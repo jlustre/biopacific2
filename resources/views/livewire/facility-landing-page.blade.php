@@ -20,6 +20,25 @@
         </script>
     @endpush
 
+    @php
+        $primary   = $facility->primary_color ?? '#2563EB';
+        $secondary = $facility->secondary_color ?? '#1E293B';
+        $accent    = $facility->accent_color ?? '#F59E0B';
+    @endphp
+    <style>
+        :root{
+            --primary-color: {{ $primary }};
+            --secondary-color: {{ $secondary }};
+            --accent-color: {{ $accent }};
+        }
+        .bg-primary{ background-color: var(--primary-color); }
+        .text-primary{ color: var(--primary-color); }
+        .bg-secondary{ background-color: var(--secondary-color); }
+        .text-secondary{ color: var(--secondary-color); }
+        .bg-accent{ background-color: var(--accent-color); }
+        .text-accent{ color: var(--accent-color); }
+    </style>
+
   <section class="relative">
     <img src="{{ $facility->hero_image_url }}" class="w-full h-96 object-cover" alt="{{ $facility->name }}">
     <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center text-white">
