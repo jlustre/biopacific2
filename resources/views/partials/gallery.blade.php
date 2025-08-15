@@ -2,7 +2,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header -->
     <div class="text-center mb-12">
-      <h2 class="text-4xl md:text-5xl font-bold text-secondary mb-4">Our Gallery</h2>
+      <h2 class="text-4xl md:text-5xl font-bold text-primary mb-4">Our Gallery</h2>
       <p class="text-lg text-gray-600 max-w-2xl mx-auto">
         Explore our collection of beautiful moments and inspiring visuals
       </p>
@@ -16,10 +16,11 @@
         'https://images.unsplash.com/photo-1530092285049-1c42085fd395',
         'https://images.unsplash.com/photo-1524758631624-e2822e304c36',
         'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4',
-        'https://images.unsplash.com/photo-1526256192325-08ad61a7a79a',
+        'https://images.unsplash.com/photo-1530092285049-1c42085fd395',
         'https://images.unsplash.com/photo-1484154218962-a197022b5858',
         'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
-        'https://images.unsplash.com/photo-1520869562399-392de8de3c1f',
+        'https://images.unsplash.com/photo-1524758631624-e2822e304c36',
+        'https://images.unsplash.com/photo-1484154218962-a197022b5858',
       ] as $index => $img)
       <div class="gallery-item group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 {{ $index === 0 ? 'sm:col-span-2 sm:row-span-2' : '' }}">
         <!-- Image -->

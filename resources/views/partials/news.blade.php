@@ -2,7 +2,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header Section -->
     <div class="text-center mb-12">
-      <h2 class="text-4xl md:text-5xl font-bold text-secondary mb-4">
+      <h2 class="text-4xl md:text-5xl font-bold text-primary mb-4">
         News & Events
       </h2>
       <p class="text-lg text-slate-600 max-w-2xl mx-auto">

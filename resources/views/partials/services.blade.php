@@ -2,7 +2,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header -->
     <div class="text-center mb-16">
-      <h2 class="text-4xl md:text-5xl font-bold text-secondary mb-4">
+      <h2 class="text-4xl md:text-5xl font-bold text-primary mb-4">
         Our <span class="text-accent">Services & Amenities</span>
       </h2>
       <p class="text-xl text-slate-600 max-w-3xl mx-auto mb-8">
@@ -225,19 +225,48 @@
           {{ $service['detailed_description'] }}
         </p>
 
-        <h4 class="text-lg font-bold text-secondary mb-4">Key Features:</h4>
-        <ul class="space-y-3 mb-6">
-          @foreach($service['features'] as $feature)
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-{{ $service['color'] }}-100 flex items-center justify-center mt-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-{{ $service['color'] }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
+        <div class="flex flex-col lg:flex-row gap-6 mb-6">
+          <!-- Service Image -->
+          <div class="lg:w-1/3">
+            <div class="aspect-video rounded-2xl overflow-hidden bg-{{ $service['color'] }}-50 border border-{{ $service['color'] }}-100">
+              @php
+                $serviceImages = [
+                  'Skilled Nursing' => 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Rehabilitation' => 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Long-term Care' => 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Memory Care' => 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Hospice Care' => 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Dining & Nutrition' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Recreation & Activities' => 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                  'Transportation' => 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'
+                ];
+              @endphp
+              <img
+                src="{{ $serviceImages[$service['title']] ?? 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80' }}"
+                alt="{{ $service['title'] }} at {{ $facility['name'] }}"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              >
             </div>
-            <span class="text-slate-700">{{ $feature }}</span>
-          </li>
-          @endforeach
-        </ul>
+          </div>
+
+          <!-- Key Features -->
+          <div class="lg:w-2/3">
+            <h4 class="text-lg font-bold text-secondary mb-4">Key Features:</h4>
+            <ul class="space-y-3">
+              @foreach($service['features'] as $feature)
+              <li class="flex items-start gap-3">
+                <div class="w-5 h-5 rounded-full bg-{{ $service['color'] }}-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <svg class="w-3 h-3 text-{{ $service['color'] }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <span class="text-slate-700">{{ $feature }}</span>
+              </li>
+              @endforeach
+            </ul>
+          </div>
+        </div>
 
         <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
           <button onclick="closeModalAndNavigate('modal-{{ $index }}', '#contact')" class="flex-1 bg-accent text-white px-6 py-3 rounded-full text-center hover:bg-accent/90 transition-colors">

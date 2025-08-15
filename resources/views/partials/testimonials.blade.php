@@ -2,7 +2,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Section Header -->
     <div class="text-center mb-16">
-      <h2 class="text-3xl sm:text-4xl font-bold text-secondary mb-4">What Our Families Say</h2>
+      <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">What Our Families Say</h2>
       <p class="text-lg text-slate-600 max-w-2xl mx-auto">Real stories from families who have experienced our compassionate care</p>
     </div>
 
@@ -15,7 +15,7 @@
           role: 'Daughter of Patient',
           text: 'The staff treated our family like their own. From the moment we walked in, we felt the warmth and genuine care. The communication was excellent, and they kept us informed every step of the way.',
           rating: 5,
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
+          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
         },
         {
           name: 'Dr. Chen',
@@ -82,7 +82,7 @@
           <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
-          <span class="font-medium">Previous</span>
+          <span class="font-medium text-secondary hover:text-white">Previous</span>
         </button>
 
         <!-- Dots Indicator -->
@@ -98,7 +98,7 @@
         <!-- Next Button -->
         <button @click="currentIndex = (currentIndex + 1) % testimonials.length"
                 class="flex items-center gap-2 px-6 py-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
-          <span class="font-medium">Next</span>
+          <span class="font-medium text-secondary hover:text-white">Next</span>
           <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>

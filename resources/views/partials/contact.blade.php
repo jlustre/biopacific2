@@ -1,9 +1,9 @@
 <section id="contact" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header -->
-    <div class="text-center mb-12">
-      <h2 class="text-3xl sm:text-4xl font-bold text-secondary mb-4">Get in Touch</h2>
-      <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">Get in Touch</h2>
+      <p class="text-lg text-slate-600 max-w-3xl mx-auto">
         Have questions or want to schedule a tour? We're here to help you every step of the way.
       </p>
     </div>
@@ -81,7 +81,7 @@
         <!-- Map -->
         <div class="bg-white rounded-2xl overflow-hidden shadow-lg border border-slate-100">
           <div class="p-4 bg-slate-50 border-b">
-            <h4 class="font-semibold text-slate-700 flex items-center">
+            <h4 class="font-semibold text-secondary flex items-center">
               <svg class="w-5 h-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3"/>
               </svg>
@@ -92,7 +92,7 @@
             class="w-full h-64 sm:h-72"
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
-            src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBPOyvtiKxDKEGDNaL8k8hxnCh_42iNDDk&q=13484+San+Pablo+Avenue,+San+Pablo,+CA+94806"
+            src="{{ $facility['maps'] }}"
             allowfullscreen>
           </iframe>
         </div>
@@ -163,7 +163,7 @@
           <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
             <button
               type="reset"
-              class="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors">
+              class="px-6 py-2.5 rounded-lg border border-slate-200 text-primary hover:bg-slate-50 transition-colors">
               Clear Form
             </button>
             <button

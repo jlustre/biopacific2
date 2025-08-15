@@ -41,24 +41,46 @@
     {{-- Per-page extra head content (e.g., JSON-LD) --}}
     @stack('meta')
 
-    @vite(['resources/css/app.css','resources/js/app.js'])
-    @livewireStyles
+    {{-- Bootstrap CSS --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     {{-- Font Awesome for icons --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    @vite(['resources/css/app.css','resources/js/app.js'])
+    @livewireStyles
+
     <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         .sidebar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             transition: all 0.3s ease;
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 56px;
+            left: 0;
+            width: 280px;
+            z-index: 1025;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            margin-left: -280px;
         }
 
         .sidebar-toggler {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
             backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggler:hover {
+            background: rgba(255,255,255,0.2);
         }
 
         .sidebar-brand {
@@ -73,6 +95,9 @@
             margin: 0.2rem 0;
             transition: all 0.3s ease;
             backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
         }
 
         .nav-link:hover {
@@ -90,31 +115,31 @@
         .sidebar-footer {
             background: rgba(0,0,0,0.1);
             border-top: 1px solid rgba(255,255,255,0.1);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
         }
 
         .content-wrapper {
+            margin-left: 280px;
+            margin-top: 56px;
             transition: margin-left 0.3s ease;
+            min-height: calc(100vh - 56px);
         }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                margin-left: -280px;
-            }
-            .sidebar.show {
-                margin-left: 0;
-            }
-            .content-wrapper {
-                margin-left: 0 !important;
-            }
+        .content-wrapper.expanded {
+            margin-left: 0;
         }
 
         .main-content {
-            min-height: calc(100vh - 56px);
             background: #f8f9fa;
+            min-height: calc(100vh - 56px);
         }
 
         .navbar {
             z-index: 1030;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .sidebar-overlay {
@@ -129,29 +154,60 @@
         }
 
         @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -280px;
+            }
+
+            .sidebar.show {
+                margin-left: 0;
+            }
+
+            .content-wrapper {
+                margin-left: 0 !important;
+            }
+
             .sidebar-overlay.show {
                 display: block;
             }
         }
+
+        /* Additional improvements */
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border-radius: 8px;
+        }
+
+        .dropdown-item {
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            transform: translateX(5px);
+        }
     </style>
 </head>
-<body class="antialiased bg-gray-50 text-gray-900">
+<body>
     {{-- Top Navigation Bar --}}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <button class="btn sidebar-toggler text-white me-3" type="button" id="sidebarToggle">
                 <i class="fas fa-bars"></i>
             </button>
-            <a class="navbar-brand" href="{{ url('/') }}">Bio-Pacific Facilities</a>
+            <a class="navbar-brand" href="{{ url('/') }}">
+                <i class="fas fa-heartbeat me-2"></i>
+                Bio-Pacific Facilities
+            </a>
 
             {{-- Right side nav items --}}
             <div class="navbar-nav ms-auto">
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-user-circle me-1"></i>
                         Guest
                     </a>
-                    <ul class="dropdown-menu">
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
@@ -166,7 +222,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     {{-- Sidebar --}}
-    <div class="sidebar position-fixed" id="sidebar" style="width: 280px; top: 56px; left: 0; z-index: 1025;">
+    <div class="sidebar" id="sidebar">
         {{-- Sidebar Brand --}}
         <div class="sidebar-brand p-3 text-center text-white">
             <i class="fas fa-heartbeat fa-2x mb-2"></i>
@@ -175,7 +231,7 @@
         </div>
 
         {{-- Navigation Menu --}}
-        <nav class="navbar-nav px-3 py-2">
+        <nav class="navbar-nav px-3 py-2 flex-grow-1">
             {{-- Dashboard --}}
             <li class="nav-item mb-1">
                 <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active' : '' }}" href="{{ url('/') }}">
@@ -210,7 +266,7 @@
         </nav>
 
         {{-- Sidebar Footer --}}
-        <div class="sidebar-footer mt-auto p-3 text-center text-white">
+        <div class="sidebar-footer p-3 text-center text-white">
             <small class="text-white-50">
                 <i class="fas fa-heart text-danger me-1"></i>
                 Compassionate Care
@@ -219,7 +275,7 @@
     </div>
 
     {{-- Main Content Wrapper --}}
-    <div class="content-wrapper" id="contentWrapper" style="margin-left: 280px; margin-top: 56px;">
+    <div class="content-wrapper" id="contentWrapper">
         <div class="main-content">
             <main class="py-4">
                 @yield('content')
@@ -227,6 +283,7 @@
         </div>
     </div>
 
+    {{-- Bootstrap JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     @livewireScripts
 
@@ -237,6 +294,12 @@
             const contentWrapper = document.getElementById('contentWrapper');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
 
+            // Check if elements exist
+            if (!sidebarToggle || !sidebar || !contentWrapper || !sidebarOverlay) {
+                console.error('Required elements not found');
+                return;
+            }
+
             sidebarToggle.addEventListener('click', function() {
                 if (window.innerWidth <= 768) {
                     // Mobile behavior
@@ -245,9 +308,8 @@
                     document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : 'auto';
                 } else {
                     // Desktop behavior
-                    const isCollapsed = contentWrapper.style.marginLeft === '0px';
-                    contentWrapper.style.marginLeft = isCollapsed ? '280px' : '0px';
-                    sidebar.style.marginLeft = isCollapsed ? '0px' : '-280px';
+                    sidebar.classList.toggle('collapsed');
+                    contentWrapper.classList.toggle('expanded');
                 }
             });
 
@@ -264,9 +326,28 @@
                     sidebar.classList.remove('show');
                     sidebarOverlay.classList.remove('show');
                     document.body.style.overflow = 'auto';
-                    sidebar.style.marginLeft = '0px';
-                    contentWrapper.style.marginLeft = '280px';
+
+                    // Reset desktop layout
+                    if (sidebar.classList.contains('collapsed')) {
+                        contentWrapper.classList.add('expanded');
+                    } else {
+                        contentWrapper.classList.remove('expanded');
+                    }
+                } else {
+                    // Reset mobile layout
+                    sidebar.classList.remove('collapsed');
+                    contentWrapper.classList.remove('expanded');
                 }
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+                dropdowns.forEach(function(dropdown) {
+                    if (!dropdown.contains(event.target) && !dropdown.previousElementSibling.contains(event.target)) {
+                        dropdown.classList.remove('show');
+                    }
+                });
             });
         });
     </script>

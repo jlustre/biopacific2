@@ -2,8 +2,8 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Section Header -->
     <div class="text-center mb-16">
-      <h2 class="text-4xl sm:text-5xl font-bold text-secondary mb-4">
-        Rooms & <span class="text-primary">Rates</span>
+      <h2 class="text-4xl sm:text-5xl font-bold text-primary mb-4">
+        Rooms & Rates
       </h2>
       <p class="text-lg text-slate-600 max-w-2xl mx-auto">
         Comfortable, secure living spaces designed for your comfort and well-being
@@ -67,7 +67,7 @@
 
           <button
             @click="openRates=true"
-            class="w-full bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-dark hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            class="w-full bg-gradient-to-r from-secondary to-accent text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-dark hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             Request Pricing Information
           </button>
@@ -78,12 +78,12 @@
       <div class="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
         <div class="relative overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1505691723518-36a5ac3b2a59?q=80&w=1200&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1200&auto=format&fit=crop"
             class="h-64 sm:h-72 w-full object-cover group-hover:scale-105 transition-transform duration-300"
             alt="Semi-Private Room"
           >
           <div class="absolute top-4 left-4">
-            <span class="bg-emerald-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+            <span class="bg-accent text-white px-3 py-1 rounded-full text-sm font-medium">
               Great Value
             </span>
           </div>
@@ -130,7 +130,7 @@
 
           <button
             @click="openRates=true"
-            class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            class="w-full bg-gradient-to-r from-secondary to-accent text-white px-6 py-3 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             Request Pricing Information
           </button>
@@ -174,8 +174,8 @@
   </div>
 
   <!-- Enhanced Rates Modal -->
-  <div x-cloak x-show="openRates" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div @click.away="openRates=false" class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl">
+  <div x-cloak x-show="openRates" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="fixed inset-0 z-50 overflow-y-auto flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0 bg-black/50 backdrop-blur-sm">
+    <div @click.away="openRates=false" class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md p-8">
       <div class="text-center mb-6">
         <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

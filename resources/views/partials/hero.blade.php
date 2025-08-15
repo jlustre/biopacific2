@@ -4,8 +4,8 @@
   </div>
   <div class="relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
-      <div class="max-w-xl bg-white/40 backdrop-blur rounded-2xl p-8 shadow-xl">
-        <h1 class="text-3xl sm:text-5xl font-extrabold text-secondary">{{ $facility['hero_main_heading'] }}</h1>
+      <div class="max-w-xl bg-white/60 backdrop-blur rounded-2xl p-8 shadow-xl">
+        <h1 class="text-3xl sm:text-5xl font-extrabold text-primary">{{ $facility['hero_main_heading'] }}</h1>
         <p class="mt-4 text-slate-700">{{ $facility['hero_sub_heading'] }}</p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a href="#contact" class="inline-flex items-center rounded-xl bg-primary px-5 py-3 text-white font-medium hover:bg-primary/90">Quick Contact</a>
