@@ -15,7 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
         ]);
+
+        // Note: We're not adding ResolveTenant to the web group globally
+        // Instead, we'll apply it selectively in routes/web.php
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

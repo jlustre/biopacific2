@@ -72,7 +72,7 @@
               </div>
               <div>
                 <p class="font-medium text-slate-700">Visiting Hours</p>
-                <p class="text-slate-600">{{ $facility['hours'] }}</p>
+                <p class="text-slate-600">{{ $facility['hours'] ?? '9:00 AM - 8:00 PM Daily' }}</p>
               </div>
             </div>
           </div>
@@ -88,13 +88,19 @@
               Our Location
             </h4>
           </div>
-          <iframe
-            class="w-full h-64 sm:h-72"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            src="{{ $facility['maps'] }}"
-            allowfullscreen>
-          </iframe>
+          @if(isset($facility['maps']) && $facility['maps'])
+            <iframe
+              class="w-full h-64 sm:h-72"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="{{ $facility['maps'] }}"
+              allowfullscreen>
+            </iframe>
+          @else
+            <div class="w-full h-64 sm:h-72 bg-gray-200 flex items-center justify-center">
+              <p class="text-gray-500">Map not available</p>
+            </div>
+          @endif
         </div>
       </div>
 

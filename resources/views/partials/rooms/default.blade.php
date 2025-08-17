@@ -67,7 +67,7 @@
 
           <button
             @click="openRates=true"
-            class="w-full bg-gradient-to-r from-secondary to-accent text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-dark hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            class="w-full bg-gradient-to-r from-secondary to-accent text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-dark hover:to-accent transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             Request Pricing Information
           </button>
@@ -130,7 +130,7 @@
 
           <button
             @click="openRates=true"
-            class="w-full bg-gradient-to-r from-secondary to-accent text-white px-6 py-3 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            class="w-full bg-gradient-to-r from-secondary to-accent text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-dark hover:to-accent transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             Request Pricing Information
           </button>
@@ -225,7 +225,7 @@
           <button type="button" @click="openRates=false" class="flex-1 px-6 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-all">
             Cancel
           </button>
-          <button type="button" @click="toast('Request sent successfully! We\'ll contact you within 24 hours.'); openRates=false" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-blue-600 text-white font-semibold hover:from-primary-dark hover:to-blue-700 transition-all shadow-lg">
+          <button type="button" @click="toast('Request sent successfully! We\'ll contact you within 24 hours.'); openRates=false" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold hover:from-primary-dark hover:to-accent transition-all shadow-lg">
             Send Request
           </button>
         </div>
