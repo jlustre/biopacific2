@@ -14,9 +14,10 @@ use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
 // Multi-tenant site routes (with ResolveTenant middleware)
-Route::middleware(['resolve.tenant'])->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-});
+// Route::middleware(['resolve.tenant'])->group(function () {
+//     Route::get('/', [HomeController::class, 'index'])->name('home');
+// });
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Landing page for easy access (without tenant middleware)
 Route::get('/index', function () {

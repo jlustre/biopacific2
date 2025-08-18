@@ -1,18 +1,15 @@
 <section id="resources" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">
-        Downloadable Resources
-      </h2>
-      <p class="text-lg text-slate-600 max-w-2xl mx-auto">
-        Access important documents and information to help you learn more about our community
-      </p>
-    </div>
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'Downloadable Resources',
+      'section_sub_header' => "Access important documents and information to help you learn more about our community"
+    ])
 
     <!-- Resources Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
       @foreach([
+        ['Menu','Weekly meal plan and dietary options','/placeholder.pdf', 'bg-red-500', 'M4 6h16M4 10h16M4 14h16M4 18h16'],
         ['Brochure','Overview of services and amenities','/placeholder.pdf', 'bg-blue-500', 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
         ['Resident Handbook','Guidelines and daily living information','/placeholder.pdf', 'bg-green-500', 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'],
         ['Application Form','Start your admission process','/placeholder.pdf', 'bg-purple-500', 'M9 12h6m-6 4h6m-6-8h6m-3-5v4m0 0l-2-2m2 2l2-2M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'],

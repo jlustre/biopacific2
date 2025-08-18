@@ -44,7 +44,7 @@
   </main>
 
   <!-- Footer -->
-  @include('partials.footer')
+  @include('partials.footer.default')
 
   <!-- Toast -->
   @include('partials.toast')

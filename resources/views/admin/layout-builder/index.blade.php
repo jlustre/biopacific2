@@ -462,7 +462,7 @@ function layoutBuilder() {
             console.log('hasChanges:', this.hasChanges);
             console.log('currentFacility:', this.currentFacility);
             console.log('selectedFacilityId:', this.selectedFacilityId);
-            
+
             if (!this.hasChanges) {
                 console.log('No changes to save');
                 return;
@@ -477,7 +477,7 @@ function layoutBuilder() {
             try {
                 const url = `/admin/layout-builder/facility/${this.currentFacility.id}/update`;
                 console.log('Save URL:', url);
-                
+
                 const payload = {
                     sections: this.sections.map((section, index) => ({
                         slug: section.slug,
@@ -499,7 +499,7 @@ function layoutBuilder() {
 
                 console.log('Response status:', response.status);
                 console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('HTTP Error:', response.status, errorText);

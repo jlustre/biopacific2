@@ -1,14 +1,10 @@
 <section id="faqs" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">
-        Frequently Asked Questions
-      </h2>
-      <p class="text-lg text-slate-600 max-w-2xl mx-auto">
-        Find answers to common questions about our services and facilities
-      </p>
-    </div>
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'Frequently Asked Questions',
+      'section_sub_header' => "Find answers to common questions about our services and facilities"
+    ])
 
     <!-- FAQ Accordion -->
     <div class="space-y-4">

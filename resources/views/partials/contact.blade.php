@@ -1,14 +1,17 @@
 <section id="contact" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- SectionHeader -->
-    @include('partials.section_header', [
-      'section_header' => 'Get in Touch',
-      'section_sub_header' => "Have questions or want to schedule a tour? We're here to help you every step of the way."
-    ])
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">Get in Touch</h2>
+      <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+        Have questions or want to schedule a tour? We're here to help you every step of the way.
+      </p>
+    </div>
 
     <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
       <!-- Contact Information -->
       <div class="space-y-8">
+        <!-- Contact Details Card -->
         <div class="bg-white rounded-2xl p-6 lg:p-8 shadow-lg border border-slate-100">
           <div class="flex items-center mb-6">
             <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-4">

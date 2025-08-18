@@ -1,19 +1,17 @@
 <section id="careers" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <h2 class="text-4xl sm:text-5xl font-bold text-primary mb-4">
-        Join Our Team
-      </h2>
-      <p class="text-lg text-slate-600 max-w-2xl mx-auto">
-        Build a rewarding career in healthcare with Bio-Pacific. We're looking for passionate professionals to make a difference.
-      </p>
-    </div>
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'Join Our Team',
+      'section_sub_header' => "Build a rewarding career in healthcare with ". e($facility['name']) .". We're looking for passionate professionals to make a difference."
+    ])
+
 
     <!-- Job Cards Grid -->
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
       @foreach([
         ['Registered Nurse (RN)','Full-time • San Pablo, CA', 'Provide exceptional patient care in our state-of-the-art facility.', 'stethoscope'],
+        ['Medical Receptionist','Full-time • San Pablo, CA', 'Greet patients, manage appointments, and support front desk operations.', 'clock'],
         ['Certified Nursing Assistant (CNA)','Part-time • San Pablo, CA', 'Support our nursing team and help patients with daily activities.', 'heart'],
         ['Physical Therapist','Part-time • San Pablo, CA', 'Help patients recover and improve their mobility and quality of life.', 'activity'],
       ] as [$role,$meta,$description,$icon])

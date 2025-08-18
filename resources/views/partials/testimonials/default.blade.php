@@ -1,10 +1,10 @@
 <section id="testimonials" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Section Header -->
-    <div class="text-center mb-16">
-      <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">What Our Families Say</h2>
-      <p class="text-lg text-slate-600 max-w-2xl mx-auto">Real stories from families who have experienced our compassionate care</p>
-    </div>
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'What Our Families Say',
+      'section_sub_header' => "Real stories from families who have experienced our compassionate care"
+    ])
 
     <!-- Testimonials Carousel -->
     <div class="relative" x-data="{
@@ -108,6 +108,15 @@
       <!-- Trust Indicators -->
       <div class="mt-16 text-center">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div class="flex flex-col items-center">
+            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+              <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17.75V17m0-10v.75m-7.07 7.07l.53-.53m12.02 0l-.53-.53M4.22 10.22l.53.53m14.02 0l-.53.53M12 7a5 5 0 100 10 5 5 0 000-10z"/>
+              </svg>
+            </div>
+            <h4 class="font-semibold text-secondary mb-2">Safe Environment</h4>
+            <p class="text-slate-600 text-sm">Strict safety protocols for peace of mind</p>
+          </div>
           <div class="flex flex-col items-center">
             <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

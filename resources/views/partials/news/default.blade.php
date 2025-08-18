@@ -1,27 +1,25 @@
 <section id="news" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Header Section -->
-    <div class="text-center mb-12">
-      <h2 class="text-4xl md:text-5xl font-bold text-primary mb-4">
-        News & Events
-      </h2>
-      <p class="text-lg text-slate-600 max-w-2xl mx-auto">
-        Stay updated with the latest happenings at Bio Pacific
-      </p>
-      <div class="mt-6">
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'News & Events',
+      'section_sub_header' => "Stay updated with the latest happenings at ". e($facility['name']) ."."
+    ])
+
+    <div class="text-center mb-12 mt-6">
         <a href="#" class="inline-flex items-center px-6 py-3 bg-primary text-white font-semibold rounded-full hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl">
           View All News
           <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
         </a>
-      </div>
     </div>
 
     <!-- News Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
       @foreach([
         ['Fall Prevention Workshop','Sept 18','2024','Learn safety techniques for residents and families with expert guidance.','workshop','bg-emerald-500'],
+        ['Mental Health Awareness Talk','Nov 5','2024','Join our guest speaker for insights and resources on mental wellness.','seminar','bg-purple-500'],
         ['Flu Shot Clinic','Oct 3','2024','On-site vaccinations for residents & staff by certified healthcare professionals.','medical','bg-blue-500'],
         ['Family BBQ Day','Oct 20','2024','Join us for food, music, and facility tours in a festive atmosphere.','event','bg-orange-500'],
       ] as [$title,$date,$year,$desc,$type,$color])

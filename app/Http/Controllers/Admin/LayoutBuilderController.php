@@ -136,7 +136,7 @@ class LayoutBuilderController extends Controller
 
         try {
             Log::info('LayoutBuilder: Starting validation');
-            
+
             $validated = $request->validate([
                 'sections' => 'required|array',
                 'sections.*.slug' => 'required|string|exists:layout_sections,slug',
@@ -202,7 +202,7 @@ class LayoutBuilderController extends Controller
                 'errors' => $e->errors(),
                 'request_data' => $request->all()
             ]);
-            
+
             return response()->json([
                 'error' => 'Validation failed',
                 'details' => $e->errors()
@@ -246,7 +246,7 @@ class LayoutBuilderController extends Controller
 
         // Get current facility layout configuration
         $facilityConfig = $facility->layout_config ?? [];
-        
+
         // Build sections data from current template and facility config
         $sectionsData = [];
         foreach ($currentTemplate->sections as $sectionSlug) {
@@ -326,7 +326,7 @@ class LayoutBuilderController extends Controller
                 'facility_id' => $facility->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to save template: ' . $e->getMessage()
             ], 500);
@@ -351,7 +351,7 @@ class LayoutBuilderController extends Controller
                 'sections_type' => gettype($sections),
                 'sections_data' => $sections
             ]);
-            
+
             // Try to decode if it's a JSON string
             if (is_string($sections)) {
                 $decoded = json_decode($sections, true);
@@ -384,7 +384,7 @@ class LayoutBuilderController extends Controller
                 ]);
                 continue;
             }
-            
+
             $previewConfig[$sectionData['slug']] = [
                 'variant' => $sectionData['variant'],
                 'order' => $index
@@ -423,11 +423,11 @@ class LayoutBuilderController extends Controller
 
         // Convert facility model to array for the views
         $facilityData = $facility->toArray();
-        
+
         // Add default values for missing fields that views expect
         $facilityData['hours'] = $facilityData['hours'] ?? '9:00 AM - 8:00 PM Daily';
         $facilityData['tagline'] = $facilityData['tagline'] ?? 'Quality care for your loved ones';
-        
+
         // Add social media data if not present
         if (!isset($facilityData['social'])) {
             $facilityData['social'] = [

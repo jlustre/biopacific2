@@ -1,13 +1,10 @@
 <section id="gallery" class="py-16 sm:py-24 bg-gradient-to-br from-gray-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <h2 class="text-4xl md:text-5xl font-bold text-primary mb-4">Our Gallery</h2>
-      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-        Explore our collection of beautiful moments and inspiring visuals
-      </p>
-      <div class="w-24 h-1 bg-primary mx-auto mt-6 rounded-full"></div>
-    </div>
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'Our Gallery',
+      'section_sub_header' => "Explore our collection of beautiful moments and inspiring visuals"
+    ])
 
     <!-- Gallery Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">

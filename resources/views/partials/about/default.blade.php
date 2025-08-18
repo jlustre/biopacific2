@@ -1,45 +1,50 @@
 <section id="about" class="py-16 sm:py-24 bg-gradient-to-br from-blue-50 to-green-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Header -->
-    <div class="text-center mb-16">
-      <h2 class="text-4xl md:text-5xl font-bold text-primary mb-4">
-        About <span class="text-accent">{{ $facility['name'] }}</span>
-      </h2>
-      <p class="text-xl text-slate-600 max-w-3xl mx-auto">
-        Dedicated to providing compassionate care and creating a warm, supportive environment where residents thrive.
-      </p>
-    </div>
+    <!-- SectionHeader -->
+    @include('partials.section_header', [
+      'section_header' => 'About <span class="text-accent">' . e($facility['name']) . '</span>',
+      'section_sub_header' => 'Dedicated to providing compassionate care and creating a warm, supportive environment where residents thrive.'
+    ])
 
     <!-- Main Content -->
-    <div class="grid lg:grid-cols-2 gap-16 items-center mb-16">
+    <div class="grid lg:grid-cols-2 gap-8 items-start mb-16">
       <!-- Image Side -->
-      <div class="relative">
+      <div class="lg:col-span-2 relative">
         <div class="relative overflow-hidden rounded-3xl shadow-2xl">
           <img
             src="{{ asset('images/nursehuggingpatient.jpg') }}"
             alt="Caring nursing staff helping elderly residents"
-            class="w-full h-96 object-cover"
+            class="w-full h-80 lg:h-96 object-cover"
           >
           <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
         </div>
         <!-- Floating Card -->
-        <div class="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl border-l-4 border-accent">
-          <div class="text-3xl font-bold text-accent">{{ $facility['years'] }}+</div>
-          <div class="text-sm text-slate-600">Years of Excellence</div>
+        <div class="absolute -bottom-4 -right-4 bg-white p-4 lg:p-6 rounded-2xl shadow-xl border-l-4 border-accent">
+          <div class="text-2xl lg:text-3xl font-bold text-accent">{{ $facility['years'] }}+</div>
+          <div class="text-xs lg:text-sm text-slate-600">Years of Excellence</div>
         </div>
       </div>
 
       <!-- Content Side -->
-      <div class="space-y-6">
+      <div class="lg:col-span-2 space-y-6">
         <div class="space-y-4">
-          <h3 class="text-2xl font-bold text-primary">Our Mission</h3>
-          <p class="text-slate-700 leading-relaxed">
+          <h3 class="text-3xl font-bold text-primary">Our Mission</h3>
+          <p class="text-slate-700 leading-relaxed text-xl">
             Founded on the principles of dignity, respect, and clinical excellence, {{ $facility['name'] }} provides comprehensive skilled nursing, rehabilitation, and long-term care services. We believe every resident deserves personalized attention and compassionate care in a home-like environment.
           </p>
         </div>
 
         <!-- Key Values -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-6">
+          <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
+            <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="font-semibold text-primary">Integrity</div>
+            <p class="text-sm text-slate-600 mt-1">Honesty and transparency</p>
+          </div>
           <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
             <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +77,7 @@
     </div>
 
     <!-- Achievements Grid -->
-    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-accent hover:shadow-xl transition-shadow">
         <div class="flex items-center space-x-3 mb-3">
           <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">

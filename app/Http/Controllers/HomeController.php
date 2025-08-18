@@ -13,7 +13,7 @@ class HomeController extends Controller
 
         // For backward compatibility, if no current facility is found,
         // fall back to a default facility for development
-        if (!app()->bound('current_facility')) {
+        // if (!app()->bound('current_facility')) {
             $facility = [
                 'name' => 'Vale Health Care Center',
                 'tagline' => 'Compassionate care, clinical excellence.',
@@ -34,11 +34,11 @@ class HomeController extends Controller
 
             $colors = ['primary'=>'#059669','secondary'=>'#064E3B','accent'=>'#FACC15'];
 
-            return view('welcome', compact('facility','colors'));
-        }
+        //     return view('welcome', compact('facility','colors'));
+        // }
 
         // If we have a current facility (normal case), just return the view
         // The facility data is already shared via the middleware
-        return view('welcome');
+        return view('welcome', compact('facility', 'colors'));
     }
 }
