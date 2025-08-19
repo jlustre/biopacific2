@@ -3,7 +3,7 @@
       <div class="flex items-center justify-between h-16">
       <a href="#top" class="flex items-center gap-3">
           <span class="inline-flex h-9 w-9 rounded-xl items-center justify-center bg-primary/10 text-primary font-bold">V</span>
-          <div class="font-semibold">{{ $facility['name'] }}</div>
+          <div class="lg:text-xl font-semibold">{{ $facility['name'] }}</div>
       </a>
       @include('partials.navbar')
       <div class="hidden md:flex gap-2">
