@@ -65,8 +65,11 @@ Route::prefix('admin')->group(function () {
         return response()->json(['message' => 'Test route works', 'timestamp' => now()]);
     });
     Route::get('/layout-builder/facility/{facilityId}/layout', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'getFacilityLayout'])->name('admin.layout-builder.facility-layout');
+<<<<<<< HEAD
     // Fix for frontend requesting /admin/layout-builder/facility/{facilityId}/layout
     Route::get('/admin/layout-builder/facility/{facilityId}/layout', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'getFacilityLayout']);
+=======
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
     Route::post('/layout-builder/facility/{facilityId}/update', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'updateLayout'])->name('admin.layout-builder.update');
     Route::post('/layout-builder/facility/{facilityId}/duplicate', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'duplicateLayout'])->name('admin.layout-builder.duplicate');
     Route::post('/layout-builder/facility/{facilityId}/save-template', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'saveAsTemplate'])->name('admin.layout-builder.save-template');

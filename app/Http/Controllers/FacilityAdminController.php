@@ -11,7 +11,11 @@ class FacilityAdminController extends Controller
 {
     public function index()
     {
+<<<<<<< HEAD
         $facilities = Facility::orderBy('name')->paginate();
+=======
+        $facilities = Facility::orderBy('name')->paginate(12);
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         return view('admin.facilities.index', compact('facilities'));
     }
 
@@ -24,7 +28,11 @@ class FacilityAdminController extends Controller
     public function edit($id)
     {
         $facility = Facility::findOrFail($id);
+<<<<<<< HEAD
         $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4']; // Available layouts
+=======
+        $layoutTemplates = ['layout1', 'layout2', 'layout3', 'layout4']; // Available layouts
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
 
         return view('admin.facilities.edit', compact('facility', 'layoutTemplates'));
     }
@@ -39,7 +47,11 @@ class FacilityAdminController extends Controller
             'domain' => 'required|string|max:255|unique:facilities,domain,' . $id,
             'subdomain' => 'nullable|string|max:100',
             'is_active' => 'boolean',
+<<<<<<< HEAD
             'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
+=======
+            'layout_template' => 'required|string|in:layout1,layout2,layout3,layout4',
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:50',
@@ -59,7 +71,10 @@ class FacilityAdminController extends Controller
             'facebook' => 'nullable|url|max:255',
             'twitter' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
+<<<<<<< HEAD
             'location_map' => 'nullable|string|max:1000',
+=======
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             'sections' => 'array',
             'sections.*' => 'boolean'
         ]);
@@ -78,6 +93,7 @@ class FacilityAdminController extends Controller
             'instagram' => $request->instagram,
         ];
 
+<<<<<<< HEAD
         // Convert Google Maps URL to embed format if needed
         $locationMap = $validated['location_map'] ?? null;
         if ($locationMap && preg_match('/^https?:\/\/maps\.google\.com\/maps\?q=/', $locationMap)) {
@@ -86,6 +102,9 @@ class FacilityAdminController extends Controller
                 $locationMap .= '&output=embed';
             }
         }
+=======
+        // Update facility basic info
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         $facility->update([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
@@ -113,13 +132,20 @@ class FacilityAdminController extends Controller
             'facebook' => $validated['facebook'],
             'twitter' => $validated['twitter'],
             'instagram' => $validated['instagram'],
+<<<<<<< HEAD
             'location_map' => $locationMap,
+=======
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         ]);
 
         // Update settings with active sections and social data for backward compatibility
         $settings = $facility->settings ?? [];
         $settings['social'] = array_filter($socialData); // Remove empty values
+<<<<<<< HEAD
         $settings['active_sections'] = array_keys(array_filter($request->sections ?? []));
+=======
+        $settings['active_sections'] = $request->sections ?? [];
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
 
         $facility->update(['settings' => $settings]);
 

@@ -6,17 +6,29 @@
 <div class="flex items-center justify-between">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Layout Builder</h1>
+<<<<<<< HEAD
         <p class="text-gray-600 mt-1">Design and customize facility layouts by reordering sections and changing variants
         </p>
     </div>
     <div class="flex items-center gap-3">
         <a href="{{ route('admin.layouts.index') }}"
             class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+=======
+        <p class="text-gray-600 mt-1">Design and customize facility layouts by reordering sections and changing variants</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ route('admin.layouts.index') }}"
+           class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             <i class="fas fa-th-large"></i>
             Layout Templates
         </a>
         <a href="{{ route('admin.sections.index') }}"
+<<<<<<< HEAD
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+=======
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             <i class="fas fa-puzzle-piece"></i>
             Manage Sections
         </a>
@@ -31,6 +43,7 @@
     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
         <h3 class="text-sm font-medium text-yellow-800 mb-2">Debug Information</h3>
         <div class="text-sm text-yellow-700">
+<<<<<<< HEAD
             <p><strong>Selected Facility ID:</strong> <span x-text="selectedFacilityId || 'None'"></span></p>
             <p><strong>Available Sections Count:</strong> <span x-text="availableSections.length"></span></p>
             @if (!$facilities->isEmpty())
@@ -41,6 +54,12 @@
             @endif
             <p><strong>Sections Count:</strong> <span x-text="sections.length"></span></p>
             <p><strong>Loading:</strong> <span x-text="loading ? 'Yes' : 'No'"></span></p>
+=======
+            <p>Selected Facility ID: <span x-text="selectedFacilityId || 'None'"></span></p>
+            <p>Current Facility: <span x-text="currentFacility ? currentFacility.name : 'None'"></span></p>
+            <p>Sections Count: <span x-text="sections.length"></span></p>
+            <p>Loading: <span x-text="loading ? 'Yes' : 'No'"></span></p>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         </div>
     </div>
 
@@ -52,6 +71,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                     Facility ({{ $facilities->count() }} available)
                 </label>
+<<<<<<< HEAD
                 <select x-model="selectedFacilityId"
                     @change="console.log('Facility changed to:', selectedFacilityId); loadFacilityLayout()"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -61,6 +81,16 @@
                     @endforeach
                     @if($facilities->isEmpty())
                     <option disabled>No facilities found</option>
+=======
+                <select x-model="selectedFacilityId" @change="console.log('Facility changed to:', selectedFacilityId); loadFacilityLayout()"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select a facility...</option>
+                    @foreach($facilities as $facility)
+                        <option value="{{ $facility->id }}">{{ $facility->name }} ({{ $facility->domain }})</option>
+                    @endforeach
+                    @if($facilities->isEmpty())
+                        <option disabled>No facilities found</option>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                     @endif
                 </select>
             </div>
@@ -75,7 +105,11 @@
             </div>
             <div x-show="currentFacility" class="flex items-end">
                 <button @click="openPreview()"
+<<<<<<< HEAD
                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+=======
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                     <i class="fas fa-eye"></i>
                     Preview Layout
                 </button>
@@ -98,7 +132,11 @@
                         <div class="flex items-center gap-2">
                             <span class="text-sm text-gray-500" x-text="sections.length + ' sections'"></span>
                             <button @click="saveLayout()" :disabled="!hasChanges"
+<<<<<<< HEAD
                                 class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+=======
+                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                                 <i class="fas fa-save"></i>
                                 Save Changes
                             </button>
@@ -110,7 +148,11 @@
                     <div id="sections-container" class="space-y-4">
                         <template x-for="(section, index) in sections" :key="section.slug">
                             <div class="section-item bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-move hover:bg-gray-100 transition-colors"
+<<<<<<< HEAD
                                 :data-section="section.slug">
+=======
+                                 :data-section="section.slug">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
 
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-3">
@@ -119,7 +161,11 @@
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-semibold"
+<<<<<<< HEAD
                                                 x-text="index + 1"></div>
+=======
+                                                 x-text="index + 1"></div>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                                             <div>
                                                 <h3 class="font-medium text-gray-900" x-text="section.name"></h3>
                                                 <p class="text-sm text-gray-500" x-text="section.description"></p>
@@ -132,7 +178,11 @@
                                         <div class="flex items-center gap-2">
                                             <label class="text-sm text-gray-600">Variant:</label>
                                             <select x-model="section.current_variant" @change="markAsChanged()"
+<<<<<<< HEAD
                                                 class="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500">
+=======
+                                                    class="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                                                 <template x-for="variant in section.available_variants" :key="variant">
                                                     <option :value="variant" x-text="variant"></option>
                                                 </template>
@@ -141,11 +191,19 @@
 
                                         <!-- Actions -->
                                         <button @click="removeSection(index)"
+<<<<<<< HEAD
                                             class="text-red-600 hover:text-red-800 p-1">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                         <button @click="configureSection(section)"
                                             class="text-blue-600 hover:text-blue-800 p-1">
+=======
+                                                class="text-red-600 hover:text-red-800 p-1">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <button @click="configureSection(section)"
+                                                class="text-blue-600 hover:text-blue-800 p-1">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                                             <i class="fas fa-cog"></i>
                                         </button>
                                     </div>
@@ -158,8 +216,12 @@
                     <div x-show="sections.length === 0" class="text-center py-12">
                         <i class="fas fa-layer-group text-4xl text-gray-300 mb-4"></i>
                         <h3 class="text-lg font-medium text-gray-900 mb-2">No Sections</h3>
+<<<<<<< HEAD
                         <p class="text-gray-500">Add sections from the panel on the right to start building your layout.
                         </p>
+=======
+                        <p class="text-gray-500">Add sections from the panel on the right to start building your layout.</p>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                     </div>
                 </div>
             </div>
@@ -168,7 +230,11 @@
             <div x-show="sections.length > 0" class="mt-6 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <button @click="resetLayout()"
+<<<<<<< HEAD
                         class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+=======
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         <i class="fas fa-undo"></i>
                         Reset to Original
                     </button>
@@ -176,12 +242,20 @@
 
                 <div class="flex items-center gap-3">
                     <button @click="openSaveAsTemplate()"
+<<<<<<< HEAD
                         class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+=======
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         <i class="fas fa-save"></i>
                         Save as Template
                     </button>
                     <button @click="openDuplicateLayout()"
+<<<<<<< HEAD
                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+=======
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         <i class="fas fa-copy"></i>
                         Duplicate Layout
                     </button>
@@ -200,19 +274,32 @@
                 <div class="p-4 space-y-3">
                     <template x-for="section in availableSections" :key="section.slug">
                         <div class="available-section bg-gray-50 border border-gray-200 rounded-lg p-3 cursor-move hover:bg-blue-50 hover:border-blue-300 transition-colors"
+<<<<<<< HEAD
                             :data-section="section.slug">
+=======
+                             :data-section="section.slug">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="font-medium text-gray-900 text-sm" x-text="section.name"></h4>
                                     <p class="text-xs text-gray-500" x-text="section.description"></p>
                                 </div>
+<<<<<<< HEAD
                                 <button @click="addSection(section)" class="text-blue-600 hover:text-blue-800 p-1">
+=======
+                                <button @click="addSection(section)"
+                                        class="text-blue-600 hover:text-blue-800 p-1">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
                             <div class="mt-2">
+<<<<<<< HEAD
                                 <span class="text-xs text-gray-400"
                                     x-text="section.variants.length + ' variants'"></span>
+=======
+                                <span class="text-xs text-gray-400" x-text="section.variants.length + ' variants'"></span>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                             </div>
                         </div>
                     </template>
@@ -231,7 +318,11 @@
 
     <!-- Save as Template Modal -->
     <div x-show="showSaveTemplate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+<<<<<<< HEAD
         x-cloak @click.self="showSaveTemplate = false">
+=======
+         x-cloak @click.self="showSaveTemplate = false">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div class="p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Save as Template</h3>
@@ -241,19 +332,31 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Template Name</label>
                             <input type="text" x-model="templateForm.name" required
+<<<<<<< HEAD
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+=======
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                             <textarea x-model="templateForm.description" rows="3"
+<<<<<<< HEAD
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+=======
+                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         </div>
 
                         <div>
                             <label class="flex items-center gap-2">
                                 <input type="checkbox" x-model="templateForm.apply_to_facility"
+<<<<<<< HEAD
                                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+=======
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                                 <span class="text-sm text-gray-700">Apply this template to current facility</span>
                             </label>
                         </div>
@@ -261,10 +364,18 @@
 
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="showSaveTemplate = false"
+<<<<<<< HEAD
                             class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
                             Cancel
                         </button>
                         <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+=======
+                                class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                             Save Template
                         </button>
                     </div>
@@ -275,7 +386,11 @@
 
     <!-- Duplicate Layout Modal -->
     <div x-show="showDuplicateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+<<<<<<< HEAD
         x-cloak @click.self="showDuplicateModal = false">
+=======
+         x-cloak @click.self="showDuplicateModal = false">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div class="p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Duplicate Layout</h3>
@@ -285,22 +400,38 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">New Template Name</label>
                             <input type="text" x-model="duplicateForm.name" required
+<<<<<<< HEAD
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+=======
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                             <textarea x-model="duplicateForm.description" rows="3"
+<<<<<<< HEAD
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+=======
+                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         </div>
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" @click="showDuplicateModal = false"
+<<<<<<< HEAD
                             class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
                             Cancel
                         </button>
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+=======
+                                class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                             Duplicate Layout
                         </button>
                     </div>
@@ -315,7 +446,11 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
+<<<<<<< HEAD
     function layoutBuilder() {
+=======
+function layoutBuilder() {
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
     return {
         selectedFacilityId: '',
         currentFacility: null,
@@ -652,4 +787,8 @@
     }
 }
 </script>
+<<<<<<< HEAD
 @endpush
+=======
+@endpush
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be

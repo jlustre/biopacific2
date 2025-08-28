@@ -147,7 +147,11 @@ class LayoutTemplatesSeeder extends Seeder
         $templates = [
             [
                 'name' => 'Classic Layout',
+<<<<<<< HEAD
                 'slug' => 'default-template',
+=======
+                'slug' => 'layout1',
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                 'description' => 'Traditional layout with all sections',
                 'sections' => ['hero', 'about', 'services', 'contact'],
                 'default_config' => [

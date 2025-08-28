@@ -1,6 +1,10 @@
 <?php
 
+<<<<<<< HEAD
 namespace App\Livewire;
+=======
+namespace App\Http\Livewire;
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
 
 use Livewire\Component;
 use App\Models\Facility;

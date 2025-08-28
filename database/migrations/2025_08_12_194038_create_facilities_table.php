@@ -14,7 +14,10 @@ return new class extends Migration
         Schema::create('facilities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+<<<<<<< HEAD
             $table->string('tagline')->default('Quality care for your loved ones');
+=======
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             $table->string('slug')->unique();
             $table->string('logo_url')->nullable();
             $table->string('hero_image_url')->nullable();

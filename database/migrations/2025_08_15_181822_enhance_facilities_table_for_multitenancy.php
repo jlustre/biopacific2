@@ -26,7 +26,11 @@ return new class extends Migration
                 $table->json('settings')->nullable()->after('is_active');
             }
             if (!Schema::hasColumn('facilities', 'layout_template')) {
+<<<<<<< HEAD
                 $table->string('layout_template')->default('default-template')->after('settings');
+=======
+                $table->string('layout_template')->default('layout1')->after('settings');
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             }
             if (!Schema::hasColumn('facilities', 'layout_config')) {
                 $table->json('layout_config')->nullable()->after('layout_template');
@@ -40,7 +44,11 @@ return new class extends Migration
                 'domain' => $facility->slug ? $facility->slug . '.example.com' : 'facility' . ($index + 1) . '.example.com',
                 'subdomain' => $facility->slug ?: 'facility' . ($index + 1),
                 'is_active' => true,
+<<<<<<< HEAD
                 'layout_template' => 'default-template'
+=======
+                'layout_template' => 'layout1'
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             ]);
         }
     }

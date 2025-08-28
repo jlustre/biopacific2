@@ -22,8 +22,12 @@ class LayoutBuilderController extends Controller
 
     public function index()
     {
+<<<<<<< HEAD
         $facilities = Facility::select('id', 'name', 'domain', 'layout_template', 'phone', 'beds',
         'headline', 'subheadline', 'address', 'primary_color', 'secondary_color', 'accent_color')->get();
+=======
+        $facilities = Facility::select('id', 'name', 'domain', 'layout_template')->get();
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         $templates = LayoutTemplate::where('is_active', true)->get();
 
         return view('admin.layout-builder.index', compact('facilities', 'templates'));

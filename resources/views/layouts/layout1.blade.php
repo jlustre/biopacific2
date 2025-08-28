@@ -1,4 +1,5 @@
 <!doctype html>
+<<<<<<< HEAD
 <html lang="en" x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}"
   class="scroll-smooth">
 
@@ -6,6 +7,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality care for your loved ones' }}</title>
+=======
+<html lang="en" x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ $facility['name'] }} — {{ $facility['tagline'] }}</title>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
   <meta name="description" content="{{ $facility['meta_description'] }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -16,15 +24,22 @@
       theme: {
         extend: {
           colors: {
+<<<<<<< HEAD
             primary: '{{ $colors['primary'] ?? '#047857' }}',
             secondary: '{{ $colors['secondary'] ?? '#1f2937' }}',
             accent: '{{ $colors['accent'] ?? '#06b6d4' }}',
+=======
+            primary: '{{ $colors['primary'] }}',
+            secondary: '{{ $colors['secondary'] }}',
+            accent: '{{ $colors['accent'] }}',
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
           },
         }
       }
     }
   </script>
   <style>
+<<<<<<< HEAD
     :root {
       --color-primary: {
           {
@@ -58,6 +73,16 @@
   </style>
 </head>
 
+=======
+    :root{
+      --color-primary: {{ $colors['primary'] }};
+      --color-secondary: {{ $colors['secondary'] }};
+      --color-accent: {{ $colors['accent'] }};
+    }
+    .high-contrast *{ color: #000 !important; background-image:none !important; }
+  </style>
+</head>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
 <body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
   <!-- Header -->
   @include('partials.header')
@@ -125,5 +150,9 @@
     }
   </script>
 </body>
+<<<<<<< HEAD
 
 </html>
+=======
+</html>
+>>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
