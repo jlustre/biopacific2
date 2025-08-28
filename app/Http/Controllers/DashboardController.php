@@ -31,11 +31,7 @@ class DashboardController extends Controller
         view()->share('facility', $facility->toArray());
 
         // Share layout template (it's a string field, not a relationship)
-<<<<<<< HEAD
         view()->share('layoutTemplate', $facility->layout_template ?? 'default-template');
-=======
-        view()->share('layoutTemplate', $facility->layout_template ?? 'layout1');
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
 
         return view('welcome');
     }

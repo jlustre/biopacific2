@@ -67,10 +67,5 @@ class TenantConfigService
 
     public function getLayoutTemplate()
     {
-<<<<<<< HEAD
-        return $this->facility ? $this->facility->layout_template : 'default-template';
-=======
         return $this->facility ? $this->facility->layout_template : 'layout1';
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
     }
-}

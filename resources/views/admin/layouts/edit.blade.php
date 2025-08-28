@@ -10,20 +10,12 @@
     </div>
     <div class="flex items-center gap-3">
         <a href="{{ route('admin.layouts.show', $template->id) }}"
-<<<<<<< HEAD
             class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-=======
-           class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             <i class="fas fa-arrow-left"></i>
             Back to Details
         </a>
         <a href="{{ route('admin.layouts.preview', $template->id) }}"
-<<<<<<< HEAD
             class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-=======
-           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
             <i class="fas fa-eye"></i>
             Preview
         </a>
@@ -44,27 +36,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Template Name</label>
-<<<<<<< HEAD
                     <input type="text" id="name" name="name" value="{{ old('name', $template->name) }}"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required>
                     @error('name')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-=======
-                    <input type="text"
-                           id="name"
-                           name="name"
-                           value="{{ old('name', $template->name) }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           required>
-                    @error('name')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                     @enderror
                 </div>
 
                 <div>
-<<<<<<< HEAD
                     <label for="preview_image" class="block text-sm font-medium text-gray-700 mb-2">Preview Image
                         URL</label>
                     <input type="url" id="preview_image" name="preview_image"
@@ -72,109 +52,35 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     @error('preview_image')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-=======
-                    <label for="preview_image" class="block text-sm font-medium text-gray-700 mb-2">Preview Image URL</label>
-                    <input type="url"
-                           id="preview_image"
-                           name="preview_image"
-                           value="{{ old('preview_image', $template->preview_image) }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    @error('preview_image')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                     @enderror
                 </div>
             </div>
 
             <div class="mt-6">
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-<<<<<<< HEAD
                 <textarea id="description" name="description" rows="3"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Describe this layout template...">{{ old('description', $template->description) }}</textarea>
                 @error('description')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-=======
-                <textarea id="description"
-                          name="description"
-                          rows="3"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Describe this layout template...">{{ old('description', $template->description) }}</textarea>
-                @error('description')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                 @enderror
             </div>
 
             <div class="mt-6">
                 <label class="flex items-center">
-<<<<<<< HEAD
                     <input type="checkbox" name="is_active" value="1" {{ old('is_active', $template->is_active) ?
                     'checked' : '' }}
                     class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring
                     focus:ring-blue-200 focus:ring-opacity-50">
-=======
-                    <input type="checkbox"
-                           name="is_active"
-                           value="1"
-                           {{ old('is_active', $template->is_active) ? 'checked' : '' }}
-                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                     <span class="ml-2 text-sm text-gray-700">Active (available for use)</span>
                 </label>
             </div>
         </div>
 
         {{-- Section Configuration --}}
-<<<<<<< HEAD
         <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Livewire Section Management</h2>
             <livewire:layout-builder :templateId="$template->id" />
-=======
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Layout Sections</h2>
-            <p class="text-gray-600 mb-6">Select and arrange the sections for this layout template</p>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($availableSections as $section)
-                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                        <label class="flex items-start cursor-pointer">
-                            <input type="checkbox"
-                                   name="sections[]"
-                                   value="{{ $section->slug }}"
-                                   {{ in_array($section->slug, old('sections', $template->sections ?? [])) ? 'checked' : '' }}
-                                   class="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                            <div class="ml-3 flex-1">
-                                <div class="font-medium text-gray-900">{{ $section->name }}</div>
-                                <div class="text-sm text-gray-500 mt-1">{{ $section->description }}</div>
-
-                                @if($section->variants && count($section->variants) > 1)
-                                    <div class="mt-2">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Variant:</label>
-                                        <select name="default_config[{{ $section->slug }}][variant]"
-                                                class="text-xs border border-gray-300 rounded px-2 py-1 w-full">
-                                            @foreach($section->variants as $variant)
-                                                @php
-                                                    $variantName = is_array($variant) ? ($variant['name'] ?? 'default') : (is_object($variant) ? ($variant->name ?? 'default') : $variant);
-                                                    $currentVariant = old("default_config.{$section->slug}.variant", $template->default_config[$section->slug]['variant'] ?? 'default');
-                                                @endphp
-                                                <option value="{{ $variantName }}" {{ $variantName === $currentVariant ? 'selected' : '' }}>
-                                                    {{ ucfirst($variantName) }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                @endif
-                            </div>
-                        </label>
-                    </div>
-                @endforeach
-            </div>
-
-            @error('sections')
-                <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-            @enderror
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
         </div>
 
         {{-- Save Actions --}}
@@ -186,19 +92,11 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <a href="{{ route('admin.layouts.show', $template->id) }}"
-<<<<<<< HEAD
                         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
                         Cancel
                     </a>
                     <button type="submit"
                         class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center gap-2">
-=======
-                       class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
-                        Cancel
-                    </a>
-                    <button type="submit"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors flex items-center gap-2">
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
                         <i class="fas fa-save"></i>
                         Save Changes
                     </button>
@@ -219,8 +117,4 @@
     // This could be enhanced with sortable.js or similar
 </script>
 @endpush
-<<<<<<< HEAD
 @endsection
-=======
-@endsection
->>>>>>> 5a7e1f9599c22a67bfe93c9cd3f696bb1a5ec0be
