@@ -1,7 +1,7 @@
 <div class="bg-white">
-    @push('meta')
-        <script type="application/ld+json">
-        {
+  @push('meta')
+  <script type="application/ld+json">
+    {
         "@context": "https://schema.org",
         "@type": "NursingHome",
         "name": "{{ $facility->name }}",
@@ -17,27 +17,65 @@
             "addressCountry": "US"
         }
         }
-        </script>
-    @endpush
+  </script>
+  @endpush
 
-    @php
-        $primary   = $facility->primary_color ?? '#2563EB';
-        $secondary = $facility->secondary_color ?? '#1E293B';
-        $accent    = $facility->accent_color ?? '#F59E0B';
-    @endphp
-    <style>
-        :root{
-            --primary-color: {{ $primary }};
-            --secondary-color: {{ $secondary }};
-            --accent-color: {{ $accent }};
+  @php
+  $primary = $facility->primary_color ?? '#2563EB';
+  $secondary = $facility->secondary_color ?? '#1E293B';
+  $accent = $facility->accent_color ?? '#F59E0B';
+  @endphp
+  <style>
+    :root {
+      --primary-color: {
+          {
+          $primary
         }
-        .bg-primary{ background-color: var(--primary-color); }
-        .text-primary{ color: var(--primary-color); }
-        .bg-secondary{ background-color: var(--secondary-color); }
-        .text-secondary{ color: var(--secondary-color); }
-        .bg-accent{ background-color: var(--accent-color); }
-        .text-accent{ color: var(--accent-color); }
-    </style>
+      }
+
+      ;
+
+      --secondary-color: {
+          {
+          $secondary
+        }
+      }
+
+      ;
+
+      --accent-color: {
+          {
+          $accent
+        }
+      }
+
+      ;
+    }
+
+    .bg-primary {
+      background-color: var(--primary-color);
+    }
+
+    .text-primary {
+      color: var(--primary-color);
+    }
+
+    .bg-secondary {
+      background-color: var(--secondary-color);
+    }
+
+    .text-secondary {
+      color: var(--secondary-color);
+    }
+
+    .bg-accent {
+      background-color: var(--accent-color);
+    }
+
+    .text-accent {
+      color: var(--accent-color);
+    }
+  </style>
 
   <section class="relative">
     <img src="{{ $facility->hero_image_url }}" class="w-full h-96 object-cover" alt="{{ $facility->name }}">
@@ -47,12 +85,7 @@
       <p class="mt-2 text-lg">{{ $facility->headline }}</p>
       <div class="mt-4 flex gap-2 text-sm">
         <span class="bg-white/90 text-gray-800 px-3 py-1 rounded">Beds: {{ $facility->beds }}</span>
-        @if($facility->ranking_position && $facility->ranking_total)
-          <span class="bg-indigo-600/90 px-3 py-1 rounded">Ranking: {{ $facility->ranking_position }} / {{ $facility->ranking_total }}</span>
-        @endif
-        @if($facility->ownership_role)
-          <span class="bg-emerald-600/90 px-3 py-1 rounded">{{ $facility->ownership_role }}</span>
-        @endif
+        <!-- ...existing code... -->
       </div>
     </div>
   </section>
@@ -64,7 +97,7 @@
       <p class="text-gray-600">{{ $facility->about_text }}</p>
       <ul class="mt-6 grid grid-cols-2 gap-3">
         @foreach($facility->values as $v)
-          <li class="bg-gray-100 rounded px-3 py-2 text-center font-medium">{{ $v->value }}</li>
+        <li class="bg-gray-100 rounded px-3 py-2 text-center font-medium">{{ $v->value }}</li>
         @endforeach
       </ul>
     </div>
@@ -75,11 +108,11 @@
       <h2 class="text-2xl font-bold mb-6 text-center">Our Services</h2>
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         @foreach($facility->services as $s)
-          <div class="p-6 bg-white border rounded-lg text-center">
-            {!! $s->icon !!}
-            <h3 class="mt-3 font-semibold">{{ $s->title }}</h3>
-            <p class="mt-2 text-gray-600">{{ $s->description }}</p>
-          </div>
+        <div class="p-6 bg-white border rounded-lg text-center">
+          {!! $s->icon !!}
+          <h3 class="mt-3 font-semibold">{{ $s->title }}</h3>
+          <p class="mt-2 text-gray-600">{{ $s->description }}</p>
+        </div>
         @endforeach
       </div>
     </div>
@@ -90,11 +123,11 @@
       <h2 class="text-2xl font-bold mb-6 text-center">What Families Say</h2>
       <div class="grid md:grid-cols-3 gap-6">
         @foreach($facility->testimonials as $t)
-          <div class="p-6 bg-white rounded-lg shadow text-center">
-            <img src="{{ $t->photo_url }}" alt="{{ $t->name }}" class="w-16 h-16 rounded-full mx-auto mb-3">
-            <p class="italic text-gray-700">"{{ $t->quote }}"</p>
-            <p class="mt-2 font-semibold">{{ $t->name }}</p>
-          </div>
+        <div class="p-6 bg-white rounded-lg shadow text-center">
+          <img src="{{ $t->photo_url }}" alt="{{ $t->name }}" class="w-16 h-16 rounded-full mx-auto mb-3">
+          <p class="italic text-gray-700">"{{ $t->quote }}"</p>
+          <p class="mt-2 font-semibold">{{ $t->name }}</p>
+        </div>
         @endforeach
       </div>
     </div>
@@ -105,7 +138,7 @@
       <h2 class="text-2xl font-bold mb-6 text-center">Gallery</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         @foreach($facility->galleryImages as $img)
-          <img src="{{ $img->thumbnail_url }}" class="rounded-lg shadow hover:opacity-90 transition" alt="Gallery image">
+        <img src="{{ $img->thumbnail_url }}" class="rounded-lg shadow hover:opacity-90 transition" alt="Gallery image">
         @endforeach
       </div>
     </div>
@@ -135,4 +168,3 @@
     </div>
   </footer>
 </div>
-

@@ -25,7 +25,24 @@
   <div class="absolute left-0 bottom-24 z-10 w-full">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       <div class="max-w-xl bg-white/60 backdrop-blur rounded-2xl p-8 shadow-xl">
-        <h1 class="text-2xl sm:text-4xl font-extrabold" style="color: {{ $facility['accent_color'] ?? '#e3342f' }}">
+        <!-- Add a dark text stroke for better contrast -->
+        <style>
+          .hero-headline-shadow {
+            /* Existing styles... */
+            -webkit-text-stroke: .5px rgba(40, 40, 40, 0.7);
+            text-stroke: .5px rgba(40, 40, 40, 0.7);
+            /* For future compatibility */
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0px 1px rgba(0, 0, 0, 0.12);
+            border: 2px solid rgba(73, 64, 64, 0.4);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10);
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.18);
+          }
+        </style>
+        <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow"
+          style="color: {{ $facility['accent_color'] ?? '#e3342f' }}">
           {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
         </h1>
         <p class="mt-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>

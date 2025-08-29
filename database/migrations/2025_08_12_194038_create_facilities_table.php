@@ -23,24 +23,19 @@ return new class extends Migration
             $table->string('about_image_url')->nullable();
             $table->text('about_text')->nullable();
             $table->string('location_map')->nullable();
-
             $table->string('address')->nullable();
             $table->string('city')->nullable();
             $table->string('state', 2)->nullable();
+            $table->string('zip', 10)->nullable();
             $table->unsignedSmallInteger('beds')->nullable();
-
-            $table->unsignedSmallInteger('ranking_position')->nullable();
-            $table->unsignedSmallInteger('ranking_total')->nullable();
-            $table->string('ownership_role')->nullable();
-
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
+            $table->string('years')->nullable();
             $table->string('facebook')->nullable();
             $table->string('twitter')->nullable();
             $table->string('instagram')->nullable();
             $table->string('meta_title')->nullable();
             $table->string('meta_description')->nullable();
-            $table->string('meta_image_url')->nullable();
             $table->string('primary_color')->nullable();
             $table->string('secondary_color')->nullable();
             $table->string('accent_color')->nullable();

@@ -32,8 +32,15 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($facilities as $facility)
             <div
-                class="bg-white rounded-2xl border border-gray-300 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full">
+                class="bg-white rounded-2xl border border-gray-300 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full relative">
 
+                <!-- Active/Inactive Badge -->
+                <div class="absolute top-4 right-4 z-10">
+                    <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $facility->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} shadow">
+                        {{ $facility->is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                </div>
                 <!-- Facility Header -->
                 <div class="p-6 border-b border-gray-200">
 
@@ -42,46 +49,30 @@
                             <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-10 w-10 object-contain">
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 text-center mb-1">{{ $facility->name }}</h3>
-                        <p class="text-sm text-gray-600 mb-2">{{ $facility->tagline ?? 'Quality healthcare services' }}
+                        <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline ?? 'Quality healthcare
+                            services' }}
                         </p>
                         @if($facility->address)
-                        <div class="flex items-center gap-2 text-sm text-gray-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            </svg>
-                            <span>{{ $facility->address }}</span>
-                        </div>
-                        @endif
-                        <div class="flex flex-wrap gap-2 items-center mt-2">
-
-                            @if($facility->domain)
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
-                                </svg>
-                                {{ $facility->domain }}
+                        <div class="flex flex-col items-center text-center mb-2">
+                            <span class="text-sm text-gray-500">{{ $facility->address }}</span>
+                            @if($facility->city || $facility->state || $facility->zip)
+                            <span class="text-sm text-gray-400 mt-1">
+                                {{ $facility->city ?? '' }}{{ $facility->city && ($facility->state || $facility->zip) ?
+                                ', ' : '' }}{{ $facility->state ?? '' }}{{ $facility->state && $facility->zip ? ' ' : ''
+                                }}{{ $facility->zip ?? '' }}
                             </span>
                             @endif
                         </div>
+                        @endif
                     </div>
-
+                    <div class="flex justify-center items-center mt-4">
+                        <span class="text-xl font-bold text-primary tracking-wide">
+                            {{ $facility->phone ? '(' . substr($facility->phone,0,3) . ') ' .
+                            substr($facility->phone,3,3) . '-' . substr($facility->phone,6,4) : 'N/A' }}
+                        </span>
+                    </div>
                     <!-- Facility Details -->
                     <div class="p-6 space-y-3 flex flex-col gap-2">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-6 h-6 text-primary mr-2" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            <span class="text-xl font-bold text-primary tracking-wide">
-                                {{ $facility->phone ? '(' . substr($facility->phone,0,3) . ') ' .
-                                substr($facility->phone,3,3) . '-' . substr($facility->phone,6,4) : 'N/A' }}
-                            </span>
-                        </div>
                         <div class="flex items-center gap-4 mt-2">
                             @if($facility->layout_template)
                             <div class="flex items-center gap-2 text-sm">
@@ -140,20 +131,29 @@
                             @endif
                         </div>
                     </div>
-                    <div>
+                    @if($facility->domain)
+                    <div class="flex flex-wrap gap-2 items-center mt-2">
                         <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $facility->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                            {{ $facility->is_active ? 'Active' : 'Inactive' }}
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                            <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                            </svg>
+                            {{ $facility->domain }}
                         </span>
                     </div>
+                    @endif
                 </div>
             </div>
             @endforeach
 
             <!-- Pagination -->
             @if($facilities->hasPages())
-            <div class="mt-8">
-                {{ $facilities->links() }}
+            <div class="col-span-1 md:col-span-2 lg:col-span-3">
+                <div class="mt-8">
+                    {{ $facilities->links() }}
+                </div>
             </div>
             @endif
 
@@ -169,5 +169,4 @@
             </div>
             @endif
         </div>
-    </div>
-    @endsection
+        @endsection

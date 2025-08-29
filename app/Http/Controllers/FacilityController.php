@@ -27,8 +27,6 @@ class FacilityController extends Controller
             'city' => 'required|string|max:255',
             'state' => 'required|string|max:255',
             'beds' => 'nullable|integer|min:0',
-            'ranking_position' => 'nullable|integer|min:1',
-            'ranking_total' => 'nullable|integer|min:1',
             'hero_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
         ]);
@@ -64,8 +62,6 @@ class FacilityController extends Controller
             'city' => 'required|string|max:255',
             'state' => 'required|string|max:255',
             'beds' => 'nullable|integer|min:0',
-            'ranking_position' => 'nullable|integer|min:1',
-            'ranking_total' => 'nullable|integer|min:1',
             'hero_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
         ]);

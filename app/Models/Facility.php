@@ -7,11 +7,10 @@ class Facility extends Model
 {
     protected $fillable = [
       'name','slug','tagline','logo_url','hero_image_url','headline','subheadline',
-      'about_image_url','about_text','address','city','state','beds',
-      'ranking_position','ranking_total','ownership_role','phone','email',
-      'facebook','twitter','instagram','primary_color', 'secondary_color', 'accent_color',
-      'domain', 'subdomain', 'is_active', 'settings', 'layout_template', 'layout_config',
-      'location_map'
+      'about_image_url','about_text','address','city','state','zip','beds', 'years',
+      'phone','email','facebook','twitter','instagram','primary_color', 'secondary_color', 
+      'accent_color','domain', 'subdomain', 'is_active', 'settings', 'layout_template', 
+      'layout_config','location_map'
     ];
 
   protected $casts = [

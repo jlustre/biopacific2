@@ -2,13 +2,21 @@
     class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
-            <a href="#top" class="flex items-center gap-3">
-
-                <span class="inline-flex h-9 w-9 items-center justify-center bg-primary/10 text-primary font-bold">
-                    <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-6 w-6 object-contain">
+            <!-- Logo and site name -->
+            <div class="flex items-center justify-start">
+                <span
+                    class="inline-flex h-10 w-10 items-center justify-center bg-primary/10 text-primary font-bold mr-3">
+                    <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-5 w-5 object-contain">
                 </span>
-                <div class="lg:text-xl font-semibold">{{ $facility['name'] }}</div>
-            </a>
+                <a href="#top" class="flex items-center gap-1">
+                    <div class="flex flex-col">
+                        <div class="lg:text-xl font-semibold">{{ $facility['name'] }}</div>
+                        @if(!empty($facility['tagline']))
+                        <div class="text-xs text-slate-500 dark:text-slate-400">{{ $facility['tagline'] }}</div>
+                        @endif
+                    </div>
+                </a>
+            </div>
             @include('partials.navbar')
             <div class="hidden md:flex gap-2">
                 <a href="#book"
