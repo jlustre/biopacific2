@@ -110,6 +110,28 @@
                     </div>
                     @endif
 
+                    <!-- Facility Colors -->
+                    <div class="flex items-center justify-center gap-2 mb-4">
+                        @if($facility->primary_color)
+                        <div class="flex items-center gap-2 text-sm">
+                            <div class="w-5 h-5 rounded border border-gray-300"
+                                style="background-color: {{ $facility->primary_color }};" title="Primary"></div>
+                            <span class="text-sm">Primary</span>
+                        </div>
+                        @endif
+
+                        @if($facility->secondary_color)
+                        <div class="w-5 h-5 rounded border border-gray-300"
+                            style="background-color: {{ $facility->secondary_color }};" title="Secondary"></div>
+                        <span class="text-sm">Secondary</span>
+                        @endif
+
+                        @if($facility->accent_color)
+                        <div class="w-5 h-5 rounded border border-gray-300"
+                            style="background-color: {{ $facility->accent_color }};" title="Accent"></div>
+                        <span class="text-sm">Accent</span>
+                        @endif
+                    </div>
                     <!-- Action Buttons -->
                     <div class="p-6 pt-0 mt-auto space-y-3">
                         <div class="flex gap-2">

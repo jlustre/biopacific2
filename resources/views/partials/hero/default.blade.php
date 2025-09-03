@@ -1,198 +1,169 @@
-<section class="relative overflow-hidden min-h-screen">
-  <!-- Multiple background images that rotate -->
-  <div class="absolute inset-0">
-    <div class="hero-slideshow relative h-full w-full">
-      <div class="slide active">
-        <img src="{{ asset('images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}"
-          alt="Warm nursing home common area with residents and staff" class="h-full w-full object-cover opacity-70">
+{{-- HERO — Version C: Full-width background video with image fallback --}}
+<section class="relative min-h-[80vh] md:min-h-screen overflow-hidden isolate">
+  {{-- Background media --}}
+  <div class="absolute inset-0 -z-10">
+    {{-- Video (autoplays silently; pauses for reduced motion) --}}
+    <video id="heroBgVideo" class="absolute inset-0 h-full w-full object-cover" playsinline autoplay muted loop
+      preload="auto"
+      poster="{{ asset($facility['hero_poster'] ?? 'images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}"
+      aria-hidden="true">
+      @if(!empty($facility['hero_video_webm']))
+      <source src="{{ asset($facility['hero_video_webm']) }}" type="video/webm">
+      @endif
+      <source src="{{ asset($facility['hero_video_mp4'] ?? 'videos/hero.mp4') }}" type="video/mp4">
+      {{-- If the browser can't play the video, it will show the poster automatically --}}
+    </video>
+
+    {{-- Fallback image (for <noscript> or if video fails completely) --}}
+      <noscript>
+        <img
+          src="{{ asset($facility['hero_poster'] ?? 'images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}"
+          alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
+          class="absolute inset-0 w-full h-auto max-w-full object-cover block" />
+      </noscript>
+
+      {{-- Readability overlays --}}
+      <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50"></div>
+      <div class="pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full blur-3xl opacity-30"
+        style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}"></div>
+      <div class="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full blur-3xl opacity-25"
+        style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></div>
+  </div>
+
+  {{-- Content --}}
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+    <div class="max-w-3xl">
+      <span
+        class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/30">
+        <span class="inline-block h-2.5 w-2.5 rounded-full"
+          style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></span>
+        Family-centered • Evidence-based • Compassion
+      </span>
+
+      <h1 class="mt-4 text-4xl md:text-6xl font-black leading-tight"
+        style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.25);">
+        {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
+      </h1>
+
+      <p class="mt-4 md:text-xl text-slate-100/95 max-w-2xl">
+        {{ $facility['subheadline'] ?? 'Skilled nursing, rehabilitation, memory care, and hospice in a warm, dignified
+        setting.' }}
+      </p>
+
+      <div class="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <a href="#contact"
+          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
+          style="background-color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+          Quick Contact
+        </a>
+        <a href="#book"
+          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold bg-white/15 backdrop-blur text-white ring-1 ring-white/40 hover:bg-white/25 transition"
+          style="--btn: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+          Book a Tour
+        </a>
+        <button id="playVideoBtn"
+          class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
+          style="background-color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+          <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M8 5v10l8-5-8-5z" />
+          </svg>
+          Watch Intro
+        </button>
       </div>
-      <div class="slide">
-        <img src="{{ asset('images/recreation_activities-room.png') }}"
-          alt="Elegant dining room with residents enjoying meals" class="h-full w-full object-cover opacity-70">
-      </div>
-      <div class="slide">
-        <img src="{{ asset('images/physical-therapy-session.png') }}" alt="Physical therapy session in modern facility"
-          class="h-full w-full object-cover opacity-70">
-      </div>
-      <div class="slide">
-        <img src="{{ asset('images/garden-outdoor-activities.png') }}"
-          alt="Beautiful garden area for outdoor activities" class="h-full w-full object-cover opacity-70">
+
+      {{-- Chips --}}
+      <div class="mt-6 flex flex-wrap gap-2">
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-medium text-white ring-1 ring-white/30">
+          Beds Available: Limited
+        </span>
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-medium text-white ring-1 ring-white/30">
+          Rehab • Memory Care • Hospice
+        </span>
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-medium text-white ring-1 ring-white/30">
+          Tours Daily {{ $facility['hours'] ?? '9AM–7PM' }}
+        </span>
       </div>
     </div>
   </div>
 
-  <!-- Positioned content at left bottom -->
-  <div class="absolute left-0 bottom-24 z-10 w-full">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <div class="max-w-xl bg-white/60 backdrop-blur rounded-2xl p-8 shadow-xl">
-        <!-- Add a dark text stroke for better contrast -->
-        <style>
-          .hero-headline-shadow {
-            /* Existing styles... */
-            -webkit-text-stroke: .5px rgba(40, 40, 40, 0.7);
-            text-stroke: .5px rgba(40, 40, 40, 0.7);
-            /* For future compatibility */
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0px 1px rgba(0, 0, 0, 0.12);
-            border: 2px solid rgba(73, 64, 64, 0.4);
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10);
-            border-radius: 0.75rem;
-            padding: 0.5rem 1rem;
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.18);
-          }
-        </style>
-        <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow"
-          style="color: {{ $facility['accent_color'] ?? '#e3342f' }}">
-          {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
-        </h1>
-        <p class="mt-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>
-        <div class="mt-6 flex flex-wrap gap-3">
-          <a href="#contact" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-            style="background-color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
-            Quick Contact
-          </a>
-          <a href="#book" class="inline-flex items-center rounded-xl border px-5 py-3 font-medium"
-            style="border-color: {{ $facility['primary_color'] ?? '#1a7f37' }}; color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
-            Book a Tour
-          </a>
-          <button id="playVideoBtn" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-            style="background-color: {{ $facility['accent_color'] ?? '#e3342f' }};">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8 5v10l8-5-8-5z" />
-            </svg>
-            Watch Intro Video
-          </button>
-        </div>
+  {{-- Modal for intro video (reusing your previous pattern) --}}
+  <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+    <div class="relative w-full max-w-3xl">
+      <button id="closeVideoBtn" class="absolute -top-12 right-0 text-white hover:text-red-400">
+        <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
+        <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" frameborder="0"
+          allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
       </div>
     </div>
   </div>
-
 </section>
 
-<!-- Video Modal -->
-<div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden">
-  <div class="relative w-full max-w-4xl mx-4">
-    <!-- Prominent close button -->
-    <button id="closeVideoBtn"
-      class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors duration-200 z-10">
-      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
-      </svg>
-    </button>
-    <!-- Video container -->
-    <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%; height: 0;">
-      <iframe id="youtubeIframe" class="absolute top-0 left-0 w-full h-full" src="" frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen></iframe>
-    </div>
-  </div>
-</div>
-
+{{-- Styles to handle prefers-reduced-motion (pause video, keep poster) --}}
 <style>
-  .hero-slideshow {
-    position: relative;
-    min-height: 100vh;
-  }
-
-  .slide {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    min-height: 100vh;
-    opacity: 0;
-    transition: opacity 1s ease-in-out;
-  }
-
-  .slide.active {
-    opacity: 1;
-  }
-
-  .slide img {
-    width: 100%;
-    height: 100%;
-    min-height: 100vh;
-    object-fit: cover;
-  }
-
-  /* Ensure modal is above everything */
-  #videoModal {
-    z-index: 9999;
-  }
-
-  /* Disable scrolling when modal is open */
-  body.modal-open {
-    overflow: hidden;
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-
-    .slide,
-    .slide img,
-    .hero-slideshow {
-      min-height: 80vh;
+  @media (prefers-reduced-motion: reduce) {
+    #heroBgVideo {
+      display: none;
     }
 
-    section.relative {
-      min-height: 80vh;
+    /* Poster still shows as background via poster attr? Not if hidden—so: */
+  }
+
+  /* Alternative: use an overlay image when reduced motion is on */
+  @media (prefers-reduced-motion: reduce) {
+    .reduced-motion-fallback {
+      background-image: url('{{ asset($facility[' hero_poster'] ?? ' images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}');
+      background-size: cover;
+      background-position: center;
     }
   }
 </style>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Slideshow functionality
-    const slides = document.querySelectorAll('.slide');
-    let currentSlide = 0;
+  document.addEventListener('DOMContentLoaded', () => {
+    const bgVideo = document.getElementById('heroBgVideo');
 
-    function nextSlide() {
-        slides[currentSlide].classList.remove('active');
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add('active');
+    // Respect reduced motion and autoplay blocking
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReduced && bgVideo) {
+      try { bgVideo.pause(); } catch(e) {}
+      // Optional: add a class to section to ensure image fallback if needed
+      bgVideo.closest('section')?.classList.add('reduced-motion-fallback');
+    } else if (bgVideo) {
+      // Some browsers block autoplay; try play() and swallow the promise rejection
+      const tryPlay = bgVideo.play();
+      if (tryPlay && typeof tryPlay.catch === 'function') {
+        tryPlay.catch(() => { /* leave poster visible; nothing else to do */ });
+      }
     }
 
-    // Change slide every 5 seconds
-    setInterval(nextSlide, 5000);
+    // Modal video controls
+    const playBtn = document.getElementById('playVideoBtn');
+    const modal = document.getElementById('videoModal');
+    const closeBtn = document.getElementById('closeVideoBtn');
+    const iframe = document.getElementById('youtubeIframe');
+    const YT = '{{ $facility['hero_video_id'] ?? 'YOUR_YOUTUBE_VIDEO_ID' }}';
 
-    // Video modal functionality
-    const playVideoBtn = document.getElementById('playVideoBtn');
-    const videoModal = document.getElementById('videoModal');
-    const closeVideoBtn = document.getElementById('closeVideoBtn');
-    const youtubeIframe = document.getElementById('youtubeIframe');
-
-    // Replace this with your actual YouTube video ID
-    const youtubeVideoId = 'YOUR_YOUTUBE_VIDEO_ID'; // Replace with actual video ID
-
-    playVideoBtn.addEventListener('click', function() {
-        // Set the YouTube URL with autoplay
-        youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
-        videoModal.classList.remove('hidden');
-        document.body.classList.add('modal-open');
-    });
-
-    function closeModal() {
-        videoModal.classList.add('hidden');
-        document.body.classList.remove('modal-open');
-        // Stop the video by clearing the src
-        youtubeIframe.src = '';
+    function openModal(){
+      iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(){
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+      document.body.style.overflow = ''; iframe.src = '';
     }
 
-    closeVideoBtn.addEventListener('click', closeModal);
-
-    // Close modal when clicking outside the video
-    videoModal.addEventListener('click', function(e) {
-        if (e.target === videoModal) {
-            closeModal();
-        }
-    });
-
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
-});
+    playBtn?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+  });
 </script>

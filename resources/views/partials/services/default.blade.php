@@ -14,8 +14,9 @@ $serviceImages = [
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
     @include('partials.section_header', [
-    'section_header' => 'Our <span class="text-accent">Services & Amenities</span>',
-    'section_sub_header' => 'Comprehensive care and enriching amenities designed to enhance quality of life for every
+    'section_header' => 'Our Services & Amenities',
+    'section_sub_header' => 'Comprehensive care and enriching amenities designed to enhance quality of life for
+    every
     resident.'
     ])
 
@@ -28,10 +29,14 @@ $serviceImages = [
       'description' => '24/7 clinical care, wound care, IV therapy, and medication management by licensed
       professionals.',
       'color' => 'red',
-      'detailed_description' => 'Our skilled nursing team provides comprehensive 24/7 clinical care with registered
-      nurses and licensed practical nurses on-site at all times. We specialize in complex medical conditions including
-      wound care management, IV therapy administration, medication management and monitoring, post-surgical care, and
-      chronic disease management. Our nurses work closely with physicians to ensure optimal health outcomes and provide
+      'detailed_description' => 'Our skilled nursing team provides comprehensive 24/7 clinical care with
+      registered
+      nurses and licensed practical nurses on-site at all times. We specialize in complex medical conditions
+      including
+      wound care management, IV therapy administration, medication management and monitoring, post-surgical care,
+      and
+      chronic disease management. Our nurses work closely with physicians to ensure optimal health outcomes and
+      provide
       families with regular updates on their loved one\'s condition.',
       'features' => [
       '24/7 registered nurse supervision',
@@ -46,9 +51,12 @@ $serviceImages = [
       'title' => 'Rehabilitation',
       'description' => 'Physical, occupational, and speech therapy with goal-driven recovery programs.',
       'color' => 'blue',
-      'detailed_description' => 'Our comprehensive rehabilitation program features licensed physical, occupational, and
-      speech therapists who create individualized treatment plans focused on restoring function and independence. We
-      utilize state-of-the-art equipment and evidence-based techniques to help residents recover from surgery, injury,
+      'detailed_description' => 'Our comprehensive rehabilitation program features licensed physical,
+      occupational, and
+      speech therapists who create individualized treatment plans focused on restoring function and independence.
+      We
+      utilize state-of-the-art equipment and evidence-based techniques to help residents recover from surgery,
+      injury,
       or illness while building strength, mobility, and confidence.',
       'features' => [
       'Physical therapy for mobility and strength',
@@ -65,7 +73,8 @@ $serviceImages = [
       'color' => 'green',
       'detailed_description' => 'Our long-term care services provide comprehensive support for residents who need
       ongoing assistance with daily activities. We focus on maintaining dignity, independence, and quality of life
-      through personalized care plans that address each resident\'s unique needs, preferences, and goals while fostering
+      through personalized care plans that address each resident\'s unique needs, preferences, and goals while
+      fostering
       a warm, home-like environment.',
       'features' => [
       'Assistance with daily living activities',
@@ -80,9 +89,12 @@ $serviceImages = [
       'title' => 'Memory Care',
       'description' => 'Specialized secure environment and programs for Alzheimer\'s and dementia care.',
       'color' => 'purple',
-      'detailed_description' => 'Our specialized memory care unit provides a secure, structured environment designed
-      specifically for residents with Alzheimer\'s disease, dementia, and other memory-related conditions. Our trained
-      staff use evidence-based approaches to create meaningful daily routines that promote cognitive function, reduce
+      'detailed_description' => 'Our specialized memory care unit provides a secure, structured environment
+      designed
+      specifically for residents with Alzheimer\'s disease, dementia, and other memory-related conditions. Our
+      trained
+      staff use evidence-based approaches to create meaningful daily routines that promote cognitive function,
+      reduce
       anxiety, and maintain quality of life.',
       'features' => [
       'Secure, specially designed environment',
@@ -97,9 +109,12 @@ $serviceImages = [
       'title' => 'Hospice Care',
       'description' => 'Compassionate comfort-focused end-of-life support for residents and families.',
       'color' => 'orange',
-      'detailed_description' => 'Our hospice care program focuses on comfort, dignity, and quality of life for residents
-      in their final stages of life. We work closely with hospice providers to ensure comprehensive pain management,
-      emotional support, and spiritual care while providing families with guidance and comfort during this difficult
+      'detailed_description' => 'Our hospice care program focuses on comfort, dignity, and quality of life for
+      residents
+      in their final stages of life. We work closely with hospice providers to ensure comprehensive pain
+      management,
+      emotional support, and spiritual care while providing families with guidance and comfort during this
+      difficult
       time.',
       'features' => [
       'Comfort-focused care approach',
@@ -114,9 +129,12 @@ $serviceImages = [
       'title' => 'Dining & Nutrition',
       'description' => 'Chef-planned nutritious menus, special dietary accommodations, and dining experiences.',
       'color' => 'yellow',
-      'detailed_description' => 'Our dining program features chef-prepared, nutritionally balanced meals designed to
-      meet the dietary needs and preferences of our residents. We accommodate special diets, cultural preferences, and
-      medical requirements while creating an enjoyable dining experience that promotes social interaction and maintains
+      'detailed_description' => 'Our dining program features chef-prepared, nutritionally balanced meals designed
+      to
+      meet the dietary needs and preferences of our residents. We accommodate special diets, cultural preferences,
+      and
+      medical requirements while creating an enjoyable dining experience that promotes social interaction and
+      maintains
       the pleasure of eating.',
       'features' => [
       'Chef-prepared nutritious meals',
@@ -133,7 +151,8 @@ $serviceImages = [
       'color' => 'pink',
       'detailed_description' => 'Our comprehensive activities program is designed to engage residents physically,
       mentally, socially, and spiritually. We offer a wide variety of programs tailored to different interests,
-      abilities, and cognitive levels, ensuring every resident can participate in meaningful activities that bring joy
+      abilities, and cognitive levels, ensuring every resident can participate in meaningful activities that bring
+      joy
       and purpose to their daily lives.',
       'features' => [
       'Daily social and recreational activities',
@@ -149,8 +168,10 @@ $serviceImages = [
       'description' => 'Coordinated medical appointments, shopping trips, and community outings.',
       'color' => 'indigo',
       'detailed_description' => 'Our transportation services ensure residents can maintain connections with their
-      community and access essential services. We provide safe, comfortable transportation for medical appointments,
-      shopping trips, family visits, and recreational outings, helping residents maintain their independence and quality
+      community and access essential services. We provide safe, comfortable transportation for medical
+      appointments,
+      shopping trips, family visits, and recreational outings, helping residents maintain their independence and
+      quality
       of life.',
       'features' => [
       'Medical appointment transportation',
@@ -195,11 +216,12 @@ $serviceImages = [
           <div class="inline-flex items-center gap-2 text-white font-medium text-sm">
             <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30"
               onclick="openModal('modal-{{ $index }}', event)"
-              style="cursor:pointer; background-color: {{ $facility['secondary_color'] ?? '#fff' }}; color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
+              style="cursor:pointer; background-color: {{ $facility['primary_color'] ?? '#000000' }}; color: #FFFFFF;">
               Learn more
             </span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+              </path>
             </svg>
           </div>
         </div>
@@ -224,7 +246,8 @@ $serviceImages = [
           Need More Information?
         </h3>
         <p class="text-slate-600 mb-6 max-w-2xl mx-auto">
-          Our team is here to answer your questions and help you understand how our services can benefit you or your
+          Our team is here to answer your questions and help you understand how our services can benefit you
+          or your
           loved one.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -270,7 +293,8 @@ $serviceImages = [
         <button onclick="closeModal('modal-{{ $index }}')"
           class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
           <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+            </path>
           </svg>
         </button>
       </div>
@@ -288,7 +312,8 @@ $serviceImages = [
               class="h-48 lg:h-full rounded-2xl overflow-hidden bg-{{ $service['color'] }}-50 border border-{{ $service['color'] }}-100">
               <img
                 src="{{ $serviceImages[$service['title']] ?? 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80' }}"
-                alt="{{ $service['title'] }} at Bio Pacific" class="w-full h-full object-cover" loading="lazy">
+                alt="{{ $service['title'] }} at Bio Pacific" class="w-full h-auto max-w-full object-cover block"
+                loading="lazy">
             </div>
           </div>
 

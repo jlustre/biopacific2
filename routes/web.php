@@ -26,7 +26,7 @@ Route::get('/index', function () {
 
 // Dashboard routes (without tenant middleware - for site directory)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/facility/{id}/preview', [DashboardController::class, 'facility'])->name('dashboard.facility');
 

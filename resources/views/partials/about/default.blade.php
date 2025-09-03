@@ -1,153 +1,188 @@
-<section id="about" class="py-16 sm:py-24 bg-gradient-to-br from-blue-50 to-green-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- SectionHeader -->
-    @include('partials.section_header', [
-    'section_header' => 'About <span class="text-accent">' . e($facility['name']) . '</span>',
-    'section_sub_header' => $facility['subheadline'] ?? 'Dedicated to providing compassionate care and creating a warm,
-    supportive environment where residents thrive.'
-    ])
+{{-- ABOUT — Version B: Collage + Tabs + Timeline + Accreditations --}}
+<section id="about" class="relative overflow-hidden py-20 md:py-28">
+  {{-- Background decoration --}}
+  <div class="pointer-events-none absolute inset-0 -z-10">
+    <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50"></div>
+    <div class="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-30"
+      style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}"></div>
+    <div class="absolute -bottom-28 -right-24 h-96 w-96 rounded-full blur-3xl opacity-20"
+      style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></div>
+  </div>
 
-    <!-- Main Content -->
-    <div class="grid lg:grid-cols-2 gap-8 items-start mb-16">
-      <!-- Image Side -->
-      <div class="lg:col-span-2 relative">
-        <div class="relative overflow-hidden rounded-3xl shadow-2xl">
-          <img src="{{ asset('images/nursehuggingpatient.jpg') }}" alt="Caring nursing staff helping elderly residents"
-            class="w-full h-80 lg:h-96 object-cover">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {{-- Header --}}
+    <div class="max-w-3xl">
+      <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+        <span style="color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">About</span> {{ $facility['name'] ?? 'Our
+        Facility' }}
+      </h2>
+      <p class="mt-3 text-lg md:text-xl text-slate-700">
+        {{ $facility['subheadline'] ?? 'Dedicated to compassionate, evidence-based care in a warm, family-centered
+        environment.' }}
+      </p>
+    </div>
+
+    {{-- Main grid --}}
+    <div class="mt-12 grid gap-10 lg:grid-cols-12 items-start">
+      {{-- Left: Image collage + years badge --}}
+      <div class="lg:col-span-5">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+          <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg">
+            <img src="{{ asset('images/nursehuggingpatient.jpg') }}" alt="Nurse supporting a resident"
+              class="h-full w-full object-cover max-w-full h-auto block">
+          </div>
+          <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg translate-y-6">
+            <img src="{{ asset('images/recreation_activities-room.png') }}"
+              alt="Residents enjoying recreation activities" class="h-full w-full object-cover max-w-full h-auto block">
+          </div>
+          <div class="aspect-[3/2] overflow-hidden rounded-2xl shadow-lg col-span-2">
+            <img src="{{ asset('images/physical-therapy-session.png') }}" alt="Physical therapy session"
+              class="h-full w-full object-cover max-w-full h-auto block">
+          </div>
         </div>
-        <!-- Floating Card -->
-        <div class="absolute -bottom-4 -right-4 bg-white p-4 lg:p-6 rounded-2xl shadow-xl border-l-4 border-accent">
-          <div class="text-2xl lg:text-3xl font-bold text-accent">{{ $facility['years'] ?? '20' }}+</div>
-          <div class="text-xs lg:text-sm text-slate-600">Years of Service</div>
+
+        {{-- Floating years card --}}
+        <div class="mt-4 flex items-center gap-4">
+          <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
+            <div class="text-2xl md:text-3xl font-black" style="color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+              {{ $facility['years'] ?? '20' }}+
+            </div>
+            <div class="text-xs md:text-sm text-slate-600">Years of Service</div>
+          </div>
+          <p class="text-sm text-slate-600">
+            Serving families across California with **dignity, respect, and clinical excellence**.
+          </p>
         </div>
       </div>
 
-      <!-- Content Side -->
-      <div class="lg:col-span-2 space-y-6">
-        <div class="space-y-4">
-          <h3 class="text-3xl font-bold text-primary">Our Mission</h3>
-          <p class="text-slate-700 leading-relaxed text-xl">
-            Founded on the principles of dignity, respect, and clinical excellence, <strong>{{ $facility['name']
-              }}</strong> provides
-            comprehensive skilled nursing, rehabilitation, and long-term care services. We believe every resident
-            deserves personalized attention and compassionate care in a home-like environment.
-          </p>
+      {{-- Right: Tabs, values, metrics --}}
+      <div class="lg:col-span-7">
+        {{-- Tabs --}}
+        <div x-data="{tab:'mission'}" class="relative">
+          <div class="flex flex-wrap gap-2">
+            <button @click="tab='mission'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
+              :class="tab==='mission' ? 'text-white' : 'text-slate-700'"
+              :style="tab==='mission' ? 'background:{{ $facility['primary_color'] ?? '#0EA5E9' }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
+              Mission
+            </button>
+            <button @click="tab='vision'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
+              :class="tab==='vision' ? 'text-white' : 'text-slate-700'"
+              :style="tab==='vision' ? 'background:{{ $facility['secondary_color'] ?? '#155E75' }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
+              Vision
+            </button>
+            <button @click="tab='values'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
+              :class="tab==='values' ? 'text-white' : 'text-slate-700'"
+              :style="tab==='values' ? 'background:{{ $facility['accent_color'] ?? '#F59E0B' }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
+              Values
+            </button>
+          </div>
+
+          {{-- Panels --}}
+          <div class="mt-6 space-y-6">
+            {{-- Mission --}}
+            <div x-show="tab==='mission'" x-transition>
+              <h3 class="text-xl font-bold text-slate-900">Our Mission</h3>
+              <p class="mt-2 text-slate-700 leading-relaxed">
+                {{ $facility['mission'] ?? "We deliver personalized, outcomes-focused care—skilled nursing,
+                rehabilitation, memory care, and hospice—so every resident can live with dignity and purpose." }}
+              </p>
+            </div>
+
+            {{-- Vision --}}
+            <div x-show="tab==='vision'" x-transition>
+              <h3 class="text-xl font-bold text-slate-900">Our Vision</h3>
+              <p class="mt-2 text-slate-700 leading-relaxed">
+                {{ $facility['vision'] ?? "To be California’s most trusted home for seniors—where families feel
+                confident, residents feel at home, and clinical excellence meets genuine compassion." }}
+              </p>
+            </div>
+
+            {{-- Values --}}
+            <div x-show="tab==='values'" x-transition>
+              <h3 class="text-xl font-bold text-slate-900">Core Values</h3>
+              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                @foreach([
+                ['Integrity','Honesty & transparency'],
+                ['Compassion','Caring with heart'],
+                ['Excellence','Quality in everything'],
+                ['Community','We belong together'],
+                ] as [$title,$desc])
+                <div class="rounded-xl border bg-white p-4 shadow-sm">
+                  <div class="inline-flex h-10 w-10 items-center justify-center rounded-lg"
+                    style="background: {{ ($facility['accent_color'] ?? '#F59E0B') }}1A; color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+                    ★
+                  </div>
+                  <div class="mt-2 font-semibold" style="color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">{{ $title
+                    }}</div>
+                  <p class="text-sm text-slate-600">{{ $desc }}</p>
+                </div>
+                @endforeach
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Key Values -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-6">
-          <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-            <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+        {{-- Metrics row --}}
+        <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3">
+          @foreach([
+          ['State-Licensed','green','Compliant & certified'],
+          ['Awards','amber','Recognized for quality'],
+          ['Modern Facility','blue','Safety & accessibility'],
+          ['24/7 Staff','purple','Compassionate professionals'],
+          ] as [$k,$tone,$txt])
+          <div class="rounded-2xl border bg-white p-5 shadow-md hover:shadow-lg transition">
+            <div class="flex items-center gap-3">
+              <div class="h-10 w-10 rounded-full flex items-center justify-center
+                          @if($tone==='green') bg-green-100 text-green-700
+                          @elseif($tone==='amber') bg-amber-100 text-amber-700
+                          @elseif($tone==='blue') bg-blue-100 text-blue-700
+                          @else bg-purple-100 text-purple-700 @endif">
+                ✓
+              </div>
+              <div class="font-semibold text-slate-900">{{ $k }}</div>
             </div>
-            <div class="font-semibold text-primary">Integrity</div>
-            <p class="text-sm text-slate-600 mt-1">Honesty and transparency</p>
+            <p class="mt-2 text-xs text-slate-600">{{ $txt }}</p>
           </div>
-          <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-            <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
-                </path>
-              </svg>
-            </div>
-            <div class="font-semibold text-primary">Compassion</div>
-            <p class="text-sm text-slate-600 mt-1">Caring with heart</p>
-          </div>
-          <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-            <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div class="font-semibold text-primary">Excellence</div>
-            <p class="text-sm text-slate-600 mt-1">Quality in everything</p>
-          </div>
-          <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-            <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                </path>
-              </svg>
-            </div>
-            <div class="font-semibold text-primary">Community</div>
-            <p class="text-sm text-slate-600 mt-1">Building connections</p>
-          </div>
+          @endforeach
         </div>
       </div>
     </div>
 
-    <!-- Achievements Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-accent hover:shadow-xl transition-shadow">
-        <div class="flex items-center space-x-3 mb-3">
-          <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h4 class="font-bold text-secondary">Accreditations</h4>
-        </div>
-        <p class="text-sm text-slate-600 leading-relaxed">
-          State-licensed facility with Medicare and Medicaid certification, ensuring compliance with highest care
-          standards.
-        </p>
-      </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-yellow-400 hover:shadow-xl transition-shadow">
-        <div class="flex items-center space-x-3 mb-3">
-          <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
-              </path>
-            </svg>
+    {{-- Accreditation strip --}}
+    <div class="mt-14 rounded-2xl border bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center text-white"
+            style="background: {{ $facility['secondary_color'] ?? '#155E75' }}">✓</div>
+          <div>
+            <div class="font-semibold text-slate-900">Accreditations & Certifications</div>
+            <p class="text-xs text-slate-600">Medicare/Medicaid certified • State licensed • Regular quality audits</p>
           </div>
-          <h4 class="font-bold text-secondary">Awards</h4>
         </div>
-        <p class="text-sm text-slate-600 leading-relaxed">
-          Recognized for outstanding quality care and exceptional resident satisfaction scores by state health
-          authorities.
-        </p>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="rounded-full px-3 py-1 ring-1 ring-slate-200">HIPAA-aware processes</span>
+          <span class="rounded-full px-3 py-1 ring-1 ring-slate-200">Care quality awards</span>
+          <span class="rounded-full px-3 py-1 ring-1 ring-slate-200">Family satisfaction</span>
+        </div>
       </div>
+    </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-blue-400 hover:shadow-xl transition-shadow">
-        <div class="flex items-center space-x-3 mb-3">
-          <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-              </path>
-            </svg>
-          </div>
-          <h4 class="font-bold text-secondary">Facility</h4>
+    {{-- Soft CTA --}}
+    <div class="mt-10 rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-white to-slate-50 ring-1 ring-slate-200">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div>
+          <h4 class="text-lg font-bold text-slate-900">Want to learn more?</h4>
+          <p class="text-slate-600 text-sm">Schedule a tour or speak with our admissions team today.</p>
         </div>
-        <p class="text-sm text-slate-600 leading-relaxed">
-          Modern, comfortable facilities designed with accessibility and safety in mind for optimal resident well-being.
-        </p>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-purple-400 hover:shadow-xl transition-shadow">
-        <div class="flex items-center space-x-3 mb-3">
-          <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
-              </path>
-            </svg>
-          </div>
-          <h4 class="font-bold text-secondary">Staff</h4>
+        <div class="flex gap-3">
+          <a href="#book"
+            class="inline-flex items-center rounded-xl px-5 py-2.5 font-semibold text-white shadow transition"
+            style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">Book a Tour</a>
+          <a href="#contact" class="inline-flex items-center rounded-xl px-5 py-2.5 font-semibold border transition"
+            style="border-color: {{ $facility['primary_color'] ?? '#0EA5E9' }}; color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">Contact
+            Us</a>
         </div>
-        <p class="text-sm text-slate-600 leading-relaxed">
-          Highly trained, compassionate healthcare professionals dedicated to providing personalized, 24/7 care.
-        </p>
       </div>
     </div>
   </div>

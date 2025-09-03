@@ -105,7 +105,27 @@ class FacilitySeeder extends Seeder
     'address'=>'3020 EAST 15TH STREET','phone'=>'5102615613','city'=>'OAKLAND','state'=>'CA','zip'=>'94601','beds'=>140,
     'primary_color'=>'#16A34A','secondary_color'=>'#14532D','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Fruitvale+Healthcare+Center,3020+EAST+15TH+STREET%2COAKLAND%2CCA+94601&output=embed',
-    'domain'=>'hcai.ca.gov/facility/fruitvale-healthcare-center','years'=>'20'
+    'domain'=>'fruitvalehealthcarecenter.com','years'=>'20'
+  ],
+  [
+    'name'=>'Glendale Transitional Care Center',
+    'tagline'=>'Guiding Recovery With Compassion and Expertise',
+    'headline'=>'Your Path to Healing in Glendale',
+    'subheadline'=>'Providing personalized transitional care and rehabilitation services to restore independence and quality of life.',
+    'address'=>'1509 Wilson Terrace, North Tower, 2nd Floor','phone'=>'8184098072','city'=>'GLENDALE','state'=>'CA','zip'=>'91206','beds'=>92,
+    'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
+    'location_map'=> 'https://maps.google.com/maps?q=Glendale+Transitional+Care+Center,1509+Wilson+Terrace%2C+North+Tower%2C+2nd+Floor%2CGLENDALE%2CCA+91206&output=embed',
+    'domain'=>'glendaletransitionalcarecenter.com','years'=>'20'
+  ],
+  [
+    'name'=>'Hayward Hills Health Care Center',
+    'tagline'=>'Compassionate Care, Close to Home',
+    'headline'=>'Restoring Health in the Heart of Hayward',
+    'subheadline'=>'Delivering personalized skilled nursing and rehabilitation services designed to support recovery, dignity, and independence',
+    'address'=>'1768 B Street','phone'=>'5105384424','city'=>'HAYWARD','state'=>'CA','zip'=>'94541','beds'=>92,
+    'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
+    'location_map'=> 'https://maps.google.com/maps?q=Hayward+Hills+Health+Care+Center,1768+B+Street%2CHAYWARD%2CCA+94541&output=embed',
+    'domain'=>'haywardhillshealthcarecenter.com','years'=>'20'
   ],
   [
     'name'=>'Inglewood Health Care Center',
@@ -162,20 +182,10 @@ class FacilitySeeder extends Seeder
     'tagline'=>'Nurturing Health, Enriching Lives.',
     'headline'=>'Dedicated to Santa Monica Families',
     'subheadline'=>'Providing nurturing care and enriching lives with dignity and compassion.',
-    'address'=>'1338 20TH STREET','phone'=>'3102552800','city'=>'SANTA MONICA','state'=>'CA','zip'=>'90404','beds'=>59,
+    'address'=>'1320 20TH STREET','phone'=>'3102552800','city'=>'SANTA MONICA','state'=>'CA','zip'=>'90404','beds'=>59,
     'primary_color'=>'#64748B','secondary_color'=>'#0F172A','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Santa+Monica+Health+Care+Center,1320+20TH+STREET%2CSANTA+MONICA%2CCA+90404&output=embed',
     'domain'=>'santamonicahealthcarecenter.com','years'=>'20'
-  ],
-  [
-    'name'=>'Santa Monica Rehabilitation Center',
-    'tagline'=>'Rebuilding Strength, Restoring Independence',
-    'headline'=>'Restoring Strength, Renewing Hope',
-    'subheadline'=>'Comprehensive rehabilitation services to restore independence and quality of life.',
-    'address'=>'1338 20TH STREET','phone'=>'3102552800','city'=>'SANTA MONICA','state'=>'CA','zip'=>'90404','beds'=>144,
-    'primary_color'=>'#9333EA','secondary_color'=>'#581C87','accent_color'=>'#34D399',
-    'location_map'=> 'https://maps.google.com/maps?q=Santa+Monica+Health+Care+Center,1320+20TH+STREET%2CSANTA+MONICA%2CCA+90404&output=embed',
-    'domain'=>'hcai.ca.gov/facility/the-rehabilitation-center-of-santa-monica','years'=>'20'
   ],
   [
     'name'=>'Skyline Health Care Center',
@@ -195,7 +205,7 @@ class FacilitySeeder extends Seeder
     'address'=>'13484 SAN PABLO AVENUE','phone'=>'5102325945','city'=>'SAN PABLO','state'=>'CA','zip'=>'94806','beds'=>202,
     'primary_color'=>'#06B6D4','secondary_color'=>'#155E75','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Vale+Healthcare+Center,13484+SAN+PABLO+AVENUE%2CSAN+PABLO%2CCA+94806&output=embed',
-    'domain'=>'hcai.ca.gov/facility/vale-healthcare-center','years'=>'20'
+    'domain'=>'valehealthcarecenter.com','years'=>'20'
   ],
   [
     'name'=>'Village Square Health Care Center',
@@ -205,7 +215,7 @@ class FacilitySeeder extends Seeder
     'address'=>'1586 W. SAN MARCOS BLVD','phone'=>'7604712986','city'=>'SAN MARCOS','state'=>'CA','zip'=>'92078','beds'=>118,
     'primary_color'=>'#15803D','secondary_color'=>'#052E16','accent_color'=>'#84CC16',
     'location_map'=> 'https://maps.google.com/maps?q=Village+Square+Healthcare+Center,1586+W.+SAN+MARCOS+BLVD%2CSAN+MARCOS%2CCA+92078&output=embed',
-    'domain'=>'healthy.kaiserpermanente.org/southern-california/facilities/village-square-healthcare-center-328603','years'=>'20'
+    'domain'=>'villagesquarehealthcarecenter.com','years'=>'20'
   ],
 ];
 
