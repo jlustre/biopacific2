@@ -24,7 +24,7 @@
                         Preview Site
                     </a>
                     <a href="{{ route('admin.facilities.layout-config', $facility->id) }}"
-                        class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+                        class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors text-sm font-medium">
                         Configure Layout
                     </a>
                 </div>
@@ -119,22 +119,6 @@
                                 placeholder="Paste Google Maps embed code or URL here">
                             @error('location_map')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         </div>
-                    </div>
-
-                    <div>
-                        <label for="layout_template" class="block text-sm font-medium text-gray-700 mb-2">Layout
-                            Template *</label>
-                        <select id="layout_template" name="layout_template"
-                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                            required>
-                            @foreach($layoutTemplates as $template)
-                            <option value="{{ $template }}" {{ old('layout_template', $facility->layout_template) ===
-                                $template ? 'selected' : '' }}>
-                                {{ ucfirst($template) }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('layout_template')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
                 </div>
             </div>
@@ -345,48 +329,155 @@
 
             <!-- Active Sections -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100">
-                    <h3 class="text-lg font-semibold text-gray-900">Active Sections</h3>
-                    <p class="text-sm text-gray-600">Choose which sections to display on the website</p>
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div class="bg-gray-50 px-6 py-2 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Active Sections</h3>
+                        <p class="text-sm text-gray-600">Choose which sections to display on the website</p>
+                    </div>
+                    <div>
+                        <label for="layout_template" class="block text-sm font-medium text-gray-700 mb-1">Layout
+                            Template *</label>
+                        <select id="layout_template" name="layout_template"
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                            required>
+                            @foreach($layoutTemplates as $template)
+                            <option value="{{ $template }}" {{ old('layout_template',
+                                $selectedLayoutTemplate)===$template ? 'selected' : '' }}>
+                                {{ ucfirst($template) }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('layout_template')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
                 </div>
                 <div class="p-6">
                     @php
-                    $activeSections = $facility->settings['active_sections'] ?? [];
+                    $activeSections = $activeWebContent ? $activeWebContent->sections : [];
                     $availableSections = [
+                    'topbar' => 'Topbar Section',
                     'hero' => 'Hero Section',
                     'about' => 'About Section',
                     'services' => 'Services Section',
                     'rooms' => 'Rooms Section',
+                    'gallery' => 'Gallery Section',
+                    'news' => 'News & Events Section',
                     'testimonials' => 'Testimonials',
-                    'gallery' => 'Gallery',
-                    'contact' => 'Contact Section'
+                    'careers' => 'Careers Section',
+                    'contact' => 'Contact Section',
+                    'faqs' => 'FAQs Section',
+                    'resources' => 'Resources Section',
+                    'footer' => 'Footer Section'
                     ];
+
+                    $sectionVariances = [];
+
+                    foreach ($availableSections as $key => $label) {
+                    $dir = resource_path("views/partials/{$key}");
+                    $sectionVariances[$key] = ['default'];
+                    if (is_dir($dir)) {
+                    foreach (glob($dir . '/*.blade.php') as $file) {
+                    $name = basename($file, '.blade.php');
+                    if (!in_array($name, $sectionVariances[$key])) {
+                    $sectionVariances[$key][] = $name;
+                    }
+                    }
+                    }
+
+                    }
                     @endphp
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         @foreach($availableSections as $key => $label)
-                        <div class="flex items-center">
-                            <input type="checkbox" id="section_{{ $key }}" name="sections[{{ $key }}]" value="1" {{
-                                in_array($key, $activeSections) || empty($activeSections) ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-primary focus:border-primary focus:ring-primary">
-                            <label for="section_{{ $key }}" class="ml-2 text-sm font-medium text-gray-700">{{ $label
-                                }}</label>
+                        @php
+                        $isActive = in_array($key, $activeSections ?? []);
+                        $selectedVariance = $activeWebContent->variances[$key] ?? 'default';
+                        @endphp
+                        <div class="flex flex-col">
+                            <div class="flex items-center mb-2">
+                                <input type="checkbox" id="section_{{ $key }}" name="sections[{{ $key }}]" value="1" {{
+                                    $isActive ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-primary focus:border-primary focus:ring-primary section-toggle"
+                                    data-section="{{ $key }}">
+                                <label for="section_{{ $key }}" class="ml-2 text-sm font-medium text-gray-700">
+                                    {{ $label }}
+                                </label>
+                            </div>
+                            <select name="variances[{{ $key }}]" id="variance_{{ $key }}"
+                                class="rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary" {{
+                                $isActive ? '' : 'disabled' }}>
+                                @foreach($sectionVariances[$key] ?? ['default'] as $variance)
+                                <option value="{{ $variance }}" {{ $selectedVariance===$variance ? 'selected' : '' }}>
+                                    {{ ucfirst($variance) }}
+                                </option>
+                                @endforeach
+                            </select>
                         </div>
                         @endforeach
                     </div>
+                    <script>
+                        document.querySelectorAll('.section-toggle').forEach(function(checkbox) {
+                            checkbox.addEventListener('change', function() {
+                                var section = this.getAttribute('data-section');
+                                var select = document.getElementById('variance_' + section);
+                                if (this.checked) {
+                                    select.removeAttribute('disabled');
+                                } else {
+                                    select.setAttribute('disabled', 'disabled');
+                                }
+                            });
+                        });
+
+                        const templateDefaults = {
+    'default-template': { hero: 'default', about: 'default', services: 'grid' },
+    'layout2': { hero: 'video', about: 'stats', services: 'cards' },
+    // ...other templates
+};
+
+document.getElementById('layout_template').addEventListener('change', function() {
+    const selected = this.value;
+    const defaults = templateDefaults[selected] || {};
+    Object.keys(defaults).forEach(section => {
+        const select = document.querySelector(`select[name='variances[${section}]']`);
+        if (select) {
+            // If the default is not in the options, add it
+            let found = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === defaults[section]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && defaults[section]) {
+                const opt = document.createElement('option');
+                opt.value = defaults[section];
+                opt.text = defaults[section].charAt(0).toUpperCase() + defaults[section].slice(1);
+                select.appendChild(opt);
+            }
+            select.value = defaults[section];
+        }
+    });
+});
+                    </script>
                 </div>
             </div>
 
             <!-- Save Button -->
             <div class="flex justify-end">
                 <button type="submit"
-                    class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors font-medium">
+                    class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary/80 transition-colors font-medium">
                     Save Changes
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    // Prepare webContents data for JS
+    window.webContentsData = @json($webContents->mapWithKeys(function($wc) {
+        return [$wc->layout_template => $wc->sections];
+    }));
+</script>
 
 <script>
     // Color picker sync

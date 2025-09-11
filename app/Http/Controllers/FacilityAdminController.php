@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Facility;
-use App\Models\LayoutTemplate;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class FacilityAdminController extends Controller
 {
     public function index()
     {
-        $facilities = Facility::orderBy('name')->paginate();
+        $facilities = Facility::paginate(12);
         return view('admin.facilities.index', compact('facilities'));
     }
 
@@ -24,9 +25,34 @@ class FacilityAdminController extends Controller
     public function edit($id)
     {
         $facility = Facility::findOrFail($id);
-        $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4']; // Available layouts
+        $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4'];
 
-        return view('admin.facilities.edit', compact('facility', 'layoutTemplates'));
+        // Get all webcontents for reference
+        $webContents = $facility->webcontents()->get();
+
+        // Get the active webcontent directly from the database
+        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+
+        // Get the active layout template and sections
+        $selectedLayoutTemplate = $activeWebContent ? $activeWebContent->layout_template : null;
+        $selectedSections = [];
+
+        if ($activeWebContent && $activeWebContent->sections) {
+            if (is_string($activeWebContent->sections)) {
+                $selectedSections = json_decode($activeWebContent->sections, true) ?? [];
+            } elseif (is_array($activeWebContent->sections)) {
+                $selectedSections = $activeWebContent->sections;
+            }
+        }
+
+        return view('admin.facilities.edit', compact(
+            'facility',
+            'layoutTemplates',
+            'webContents',
+            'activeWebContent',
+            'selectedLayoutTemplate',
+            'selectedSections'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -39,7 +65,6 @@ class FacilityAdminController extends Controller
             'domain' => 'required|string|max:255|unique:facilities,domain,' . $id,
             'subdomain' => 'nullable|string|max:100',
             'is_active' => 'boolean',
-            'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:50',
@@ -60,40 +85,25 @@ class FacilityAdminController extends Controller
             'twitter' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
             'location_map' => 'nullable|string|max:1000',
+            // 'webcontents' => 'array',
+            'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
             'sections' => 'array',
-            'sections.*' => 'boolean'
+            'variances' => 'array', // <-- Added validation for variances
         ]);
 
-        // Ensure domain is never null - generate from slug if empty
         $domain = $validated['domain'];
         if (empty($domain)) {
             $slug = Str::slug($validated['name']);
             $domain = $slug . '.example.com';
         }
 
-        // Handle social media links - they are individual fields in our model
-        $socialData = [
-            'facebook' => $request->facebook,
-            'twitter' => $request->twitter,
-            'instagram' => $request->instagram,
-        ];
-
-        // Convert Google Maps URL to embed format if needed
-        $locationMap = $validated['location_map'] ?? null;
-        if ($locationMap && preg_match('/^https?:\/\/maps\.google\.com\/maps\?q=/', $locationMap)) {
-            $locationMap = preg_replace('/^https?:\/\/maps\.google\.com\/maps\?q=/', 'https://www.google.com/maps?q=', $locationMap);
-            if (strpos($locationMap, '&output=embed') === false) {
-                $locationMap .= '&output=embed';
-            }
-        }
         $facility->update([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'tagline' => $validated['tagline'],
-            'domain' => $domain, // Always ensure domain has a value
+            'domain' => $domain,
             'subdomain' => $validated['subdomain'],
             'is_active' => $request->has('is_active'),
-            'layout_template' => $validated['layout_template'],
             'address' => $validated['address'],
             'city' => $validated['city'],
             'state' => $validated['state'],
@@ -113,15 +123,34 @@ class FacilityAdminController extends Controller
             'facebook' => $validated['facebook'],
             'twitter' => $validated['twitter'],
             'instagram' => $validated['instagram'],
-            'location_map' => $locationMap,
+            'location_map' => $this->formatLocationMap($validated['location_map'] ?? null),
         ]);
 
-        // Update settings with active sections and social data for backward compatibility
-        $settings = $facility->settings ?? [];
-        $settings['social'] = array_filter($socialData); // Remove empty values
-        $settings['active_sections'] = array_keys(array_filter($request->sections ?? []));
+        $layoutTemplate = $validated['layout_template'];
+        $sections = $validated['sections'] ?? [];
+        $variances = $validated['variances'] ?? [];
 
-        $facility->update(['settings' => $settings]);
+        // Inactivate all templates for this facility except the selected one
+        DB::table('web_contents')
+            ->where('facility_id', $facility->id)
+            ->where('layout_template', '!=', $layoutTemplate)
+            ->update(['is_active' => false, 'sections' => null, 'variances' => null]);
+
+        // Activate the selected template and update its sections and variances
+        DB::table('web_contents')
+            ->updateOrInsert(
+                [
+                    'facility_id' => $facility->id,
+                    'layout_template' => $layoutTemplate,
+                ],
+                [
+                    'sections' => json_encode(array_keys($sections)),
+                    'variances' => json_encode($variances),
+                    'is_active' => true,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
 
         return redirect()->route('admin.facilities.edit', $facility->id)
                         ->with('success', 'Facility updated successfully!');
@@ -152,5 +181,37 @@ class FacilityAdminController extends Controller
 
         return redirect()->route('admin.facilities.layout-config', $facility->id)
                         ->with('success', 'Layout configuration updated successfully!');
+    }
+
+    // public function preview(Facility $facility)
+    // {
+    //     // Get the active webcontent for this facility
+    //     $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+
+    //     // Use the active template and sections, fallback if not found
+    //     $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
+    //     $sections = [];
+
+    //     if ($activeWebContent && $activeWebContent->sections) {
+    //         if (is_string($activeWebContent->sections)) {
+    //             $sections = json_decode($activeWebContent->sections, true) ?? [];
+    //         } elseif (is_array($activeWebContent->sections)) {
+    //             $sections = $activeWebContent->sections;
+    //         }
+    //     }
+
+
+    //     return view('facilities.preview', compact('facility', 'layoutTemplate', 'sections'));
+    // }
+
+    private function formatLocationMap($locationMap)
+    {
+        if ($locationMap && preg_match('/^https?:\/\/maps\.google\.com\/maps\?q=/', $locationMap)) {
+            $locationMap = preg_replace('/^https?:\/\/maps\.google\.com\/maps\?q=/', 'https://www.google.com/maps?q=', $locationMap);
+            if (strpos($locationMap, '&output=embed') === false) {
+                $locationMap .= '&output=embed';
+            }
+        }
+        return $locationMap;
     }
 }

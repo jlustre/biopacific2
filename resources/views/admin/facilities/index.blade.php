@@ -42,14 +42,15 @@
                     </span>
                 </div>
                 <!-- Facility Header -->
-                <div class="p-6 border-b border-gray-200">
-
+                <div class="p-6 border-b border-gray-300">
+                    <div class="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
+                        <img src="{{ $facility->facility_image ? asset('images/facilities/'.$facility->facility_image) : asset('images/bplogo.png') }}"
+                            alt="Facility Image" class="w-full h-full object-cover">
+                    </div>
                     <div class="flex flex-col gap-2">
-                        <div class="flex justify-center mb-2">
-                            <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-10 w-10 object-contain">
-                        </div>
                         <h3 class="text-xl font-bold text-gray-900 text-center mb-1">{{ $facility->name }}</h3>
-                        <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline ?? 'Quality healthcare
+                        <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline ?? 'Quality
+                            healthcare
                             services' }}
                         </p>
                         @if($facility->address)
@@ -57,8 +58,10 @@
                             <span class="text-sm text-gray-500">{{ $facility->address }}</span>
                             @if($facility->city || $facility->state || $facility->zip)
                             <span class="text-sm text-gray-400 mt-1">
-                                {{ $facility->city ?? '' }}{{ $facility->city && ($facility->state || $facility->zip) ?
-                                ', ' : '' }}{{ $facility->state ?? '' }}{{ $facility->state && $facility->zip ? ' ' : ''
+                                {{ $facility->city ?? '' }}{{ $facility->city && ($facility->state ||
+                                $facility->zip) ?
+                                ', ' : '' }}{{ $facility->state ?? '' }}{{ $facility->state && $facility->zip ? ' '
+                                : ''
                                 }}{{ $facility->zip ?? '' }}
                             </span>
                             @endif
@@ -100,7 +103,7 @@
                     <!-- Facility Location Map -->
                     @if($facility->location_map)
                     <div class="p-6 pt-0">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Location Map</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Our Location</label>
                         @if(\Illuminate\Support\Str::startsWith($facility->location_map, ['http://', 'https://']))
                         <iframe src="{{ $facility->location_map }}" width="100%" height="200" style="border:0;"
                             allowfullscreen loading="lazy"></iframe>

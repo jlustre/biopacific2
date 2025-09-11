@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             FacilitySeeder::class,
             RolePermissionSeeder::class,
             SuperAdminSeeder::class,
+            WebContentsSeeder::class,
         ]);
 
         // User::factory()->create([

@@ -42,12 +42,12 @@
 
       <h1 class="mt-4 text-4xl md:text-6xl font-black leading-tight"
         style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.25);">
-        {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
+        {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
       </h1>
 
       <p class="mt-4 md:text-xl text-slate-100/95 max-w-2xl">
-        {{ $facility['subheadline'] ?? 'Skilled nursing, rehabilitation, memory care, and hospice in a warm, dignified
-        setting.' }}
+        {!! $facility['subheadline'] ?? 'Skilled nursing, rehabilitation, memory care, and hospice in a warm, dignified
+        setting.' !!}
       </p>
 
       <div class="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">

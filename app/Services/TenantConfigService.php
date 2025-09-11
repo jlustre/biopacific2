@@ -2,8 +2,7 @@
 
 namespace App\Services;
 
-class TenantConfigService
-{
+class TenantConfigService {
     protected $facility;
 
     public function __construct()
@@ -69,3 +68,4 @@ class TenantConfigService
     {
         return $this->facility ? $this->facility->layout_template : 'layout1';
     }
+}

@@ -37,6 +37,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/facilities/{id}/layout-config', [App\Http\Controllers\FacilityAdminController::class, 'layoutConfig'])->name('admin.facilities.layout-config');
     Route::put('/facilities/{id}/layout-config', [App\Http\Controllers\FacilityAdminController::class, 'updateLayoutConfig'])->name('admin.facilities.update-layout-config');
 
+    // Facility preview route for admin
+    // Route::get('/facilities/{id}/preview', [\App\Http\Controllers\FacilityAdminController::class, 'preview'])
+    //     ->name('admin.facilities.preview');
+
     // Layout Template Admin Routes
     Route::get('/layouts', [App\Http\Controllers\Admin\LayoutTemplateController::class, 'index'])->name('admin.layouts.index');
     Route::get('/layouts/create', [App\Http\Controllers\Admin\LayoutTemplateController::class, 'create'])->name('admin.layouts.create');

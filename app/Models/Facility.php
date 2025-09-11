@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Content;
 
 class Facility extends Model
 {
@@ -10,7 +11,7 @@ class Facility extends Model
       'about_image_url','about_text','address','city','state','zip','beds', 'years',
       'phone','email','facebook','twitter','instagram','primary_color', 'secondary_color', 
       'accent_color','domain', 'subdomain', 'is_active', 'settings', 'layout_template', 
-      'layout_config','location_map'
+      'layout_config','location_map', 'facility_image', 'hours'
     ];
 
   protected $casts = [
@@ -47,18 +48,10 @@ class Facility extends Model
     $this->update(['layout_config' => $layoutConfig]);
   }
 
-  public function getSetting($key, $default = null)
-  {
-    $settings = $this->settings ?? [];
-    return data_get($settings, $key, $default);
-  }
-
-  public function setSetting($key, $value)
-  {
-    $settings = $this->settings ?? [];
-    data_set($settings, $key, $value);
-    $this->update(['settings' => $settings]);
-  }
+  public function webContents()
+{
+    return $this->hasMany(WebContent::class);
+}
 
   // Existing relationships
   public function values() { return $this->hasMany(FacilityValue::class); }

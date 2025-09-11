@@ -17,7 +17,7 @@
                     </div>
                 </a>
             </div>
-            @include('partials.navbar')
+            @include('partials.topbar.default')
             <div class="hidden md:flex gap-2">
                 <a href="#book"
                     class="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-white font-medium hover:bg-primary/90 focus:ring-2 focus:ring-primary/40">Book

@@ -8,37 +8,44 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // The facility is automatically resolved by ResolveTenant middleware
-        // and shared with all views. No need to manually pass it.
+        $f = request()->query('f');
+        if (!$f) {
+            $f = 1;
+        }
 
-        // For backward compatibility, if no current facility is found,
-        // fall back to a default facility for development
-        // if (!app()->bound('current_facility')) {
-            $facility = [
-                'name' => 'Vale Health Care Center',
-                'tagline' => 'Compassionate care, clinical excellence.',
-                'address' => '13484 San Pablo Avenue, San Pablo, CA 94806',
-                'phone' => '(510) 232-5945',
-                'email' => 'info@valehealthcarecenter.com',
-                'hours' => 'Daily 9:00 AM – 7:00 PM',
-                'years'=> '25',
-                'maps' => 'https://www.google.com/maps/embed/v1/place?key=AIzaSyBPOyvtiKxDKEGDNaL8k8hxnCh_42iNDDk&q=13484+San+Pablo+Avenue,+San+Pablo,+CA+94806',
-                'social' => ['facebook' => '#', 'linkedin' => '#', 'youtube' => '#'],
-                'meta_description' => 'Nursing home in California offering skilled nursing, rehab, memory care, long-term care, and more.',
-                'hero_main_heading' => 'Compassionate care, clinical excellence.',
-                'hero_sub_heading' => 'Personalized, compassionate care with evidence-based practices in a warm, family-centered environment.',
-                'primary_color' => '#059669',
-                'secondary_color' => '#064E3B',
-                'accent_color' => '#FACC15'
+        $facility = \App\Models\Facility::find($f);
+        $colors = [
+            'primary' => '#059669',
+            'secondary' => '#064E3B',
+            'accent' => '#FACC15'
+        ];
+
+        $activeWebContent = null;
+        $sections = [];
+        $layoutTemplate = 'default-template';
+
+        if ($facility) {
+            // Don't convert to array, keep as Eloquent model
+            $colors = [
+                'primary' => $facility->primary_color ?? '#059669',
+                'secondary' => $facility->secondary_color ?? '#064E3B',
+                'accent' => $facility->accent_color ?? '#FACC15'
             ];
 
-            $colors = ['primary'=>'#059669','secondary'=>'#064E3B','accent'=>'#FACC15'];
+            // Now you can call relationships
+            $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
 
-        //     return view('welcome', compact('facility','colors'));
-        // }
+            if ($activeWebContent && $activeWebContent->sections) {
+                if (is_string($activeWebContent->sections)) {
+                    $sections = json_decode($activeWebContent->sections, true) ?? [];
+                } elseif (is_array($activeWebContent->sections)) {
+                    $sections = $activeWebContent->sections;
+                }
+            }
 
-        // If we have a current facility (normal case), just return the view
-        // The facility data is already shared via the middleware
-        return view('welcome', compact('facility', 'colors'));
+            $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
+        }
+
+        return view('welcome', compact('facility', 'colors', 'layoutTemplate', 'sections'));
     }
 }

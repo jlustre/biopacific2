@@ -29,11 +29,12 @@
         <div class="grid grid-cols-2 gap-3 sm:gap-4">
           <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg">
             <img src="{{ asset('images/nursehuggingpatient.jpg') }}" alt="Nurse supporting a resident"
-              class="h-full w-full object-cover max-w-full h-auto block">
+              style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
           </div>
           <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg translate-y-6">
             <img src="{{ asset('images/recreation_activities-room.png') }}"
-              alt="Residents enjoying recreation activities" class="h-full w-full object-cover max-w-full h-auto block">
+              alt="Residents enjoying recreation activities"
+              style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
           </div>
           <div class="aspect-[3/2] overflow-hidden rounded-2xl shadow-lg col-span-2">
             <img src="{{ asset('images/physical-therapy-session.png') }}" alt="Physical therapy session"

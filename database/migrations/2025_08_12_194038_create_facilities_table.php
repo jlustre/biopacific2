@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('logo_url')->nullable();
             $table->string('hero_image_url')->nullable();
+            $table->string('facility_image')->nullable();
             $table->string('headline')->nullable();
             $table->string('subheadline')->nullable();
             $table->string('about_image_url')->nullable();
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->string('state', 2)->nullable();
             $table->string('zip', 10)->nullable();
+            $table->string('hours')->nullable();
             $table->unsignedSmallInteger('beds')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
