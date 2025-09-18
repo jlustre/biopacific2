@@ -58,7 +58,7 @@
   </style>
 </head>
 
-<body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
+<body class="bg-white px-5 lg:mr-0 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
   <!-- Header -->
   @include('partials.header')
 
@@ -66,7 +66,7 @@
   {{-- @include('partials.accessibility') --}}
 
   <!-- Main Content -->
-  <main id="top">
+  <main id="top" class="px-4 lg:px-0">
     @yield('content')
   </main>
 

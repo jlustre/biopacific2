@@ -23,6 +23,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    @livewireStyles
 </head>
 
 <body class="bg-gray-50">
@@ -122,10 +123,62 @@
                     class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
                     <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                 </a>
-                <a href="{{ route('admin.facilities.index') }}"
-                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-100 font-bold' : '' }}">
-                    <i class="fas fa-building mr-2"></i> Facilities
-                </a>
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-100 font-bold' : '' }}">
+                        <i class="fas fa-building mr-2"></i> Facilities
+                        <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                        class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                        style="display: none;" x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="transform opacity-0 scale-95"
+                        x-transition:enter-end="transform opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="transform opacity-100 scale-100"
+                        x-transition:leave-end="transform opacity-0 scale-95">
+                        <a href="{{ route('admin.facilities.index') }}"
+                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-list mr-2"></i> All
+                        </a>
+                        <hr class="my-1">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            @php
+                            $facilityList = isset($facilities) ? $facilities->sortBy('name') : [];
+                            @endphp
+                            <div style="overflow: visible; position: relative;">
+                                @foreach($facilityList as $facility)
+                                <div x-data="{ subOpen: false }" class="relative group" style="overflow: visible;"
+                                    @mouseenter="subOpen = true" @mouseleave="subOpen = false">
+                                    @php
+                                    $abbr = $facility->name;
+                                    if (\Str::contains($abbr, 'Driftwood') && \Str::contains($abbr, 'Hayward')) {
+                                    $abbr = 'Driftwood HCC - Hywd';
+                                    } elseif (\Str::contains($abbr, 'Driftwood') && \Str::contains($abbr, 'Santa Cruz'))
+                                    {
+                                    $abbr = 'Driftwood HCC - SCruz';
+                                    } elseif (\Str::contains($abbr, 'Glendale Transitional Care Center')) {
+                                    $abbr = 'Glendale TCC';
+                                    } else {
+                                    $abbr = str_replace('Health and Rehabilitation Center', 'HRC', $abbr);
+                                    $abbr = str_replace('Health Care and Rehabilitation Center', 'HRC', $abbr);
+                                    $abbr = str_replace('Health Care Center', 'HCC', $abbr);
+                                    $abbr = str_replace('Healthcare Center', 'HCC', $abbr);
+                                    }
+                                    @endphp
+                                    <a href="{{ route('dashboard.facility', $facility->id) }}" target="_blank"
+                                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-hospital mr-2"></i> {{ $abbr }}
+                                    </a>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <a href="{{ route('admin.layouts.index') }}"
                     class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.layouts.*') ? 'bg-gray-100 font-bold' : '' }}">
                     <i class="fas fa-th-large mr-2"></i> Templates
@@ -163,6 +216,8 @@
     </div>
 
     @stack('scripts')
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    @livewireScripts
 </body>
 
 </html>

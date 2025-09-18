@@ -32,7 +32,7 @@
 
   {{-- Content --}}
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-    <div class="max-w-3xl">
+    <div class="max-w-2xl">
       <span
         class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/30">
         <span class="inline-block h-2.5 w-2.5 rounded-full"
@@ -61,14 +61,16 @@
           style="--btn: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
           Book a Tour
         </a>
+        @if(!empty($facility['hero_video_id']))
         <button id="playVideoBtn"
-          class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
+          class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white transition hover:brightness-110"
           style="background-color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
-          <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M8 5v10l8-5-8-5z" />
           </svg>
           Watch Intro
         </button>
+        @endif
       </div>
 
       {{-- Chips --}}
@@ -90,6 +92,7 @@
   </div>
 
   {{-- Modal for intro video (reusing your previous pattern) --}}
+  @if(!empty($facility['hero_video_id']))
   <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
     <div class="relative w-full max-w-3xl">
       <button id="closeVideoBtn" class="absolute -top-12 right-0 text-white hover:text-red-400">
@@ -103,6 +106,7 @@
       </div>
     </div>
   </div>
+  @endif
 </section>
 
 {{-- Styles to handle prefers-reduced-motion (pause video, keep poster) --}}
@@ -125,45 +129,59 @@
   }
 </style>
 
+@push('scripts')
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const bgVideo = document.getElementById('heroBgVideo');
-
-    // Respect reduced motion and autoplay blocking
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReduced && bgVideo) {
-      try { bgVideo.pause(); } catch(e) {}
-      // Optional: add a class to section to ensure image fallback if needed
-      bgVideo.closest('section')?.classList.add('reduced-motion-fallback');
-    } else if (bgVideo) {
-      // Some browsers block autoplay; try play() and swallow the promise rejection
-      const tryPlay = bgVideo.play();
-      if (tryPlay && typeof tryPlay.catch === 'function') {
-        tryPlay.catch(() => { /* leave poster visible; nothing else to do */ });
-      }
+  document.addEventListener('DOMContentLoaded', function() {
+  var bgVideo = document.getElementById('heroBgVideo');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced && bgVideo) {
+    try { bgVideo.pause(); } catch(e) {}
+    bgVideo.closest('section')?.classList.add('reduced-motion-fallback');
+  } else if (bgVideo) {
+    var tryPlay = bgVideo.play();
+    if (tryPlay && typeof tryPlay.catch === 'function') {
+      tryPlay.catch(function(){});
     }
+  }
 
-    // Modal video controls
-    const playBtn = document.getElementById('playVideoBtn');
-    const modal = document.getElementById('videoModal');
-    const closeBtn = document.getElementById('closeVideoBtn');
-    const iframe = document.getElementById('youtubeIframe');
-    const YT = '{{ $facility['hero_video_id'] ?? 'YOUR_YOUTUBE_VIDEO_ID' }}';
+  var playBtn = document.getElementById('playVideoBtn');
+  var modal = document.getElementById('videoModal');
+  var closeBtn = document.getElementById('closeVideoBtn');
+  var iframe = document.getElementById('youtubeIframe');
+  var YT = @json($facility['hero_video_id'] ?? null); // Ensure valid YouTube video ID
 
-    function openModal(){
-      iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-      document.body.style.overflow = 'hidden';
+  function openModal() {
+    if (!YT) {
+      alert('No video available for this facility.'); // Fallback alert for debugging
+      return;
     }
-    function closeModal(){
-      modal.classList.add('hidden'); modal.classList.remove('flex');
-      document.body.style.overflow = ''; iframe.src = '';
-    }
+    iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
 
-    playBtn?.addEventListener('click', openModal);
-    closeBtn?.addEventListener('click', closeModal);
-    modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
-  });
+  function openModal() {
+    if (!YT) return;
+    iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    iframe.src = '';
+  }
+
+  if (playBtn) {
+    playBtn.addEventListener('click', openModal);
+    console.log('Play video button clicked'); // Debug logging
+  }
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+});
 </script>
+@endpush

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('headline')->nullable();
             $table->string('subheadline')->nullable();
             $table->string('about_image_url')->nullable();
+            $table->string('hero_video_id')->nullable();
             $table->text('about_text')->nullable();
             $table->string('location_map')->nullable();
             $table->string('address')->nullable();
@@ -41,6 +42,8 @@ return new class extends Migration
             $table->string('primary_color')->nullable();
             $table->string('secondary_color')->nullable();
             $table->string('accent_color')->nullable();
+            $table->json('hipaa_flags')->nullable();
+            $table->string('npp_url')->nullable(); 
             $table->timestamps();
         });
     }

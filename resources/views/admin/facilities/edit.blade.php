@@ -363,6 +363,7 @@
                     'news' => 'News & Events Section',
                     'testimonials' => 'Testimonials',
                     'careers' => 'Careers Section',
+                    'book' => 'Book a Tour Section',
                     'contact' => 'Contact Section',
                     'faqs' => 'FAQs Section',
                     'resources' => 'Resources Section',

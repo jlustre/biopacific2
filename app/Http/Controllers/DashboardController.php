@@ -35,8 +35,6 @@ class DashboardController extends Controller
             }
         }
 
-        // If activeWebContent has a variances field, use it. Otherwise, default to 'default'.
-        // Example: $activeWebContent->variances = ['hero' => 'modern', 'about' => 'classic', ...]
         if ($activeWebContent && isset($activeWebContent->variances)) {
             if (is_string($activeWebContent->variances)) {
                 $sectionVariances = json_decode($activeWebContent->variances, true) ?? [];
@@ -45,7 +43,6 @@ class DashboardController extends Controller
             }
         }
 
-        // Fallback: ensure every section has a variance
         foreach ($sections as $section) {
             if (!isset($sectionVariances[$section])) {
                 $sectionVariances[$section] = 'default';
@@ -57,13 +54,18 @@ class DashboardController extends Controller
             ? json_encode($sections)
             : json_encode([]);
 
-        app()->instance('current_facility', $facility);
-        view()->share('facility', $facility->toArray());
-        view()->share('layoutTemplate', $facility->layout_template ?? 'default-template');
-        view()->share('sections', $sections);
-        view()->share('sectionVariances', $sectionVariances);
+        // Fetch FAQ data for dynamic FAQ section
+        $faqs = \App\Models\Faq::all();
+        $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
 
-        return view('welcome');
+        return view('welcome', [
+            'facility' => $facility,
+            'layoutTemplate' => $facility->layout_template ?? 'default-template',
+            'sections' => $sections,
+            'sectionVariances' => $sectionVariances,
+            'faqs' => $faqs,
+            'categories' => $categories,
+        ]);
     }
 
     

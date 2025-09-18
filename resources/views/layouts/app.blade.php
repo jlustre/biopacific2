@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,13 +11,13 @@
     {{-- Basic SEO --}}
     <meta name="description" content="{{ $metaDescription ?? 'Compassionate senior care across California.' }}">
     @isset($metaKeywords)
-      <meta name="keywords" content="{{ $metaKeywords }}">
+    <meta name="keywords" content="{{ $metaKeywords }}">
     @endisset
     <meta name="robots" content="{{ $robots ?? 'index,follow' }}">
 
     {{-- Canonical --}}
     @isset($canonical)
-      <link rel="canonical" href="{{ $canonical }}">
+    <link rel="canonical" href="{{ $canonical }}">
     @endisset
 
     {{-- Open Graph / Facebook --}}
@@ -24,10 +25,10 @@
     <meta property="og:title" content="{{ $metaTitle ?? ($title ?? 'Bio Pacific Nursing Home Sites') }}">
     <meta property="og:description" content="{{ $metaDescription ?? 'Compassionate senior care across California.' }}">
     @isset($ogImage)
-      <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image" content="{{ $ogImage }}">
     @endisset
     @isset($canonical)
-      <meta property="og:url" content="{{ $canonical }}">
+    <meta property="og:url" content="{{ $canonical }}">
     @endisset
 
     {{-- Twitter Card --}}
@@ -35,7 +36,7 @@
     <meta name="twitter:title" content="{{ $metaTitle ?? ($title ?? 'Bio Pacific Nursing Home Sites') }}">
     <meta name="twitter:description" content="{{ $metaDescription ?? 'Compassionate senior care across California.' }}">
     @isset($ogImage)
-      <meta name="twitter:image" content="{{ $ogImage }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
     @endisset
 
     {{-- Per-page extra head content (e.g., JSON-LD) --}}
@@ -59,7 +60,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             transition: all 0.3s ease;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
             position: fixed;
             top: 56px;
             left: 0;
@@ -73,24 +74,24 @@
         }
 
         .sidebar-toggler {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
 
         .sidebar-toggler:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .sidebar-brand {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .nav-link {
-            color: rgba(255,255,255,0.8) !important;
+            color: rgba(255, 255, 255, 0.8) !important;
             border-radius: 10px;
             margin: 0.2rem 0;
             transition: all 0.3s ease;
@@ -101,20 +102,20 @@
         }
 
         .nav-link:hover {
-            background: rgba(255,255,255,0.2) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
             color: white !important;
             transform: translateX(5px);
         }
 
         .nav-link.active {
-            background: rgba(255,255,255,0.3) !important;
+            background: rgba(255, 255, 255, 0.3) !important;
             color: white !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .sidebar-footer {
-            background: rgba(0,0,0,0.1);
-            border-top: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             position: absolute;
             bottom: 0;
             left: 0;
@@ -139,7 +140,7 @@
 
         .navbar {
             z-index: 1030;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar-overlay {
@@ -149,7 +150,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1020;
         }
 
@@ -174,7 +175,7 @@
         /* Additional improvements */
         .dropdown-menu {
             border: none;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             border-radius: 8px;
         }
 
@@ -186,8 +187,28 @@
             background: #f8f9fa;
             transform: translateX(5px);
         }
+
+        /* Multi-level dropdown support */
+        .dropdown-submenu {
+            position: relative;
+        }
+
+        .dropdown-submenu>.dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -6px;
+            margin-left: 0.1rem;
+            border-radius: 8px;
+        }
+
+        .dropdown-submenu>.dropdown-item:after {
+            content: "\f105";
+            font-family: 'FontAwesome';
+            float: right;
+        }
     </style>
 </head>
+
 <body>
     {{-- Top Navigation Bar --}}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
@@ -203,14 +224,17 @@
             {{-- Right side nav items --}}
             <div class="navbar-nav ms-auto">
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-user-circle me-1"></i>
                         Guest
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li><a class="dropdown-item" href="#"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
                     </ul>
                 </div>
@@ -234,18 +258,51 @@
         <nav class="navbar-nav px-3 py-2 flex-grow-1">
             {{-- Dashboard --}}
             <li class="nav-item mb-1">
-                <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active' : '' }}" href="{{ url('/') }}">
+                <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active' : '' }}"
+                    href="{{ url('/') }}">
                     <i class="fas fa-tachometer-alt me-3"></i>
                     Dashboard
                 </a>
             </li>
 
-            {{-- Facilities Management --}}
-            <li class="nav-item mb-1">
-                <a class="nav-link {{ request()->is('facilities*') ? 'active' : '' }}" href="{{ url('/facilities') }}">
+            {{-- Facilities Dropdown --}}
+            <li class="nav-item dropdown mb-1">
+                <a class="nav-link dropdown-toggle {{ request()->is('facilities*') ? 'active' : '' }}" href="#"
+                    id="facilitiesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-building me-3"></i>
                     Facilities
                 </a>
+                <ul class="dropdown-menu" aria-labelledby="facilitiesDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{{ url('/facilities') }}">
+                            <i class="fas fa-list me-2"></i> All
+                        </a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    @php
+                    $facilityList = isset($facilities) ? $facilities->sortBy('name') : [];
+                    @endphp
+                    @foreach($facilityList as $facility)
+                    <li class="dropdown-submenu position-relative">
+                        <a class="dropdown-item dropdown-toggle" href="#" id="facilityDropdown{{ $facility->id }}"
+                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-hospital me-2"></i> {{ $facility->name }}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="facilityDropdown{{ $facility->id }}">
+                            <li><a class="dropdown-item" href="{{ route('facilities.show', $facility->slug) }}"><i
+                                        class="fas fa-eye me-2"></i> Preview</a></li>
+                            <li><a class="dropdown-item" href="{{ route('facilities.edit', $facility->slug) }}"><i
+                                        class="fas fa-edit me-2"></i> Edit</a></li>
+                            @if($facility->domain)
+                            <li><a class="dropdown-item" href="https://{{ $facility->domain }}" target="_blank"><i
+                                        class="fas fa-external-link-alt me-2"></i> Visit Live</a></li>
+                            @endif
+                        </ul>
+                    </li>
+                    @endforeach
+                </ul>
             </li>
 
             {{-- Settings --}}
@@ -340,6 +397,33 @@
                 }
             });
 
+            // Multi-level dropdown support for sidebar
+            document.querySelectorAll('.dropdown-submenu > .dropdown-item').forEach(function(element) {
+                element.addEventListener('mouseenter', function(e) {
+                    if (window.innerWidth > 768) {
+                        let submenu = element.nextElementSibling;
+                        if (submenu && submenu.classList.contains('dropdown-menu')) {
+                            submenu.classList.add('show');
+                        }
+                    }
+                });
+                element.addEventListener('mouseleave', function(e) {
+                    if (window.innerWidth > 768) {
+                        let submenu = element.nextElementSibling;
+                        if (submenu && submenu.classList.contains('dropdown-menu')) {
+                            submenu.classList.remove('show');
+                        }
+                    }
+                });
+                element.addEventListener('click', function(e) {
+                    let submenu = element.nextElementSibling;
+                    if (submenu && submenu.classList.contains('dropdown-menu')) {
+                        submenu.classList.toggle('show');
+                        e.preventDefault();
+                    }
+                });
+            });
+
             // Close dropdowns when clicking outside
             document.addEventListener('click', function(event) {
                 const dropdowns = document.querySelectorAll('.dropdown-menu.show');
@@ -352,4 +436,5 @@
         });
     </script>
 </body>
+
 </html>

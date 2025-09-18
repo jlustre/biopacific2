@@ -12,7 +12,7 @@
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         @include('partials.section_header', [
         'section_header' => 'Get in Touch',
-        'section_sub_header' => "Have questions or want to schedule a tour? We're here to help you every step of the
+        'section_sub_header' => "Have questions? We're here to help you every step of the
         way."
         ])
 

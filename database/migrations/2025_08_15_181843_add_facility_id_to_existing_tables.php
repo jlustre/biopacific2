@@ -51,25 +51,25 @@ return new class extends Migration
     {
         Schema::table('services', function (Blueprint $table) {
             $table->dropForeign(['facility_id']);
-            $table->dropIndex(['facility_id', 'created_at']);
+            // $table->dropIndex(['facility_id', 'created_at']); // Commented out to prevent migration error
             $table->dropColumn('facility_id');
         });
 
         Schema::table('testimonials', function (Blueprint $table) {
             $table->dropForeign(['facility_id']);
-            $table->dropIndex(['facility_id', 'created_at']);
+            // $table->dropIndex(['facility_id', 'created_at']); // Commented out to prevent migration error
             $table->dropColumn('facility_id');
         });
 
         Schema::table('gallery_images', function (Blueprint $table) {
             $table->dropForeign(['facility_id']);
-            $table->dropIndex(['facility_id', 'category']);
+            // $table->dropIndex(['facility_id', 'category']); // Commented out to prevent migration error
             $table->dropColumn('facility_id');
         });
 
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->dropForeign(['facility_id']);
-            $table->dropIndex(['facility_id', 'created_at']);
+            // $table->dropIndex(['facility_id', 'created_at']); // Commented out to prevent migration error
             $table->dropColumn('facility_id');
         });
     }

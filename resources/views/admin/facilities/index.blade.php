@@ -19,7 +19,7 @@
                     </div>
                 </div>
                 <div class="bg-primary/10 px-4 py-2 rounded-lg">
-                    <span class="text-primary font-semibold">{{ $facilities->total() }} Total Facilities</span>
+                    <span class="text-primary font-semibold">{{ $facilities->count() }} Total Facilities</span>
                 </div>
             </div>
         </div>
@@ -167,31 +167,45 @@
                             </svg>
                             {{ $facility->domain }}
                         </span>
+
+                        @php
+                        $rows = \App\Support\HipaaWebsiteChecklist::forFacility($facility->toArray(),
+                        $facility->hipaa_flags ?? []);
+                        $total = count($rows);
+                        $ok = collect($rows)->where('passed', true)->count();
+                        @endphp
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <a href="{{ route('admin.facilities.hipaa', $facility) }}"
+                                    class="text-sm font-semibold rounded-full px-2 py-2 border"
+                                    style="border-color: {{ $facility->primary_color ?? '#0EA5E9' }}; color: {{ $facility->primary_color ?? '#0EA5E9' }};">
+                                    HIPAA Checklist
+                                </a>
+                            </div>
+                            <div class="inline-flex items-center gap-1 rounded-full px-2 py-2 text-sm ring-1"
+                                @class([ 'bg-emerald-50 text-emerald-700 ring-emerald-200'=> $ok === $total && $total >
+                                0,
+                                'bg-amber-50 text-amber-700 ring-amber-200' => $ok < $total, ])>
+                                    {{ $ok }}/{{ $total }}{{ $ok === $total && $total > 0 ? ' Passed' : '' }}
+                            </div>
+                        </div>
                     </div>
                     @endif
                 </div>
             </div>
             @endforeach
-
-            <!-- Pagination -->
-            @if($facilities->hasPages())
-            <div class="col-span-1 md:col-span-2 lg:col-span-3">
-                <div class="mt-8">
-                    {{ $facilities->links() }}
-                </div>
-            </div>
-            @endif
-
-            <!-- Empty State -->
-            @if($facilities->isEmpty())
-            <div class="text-center py-12">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No facilities found</h3>
-                <p class="mt-1 text-sm text-gray-500">Get started by seeding some facilities.</p>
-            </div>
-            @endif
         </div>
-        @endsection
+
+        <!-- Empty State -->
+        @if($facilities->isEmpty())
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No facilities found</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by seeding some facilities.</p>
+        </div>
+        @endif
+    </div>
+    @endsection

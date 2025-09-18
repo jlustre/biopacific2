@@ -45,7 +45,7 @@ class FacilitySeeder extends Seeder
     'address'=>'2065 LOS GATOS-ALMADEN ROAD','phone'=>'4083779275','city'=>'SAN JOSE','state'=>'CA','zip'=>'95124','beds'=>77,
     'primary_color'=>'#059669','secondary_color'=>'#064e3b','accent_color'=>'#facc15',
     'location_map'=> 'https://maps.google.com/maps?q=Almaden+Health+and+Rehabilitation++Center,2065+LOS+GATOS-ALMADEN+ROAD%2CSAN+JOSE%2CCA+95124&output=embed',
-    'domain'=>'almadenhealthandrehabilitationcenter.com','years'=>'20', 'facility_image' => 'almadenhcc.jpg'
+    'domain'=>'almadenhealthandrehabilitationcenter.com','subdomain'=>'almadenhrc.com','years'=>'20', 'facility_image' => 'almadenhcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Autumn Hills Health Care Center',
@@ -55,7 +55,7 @@ class FacilitySeeder extends Seeder
     'address'=>'430 N. GLENDALE AVE','phone'=>'8182465677','city'=>'GLENDALE','state'=>'CA','zip'=>'91206','beds'=>92,
     'primary_color'=>'#059669','secondary_color'=>'#064E3B','accent_color'=>'#FACC15',
     'location_map'=> 'https://www.google.com/maps?q=Autumn+Hills+Health+Care+Center,430+N.GLENDALE+AVE%2CGLENDALE%2CCA+91206&output=embed',
-    'domain'=>'autumnhillshealthcarecenter.com','years'=>'20', 'facility_image' => 'autumnhillshcc.jpg'
+    'domain'=>'autumnhillshealthcarecenter.com','subdomain'=>'autumnhillshcc.com','years'=>'20', 'facility_image' => 'autumnhillshcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Creekside Health Care Center',
@@ -65,7 +65,7 @@ class FacilitySeeder extends Seeder
     'address'=>'1900 CHURCH LANE','phone'=>'5102355514','city'=>'SAN PABLO','state'=>'CA','zip'=>'94806','beds'=>80,
     'primary_color'=>'#0EA5E9','secondary_color'=>'#0369A1','accent_color'=>'#FBBF24',
     'location_map'=> 'https://maps.google.com/maps?q=Creekside+Healthcare+Center,1900+CHURCH+LANE%2CSAN+PABLO%2CCA+94806&output=embed',
-    'domain'=>'creeksidehealthcarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'creeksidehealthcarecenter.com','subdomain'=>'creeksidehcc.com','years'=>'20', 'facility_image' => 'creeksidehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Driftwood Health Care Center - Hayward',
@@ -75,7 +75,7 @@ class FacilitySeeder extends Seeder
     'address'=>'19700 HESPERIAN BOULEVARD','phone'=>'5107852880','city'=>'HAYWARD','state'=>'CA','zip'=>'94541','beds'=>88,
     'primary_color'=>'#10B981','secondary_color'=>'#065F46','accent_color'=>'#FDBA74',
     'location_map'=> 'https://maps.google.com/maps?q=Driftwood+Healthcare+Center+-+Hayward,19700+HESPERIAN+BOULEVARD%2CHAYWARD%2CCA+94541&output=embed',
-    'domain'=>'driftwoodhealthcarecenter-hayward.com','years'=>'20', 'facility_image' => 'driftwood-hayward.jpeg'
+    'domain'=>'driftwoodhealthcarecenter-hayward.com','subdomain'=>'driftwoodhcc-hayward.com','years'=>'20', 'facility_image' => 'driftwood-hayward.jpeg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Driftwood Health Care Center - Santa Cruz',
@@ -85,7 +85,7 @@ class FacilitySeeder extends Seeder
     'address'=>'675 24TH AVENUE','phone'=>'8314756323','city'=>'SANTA CRUZ','state'=>'CA','zip'=>'95062','beds'=>92,
     'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
     'location_map'=> 'https://maps.google.com/maps?q=Driftwood+Healthcare+Center+-+Santa+Cruz,675+24TH+AVENUE%2CSANTA+CRUZ%2CCA+95062&output=embed',
-    'domain'=>'driftwoodhealthcarecenter-santacruz.com','years'=>'20', 'facility_image' => 'driftwood-santacruz.jpg'
+    'domain'=>'driftwoodhealthcarecenter-santacruz.com','subdomain'=>'driftwoodhcc-santacruz.com','years'=>'20', 'facility_image' => 'driftwood-santacruz.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Fremont Health Care Center',
@@ -95,7 +95,7 @@ class FacilitySeeder extends Seeder
     'address'=>'39022 PRESIDIO WAY','phone'=>'5107923743','city'=>'FREMONT','state'=>'CA','zip'=>'94538','beds'=>115,
     'primary_color'=>'#7C3AED','secondary_color'=>'#4C1D95','accent_color'=>'#60A5FA',
     'location_map'=> 'https://maps.google.com/maps?q=Fremont+Healthcare+Center,39022+PRESIDIO+WAY%2CFREMONT%2CCA+94538&output=embed',
-    'domain'=>'fremonthealthcarecenter.com','years'=>'20', 'facility_image' => 'fremonthcc.jpg'
+    'domain'=>'fremonthealthcarecenter.com','subdomain'=>'fremonthcc.com','years'=>'20', 'facility_image' => 'fremonthcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Fruitvale Health Care Center',
@@ -105,7 +105,7 @@ class FacilitySeeder extends Seeder
     'address'=>'3020 EAST 15TH STREET','phone'=>'5102615613','city'=>'OAKLAND','state'=>'CA','zip'=>'94601','beds'=>140,
     'primary_color'=>'#16A34A','secondary_color'=>'#14532D','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Fruitvale+Healthcare+Center,3020+EAST+15TH+STREET%2COAKLAND%2CCA+94601&output=embed',
-    'domain'=>'fruitvalehealthcarecenter.com','years'=>'20', 'facility_image' => 'fruitvalehcc.jpg'
+    'domain'=>'fruitvalehealthcarecenter.com','subdomain'=>'fruitvalehcc.com','years'=>'20', 'facility_image' => 'fruitvalehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Glendale Transitional Care Center',
@@ -115,7 +115,7 @@ class FacilitySeeder extends Seeder
     'address'=>'1509 Wilson Terrace, North Tower, 2nd Floor','phone'=>'8184098072','city'=>'GLENDALE','state'=>'CA','zip'=>'91206','beds'=>92,
     'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
     'location_map'=> 'https://maps.google.com/maps?q=Glendale+Transitional+Care+Center,1509+Wilson+Terrace%2C+North+Tower%2C+2nd+Floor%2CGLENDALE%2CCA+91206&output=embed',
-    'domain'=>'glendaletransitionalcarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'glendaletransitionalcarecenter.com','subdomain'=>'glendaletcc.com','years'=>'20', 'facility_image' => 'glendaletransitionalcarecenter.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Hayward Hills Health Care Center',
@@ -125,7 +125,7 @@ class FacilitySeeder extends Seeder
     'address'=>'1768 B Street','phone'=>'5105384424','city'=>'HAYWARD','state'=>'CA','zip'=>'94541','beds'=>92,
     'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
     'location_map'=> 'https://maps.google.com/maps?q=Hayward+Hills+Health+Care+Center,1768+B+Street%2CHAYWARD%2CCA+94541&output=embed',
-    'domain'=>'haywardhillshealthcarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'haywardhillshealthcarecenter.com','subdomain'=>'haywardhillshcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Inglewood Health Care Center',
@@ -135,7 +135,7 @@ class FacilitySeeder extends Seeder
     'address'=>'100 S. HILLCREST BLVD','phone'=>'3106779114','city'=>'INGLEWOOD','state'=>'CA','zip'=>'90301','beds'=>99,
     'primary_color'=>'#DB2777','secondary_color'=>'#831843','accent_color'=>'#38BDF8',
     'location_map'=> 'https://maps.google.com/maps?q=Inglewood+Health+Care+Center,100+S.+HILLCREST+BLVD%2CINGLEWOOD%2CCA+90301&output=embed',
-    'domain'=>'inglewoodhealthcarecenter.com','years'=>'20', 'facility_image' => 'inglewoodhcc.jpg'
+    'domain'=>'inglewoodhealthcarecenter.com','subdomain'=>'inglewoodhcc.com','years'=>'20', 'facility_image' => 'inglewoodhcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'La Crescenta Health Care Center',
@@ -145,7 +145,7 @@ class FacilitySeeder extends Seeder
     'address'=>'3050 MONTROSE AVE','phone'=>'8189570850','city'=>'LA CRESCENTA','state'=>'CA','zip'=>'91214','beds'=>92,
     'primary_color'=>'#0EA5A4','secondary_color'=>'#134E4A','accent_color'=>'#A78BFA',
     'location_map'=> 'https://maps.google.com/maps?q=La+Crescenta+Healthcare+Center,3050+MONTROSE+AVE%2CLA+CRESCENTA%2CCA+91214&output=embed',
-    'domain'=>'lacrescentahealthcarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'lacrescentahealthcarecenter.com','subdomain'=>'lacrescentahcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Monterey Palms Health Care Center',
@@ -155,7 +155,7 @@ class FacilitySeeder extends Seeder
     'address'=>'44610 MONTEREY AVENUE','phone'=>'7607767700','city'=>'PALM DESERT','state'=>'CA','zip'=>'92260','beds'=>99,
     'primary_color'=>'#F97316','secondary_color'=>'#9A3412','accent_color'=>'#22C55E',
     'location_map'=> 'https://maps.google.com/maps?q=Monterey+Palms+Health+Care+Center,44610+MONTEREY+AVENUE%2CPALM+DESERT%2CCA+92260&output=embed',
-    'domain'=>'montereypalmshealthcarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'montereypalmshealthcarecenter.com','subdomain'=>'montereypalmshcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Palm Springs Health Care and Rehabilitation Center',
@@ -165,7 +165,7 @@ class FacilitySeeder extends Seeder
     'address'=>'277 S SUNRISE WAY','phone'=>'7603278541','city'=>'PALM SPRINGS','state'=>'CA','zip'=>'92262','beds'=>99,
     'primary_color'=>'#E11D48','secondary_color'=>'#881337','accent_color'=>'#84CC16',
     'location_map'=> 'https://maps.google.com/maps?q=Palm+Springs+Healthcare++and++Rehabilitation+Center,277+S+SUNRISE+WAY%2CPALM+SPRINGS%2CCA+92262&output=embed',
-    'domain'=>'palmspringshealthandrehabilitationcenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'palmspringshealthandrehabilitationcenter.com','subdomain'=>'palmspringshrc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Pine Ridge Health Care Center',
@@ -175,7 +175,7 @@ class FacilitySeeder extends Seeder
     'address'=>'45 PROFESSIONAL CENTER PKWY','phone'=>'4154793610','city'=>'SAN RAFAEL','state'=>'CA','zip'=>'94903','beds'=>101,
     'primary_color'=>'#2563EB','secondary_color'=>'#1D4ED8','accent_color'=>'#FDE047',
     'location_map'=> 'https://maps.google.com/maps?q=Pine+Ridge+Care+Center,45+PROFESSIONAL+CENTER+PKWY%2CSAN+RAFAEL%2CCA+94903&output=embed',
-    'domain'=>'pineridgecarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'pineridgecarecenter.com','subdomain'=>'pineridgehcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Santa Monica Health Care Center',
@@ -185,7 +185,7 @@ class FacilitySeeder extends Seeder
     'address'=>'1320 20TH STREET','phone'=>'3102552800','city'=>'SANTA MONICA','state'=>'CA','zip'=>'90404','beds'=>59,
     'primary_color'=>'#64748B','secondary_color'=>'#0F172A','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Santa+Monica+Health+Care+Center,1320+20TH+STREET%2CSANTA+MONICA%2CCA+90404&output=embed',
-    'domain'=>'santamonicahealthcarecenter.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'santamonicahealthcarecenter.com','subdomain'=>'santamonicahcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Skyline Health Care Center',
@@ -195,7 +195,7 @@ class FacilitySeeder extends Seeder
     'address'=>'2065 FOREST AVENUE','phone'=>'4082802500','city'=>'SAN JOSE','state'=>'CA','zip'=>'95128','beds'=>253,
     'primary_color'=>'#0EA5E9','secondary_color'=>'#155E75','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Skyline+Healthcare+Center+-+San+Jose,2065+FOREST+AVENUE%2CSAN+JOSE%2CCA+95128&output=embed',
-    'domain'=>'skylinehealthcarecenter-sanjose.com','years'=>'20', 'facility_image' => ''
+    'domain'=>'skylinehealthcarecenter-sanjose.com','subdomain'=>'skylinehcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Vale Health Care Center',
@@ -205,7 +205,7 @@ class FacilitySeeder extends Seeder
     'address'=>'13484 SAN PABLO AVENUE','phone'=>'5102325945','city'=>'SAN PABLO','state'=>'CA','zip'=>'94806','beds'=>202,
     'primary_color'=>'#06B6D4','secondary_color'=>'#155E75','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Vale+Healthcare+Center,13484+SAN+PABLO+AVENUE%2CSAN+PABLO%2CCA+94806&output=embed',
-    'domain'=>'valehealthcarecenter.com','years'=>'20', 'facility_image' => 'valehcc.jpg'
+    'domain'=>'valehealthcarecenter.com','subdomain'=>'valehcc.com','years'=>'20', 'facility_image' => 'valehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Village Square Health Care Center',
@@ -215,7 +215,7 @@ class FacilitySeeder extends Seeder
     'address'=>'1586 W. SAN MARCOS BLVD','phone'=>'7604712986','city'=>'SAN MARCOS','state'=>'CA','zip'=>'92078','beds'=>118,
     'primary_color'=>'#15803D','secondary_color'=>'#052E16','accent_color'=>'#84CC16',
     'location_map'=> 'https://maps.google.com/maps?q=Village+Square+Healthcare+Center,1586+W.+SAN+MARCOS+BLVD%2CSAN+MARCOS%2CCA+92078&output=embed',
-    'domain'=>'villagesquarehealthcarecenter.com','years'=>'20', 'facility_image' => 'villagesquarehcc.jpeg'
+    'domain'=>'villagesquarehealthcarecenter.com','subdomain'=>'villagesquarehcc.com','years'=>'20', 'facility_image' => 'villagesquarehcc.jpeg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
 ];
 $bplogo = 'images/bplogo.png';
@@ -231,6 +231,7 @@ unset($item);
         'facility_image' => $i['facility_image'] ?? $bplogo,
         'headline' =>  $i['headline'],
         'subheadline' =>  $i['subheadline'],
+        'hero_video_id' =>  $i['hero_video_id'] ?? null,
         'about_image_url' => $aboutImages[array_rand($aboutImages)],
         'about_text' => $i['name'].' provides personalized care and support for seniors, ensuring comfort, dignity, and quality of life.',
         'address' => ucwords(strtolower($i['address'])),
@@ -238,7 +239,9 @@ unset($item);
         'state' => $i['state'],
         'zip' => $i['zip'],
         'beds' => $i['beds'],
+        'hours' => $i['hours'],
         'domain' => $i['domain'],
+        'subdomain' => $i['subdomain'],
         'phone' => $i['phone'],
         'email' => 'info@example.com',
         'facebook' => 'https://facebook.com',

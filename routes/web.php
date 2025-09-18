@@ -1,3 +1,6 @@
+// FAQ section route with dynamic variant support
+use App\Http\Controllers\FaqController;
+Route::get('/faqs', [FaqController::class, 'index'])->name('faqs.index');
 <?php
 
 use App\Http\Controllers\HomeController;
@@ -75,6 +78,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/layout-builder/facility/{facilityId}/duplicate', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'duplicateLayout'])->name('admin.layout-builder.duplicate');
     Route::post('/layout-builder/facility/{facilityId}/save-template', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'saveAsTemplate'])->name('admin.layout-builder.save-template');
     Route::post('/layout-builder/facility/{facilityId}/preview', [App\Http\Controllers\Admin\LayoutBuilderController::class, 'preview'])->name('admin.layout-builder.preview');
+
+    Route::get('/facilities/{facility}/hipaa', function (\App\Models\Facility $facility) {
+        return view('admin.facilities.hipaa', compact('facility'));
+    })->name('admin.facilities.hipaa');
 });
 
 Route::view('dashboard', 'dashboard')
@@ -117,5 +124,9 @@ Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
 Route::get('/audit/{auditLog}', [AuditController::class, 'show'])->name('audit.show');
 Route::post('/audit/export', [AuditController::class, 'export'])->name('audit.export');
 Route::get('/audit/stats', [AuditController::class, 'stats'])->name('audit.stats');
+
+// Tour booking form submission
+use App\Http\Controllers\TourController;
+Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 
 require __DIR__.'/auth.php';

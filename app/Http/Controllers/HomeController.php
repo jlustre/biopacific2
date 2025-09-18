@@ -46,6 +46,9 @@ class HomeController extends Controller
             $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
         }
 
-        return view('welcome', compact('facility', 'colors', 'layoutTemplate', 'sections'));
+    // Fetch FAQ data for dynamic FAQ section
+    $faqs = \App\Models\Faq::all();
+    $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
+    return view('welcome', compact('facility', 'colors', 'layoutTemplate', 'sections', 'faqs', 'categories'));
     }
 }

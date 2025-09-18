@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SuperAdminSeeder::class,
             WebContentsSeeder::class,
+            FaqSeeder::class,
         ]);
 
         // User::factory()->create([

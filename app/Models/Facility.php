@@ -11,13 +11,14 @@ class Facility extends Model
       'about_image_url','about_text','address','city','state','zip','beds', 'years',
       'phone','email','facebook','twitter','instagram','primary_color', 'secondary_color', 
       'accent_color','domain', 'subdomain', 'is_active', 'settings', 'layout_template', 
-      'layout_config','location_map', 'facility_image', 'hours'
+      'layout_config','location_map', 'facility_image', 'hours', 'hero_video_id'
     ];
 
   protected $casts = [
     'settings' => 'array',
     'layout_config' => 'array',
-    'is_active' => 'boolean'
+    'is_active' => 'boolean',
+    'hipaa_flags' => 'array',
   ];
 
   public function getRouteKeyName() { return 'slug'; }

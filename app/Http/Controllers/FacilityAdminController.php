@@ -12,14 +12,28 @@ class FacilityAdminController extends Controller
 {
     public function index()
     {
-        $facilities = Facility::paginate(12);
+    $facilities = Facility::orderBy('name')->get();
         return view('admin.facilities.index', compact('facilities'));
     }
 
     public function show($id)
     {
         $facility = Facility::findOrFail($id);
-        return view('admin.facilities.show', compact('facility'));
+        $faqs = \App\Models\Faq::all();
+        dd($faqs);
+        $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
+        // Get active webcontent and layout info for welcome view
+        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+        $sections = [];
+        $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
+        if ($activeWebContent && $activeWebContent->sections) {
+            if (is_string($activeWebContent->sections)) {
+                $sections = json_decode($activeWebContent->sections, true) ?? [];
+            } elseif (is_array($activeWebContent->sections)) {
+                $sections = $activeWebContent->sections;
+            }
+        }
+        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories'));
     }
 
     public function edit($id)
@@ -45,13 +59,17 @@ class FacilityAdminController extends Controller
             }
         }
 
+        $faqs = \App\Models\Faq::all();
+        $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
         return view('admin.facilities.edit', compact(
             'facility',
             'layoutTemplates',
             'webContents',
             'activeWebContent',
             'selectedLayoutTemplate',
-            'selectedSections'
+            'selectedSections',
+            'faqs',
+            'categories'
         ));
     }
 

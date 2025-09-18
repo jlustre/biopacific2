@@ -25,7 +25,7 @@
 
     <!-- Positioned content at left bottom -->
     <div class="absolute left-0 bottom-24 z-10 w-full">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">
             <div class="max-w-xl bg-white/60 backdrop-blur rounded-2xl p-8 shadow-xl">
                 <!-- Add a dark text stroke for better contrast -->
                 <style>
@@ -47,8 +47,8 @@
                     style="color: {{ $facility['primary_color'] ?? '#e3342f' }}">
                     {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
                 </h1>
-                <p class="mt-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>
-                <div class="mt-6 flex flex-wrap gap-3">
+                <p class="mt-4 mx-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>
+                <div class="mt-6 mx-4 pb-4 flex flex-wrap gap-3 flex flex-row justify-between">
                     <a href="#contact" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
                         style="background-color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
                         Quick Contact
@@ -63,7 +63,7 @@
                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>
-                        Watch Intro Video
+                        Watch Intro
                     </button>
                 </div>
             </div>

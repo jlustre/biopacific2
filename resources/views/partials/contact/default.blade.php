@@ -21,7 +21,8 @@ $facility['social'] = [
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     @include('partials.section_header', [
     'section_header' => 'Get in Touch',
-    'section_sub_header' => "Have questions or want to schedule a tour? We're here to help you every step of the way."
+    'section_sub_header' => "Have questions other than booking a tour, use this section instead? We're here to help you
+    every step of the way."
     ])
 
     @php
@@ -133,18 +134,6 @@ $facility['social'] = [
               <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
                 <path
                   d="M22 12.06C22 6.48 17.52 2 11.94 2S2 6.48 2 12.06c0 4.99 3.66 9.13 8.44 9.94v-7.03H8.08v-2.9h2.36V9.41c0-2.33 1.39-3.62 3.52-3.62.71 0 1.8.12 2.19.18v2.41h-1.24c-1.22 0-1.6.76-1.6 1.54v1.86h2.72l-.43 2.9h-2.29v7.03C18.34 21.19 22 17.05 22 12.06z" />
-              </svg>
-            </a>
-            @endif
-
-            @if(!empty($social['twitter']) || !empty($social['x']))
-            @php $xUrl = $social['twitter'] ?? $social['x']; @endphp
-            <a href="{{ $xUrl }}" target="_blank" rel="noopener" aria-label="X (Twitter)"
-              class="h-10 w-10 flex items-center justify-center rounded-full bg-black text-white hover:opacity-90">
-              {{-- X / Twitter --}}
-              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
-                <path
-                  d="M18.244 2H21l-6.52 7.46L22.5 22h-6.87l-4.8-6.26L4.9 22H2.14l7.03-8.04L1.5 2h6.96l4.33 5.74L18.24 2Zm-1.2 18h1.67L7.08 4h-1.7L17.04 20Z" />
               </svg>
             </a>
             @endif

@@ -34,6 +34,10 @@
 @include('partials.careers.' . ($sectionVariances['careers'] ?? 'default'))
 @endif
 
+@if(is_array($sections) && in_array('book', $sections))
+@include('partials.book.' . ($sectionVariances['book'] ?? 'default'))
+@endif
+
 @if(is_array($sections) && in_array('contact', $sections))
 @include('partials.contact.' . ($sectionVariances['contact'] ?? 'default'))
 @endif

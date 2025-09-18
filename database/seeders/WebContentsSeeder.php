@@ -23,6 +23,7 @@ class WebContentsSeeder extends Seeder
             'news',
             'testimonials',
             'careers',
+            'book',
             'contact',
             'faqs',
             'resources',
@@ -30,6 +31,7 @@ class WebContentsSeeder extends Seeder
         ];
 
         $allVariances = [
+            'default',
             'default',
             'default',
             'default',
