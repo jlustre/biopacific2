@@ -165,7 +165,7 @@ class FacilitySeeder extends Seeder
     'address'=>'277 S SUNRISE WAY','phone'=>'7603278541','city'=>'PALM SPRINGS','state'=>'CA','zip'=>'92262','beds'=>99,
     'primary_color'=>'#E11D48','secondary_color'=>'#881337','accent_color'=>'#84CC16',
     'location_map'=> 'https://maps.google.com/maps?q=Palm+Springs+Healthcare++and++Rehabilitation+Center,277+S+SUNRISE+WAY%2CPALM+SPRINGS%2CCA+92262&output=embed',
-    'domain'=>'palmspringshealthandrehabilitationcenter.com','subdomain'=>'palmspringshrc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
+    'domain'=>'palmspringshealthandrehabilitationcenter.com','subdomain'=>'palmspringshrc.com','years'=>'20', 'facility_image' => 'palmspringshrc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Pine Ridge Health Care Center',
@@ -175,7 +175,7 @@ class FacilitySeeder extends Seeder
     'address'=>'45 PROFESSIONAL CENTER PKWY','phone'=>'4154793610','city'=>'SAN RAFAEL','state'=>'CA','zip'=>'94903','beds'=>101,
     'primary_color'=>'#2563EB','secondary_color'=>'#1D4ED8','accent_color'=>'#FDE047',
     'location_map'=> 'https://maps.google.com/maps?q=Pine+Ridge+Care+Center,45+PROFESSIONAL+CENTER+PKWY%2CSAN+RAFAEL%2CCA+94903&output=embed',
-    'domain'=>'pineridgecarecenter.com','subdomain'=>'pineridgehcc.com','years'=>'20', 'facility_image' => '', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
+    'domain'=>'pineridgecarecenter.com','subdomain'=>'pineridgehcc.com','years'=>'20', 'facility_image' => 'pineridgehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 'hero_video_id'=>'u31qwQUeGuM'
   ],
   [
     'name'=>'Santa Monica Health Care Center',

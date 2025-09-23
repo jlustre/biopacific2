@@ -7,7 +7,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <a href="{{ route('dashboard.index') }}" class="text-gray-500 hover:text-gray-700">
+                    <a href="{{ route('admin.dashboard.index') }}" class="text-gray-500 hover:text-gray-700">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -141,12 +141,9 @@
                             <a href="{{ route('admin.facilities.edit', $facility->id) }}"
                                 class="flex-1 bg-primary text-white text-center py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">Edit
                                 Details</a>
-                            <a href="{{ route('admin.facilities.layout-config', $facility->id) }}"
-                                class="flex-1 bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">Configure
-                                Layout</a>
                         </div>
                         <div class="flex gap-2">
-                            <a href="{{ route('dashboard.facility', $facility->id) }}"
+                            <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
                                 class="flex-1 bg-gray-100 text-gray-700 text-center py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">Preview
                                 Site</a>
                             @if($facility->domain)

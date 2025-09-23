@@ -19,13 +19,9 @@
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <a href="{{ route('dashboard.facility', $facility->id) }}"
+                    <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
                         class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
                         Preview Site
-                    </a>
-                    <a href="{{ route('admin.facilities.layout-config', $facility->id) }}"
-                        class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors text-sm font-medium">
-                        Configure Layout
                     </a>
                 </div>
             </div>

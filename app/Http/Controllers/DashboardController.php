@@ -17,7 +17,7 @@ class DashboardController extends Controller
         // Group facilities by state for better organization
         $facilitiesByState = $facilities->groupBy('state');
 
-        return view('dashboard.index', compact('facilities', 'facilitiesByState'));
+        return view('admin.dashboard.index', compact('facilities', 'facilitiesByState'));
     }
 
     public function facility($id)

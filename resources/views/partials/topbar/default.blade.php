@@ -25,7 +25,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div x-show="open" @click.away="open = false" x-transition
+          <div x-cloak x-show="open" @click.away="open = false" x-transition style="display: none;"
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
             <a href="#about" class="block px-4 py-2 hover:bg-primary/10">About</a>
             <a href="#services" class="block px-4 py-2 hover:bg-primary/10">Services</a>
@@ -41,7 +41,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div x-show="open" @click.away="open = false" x-transition
+          <div x-cloak x-show="open" @click.away="open = false" x-transition style="display: none;"
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
             <a href="#rooms" class="block px-4 py-2 hover:bg-primary/10">Rooms & Rates</a>
             <a href="#gallery" class="block px-4 py-2 hover:bg-primary/10">Gallery</a>
@@ -56,7 +56,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <div x-show="open" @click.away="open = false" x-transition
+          <div x-cloak x-show="open" @click.away="open = false" x-transition style="display: none;"
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
             <a href="#contact" class="block px-4 py-2 hover:bg-primary/10">Contact</a>
             <a href="#faqs" class="block px-4 py-2 hover:bg-primary/10">FAQs</a>
@@ -78,7 +78,7 @@
     </div>
   </div>
   <!-- Mobile Menu -->
-  <div x-show="mobileOpen" x-transition
+  <div x-cloak x-show="mobileOpen" x-transition style="display: none;"
     class="fixed top-18 left-0 w-full h-full z-[9999] bg-teal-100/50 flex flex-col md:hidden overflow-y-auto">
     <div class="w-full h-full px-6 pb-2 flex flex-col gap-2">
       <div class="flex justify-between items-center mb-6">

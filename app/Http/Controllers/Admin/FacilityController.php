@@ -11,6 +11,27 @@ class FacilityController extends Controller
 {
     // ...existing methods...
 
+    public function edit($id)
+    {
+        $facility = Facility::findOrFail($id);
+
+        $layoutTemplates = ['default-template', 'layout2', 'layout3']; // Your templates
+
+        $activeWebContent = $facility->webContent;
+        $selectedLayoutTemplate = $activeWebContent->layout_template ?? 'default-template';
+
+        // Fetch all web contents for this facility (adjust if needed)
+        $webContents = \App\Models\WebContent::where('facility_id', $facility->id)->get();
+
+        return view('admin.facilities.edit', compact(
+            'facility',
+            'layoutTemplates',
+            'activeWebContent',
+            'selectedLayoutTemplate',
+            'webContents' // <-- Add this line
+        ));
+    }
+
     public function update(Request $request, $id)
     {
         $facility = Facility::findOrFail($id);
@@ -27,7 +48,7 @@ class FacilityController extends Controller
         // ...update other fields...
 
         // Save active sections and variances
-        $sections = array_keys($request->input('sections', []));
+        $sections = $request->input('sections', []); // array of keys
         $variances = $request->input('variances', []);
 
         // Assuming you have a WebContent model related to Facility

@@ -265,7 +265,7 @@ $brandAccent = $facility['accent_color'] ?? '#F59E0B';
 
         {{-- Dialog --}}
         <div id="modal-panel-{{ $index }}"
-            class="relative max-w-2xl w-full transform rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 transition"
+            class="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto transform rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 transition"
             data-motion>
             {{-- Header --}}
             <div class="flex items-center justify-between p-6 border-b border-slate-200">

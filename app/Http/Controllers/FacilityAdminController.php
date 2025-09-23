@@ -39,6 +39,7 @@ class FacilityAdminController extends Controller
     public function edit($id)
     {
         $facility = Facility::findOrFail($id);
+        $facilities = Facility::orderBy('name')->get(); // <-- Add this line
         $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4'];
 
         // Get all webcontents for reference
@@ -63,6 +64,7 @@ class FacilityAdminController extends Controller
         $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
         return view('admin.facilities.edit', compact(
             'facility',
+            'facilities', // <-- Add this to compact
             'layoutTemplates',
             'webContents',
             'activeWebContent',
@@ -172,33 +174,6 @@ class FacilityAdminController extends Controller
 
         return redirect()->route('admin.facilities.edit', $facility->id)
                         ->with('success', 'Facility updated successfully!');
-    }
-
-    public function layoutConfig($id)
-    {
-        $facility = Facility::findOrFail($id);
-        return view('admin.facilities.layout-config', compact('facility'));
-    }
-
-    public function updateLayoutConfig(Request $request, $id)
-    {
-        $facility = Facility::findOrFail($id);
-
-        $layoutConfig = $request->validate([
-            'hero_variant' => 'required|string|in:default,video,split',
-            'about_variant' => 'required|string|in:default,stats,timeline',
-            'services_variant' => 'required|string|in:grid,cards,tabs',
-            'contact_variant' => 'required|string|in:form,info,map',
-            'hero_config' => 'array',
-            'about_config' => 'array',
-            'services_config' => 'array',
-            'contact_config' => 'array'
-        ]);
-
-        $facility->update(['layout_config' => $layoutConfig]);
-
-        return redirect()->route('admin.facilities.layout-config', $facility->id)
-                        ->with('success', 'Layout configuration updated successfully!');
     }
 
     // public function preview(Facility $facility)

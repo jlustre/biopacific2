@@ -41,7 +41,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-2">
-                    <a href="{{ route('dashboard.index') }}" class="flex items-center">
+                    <a href="{{ route('admin.dashboard.index') }}" class="flex items-center">
                         <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-12 w-auto" />
                         <div class="flex flex-col items-start leading-tight -mt-1">
                             <span class="text-xl font-bold text-gray-900">Bio-Pacific</span>
@@ -119,7 +119,7 @@
             class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30"
             :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
             <nav class="flex flex-col space-y-2">
-                <a href="{{ route('dashboard.index') }}"
+                <a href="{{ route('admin.dashboard.index') }}"
                     class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
                     <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                 </a>
@@ -169,7 +169,7 @@
                                     $abbr = str_replace('Healthcare Center', 'HCC', $abbr);
                                     }
                                     @endphp
-                                    <a href="{{ route('dashboard.facility', $facility->id) }}" target="_blank"
+                                    <a href="{{ route('admin.dashboard.facility', $facility->id) }}" target="_blank"
                                         class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-hospital mr-2"></i> {{ $abbr }}
                                     </a>
@@ -179,18 +179,7 @@
                         </div>
                     </div>
                 </div>
-                <a href="{{ route('admin.layouts.index') }}"
-                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.layouts.*') ? 'bg-gray-100 font-bold' : '' }}">
-                    <i class="fas fa-th-large mr-2"></i> Templates
-                </a>
-                <a href="{{ route('admin.layout-builder.index') }}"
-                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.layout-builder.*') ? 'bg-gray-100 font-bold' : '' }}">
-                    <i class="fas fa-paint-brush mr-2"></i> Layout Builder
-                </a>
-                <a href="{{ route('admin.sections.index') }}"
-                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.sections.*') ? 'bg-gray-100 font-bold' : '' }}">
-                    <i class="fas fa-puzzle-piece mr-2"></i> Sections
-                </a>
+
             </nav>
         </aside>
 

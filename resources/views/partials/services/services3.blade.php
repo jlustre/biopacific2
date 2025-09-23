@@ -213,7 +213,7 @@ $serviceImages = [
                     <!-- Learn More Button -->
                     <div class="inline-flex items-center gap-2 text-white font-medium text-sm">
                         <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30"
-                            onclick="openModal('modal-{{ $index }}', event)"
+                            onclick="openServiceModal3('modal-{{ $index }}', event)"
                             style="cursor:pointer; background-color: {{ $facility['primary_color'] ?? '#000000' }}; color: #FFFFFF;">
                             Learn more
                         </span>
@@ -287,7 +287,7 @@ $serviceImages = [
                     </div>
                     <h3 class="text-2xl font-bold text-secondary">{{ $service['title'] }}</h3>
                 </div>
-                <button onclick="closeModal('modal-{{ $index }}')"
+                <button onclick="closeServiceModal3('modal-{{ $index }}')"
                     class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
                     <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
@@ -335,11 +335,11 @@ $serviceImages = [
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                    <button onclick="closeModalAndNavigate('modal-{{ $index }}', '#contact')"
+                    <button onclick="closeServiceModal3AndNavigate('modal-{{ $index }}', '#contact')"
                         class="flex-1 bg-accent text-white px-6 py-3 rounded-full text-center hover:bg-accent/90 transition-colors">
                         Contact Us About This Service
                     </button>
-                    <button onclick="closeModal('modal-{{ $index }}')"
+                    <button onclick="closeServiceModal3('modal-{{ $index }}')"
                         class="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-200 transition-colors">
                         Close
                     </button>
@@ -384,7 +384,7 @@ $serviceImages = [
 </style>
 
 <script>
-    function openModal(modalId, event) {
+    function openServiceModal3(modalId, event) {
   if (event) event.stopPropagation();
   const modal = document.getElementById(modalId);
   const modalContent = document.getElementById('modal-content-' + modalId.split('-')[1]);
@@ -400,7 +400,7 @@ $serviceImages = [
   }, 10);
 }
 
-function closeModal(modalId) {
+function closeServiceModal3(modalId) {
   const modal = document.getElementById(modalId);
   const modalContent = document.getElementById('modal-content-' + modalId.split('-')[1]);
 
@@ -415,8 +415,8 @@ function closeModal(modalId) {
   }, 300);
 }
 
-function closeModalAndNavigate(modalId, targetSection) {
-  closeModal(modalId);
+function closeServiceModal3AndNavigate(modalId, targetSection) {
+  closeServiceModal3(modalId);
 
   setTimeout(() => {
     document.querySelector(targetSection).scrollIntoView({

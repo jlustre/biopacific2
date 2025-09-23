@@ -122,7 +122,7 @@
             <li><a href="#services"
                 class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                 <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
-                Services & Treatments
+                Services & Amenities
               </a></li>
             <li><a href="#rooms"
                 class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">

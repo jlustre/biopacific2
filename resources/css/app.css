@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @import "../../vendor/livewire/flux/dist/flux.css";
 
 @source '../views';
@@ -48,6 +49,8 @@
     }
 }
 
+[x-cloak] { display: none !important; }
+
 [data-flux-field]:not(ui-radio, ui-checkbox) {
     @apply grid gap-2;
 }
@@ -65,3 +68,6 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+
+
