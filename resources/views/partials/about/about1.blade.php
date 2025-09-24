@@ -29,6 +29,11 @@
 
                 <!-- Content Side -->
                 <div class="lg:col-span-3 space-y-6">
+                    @if (!empty($facility['about_text']))
+                    <p class="my-2 text-slate-700 leading-relaxed text-xl">
+                        {{ $facility['about_text'] }}
+                    </p>
+                    @endif
                     <div class="space-y-4">
                         <h3 class="text-3xl font-bold text-primary">Our Mission</h3>
                         <p class="text-slate-700 leading-relaxed text-xl">

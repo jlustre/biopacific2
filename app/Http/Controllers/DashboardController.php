@@ -58,6 +58,13 @@ class DashboardController extends Controller
         $faqs = \App\Models\Faq::all();
         $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
 
+        // Fetch testimonials for the facility
+        $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
+            ->where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('welcome', [
             'facility' => $facility,
             'layoutTemplate' => $facility->layout_template ?? 'default-template',
@@ -65,6 +72,7 @@ class DashboardController extends Controller
             'sectionVariances' => $sectionVariances,
             'faqs' => $faqs,
             'categories' => $categories,
+            'testimonials' => $testimonials,
         ]);
     }
 

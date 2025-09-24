@@ -54,6 +54,11 @@
 
       {{-- Right: Tabs, values, metrics --}}
       <div class="lg:col-span-7">
+        @if (!empty($facility['about_text']))
+        <p class="my-2 text-slate-700 leading-relaxed">
+          {{ $facility['about_text'] }}
+        </p>
+        @endif
         {{-- Tabs --}}
         <div x-data="{tab:'mission'}" class="relative">
           <div class="flex flex-wrap gap-2">

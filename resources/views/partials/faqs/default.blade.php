@@ -5,9 +5,8 @@
     'section_header' => 'Frequently Asked Questions',
     'section_sub_header' => "Find answers to common questions about our services and facilities"
     ])
-
     <!-- Category Chips -->
-    <div class="mb-6 flex flex-wrap gap-2 text-sm">
+    <div class="mb-6 flex flex-wrap gap-2 text-sm justify-center">
       <button type="button"
         class="faq-chip rounded-full border border-slate-500 bg-slate-100 px-3 py-1.5 text-slate-700 hover:bg-slate-300"
         data-category="all" onclick="filterFaqs('all')">All</button>

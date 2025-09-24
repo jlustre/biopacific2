@@ -4,8 +4,8 @@
   <div class="absolute inset-0 z-0">
     <div class="hero-slideshow h-full w-full">
       <div class="slide active">
-        <img src="{{ asset('images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}"
-          alt="Warm nursing home common area with residents and staff" class="h-full w-full object-cover opacity-60">
+        <img src="{{ asset('images/hero1.jpg') }}" alt="Warm nursing home common area with residents and staff"
+          class="h-full w-full object-cover opacity-60">
       </div>
       <div class="slide">
         <img src="{{ asset('images/recreation_activities-room.png') }}"
@@ -44,6 +44,7 @@
           style="border-color: {{ $facility['primary_color'] ?? '#1a7f37' }}; color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
           Book a Tour
         </a>
+        @if(!empty($facility['hero_video_id']))
         <button id="playVideoBtn"
           class="w-full sm:w-auto inline-flex items-center justify-center rounded-xl px-6 py-3 text-white font-semibold shadow-lg transition-all duration-200 hover:scale-105"
           style="background-color: {{ $facility['accent_color'] ?? '#e3342f' }};">
@@ -52,6 +53,7 @@
           </svg>
           Watch Intro Video
         </button>
+        @endif
       </div>
       <div class="flex flex-wrap justify-center gap-2 mt-2">
         <span
@@ -68,9 +70,9 @@
   </div>
 </section>
 
-
+@if(!empty($facility['hero_video_id']))
 <!-- Video Modal -->
-<div id="videoModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden">
+<div id="videoModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 items-center justify-center hidden">
   <div class="relative w-full max-w-2xl mx-4">
     <button id="closeVideoBtn"
       class="absolute -top-14 right-0 text-white hover:text-red-400 transition-colors duration-200 z-10">
@@ -85,6 +87,7 @@
     </div>
   </div>
 </div>
+@endif
 
 
 <style>
@@ -169,33 +172,43 @@
     }
     setInterval(nextSlide, 5000);
 
+    @if(!empty($facility['hero_video_id']))
     // Video modal functionality
     const playVideoBtn = document.getElementById('playVideoBtn');
     const videoModal = document.getElementById('videoModal');
     const closeVideoBtn = document.getElementById('closeVideoBtn');
     const youtubeIframe = document.getElementById('youtubeIframe');
-    // Replace this with your actual YouTube video ID
-    const youtubeVideoId = 'YOUR_YOUTUBE_VIDEO_ID'; // Replace with actual video ID
-    playVideoBtn.addEventListener('click', function() {
-      youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
-      videoModal.classList.remove('hidden');
-      document.body.classList.add('modal-open');
-    });
-    function closeModal() {
-      videoModal.classList.add('hidden');
-      document.body.classList.remove('modal-open');
-      youtubeIframe.src = '';
+    
+    // Get YouTube video ID from database
+    const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
+    
+    if (playVideoBtn && youtubeVideoId) {
+        playVideoBtn.addEventListener('click', function() {
+          youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
+          videoModal.classList.remove('hidden');
+          videoModal.classList.add('flex');
+          document.body.classList.add('modal-open');
+        });
+        
+        function closeModal() {
+          videoModal.classList.add('hidden');
+          videoModal.classList.remove('flex');
+          document.body.classList.remove('modal-open');
+          youtubeIframe.src = '';
+        }
+        
+        closeVideoBtn.addEventListener('click', closeModal);
+        videoModal.addEventListener('click', function(e) {
+          if (e.target === videoModal) {
+            closeModal();
+          }
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+            closeModal();
+          }
+        });
     }
-    closeVideoBtn.addEventListener('click', closeModal);
-    videoModal.addEventListener('click', function(e) {
-      if (e.target === videoModal) {
-        closeModal();
-      }
-    });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-        closeModal();
-      }
-    });
+    @endif
   });
 </script>

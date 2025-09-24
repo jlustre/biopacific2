@@ -1,3 +1,4 @@
+@if(isset($testimonials) && $testimonials && $testimonials->count() > 0)
 <section id="testimonials" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
@@ -9,29 +10,15 @@
     <!-- Testimonials Carousel -->
     <div class="relative" x-data="{
       currentIndex: 0,
-      testimonials: [
-        {
-          name: 'Maria G.',
-          role: 'Daughter of Patient',
-          text: 'The staff treated our family like their own. From the moment we walked in, we felt the warmth and genuine care. The communication was excellent, and they kept us informed every step of the way.',
-          rating: 5,
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-        },
-        {
-          name: 'Dr. Chen',
-          role: 'Son of Patient',
-          text: 'The therapy team worked miracles with my father. After his surgery, we thought he might never walk again. Thanks to their dedication and expertise, he is now mobile and independent.',
-          rating: 5,
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-        },
-        {
-          name: 'Sarah Patel',
-          role: 'Family Member',
-          text: 'The facility is immaculate and the activities keep Mom engaged and happy. She has made wonderful friends here and truly feels at home. We could not be more grateful.',
-          rating: 5,
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-        }
-      ]
+      testimonials: @js(isset($testimonials) ? $testimonials->map(function($testimonial) {
+        return [
+          'name' => $testimonial->name,
+          'relationship' => $testimonial->relationship,
+          'text' => $testimonial->quote,
+          'rating' => $testimonial->rating ?? 5,
+          'avatar' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
+        ];
+      })->values() : [])
     }">
 
       <!-- Main Testimonial Card -->
@@ -72,7 +59,7 @@
                 class="w-16 h-16 rounded-full object-cover ring-4 ring-white shadow-lg">
               <div>
                 <div class="font-semibold text-lg text-secondary" x-text="testimonials[currentIndex].name"></div>
-                <div class="text-slate-500" x-text="testimonials[currentIndex].role"></div>
+                <div class="text-slate-500" x-text="testimonials[currentIndex].relationship"></div>
               </div>
             </div>
           </div>
@@ -161,3 +148,4 @@
     </div>
   </div>
 </section>
+@endif

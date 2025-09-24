@@ -16,9 +16,9 @@
             <div class="grid md:grid-cols-2 gap-6">
                 <!-- Facility Name -->
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Facility Name *</label>
+                    <label for="name" class="block text-sm text-gray-700 mb-2 font-bold">Facility Name</label>
                     <input type="text" id="name" name="name" value="{{ old('name', $facility->name) }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror"
                         required>
                     @error('name')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>

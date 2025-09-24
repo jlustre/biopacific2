@@ -20,7 +20,11 @@ class FacilityAdminController extends Controller
     {
         $facility = Facility::findOrFail($id);
         $faqs = \App\Models\Faq::all();
-        dd($faqs);
+        $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
+            ->where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
         $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
         // Get active webcontent and layout info for welcome view
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
@@ -33,7 +37,7 @@ class FacilityAdminController extends Controller
                 $sections = $activeWebContent->sections;
             }
         }
-        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories'));
+        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials'));
     }
 
     public function edit($id)
@@ -64,7 +68,7 @@ class FacilityAdminController extends Controller
         $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
         return view('admin.facilities.edit', compact(
             'facility',
-            'facilities', // <-- Add this to compact
+            'facilities', 
             'layoutTemplates',
             'webContents',
             'activeWebContent',
@@ -98,7 +102,7 @@ class FacilityAdminController extends Controller
             'headline' => 'nullable|string|max:255',
             'subheadline' => 'nullable|string|max:500',
             'about_text' => 'nullable|string',
-            'hero_image_url' => 'nullable|url|max:500',
+            'hero_image_url' => 'nullable|max:500',
             'about_image_url' => 'nullable|url|max:500',
             'logo_url' => 'nullable|url|max:500',
             'facebook' => 'nullable|url|max:255',

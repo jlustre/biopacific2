@@ -1,10 +1,20 @@
 {{-- HERO — Refined: Calm focus, glass card, accessible & responsive --}}
+@php
+// Build poster image URL for video background
+$posterFilename = $facility['hero_image_url'] ?? null;
+if (!empty($posterFilename)) {
+$poster = url('images/' . $posterFilename);
+} else {
+$poster = asset('images/hero1.jpg');
+}
+$hasVideo = !empty($facility['hero_video_id']);
+@endphp
+
 <section class="relative isolate overflow-hidden min-h-[78vh] md:min-h-screen">
     {{-- Background media --}}
     <div class="absolute inset-0 -z-10">
         <video id="heroBgVideo" class="absolute inset-0 h-full w-full object-cover" playsinline autoplay muted loop
-            preload="auto" aria-hidden="true"
-            poster="{{ asset($facility['hero_poster'] ?? 'images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}">
+            preload="auto" aria-hidden="true" poster="{{ $poster }}">
             @if(!empty($facility['hero_video_webm']))
             <source src="{{ asset($facility['hero_video_webm']) }}" type="video/webm">
             @endif
@@ -20,14 +30,13 @@
 
         {{-- No-JS image fallback --}}
         <noscript>
-            <img src="{{ asset($facility['hero_poster'] ?? 'images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}"
-                alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
+            <img src="{{ $poster }}" alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
                 class="absolute inset-0 h-full w-full object-cover">
         </noscript>
     </div>
 
     {{-- Content --}}
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-28">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:py-28">
         <div class="max-w-4xl">
             {{-- Pill --}}
             <div
@@ -80,6 +89,7 @@
                         Book a Tour
                     </a>
 
+                    @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
                         style="background-color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
@@ -88,6 +98,7 @@
                         </svg>
                         Watch Intro
                     </button>
+                    @endif
                 </div>
             </div>
 
@@ -102,21 +113,27 @@
         </div>
     </div>
 
-    {{-- Modal for intro video --}}
-    <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-        <div class="relative w-full max-w-3xl">
-            <button id="closeVideoBtn" class="absolute -top-12 right-0 text-white hover:text-red-400"
-                aria-label="Close video">
-                <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+    @if(!empty($facility['hero_video_id']))
+    <!-- Video Modal -->
+    <div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center hidden">
+        <div class="relative w-full max-w-4xl mx-4">
+            <!-- Prominent close button -->
+            <button id="closeVideoBtn"
+                class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors duration-200 z-10">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12">
+                    </path>
                 </svg>
             </button>
-            <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
-                <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" title="Facility intro"
-                    allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+            <!-- Video container -->
+            <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%; height: 0;">
+                <iframe id="youtubeIframe" class="absolute top-0 left-0 w-full h-full" src="" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
             </div>
         </div>
     </div>
+    @endif
 </section>
 
 {{-- Reduced motion handling & small fixes --}}
@@ -128,47 +145,102 @@
 
         /* Use poster as a background on the section itself for reduced motion users */
         .is-reduced-motion {
-            background-image: url('{{ asset($facility[' hero_poster'] ?? ' images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}');
+            background-image: url('{{ $poster }}');
             background-size: cover;
             background-position: center;
         }
     }
+
+    /* Ensure modal is above everything */
+    #videoModal {
+        z-index: 9999;
+    }
+
+    /* Disable scrolling when modal is open */
+    body.modal-open {
+        overflow: hidden;
+    }
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    const section = document.currentScript.closest('section') || document.querySelector('section[aria-label="hero"]') || document.querySelector('section');
-    const bgVideo = document.getElementById('heroBgVideo');
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // Respect reduced motion & autoplay blocking
-    if (prefersReduced && section) section.classList.add('is-reduced-motion');
-    if (!prefersReduced && bgVideo) {
-      const p = bgVideo.play?.();
-      if (p && typeof p.catch === 'function') p.catch(() => {/* leave poster */});
+    document.addEventListener('DOMContentLoaded', function() {
+  var bgVideo = document.getElementById('heroBgVideo');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced && bgVideo) {
+    try { bgVideo.pause(); } catch(e) {}
+    bgVideo.closest('section')?.classList.add('reduced-motion-fallback');
+  } else if (bgVideo) {
+    var tryPlay = bgVideo.play();
+    if (tryPlay && typeof tryPlay.catch === 'function') {
+      tryPlay.catch(function(){});
     }
+  }
 
-    // Modal video controls
-    const playBtn = document.getElementById('playVideoBtn');
-    const modal = document.getElementById('videoModal');
-    const closeBtn = document.getElementById('closeVideoBtn');
-    const iframe = document.getElementById('youtubeIframe');
-    const YT = @json($facility['hero_video_id'] ?? 'YOUR_YOUTUBE_VIDEO_ID');
+  @if(!empty($facility['hero_video_id']))
+  // Video modal functionality
+  console.log('Hero3: Video functionality initializing...');
+  const playVideoBtn = document.getElementById('playVideoBtn');
+  const videoModal = document.getElementById('videoModal');
+  const closeVideoBtn = document.getElementById('closeVideoBtn');
+  const youtubeIframe = document.getElementById('youtubeIframe');
 
-    function openModal(){
-      iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeModal(){
-      modal.classList.add('hidden'); modal.classList.remove('flex');
-      document.body.style.overflow = '';
-      iframe.src = '';
-    }
-
-    playBtn?.addEventListener('click', openModal);
-    closeBtn?.addEventListener('click', closeModal);
-    modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+  console.log('Hero3: Elements found:', {
+    playVideoBtn: !!playVideoBtn,
+    videoModal: !!videoModal,
+    closeVideoBtn: !!closeVideoBtn,
+    youtubeIframe: !!youtubeIframe
   });
+
+  // Get YouTube video ID from database
+  const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
+  console.log('Hero3: Video ID:', youtubeVideoId);
+
+  if (playVideoBtn && videoModal && closeVideoBtn && youtubeIframe && youtubeVideoId) {
+      console.log('Hero3: Setting up video functionality');
+      playVideoBtn.addEventListener('click', function() {
+          console.log('Hero3: Button clicked!');
+          // Set the YouTube URL with autoplay
+          youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
+          videoModal.classList.remove('hidden');
+          videoModal.classList.add('flex');
+          document.body.classList.add('modal-open');
+          console.log('Hero3: Modal should be open now');
+      });
+
+      function closeModal() {
+          console.log('Hero3: Closing modal');
+          videoModal.classList.add('hidden');
+          videoModal.classList.remove('flex');
+          document.body.classList.remove('modal-open');
+          // Stop the video by clearing the src
+          youtubeIframe.src = '';
+      }
+
+      closeVideoBtn.addEventListener('click', closeModal);
+
+      // Close modal when clicking outside the video
+      videoModal.addEventListener('click', function(e) {
+          if (e.target === videoModal) {
+              closeModal();
+          }
+      });
+
+      // Close modal with Escape key
+      document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+              closeModal();
+          }
+      });
+  } else {
+      console.log('Hero3: Setup failed - missing elements or video ID');
+      console.log('Missing elements:', {
+          playVideoBtn: !playVideoBtn,
+          videoModal: !videoModal,
+          closeVideoBtn: !closeVideoBtn,
+          youtubeIframe: !youtubeIframe,
+          youtubeVideoId: !youtubeVideoId
+      });
+  }
+  @endif
+});
 </script>

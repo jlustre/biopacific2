@@ -1,4 +1,11 @@
 {{-- HERO — Alt Design: Split layout, framed image, soft texture --}}
+@php
+$poster = !empty($facility['hero_image_url'])
+? asset('images/'.$facility['hero_image_url'])
+: ($facility['hero_config']['background_image'] ??
+asset('images/hero1.jpg'));
+@endphp
+
 <section class="relative isolate overflow-hidden">
     {{-- Subtle texture / brand glow --}}
     <div
@@ -84,10 +91,10 @@
                         style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}"></div>
 
                     <figure class="relative rounded-[28px] overflow-hidden ring-1 ring-slate-200 shadow-xl bg-white">
-                        <img src="{{ $facility['hero_config']['background_image'] ?? asset('images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg') }}"
+                        <img src="{{ $poster }}"
                             alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
                             class="h-80 w-full object-cover md:h-[28rem]">
-                        {{-- Lower info strip --}}
+
                         <figcaption class="absolute inset-x-0 bottom-0">
                             <div
                                 class="m-3 rounded-2xl bg-white/90 backdrop-blur ring-1 ring-slate-200 px-4 py-3 flex items-center justify-between">
@@ -112,6 +119,7 @@
         </div>
     </div>
 
+    @if(!empty($facility['hero_video_id']))
     {{-- Optional: video modal (if you provide hero_video_id) --}}
     <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
         <div class="relative w-full max-w-3xl">
@@ -127,30 +135,34 @@
             </div>
         </div>
     </div>
+    @endif
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+        @if(!empty($facility['hero_video_id']))
         const playBtn = document.getElementById('playVideoBtn');
         const modal = document.getElementById('videoModal');
         const closeBtn = document.getElementById('closeVideoBtn');
         const iframe = document.getElementById('youtubeIframe');
         const YT = @json($facility['hero_video_id'] ?? null);
     
-        function openModal(){
-          if(!YT) return;
-          iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
-          modal.classList.remove('hidden'); modal.classList.add('flex');
-          document.body.style.overflow = 'hidden';
+        if (playBtn && modal && YT) {
+            function openModal(){
+              iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
+              modal.classList.remove('hidden'); modal.classList.add('flex');
+              document.body.style.overflow = 'hidden';
+            }
+            function closeModal(){
+              modal.classList.add('hidden'); modal.classList.remove('flex');
+              document.body.style.overflow = '';
+              iframe.src = '';
+            }
+        
+            playBtn?.addEventListener('click', openModal);
+            closeBtn?.addEventListener('click', closeModal);
+            modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
         }
-        function closeModal(){
-          modal.classList.add('hidden'); modal.classList.remove('flex');
-          document.body.style.overflow = '';
-          iframe.src = '';
-        }
-    
-        playBtn?.addEventListener('click', openModal);
-        closeBtn?.addEventListener('click', closeModal);
-        modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+        @endif
       });
     </script>
 </section>

@@ -8,7 +8,7 @@ BOOK A TOUR — Single Mode, Visual Variant
 $primary = $facility['primary_color'] ?? '#0EA5E9';
 $secondary = $facility['secondary_color'] ?? '#1E293B';
 $accent = $facility['accent_color'] ?? '#F59E0B';
-$poster = asset($facility['hero_poster'] ?? 'images/a_cheerful_middleaged_caregiver_pushing_an_elderly.jpg');
+$poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
 @endphp
 
 <section id="book" class="relative isolate overflow-hidden">

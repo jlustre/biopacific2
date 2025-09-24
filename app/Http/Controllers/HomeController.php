@@ -49,6 +49,17 @@ class HomeController extends Controller
     // Fetch FAQ data for dynamic FAQ section
     $faqs = \App\Models\Faq::all();
     $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
-    return view('welcome', compact('facility', 'colors', 'layoutTemplate', 'sections', 'faqs', 'categories'));
+    
+    // Fetch testimonials for the facility
+    $testimonials = collect(); // Empty collection as default
+    if ($facility) {
+        $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
+            ->where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+    
+    return view('welcome', compact('facility', 'colors', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials'));
     }
 }

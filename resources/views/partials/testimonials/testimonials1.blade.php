@@ -4,6 +4,7 @@ $secondary = $facility['secondary_color'] ?? '#1E293B';
 $accent = $facility['accent_color'] ?? '#F59E0B';
 @endphp
 
+@if(isset($testimonials) && $testimonials && $testimonials->count() > 0)
 <section id="testimonials" class="relative isolate overflow-hidden py-16 sm:py-24">
     {{-- Ambient brand backdrop --}}
     <div class="pointer-events-none absolute inset-0 -z-10">
@@ -143,10 +144,9 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
         </div>
 
         {{-- Wall of Love (Masonry-like grid) --}}
-        <div class="mt-10 columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
+        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <template x-for="(t, i) in filtered" :key="i">
-                <article
-                    class="mb-4 break-inside-avoid rounded-3xl ring-1 ring-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+                <article class="rounded-3xl ring-1 ring-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
                     <div class="flex items-start gap-3">
                         <img :src="t.avatar" :alt="t.name"
                             class="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow">
@@ -194,18 +194,22 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
         </div>
     </div>
 </section>
+@endif
 <script>
     function testimonialsWall(){
     return {
-      // Seed data: replace with DB data
-      all: [
-        { name:'Maria G.', role:'Daughter (Family)', tag:'Family', rating:5, avatar:'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=faces', photo:'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200&fit=crop', text:'The staff treated our family like their own. From the moment we walked in, we felt warmth and genuine care. Communication was excellent and timely.' },
-        { name:'Dr. Chen', role:'Son (Family)', tag:'Family', rating:5, avatar:'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop&crop=faces', photo:'https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?q=80&w=1200&fit=crop', text:'The therapy team worked miracles with my father after surgery. He is now mobile and more independent—grateful for their dedication.' },
-        { name:'Sarah P.', role:'Resident', tag:'Resident', rating:5, avatar:'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=120&h=120&fit=crop&crop=faces', photo:'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1200&fit=crop', text:'The activities keep me engaged and happy. I have made wonderful friends here and truly feel at home.' },
-        { name:'Evelyn R.', role:'Resident', tag:'Resident', rating:4, avatar:'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=120&h=120&fit=crop&crop=faces', photo:'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200&fit=crop', text:'Nurses are kind and attentive. The dining team is thoughtful about my preferences and dietary needs. I appreciate the respect they show.' },
-        { name:'Dr. Lopez', role:'Attending Physician', tag:'Physician', rating:5, avatar:'https://images.unsplash.com/photo-1557862921-37829c790f19?w=120&h=120&fit=crop&crop=faces', photo:'https://images.unsplash.com/photo-1588613253719-72a9b549f9ad?q=80&w=1200&fit=crop', text:'Consistent clinical communication and adherence to evidence-based protocols. The team partners well with families on care goals.' },
-        { name:'Patel Family', role:'Family', tag:'Family', rating:5, avatar:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=faces', photo:'https://images.unsplash.com/photo-1544510808-91b0f2f9c5ee?q=80&w=1200&fit=crop', text:'Immaculate facility, friendly staff, and smooth discharge planning after rehab. We always felt informed and supported.' },
-      ],
+      // Database testimonials
+      all: @js(isset($testimonials) ? $testimonials->map(function($testimonial) {
+        return [
+          'name' => $testimonial->name,
+          'role' => $testimonial->relationship,
+          'tag' => $testimonial->relationship,
+          'rating' => $testimonial->rating ?? 5,
+          'avatar' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+          'photo' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200&fit=crop',
+          'text' => $testimonial->quote
+        ];
+      })->values() : []),
       filter: 'All',
       query: '',
       modal: { open:false, item:{} },
