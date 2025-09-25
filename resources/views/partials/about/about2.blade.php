@@ -64,24 +64,6 @@ $aboutPeople = asset('images/about-people.png');
       </div>
     </div>
 
-    {{-- Quick stats --}}
-    <div class="mt-14 grid gap-4 sm:grid-cols-3">
-      <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-5">
-        <div class="text-xs uppercase tracking-wide text-slate-500">Location</div>
-        <div class="mt-1 text-xl font-bold text-slate-900">{{ $cityState ?: 'California' }}</div>
-        <p class="text-sm text-slate-600">Rooted in the local community we serve.</p>
-      </div>
-      <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-5">
-        <div class="text-xs uppercase tracking-wide text-slate-500">Capacity</div>
-        <div class="mt-1 text-xl font-bold text-slate-900">{{ $beds ? $beds.' beds' : 'Skilled nursing' }}</div>
-        <p class="text-sm text-slate-600">Cozy rooms, attentive staffing ratios.</p>
-      </div>
-      <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-5">
-        <div class="text-xs uppercase tracking-wide text-slate-500">Tours</div>
-        <div class="mt-1 text-xl font-bold text-slate-900">{{ $facility['hours'] ?? '9AM–7PM' }}</div>
-        <p class="text-sm text-slate-600">Visit to experience our care first-hand.</p>
-      </div>
-    </div>
 
     {{-- Value pillars --}}
     <div class="mt-14">
@@ -170,30 +152,6 @@ $aboutPeople = asset('images/about-people.png');
 
       {{-- Leadership mini-bios --}}
       <div class="space-y-4">
-        <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8">
-          <h3 class="text-2xl font-bold text-slate-900">Leadership</h3>
-          <p class="mt-2 text-slate-600">Experienced leaders committed to quality and empathy.</p>
-
-          <div class="mt-4 grid sm:grid-cols-2 gap-4">
-            @foreach([
-            ['name'=>'Alexandra Nguyen, RN','role'=>'Director of Nursing','bio'=>'15+ years in skilled nursing &
-            post-acute quality.'],
-            ['name'=>'Marco Rivera, NHA','role'=>'Administrator','bio'=>'Operations leader focused on family experience
-            & safety.'],
-            ] as $lead)
-            <div class="flex gap-3 rounded-2xl ring-1 ring-slate-200 p-4">
-              <div class="h-12 w-12 rounded-xl shrink-0"
-                style="background: linear-gradient(135deg, {{ $primary }}, {{ $accent }});"></div>
-              <div>
-                <div class="font-semibold text-slate-900">{{ $lead['name'] }}</div>
-                <div class="text-xs text-slate-500">{{ $lead['role'] }}</div>
-                <p class="mt-1 text-sm text-slate-600">{{ $lead['bio'] }}</p>
-              </div>
-            </div>
-            @endforeach
-          </div>
-        </div>
-
         {{-- Accreditations / assurances --}}
         <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8">
           <h3 class="text-lg font-semibold text-slate-900">Assurances</h3>
@@ -218,25 +176,27 @@ $aboutPeople = asset('images/about-people.png');
           <p class="mt-3 text-[12px] text-slate-500">Please avoid sharing sensitive medical information via web forms.
           </p>
         </div>
+        {{-- CTA --}}
+        <div
+          class="mt-14 rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="text-xl font-bold text-slate-900">See our care in action</div>
+            <p class="text-sm text-slate-600">Schedule a private tour—meet our team, ask questions, and explore.</p>
+          </div>
+          <div class="flex gap-3">
+            <a href="#book"
+              class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow"
+              style="background: {{ $primary }}">Book A Tour</a>
+            @if(!empty($facility['phone']))
+            <a href="tel:{{ $facility['phone'] }}"
+              class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"
+              style="color: {{ $primary }}; border-color: {{ $primary }}">Call Us</a>
+            @endif
+          </div>
+        </div>
       </div>
+
     </div>
 
-    {{-- CTA --}}
-    <div
-      class="mt-14 rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-      <div>
-        <div class="text-xl font-bold text-slate-900">See our care in action</div>
-        <p class="text-sm text-slate-600">Schedule a private tour—meet our team, ask questions, and explore.</p>
-      </div>
-      <div class="flex gap-3">
-        <a href="#book" class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow"
-          style="background: {{ $primary }}">Book a Tour</a>
-        @if(!empty($facility['phone']))
-        <a href="tel:{{ $facility['phone'] }}"
-          class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"
-          style="color: {{ $primary }}; border-color: {{ $primary }}">Call Us</a>
-        @endif
-      </div>
-    </div>
   </div>
 </section>
