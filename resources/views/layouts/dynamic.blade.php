@@ -4,17 +4,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $facility['name'] ?? 'Bio-Pacific Healthcare' }}</title>
+    <title>{{ (is_object($facility) ? $facility->name : ($facility['name'] ?? null)) ?? 'Bio-Pacific Healthcare' }}
+    </title>
 
     {{-- Tenant-specific favicon --}}
     <link rel="icon" href="{{ app(\App\Services\TenantAssetService::class)->getFaviconUrl() }}">
 
     {{-- Dynamic theme colors --}}
+    @php
+    // Ensure we have facility data for CSS variables
+    $facilityColors = [];
+    if (isset($facility) && is_object($facility)) {
+    $facilityColors = $facility->toArray();
+    } else {
+    $facilityColors = $facility ?? [];
+    }
+    @endphp
     <style>
         :root {
             --color-primary: {
                     {
-                    $facility['primary_color'] ?? '#047857'
+                    $facilityColors['primary_color'] ?? '#047857'
                 }
             }
 
@@ -22,7 +32,7 @@
 
             --color-secondary: {
                     {
-                    $facility['secondary_color'] ?? '#1f2937'
+                    $facilityColors['secondary_color'] ?? '#1f2937'
                 }
             }
 
@@ -30,7 +40,7 @@
 
             --color-accent: {
                     {
-                    $facility['accent_color'] ?? '#06b6d4'
+                    $facilityColors['accent_color'] ?? '#06b6d4'
                 }
             }
 
@@ -46,9 +56,19 @@
     @livewireStyles
 </head>
 
+@php
+// Convert facility object to array for compatibility with partials
+$facilityData = [];
+if (isset($facility) && is_object($facility)) {
+$facilityData = $facility->toArray();
+} else {
+$facilityData = $facility ?? [];
+}
+@endphp
+
 <body class="font-sans antialiased">
     {{-- Navigation --}}
-    @include('partials.navigation', ['facility' => $facility ?? []])
+    @include('partials.navigation', ['facility' => $facilityData])
 
     {{-- Main Content --}}
     <main>
@@ -56,7 +76,7 @@
     </main>
 
     {{-- Footer --}}
-    @include('partials.footer.footer', ['facility' => $facility ?? []])
+    @include('partials.footer.footer', ['facility' => $facilityData])
 
     @livewireScripts
 </body>

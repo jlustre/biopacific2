@@ -2,7 +2,11 @@
 @php
 $primary = $facility['primary_color'] ?? '#0EA5E9';
 $secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? '#F59E0B';
+$accent = $facility['accent_color'] ?? <div
+    class="aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100">
+    <img src="{{ asset('images/transportation_care.png') }}"
+        alt="Transportation and care services throughout our journey" class="w-full h-full object-cover">
+</div>
 $years = (int)($facility['years'] ?? 20);
 $poster = !empty($facility['about_image_url'])
 ? url('images/' . $facility['about_image_url'])

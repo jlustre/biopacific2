@@ -10,7 +10,7 @@ class TenantAssetService
 
     public function __construct()
     {
-        $this->facility = app('current_facility');
+        $this->facility = app()->bound('current_facility') ? app('current_facility') : null;
     }
 
     public function getLogoUrl()

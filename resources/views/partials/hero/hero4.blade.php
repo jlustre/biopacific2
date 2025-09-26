@@ -28,12 +28,13 @@ asset('images/hero1.jpg'));
                 </span>
 
                 <h1 class="mt-4 text-slate-900 font-extrabold leading-tight text-4xl md:text-6xl">
-                    {!! $facility['hero_config']['title'] ?? 'Where Comfort Meets Compassion' !!}
+                    {!! $facility['headline'] ?? $facility['hero_config']['title'] ?? 'Where Comfort Meets Compassion'
+                    !!}
                 </h1>
 
                 <p class="mt-4 md:text-xl text-slate-600 max-w-2xl">
-                    {!! $facility['hero_config']['subtitle'] ?? 'Skilled nursing, rehabilitation, memory care, and
-                    hospice in a warm, dignified setting.' !!}
+                    {!! $facility['subheadline'] ?? $facility['hero_config']['subtitle'] ?? 'Skilled nursing,
+                    rehabilitation, memory care, and hospice in a warm, dignified setting.' !!}
                 </p>
 
                 {{-- CTA Row --}}
@@ -97,7 +98,7 @@ asset('images/hero1.jpg'));
 
                         <figcaption class="absolute inset-x-0 bottom-0">
                             <div
-                                class="m-3 rounded-2xl bg-white/90 backdrop-blur ring-1 ring-slate-200 px-4 py-3 flex items-center justify-between">
+                                class="m-3 rounded-2xl bg-white/60 backdrop-blur ring-1 ring-slate-200 px-4 py-3 flex items-center justify-between">
                                 <div class="text-sm">
                                     <div class="font-semibold text-slate-900">{{ $facility['name'] ?? 'Our Facility' }}
                                     </div>
@@ -123,13 +124,15 @@ asset('images/hero1.jpg'));
     {{-- Optional: video modal (if you provide hero_video_id) --}}
     <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
         <div class="relative w-full max-w-3xl">
-            <button id="closeVideoBtn" class="absolute -top-12 right-0 text-white hover:text-red-400"
-                aria-label="Close video">
-                <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
             <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
+                <button id="closeVideoBtn"
+                    class="absolute top-4 right-4 text-white hover:text-red-400 bg-black/70 rounded-full p-3 backdrop-blur z-10 border border-white/20"
+                    aria-label="Close video">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" title="Facility intro"
                     allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
             </div>

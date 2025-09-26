@@ -31,48 +31,57 @@
                     <!-- About & Services -->
                     <div class="space-y-1">
                         <div class="font-medium text-slate-600 dark:text-slate-400 px-3 py-1">About</div>
-                        <a href="#about" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#about"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">About Us</a>
-                        <a href="#services" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#services"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Our Services</a>
                     </div>
 
                     <!-- Facility -->
                     <div class="space-y-1">
                         <div class="font-medium text-slate-600 dark:text-slate-400 px-3 py-1">Facility</div>
-                        <a href="#rooms" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#rooms"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Rooms & Rates</a>
-                        <a href="#gallery" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#gallery"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Photo Gallery</a>
                     </div>
 
                     <!-- Community -->
                     <div class="space-y-1">
                         <div class="font-medium text-slate-600 dark:text-slate-400 px-3 py-1">Community</div>
-                        <a href="#news" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#news"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">News & Events</a>
-                        <a href="#testimonials"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#testimonials"
                             class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Testimonials</a>
-                        <a href="#careers" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#careers"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Careers</a>
                     </div>
 
                     <!-- Support -->
                     <div class="space-y-1">
                         <div class="font-medium text-slate-600 dark:text-slate-400 px-3 py-1">Support</div>
-                        <a href="#contact" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Contact Us</a>
-                        <a href="#faqs" class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#faqs"
+                            class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">FAQs</a>
-                        <a href="#resources"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#resources"
                             class="block px-6 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                             @click="mobileOpen=false">Resources</a>
                     </div>
 
                     <!-- Book button with extra padding at bottom -->
                     <div class="pt-2 pb-4">
-                        <a href="#book" class="block text-center px-3 py-3 rounded-lg bg-primary text-white font-medium"
+                        <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#book"
+                            class="block text-center px-3 py-3 rounded-lg bg-primary text-white font-medium"
                             @click="mobileOpen=false">Book a Tour</a>
                     </div>
                 </div>

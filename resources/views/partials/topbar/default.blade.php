@@ -79,8 +79,8 @@
   </div>
   <!-- Mobile Menu -->
   <div x-cloak x-show="mobileOpen" x-transition style="display: none;"
-    class="fixed top-18 left-0 w-full h-full z-[9999] bg-teal-100/50 flex flex-col md:hidden overflow-y-auto">
-    <div class="w-full h-full px-6 pb-2 flex flex-col gap-2">
+    class="fixed top-0 left-0 w-full h-screen z-[9999] bg-teal-100/50 flex flex-col md:hidden overflow-y-auto">
+    <div class="w-full min-h-screen px-6 py-6 flex flex-col gap-2 bg-white/95 backdrop-blur mt-16">
       <div class="flex justify-between items-center mb-6">
         <span class="font-bold text-xl text-primary ml-2">Menu</span>
         <button @click="mobileOpen = false" class="p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary">

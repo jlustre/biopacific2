@@ -33,18 +33,15 @@ $hasVideo = !empty($facility['hero_video_id']);
           {{-- Vertical facts rail (sticks within the image on larger screens) --}}
           <div class="absolute bottom-4 left-4 flex flex-col gap-2">
             <div
-              class="rounded-xl bg-white/90 backdrop-blur ring-1 ring-white/60 px-3 py-2 text-[12px] font-semibold text-slate-900">
-              Beds: {{ $facility['beds'] ?? '—' }}
-            </div>
-            <div
-              class="rounded-xl bg-white/90 backdrop-blur ring-1 ring-white/60 px-3 py-2 text-[12px] font-semibold text-slate-900">
+              class="rounded-xl bg-white/70 backdrop-blur ring-1 ring-white/60 px-3 py-2 text-[12px] font-semibold text-slate-900">
               Tours: {{ $facility['hours'] ?? '9AM–7PM' }}
             </div>
             <div
-              class="rounded-xl bg-white/90 backdrop-blur ring-1 ring-white/60 px-3 py-2 text-[12px] font-semibold text-slate-900">
+              class="rounded-xl bg-white/70 backdrop-blur ring-1 ring-white/60 px-3 py-2 text-[12px] font-semibold text-slate-900">
               {{ ($facility['city'] ?? '') }}@if(!empty($facility['state'])), {{ $facility['state'] }}@endif
             </div>
           </div>
+
         </div>
         {{-- Trust chips --}}
         <div class="mt-5 flex flex-wrap gap-2 justify-center">
@@ -124,12 +121,29 @@ $hasVideo = !empty($facility['hero_video_id']);
     {{-- Reassurance bar - moved below the image --}}
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
       <div class="text-xs text-slate-500 flex flex-wrap justify-center gap-x-3 gap-y-1">
-        <span>Licensed & Accredited</span>
+        <span class="inline-flex items-center gap-1">
+          <svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          Licensed & Accredited
+        </span>
         <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-        <span>24/7 Skilled Nursing</span>
+        <span class="inline-flex items-center gap-1">
+          <svg class="h-4 w-4 text-sky-600" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 3a9 9 0 019 9c0 4.5-3.5 8.2-8 8.9-4.5-.7-8-4.4-8-8.9a9 9 0 019-9zm0 2a7 7 0 00-7 7c0 3.6 2.8 6.6 6.4 7.1.2 0 .4 0 .6 0 3.6-.5 6.4-3.5 6.4-7.1a7 7 0 00-7-7zm0 3a4 4 0 014 4c0 2.2-1.8 4-4 4s-4-1.8-4-4a4 4 0 014-4z" />
+          </svg>
+          24/7 Skilled Nursing
+        </span>
         <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-        <span>On-site Rehabilitation</span>
+        <span class="inline-flex items-center gap-1">
+          <svg class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.285 6.709l-8.285 8.285-4.285-4.285-1.415 1.415 5.7 5.7 9.7-9.7z" />
+          </svg>
+          On-site Rehabilitation
+        </span>
       </div>
+
     </div>
   </div>
 

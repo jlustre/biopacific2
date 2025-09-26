@@ -43,9 +43,31 @@
     </div>
     @endif
 
+    <!-- Error Messages -->
+    @if($errors->any())
+    <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex">
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">There were some errors with your submission:</h3>
+                    <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Main Form -->
     <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
-        <form action="{{ route('admin.facilities.update', $facility->id) }}" method="POST" class="space-y-8">
+        <form action="{{ route('admin.facilities.update', $facility) }}" method="POST" class="space-y-8">
             @csrf
             @method('PUT')
 
@@ -268,7 +290,7 @@
                                     <div>
                                         <label for="logo_url" class="block text-sm font-bold text-gray-700 mb-2">Logo
                                             URL</label>
-                                        <input type="url" id="logo_url" name="logo_url"
+                                        <input type="text" id="logo_url" name="logo_url"
                                             value="{{ old('logo_url', $facility->logo_url) }}"
                                             class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
                                         @error('logo_url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -290,7 +312,9 @@
                                             if (is_dir($imagesPath)) {
                                             $files = scandir($imagesPath);
                                             foreach ($files as $file) {
-                                            if (str_starts_with($file, 'hero') && str_ends_with($file, '.png')) {
+                                            if (str_starts_with($file, 'hero') && (str_ends_with($file, '.png') ||
+                                            str_ends_with($file, '.jpg') || str_ends_with($file, '.jpeg') ||
+                                            str_ends_with($file, '.webp'))) {
                                             // Extract number/name for sorting
                                             $name = pathinfo($file, PATHINFO_FILENAME);
                                             $heroImages[] = [
@@ -324,7 +348,7 @@
                                         <label for="about_image_url"
                                             class="block text-sm font-medium text-gray-700 mb-2">About
                                             Image URL</label>
-                                        <input type="url" id="about_image_url" name="about_image_url"
+                                        <input type="text" id="about_image_url" name="about_image_url"
                                             value="{{ old('about_image_url', $facility->about_image_url) }}"
                                             class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
                                         @error('about_image_url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -573,7 +597,7 @@
 
             <!-- Save Button -->
             <div class="flex justify-end">
-                <button type="submit"
+                <button type="submit" id="save-button"
                     class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary/80 transition-colors font-medium">
                     Save Changes
                 </button>
@@ -619,6 +643,44 @@
             const textInput = this.parentNode.querySelector('input[type="text"]');
             textInput.value = this.value;
         });
+    });
+    
+    // Debug form submission - wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Target the main facility edit form specifically, not the logout form
+        const form = document.querySelector('form[action*="admin/facilities"]');
+        console.log('Facility form found:', form);
+        console.log('Form action URL:', form ? form.action : 'No facility form found');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Remove the alert since it's working now
+                console.log('Facility form submitting to:', this.action);
+                console.log('Form method:', this.method);
+                
+                // Log sections data
+                const sections = {};
+                document.querySelectorAll('input[name^="sections["]').forEach(input => {
+                    if (input.checked) {
+                        sections[input.name] = input.value;
+                    }
+                });
+                console.log('Sections:', sections);
+                
+                // Log variances data
+                const variances = {};
+                document.querySelectorAll('select[name^="variances["]').forEach(select => {
+                    if (!select.disabled) {
+                        variances[select.name] = select.value;
+                    }
+                });
+                console.log('Variances:', variances);
+                
+                return true;
+            });
+        } else {
+            console.error('Facility form not found!');
+        }
     });
 </script>
 

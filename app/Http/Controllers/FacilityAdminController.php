@@ -40,9 +40,14 @@ class FacilityAdminController extends Controller
         return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials'));
     }
 
-    public function edit($id)
+    public function edit($identifier)
     {
-        $facility = Facility::findOrFail($id);
+        // Try to find facility by ID first (if it's numeric), then by slug
+        if (is_numeric($identifier)) {
+            $facility = Facility::findOrFail($identifier);
+        } else {
+            $facility = Facility::where('slug', $identifier)->firstOrFail();
+        }
         $facilities = Facility::orderBy('name')->get(); // <-- Add this line
         $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4'];
 
@@ -79,14 +84,21 @@ class FacilityAdminController extends Controller
         ));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Facility $facility)
     {
-        $facility = Facility::findOrFail($id);
+        // Debug: Log the request data
+        Log::info('Facility Update Request', [
+            'facility_id' => $facility->id,
+            'facility_slug' => $facility->slug,
+            'sections' => $request->input('sections'),
+            'variances' => $request->input('variances'),
+            'all_data' => $request->all()
+        ]);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:500',
-            'domain' => 'required|string|max:255|unique:facilities,domain,' . $id,
+            'domain' => 'required|string|max:255|unique:facilities,domain,' . $facility->id,
             'subdomain' => 'nullable|string|max:100',
             'is_active' => 'boolean',
             'address' => 'nullable|string|max:500',
@@ -103,8 +115,8 @@ class FacilityAdminController extends Controller
             'subheadline' => 'nullable|string|max:500',
             'about_text' => 'nullable|string',
             'hero_image_url' => 'nullable|max:500',
-            'about_image_url' => 'nullable|url|max:500',
-            'logo_url' => 'nullable|url|max:500',
+            'about_image_url' => 'nullable|max:500',
+            'logo_url' => 'nullable|max:500',
             'facebook' => 'nullable|url|max:255',
             'twitter' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
@@ -154,6 +166,12 @@ class FacilityAdminController extends Controller
         $sections = $validated['sections'] ?? [];
         $variances = $validated['variances'] ?? [];
 
+        Log::info('Processing layout update', [
+            'layout_template' => $layoutTemplate,
+            'sections' => $sections,
+            'variances' => $variances
+        ]);
+
         // Inactivate all templates for this facility except the selected one
         DB::table('web_contents')
             ->where('facility_id', $facility->id)
@@ -161,7 +179,7 @@ class FacilityAdminController extends Controller
             ->update(['is_active' => false, 'sections' => null, 'variances' => null]);
 
         // Activate the selected template and update its sections and variances
-        DB::table('web_contents')
+        $result = DB::table('web_contents')
             ->updateOrInsert(
                 [
                     'facility_id' => $facility->id,
@@ -175,6 +193,8 @@ class FacilityAdminController extends Controller
                     'created_at' => now(),
                 ]
             );
+
+        Log::info('WebContent update result', ['result' => $result]);
 
         return redirect()->route('admin.facilities.edit', $facility->id)
                         ->with('success', 'Facility updated successfully!');

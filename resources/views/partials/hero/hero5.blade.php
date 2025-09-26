@@ -75,19 +75,20 @@ $hasVideo = !empty($facility['hero_video_id']);
                 {{-- CTAs --}}
                 <div class="mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
                     <a href="#book"
-                        class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
+                        class="inline-flex justify-center items-center rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:brightness-110"
                         style="background: {{ $primary }}">Book a Tour</a>
 
                     <a href="#contact"
-                        class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50 transition">
+                        class="inline-flex justify-center items-center rounded-xl px-4 py-2 text-sm font-semibold bg-transparent ring-1 transition-all duration-200 hover:bg-white/10 hover:backdrop-blur"
+                        style="color: {{ $primary }}; border-color: {{ $primary }}">
                         Quick Contact
                     </a>
 
                     @if($hasVideo)
                     <button id="playVideoBtn"
-                        class="inline-flex items-center gap-2 rounded-xl px-5 py-3 font-semibold bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50 transition"
-                        aria-label="Watch intro video">
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/20 transition-all duration-200 hover:brightness-110"
+                        style="background: {{ $accent }}" aria-label="Watch intro video">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>
                         Watch Intro
@@ -131,7 +132,7 @@ $hasVideo = !empty($facility['hero_video_id']);
 
                     {{-- Floating mini-card --}}
                     <div class="absolute -bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-[340px]">
-                        <div class="rounded-2xl bg-white ring-1 ring-slate-200 shadow-xl p-4 sm:p-5">
+                        <div class="rounded-2xl bg-white/80 backdrop-blur ring-1 ring-slate-200 shadow-xl p-4 sm:p-5">
                             <div class="flex items-center gap-3">
                                 <div class="h-10 w-10 rounded-xl"
                                     style="background: linear-gradient(135deg, {{ $primary }}, {{ $accent }});"></div>
@@ -149,9 +150,16 @@ $hasVideo = !empty($facility['hero_video_id']);
                                     style="color: {{ $primary }}; border-color: {{ $primary }}">Contact</a>
                             </div>
                             @if(!empty($facility['phone']))
+                            @php
+                            // Format phone number (assumes 10-digit US format)
+                            $phone = preg_replace('/\D/', '', $facility['phone']);
+                            $formatted_phone = strlen($phone) === 10 ?
+                            '(' . substr($phone, 0, 3) . ') ' . substr($phone, 3, 3) . '-' . substr($phone, 6, 4) :
+                            $facility['phone'];
+                            @endphp
                             <a href="tel:{{ $facility['phone'] }}"
                                 class="mt-3 block text-center text-xs text-slate-600 underline">Or call {{
-                                $facility['phone'] }}</a>
+                                $formatted_phone }}</a>
                             @endif
                         </div>
                     </div>
@@ -164,16 +172,16 @@ $hasVideo = !empty($facility['hero_video_id']);
     @if($hasVideo)
     <div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center hidden">
         <div class="relative w-full max-w-4xl mx-4">
-            <!-- Prominent close button -->
-            <button id="closeVideoBtn"
-                class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors duration-200 z-10">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12">
-                    </path>
-                </svg>
-            </button>
             <!-- Video container -->
             <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%; height: 0;">
+                <!-- Prominent close button -->
+                <button id="closeVideoBtn"
+                    class="absolute top-8 right-4 text-white hover:text-red-400 bg-black/70 rounded-full p-3 backdrop-blur z-10 border border-white/20 transition-colors duration-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
                 <iframe id="youtubeIframe" class="absolute top-0 left-0 w-full h-full" src="" frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen></iframe>
