@@ -49,8 +49,15 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
     $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
 
     // Fetch FAQ data for dynamic FAQ section
-    $faqs = \App\Models\Faq::all();
-    $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
+    $faqs = \App\Models\Faq::availableForFacility($facility->id)
+        ->where('is_active', true)
+        ->orderBy('is_featured', 'desc')
+        ->orderBy('sort_order')
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    // Get categories from the retrieved FAQs
+    $categories = $faqs->pluck('category')->filter()->unique()->values();
 
     // Fetch testimonials for the facility
     $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
@@ -283,6 +290,25 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::delete('/facilities/{facility}', [FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
+
+    // Web Contents Routes
+    Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
+    Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
+    Route::get('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'showTestimonial'])->name('facilities.webcontents.testimonials.show');
+    Route::post('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'storeTestimonial'])->name('facilities.webcontents.testimonials.store');
+    Route::put('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'updateTestimonial'])->name('facilities.webcontents.testimonials.update');
+    Route::delete('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'destroyTestimonial'])->name('facilities.webcontents.testimonials.destroy');
+    Route::get('/facilities/web-contents/faqs', [FacilityAdminController::class, 'faqs'])->name('facilities.webcontents.faqs');
+    Route::get('/facilities/web-contents/faqs/{facility}/data', [FacilityAdminController::class, 'getFaqs'])->name('facilities.webcontents.faqs.data');
+    Route::get('/facilities/web-contents/faqs/{faq}', [FacilityAdminController::class, 'showFaq'])->name('facilities.webcontents.faqs.show');
+    Route::post('/facilities/web-contents/faqs', [FacilityAdminController::class, 'storeFaq'])->name('facilities.webcontents.faqs.store');
+    Route::put('/facilities/web-contents/faqs/{faq}', [FacilityAdminController::class, 'updateFaq'])->name('facilities.webcontents.faqs.update');
+    Route::delete('/facilities/web-contents/faqs/{faq}', [FacilityAdminController::class, 'destroyFaq'])->name('facilities.webcontents.faqs.destroy');
+    Route::get('/facilities/web-contents/faqs/defaults/list', [FacilityAdminController::class, 'getDefaultFaqs'])->name('facilities.webcontents.faqs.defaults');
+    Route::get('/facilities/web-contents/galleries', [FacilityAdminController::class, 'galleries'])->name('facilities.webcontents.galleries');
+    Route::get('/facilities/web-contents/news-events', [FacilityAdminController::class, 'newsEvents'])->name('facilities.webcontents.news-events');
+    Route::get('/facilities/web-contents/blogs', [FacilityAdminController::class, 'blogs'])->name('facilities.webcontents.blogs');
+    Route::get('/facilities/web-contents/careers', [FacilityAdminController::class, 'careers'])->name('facilities.webcontents.careers');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');

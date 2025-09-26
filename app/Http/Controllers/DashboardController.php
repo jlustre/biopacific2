@@ -55,8 +55,15 @@ class DashboardController extends Controller
             : json_encode([]);
 
         // Fetch FAQ data for dynamic FAQ section
-        $faqs = \App\Models\Faq::all();
-        $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
+        $faqs = \App\Models\Faq::availableForFacility($facility->id)
+            ->where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('sort_order')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Get categories from the retrieved FAQs
+        $categories = $faqs->pluck('category')->filter()->unique()->values();
 
         // Fetch testimonials for the facility
         $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Facility;
+use App\Models\Testimonial;
+use App\Models\Faq;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -19,13 +21,18 @@ class FacilityAdminController extends Controller
     public function show($id)
     {
         $facility = Facility::findOrFail($id);
-        $faqs = \App\Models\Faq::all();
+        $faqs = \App\Models\Faq::availableForFacility($facility->id)
+            ->where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('sort_order')
+            ->orderBy('created_at', 'desc')
+            ->get();
         $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
             ->where('is_active', true)
             ->orderBy('is_featured', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
-        $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
+        $categories = $faqs->pluck('category')->filter()->unique()->values();
         // Get active webcontent and layout info for welcome view
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
         $sections = [];
@@ -69,8 +76,13 @@ class FacilityAdminController extends Controller
             }
         }
 
-        $faqs = \App\Models\Faq::all();
-        $categories = \App\Models\Faq::select('category')->distinct()->pluck('category')->filter()->values()->all();
+        $faqs = \App\Models\Faq::availableForFacility($facility->id)
+            ->where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('sort_order')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        $categories = $faqs->pluck('category')->filter()->unique()->values();
         return view('admin.facilities.edit', compact(
             'facility',
             'facilities', 
@@ -230,5 +242,285 @@ class FacilityAdminController extends Controller
             }
         }
         return $locationMap;
+    }
+
+    // Web Content Methods
+    public function testimonials()
+    {
+        $facilities = Facility::orderBy('name')->get();
+        return view('admin.facilities.webcontents.testimonials', compact('facilities'));
+    }
+
+    public function getTestimonials($facilityId)
+    {
+        $facility = Facility::findOrFail($facilityId);
+        $testimonials = $facility->testimonials()
+            ->orderByDesc('is_featured')
+            ->orderByDesc('created_at')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'testimonials' => $testimonials,
+            'count' => $testimonials->count()
+        ]);
+    }
+
+    public function storeTestimonial(Request $request)
+    {
+        $validated = $request->validate([
+            'facility_id' => 'required|exists:facilities,id',
+            'name' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'quote' => 'required|string',
+            'relationship' => 'nullable|string|max:255',
+            'rating' => 'required|integer|min:1|max:5',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean'
+        ]);
+
+        $testimonial = Testimonial::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Testimonial created successfully!',
+            'testimonial' => $testimonial
+        ]);
+    }
+
+    public function showTestimonial($testimonialId)
+    {
+        // Find testimonial without global scope constraints
+        $testimonial = Testimonial::withoutGlobalScope('tenant')->find($testimonialId);
+        
+        if (!$testimonial) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Testimonial not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'testimonial' => $testimonial
+        ]);
+    }
+
+    public function updateTestimonial(Request $request, $testimonialId)
+    {
+        // Find testimonial without global scope constraints
+        $testimonial = Testimonial::withoutGlobalScope('tenant')->find($testimonialId);
+        
+        if (!$testimonial) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Testimonial not found'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'quote' => 'required|string',
+            'relationship' => 'nullable|string|max:255',
+            'rating' => 'required|integer|min:1|max:5',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean'
+        ]);
+
+        $testimonial->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Testimonial updated successfully!',
+            'testimonial' => $testimonial
+        ]);
+    }
+
+    public function destroyTestimonial($testimonialId)
+    {
+        // Find testimonial without global scope constraints
+        $testimonial = Testimonial::withoutGlobalScope('tenant')->find($testimonialId);
+        
+        if (!$testimonial) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Testimonial not found'
+            ], 404);
+        }
+
+        $testimonial->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Testimonial deleted successfully!'
+        ]);
+    }
+
+    public function faqs()
+    {
+        $facilities = Facility::orderBy('name')->get();
+        return view('admin.facilities.webcontents.faqs', compact('facilities'));
+    }
+
+    public function getFaqs($facilityId)
+    {
+        // Get both facility-specific FAQs and default FAQs available to this facility
+        $faqs = Faq::availableForFacility($facilityId)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'faqs' => $faqs,
+            'count' => $faqs->count()
+        ]);
+    }
+
+    public function showFaq($faqId)
+    {
+        // Find FAQ without any scope constraints for editing
+        $faq = Faq::find($faqId);
+        
+        if (!$faq) {
+            return response()->json([
+                'success' => false,
+                'message' => 'FAQ not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'faq' => $faq
+        ]);
+    }
+
+    public function storeFaq(Request $request)
+    {
+        $validated = $request->validate([
+            'facility_id' => 'nullable|exists:facilities,id',
+            'question' => 'required|string',
+            'answer' => 'required|string',
+            'category' => 'nullable|string|max:255',
+            'icon' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_default' => 'boolean',
+            'sort_order' => 'integer|min:0'
+        ]);
+
+        // If it's a default FAQ, facility_id should be null
+        if ($validated['is_default'] ?? false) {
+            $validated['facility_id'] = null;
+        }
+
+        $faq = Faq::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FAQ created successfully!',
+            'faq' => $faq
+        ]);
+    }
+
+    public function updateFaq(Request $request, $faqId)
+    {
+        // Find FAQ without scope constraints
+        $faq = Faq::find($faqId);
+        
+        if (!$faq) {
+            return response()->json([
+                'success' => false,
+                'message' => 'FAQ not found'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'facility_id' => 'nullable|exists:facilities,id',
+            'question' => 'required|string',
+            'answer' => 'required|string',
+            'category' => 'nullable|string|max:255',
+            'icon' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_default' => 'boolean',
+            'sort_order' => 'integer|min:0'
+        ]);
+
+        // If it's a default FAQ, facility_id should be null
+        if ($validated['is_default'] ?? false) {
+            $validated['facility_id'] = null;
+        }
+
+        $faq->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FAQ updated successfully!',
+            'faq' => $faq
+        ]);
+    }
+
+    public function destroyFaq($faqId)
+    {
+        // Find FAQ without scope constraints
+        $faq = Faq::find($faqId);
+        
+        if (!$faq) {
+            return response()->json([
+                'success' => false,
+                'message' => 'FAQ not found'
+            ], 404);
+        }
+
+        $faq->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FAQ deleted successfully!'
+        ]);
+    }
+
+    public function getDefaultFaqs()
+    {
+        // Get all default FAQs that can be used by multiple facilities
+        $faqs = Faq::default()
+            ->where('is_active', true)
+            ->orderBy('category')
+            ->orderBy('sort_order')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'faqs' => $faqs,
+            'count' => $faqs->count()
+        ]);
+    }
+
+    public function galleries()
+    {
+        $facilities = Facility::orderBy('name')->get();
+        return view('admin.facilities.webcontents.galleries', compact('facilities'));
+    }
+
+    public function newsEvents()
+    {
+        $facilities = Facility::orderBy('name')->get();
+        return view('admin.facilities.webcontents.news-events', compact('facilities'));
+    }
+
+    public function blogs()
+    {
+        $facilities = Facility::orderBy('name')->get();
+        return view('admin.facilities.webcontents.blogs', compact('facilities'));
+    }
+
+    public function careers()
+    {
+        $facilities = Facility::orderBy('name')->get();
+        return view('admin.facilities.webcontents.careers', compact('facilities'));
     }
 }

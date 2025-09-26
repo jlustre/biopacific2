@@ -167,6 +167,51 @@
                     </div>
                 </div>
 
+                <!-- Web Contents Menu -->
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.webcontents.*') ? 'bg-gray-100 font-bold' : '' }}">
+                        <i class="fas fa-globe-americas mr-2"></i> Web Contents
+                        <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                        class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                        style="display: none;" x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="transform opacity-0 scale-95"
+                        x-transition:enter-end="transform opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="transform opacity-100 scale-100"
+                        x-transition:leave-end="transform opacity-0 scale-95">
+                        <a href="{{ route('admin.facilities.webcontents.testimonials') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-quote-right mr-2"></i> Testimonials
+                        </a>
+                        <a href="{{ route('admin.facilities.webcontents.faqs') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-question-circle mr-2"></i> FAQs
+                        </a>
+                        <a href="{{ route('admin.facilities.webcontents.galleries') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-images mr-2"></i> Galleries
+                        </a>
+                        <a href="{{ route('admin.facilities.webcontents.news-events') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-newspaper mr-2"></i> News & Events
+                        </a>
+                        <a href="{{ route('admin.facilities.webcontents.blogs') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-blog mr-2"></i> Blogs
+                        </a>
+                        <a href="{{ route('admin.facilities.webcontents.careers') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-briefcase mr-2"></i> Careers
+                        </a>
+                    </div>
+                </div>
+
             </nav>
         </aside>
 

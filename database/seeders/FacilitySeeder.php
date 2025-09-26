@@ -226,13 +226,13 @@ unset($item);
         'name' => $i['name'],
         'tagline' => $i['tagline'],
         'slug' => Str::slug($i['name']),
-        'logo_url' => 'https://images.unsplash.com/photo-1588776814546-84ef50a2f7b8?auto=format&fit=crop&w=200&q=80',
-        'hero_image_url' => $heroImages[array_rand($heroImages)],
+        'logo_url' => 'bplogo.png',
+        'hero_image_url' => 'hero3.png',
         'facility_image' => $i['facility_image'] ?? $bplogo,
         'headline' =>  $i['headline'],
         'subheadline' =>  $i['subheadline'],
         'hero_video_id' =>  $i['hero_video_id'] ?? null,
-        'about_image_url' => $aboutImages[array_rand($aboutImages)],
+        'about_image_url' => 'about-people.png',
         'about_text' => $i['name'].' provides personalized care and support for seniors, ensuring comfort, dignity, and quality of life.',
         'address' => ucwords(strtolower($i['address'])),
         'city' => ucwords(strtolower($i['city'])),
@@ -252,6 +252,23 @@ unset($item);
         'accent_color'    => $i['accent_color'],
         'location_map'    => $i['location_map'],
         'years'    => $i['years'],
+        // Additional columns found in database
+        'is_active' => true,
+        'settings' => '',
+        'layout_template' => 'default-template',
+        'layout_config' => '',
+        'meta_title' => '',
+        'meta_description' => '',
+        'hipaa_flags' => [
+          'npp_page' => 1,
+          'tls_hsts' => '',
+          'baa_vendors' => '',
+          'test_toggle' => 1,
+          'forms_secure' => '',
+          'privacy_notice' => '',
+          'tracking_controls' => ''
+        ],
+        'npp_url' => '',
       ]);
 
       foreach (['Compassion','Integrity','Respect','Excellence'] as $v) {
@@ -264,14 +281,27 @@ unset($item);
         Testimonial::create([
           'facility_id'=>$facility->id,
           'name'=> fake()->name(),
+          'title'=> fake()->randomElement(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', '']),
           'quote'=> fake()->randomElement([
-            'The staff here are caring and professional.',
-            'Feels like home, with genuine compassion.',
-            'They go above and beyond every day.',
-            'Our family is grateful for the amazing care.',
-            'The environment is warm and welcoming.',
-            'Residents feel truly valued here.',
+            'The therapy team worked miracles with my father. After his surgery, we thought he might never walk again. Thanks to their dedication and expertise, he is now mobile and independent.',
+            'The staff here are caring and professional. They made my mother feel at home during her recovery.',
+            'Feels like home, with genuine compassion. The nurses go above and beyond every single day.',
+            'They go above and beyond every day. The rehabilitation program helped me regain my strength.',
+            'Our family is grateful for the amazing care. The facility is clean and well-maintained.',
+            'The environment is warm and welcoming. Staff truly care about each resident\'s wellbeing.',
+            'Residents feel truly valued here. The activities and social programs are wonderful.',
+            'The medical team is exceptional. They kept us informed every step of the way.',
+            'Outstanding physical therapy services. My recovery exceeded all expectations.',
+            'Compassionate care when we needed it most. Highly recommend this facility.',
           ]),
+          'relationship' => fake()->randomElement([
+            'Current Patient', 'Former Patient', 'Patient Family Member', 'Visitor', 
+            'Current Staff', 'Former Staff', 'Healthcare Professional', 'Volunteer',
+            'Community Member', 'other'
+          ]),
+          'rating' => fake()->numberBetween(4, 5),
+          'is_active' => true,
+          'is_featured' => fake()->boolean(20), // 20% chance of being featured
           'photo_url'=>'https://randomuser.me/api/portraits/'.(rand(0,1)?'women':'men').'/'.rand(10,90).'.jpg',
         ]);
       }
