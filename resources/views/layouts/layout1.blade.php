@@ -1,86 +1,75 @@
-<!doctype html>
-<html lang="en" x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}"
-  class="scroll-smooth">
-
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality care for your loved ones' }}</title>
+<!docty <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality Care For Your Loved Ones' }}</title>
   <meta name="description" content="{{ $facility['meta_description'] }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: '{{ $colors['primary'] ?? '#047857' }}',
-            secondary: '{{ $colors['secondary'] ?? '#1f2937' }}',
-            accent: '{{ $colors['accent'] ?? '#06b6d4' }}',
-          },
+  @vite(['resources/css/app.css', 'resources/js/app.js'])ml>
+  <html lang="en" x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}"
+    class="scroll-smooth">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality care for your loved ones' }}</title>
+    <meta name="description" content="{{ $facility['meta_description'] }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+      :root {
+        --color-primary: {
+            {
+            $colors['primary'] ?? '#047857'
+          }
         }
-      }
-    }
-  </script>
-  <style>
-    :root {
-      --color-primary: {
-          {
-          $colors['primary'] ?? '#047857'
+
+        ;
+
+        --color-secondary: {
+            {
+            $colors['secondary'] ?? '#1f2937'
+          }
         }
-      }
 
-      ;
+        ;
 
-      --color-secondary: {
-          {
-          $colors['secondary'] ?? '#1f2937'
+        --color-accent: {
+            {
+            $colors['accent'] ?? '#06b6d4'
+          }
         }
+
+        ;
       }
 
-      ;
-
-      --color-accent: {
-          {
-          $colors['accent'] ?? '#06b6d4'
-        }
+      .high-contrast * {
+        color: #000 !important;
+        background-image: none !important;
       }
+    </style>
+  </head>
 
-      ;
-    }
+  <body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
+    <!-- Header -->
+    @include('partials.header')
 
-    .high-contrast * {
-      color: #000 !important;
-      background-image: none !important;
-    }
-  </style>
-</head>
+    <!-- Accessibility / Language Toolbar -->
+    {{-- @include('partials.accessibility') --}}
 
-<body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
-  <!-- Header -->
-  @include('partials.header')
+    <!-- Main Content -->
+    <main id="top">
+      @yield('content')
+    </main>
 
-  <!-- Accessibility / Language Toolbar -->
-  {{-- @include('partials.accessibility') --}}
+    <!-- Footer -->
+    @include('partials.footer.default')
 
-  <!-- Main Content -->
-  <main id="top">
-    @yield('content')
-  </main>
+    <!-- Toast -->
+    @include('partials.toast')
 
-  <!-- Footer -->
-  @include('partials.footer.default')
+    <!-- Go to Top Button -->
+    @include('partials.gototop')
 
-  <!-- Toast -->
-  @include('partials.toast')
-
-  <!-- Go to Top Button -->
-  @include('partials.gototop')
-
-  <script>
-    function siteUI(){
+    <script>
+      function siteUI(){
       return {
         mobileOpen:false,
         openRates:false,
@@ -123,7 +112,7 @@
         }
       }
     }
-  </script>
-</body>
+    </script>
+  </body>
 
-</html>
+  </html>

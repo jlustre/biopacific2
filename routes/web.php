@@ -289,7 +289,29 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facility/{id}/preview', [DashboardController::class, 'facility'])->name('dashboard.facility');
 
     Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('admin.facilities.hipaa', compact('facility')))->name('facilities.hipaa');
+    
+    // Interactive HIPAA checklist for testing
+    Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('admin.facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
 });
+
+// AJAX endpoint for HIPAA flag updates
+Route::post('/facilities/{facility}/hipaa/toggle', function(Facility $facility) {
+    $key = request('key');
+    
+    $flags = $facility->hipaa_flags ?? [];
+    // Toggle the current value (true becomes false, false/null becomes true)
+    $flags[$key] = !($flags[$key] ?? false);
+    
+    $facility->update(['hipaa_flags' => $flags]);
+    
+    return response()->json([
+        'success' => true,
+        'flags' => $flags,
+        'toggled_key' => $key,
+        'new_value' => $flags[$key],
+        'message' => $flags[$key] ? 'HIPAA item marked as completed!' : 'HIPAA item marked as incomplete!'
+    ]);
+})->name('hipaa.toggle');
 
 // Facilities (view permission)
 Route::middleware(['auth', 'permission:view facilities'])->group(function () {

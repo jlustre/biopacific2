@@ -137,24 +137,25 @@
                     </div>
                     <!-- Action Buttons -->
                     <div class="p-6 pt-0 mt-auto space-y-3">
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 justify-center">
                             <a href="{{ route('admin.facilities.edit', $facility->id) }}"
-                                class="flex-1 bg-primary text-white text-center py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">Edit
-                                Details</a>
+                                class="bg-blue-600 text-white text-center py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                                Edit Details
+                            </a>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 justify-center">
                             <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
-                                class="flex-1 bg-gray-100 text-gray-700 text-center py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">Preview
+                                class="bg-gray-100 text-gray-700 text-center py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">Preview
                                 Site</a>
                             @if($facility->domain)
                             <a href="http://{{ $facility->domain }}" target="_blank"
-                                class="flex-1 bg-green-100 text-green-700 text-center py-2 px-4 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">Visit
+                                class="bg-green-100 text-green-700 text-center py-2 px-4 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">Visit
                                 Live</a>
                             @endif
                         </div>
                     </div>
                     @if($facility->domain)
-                    <div class="flex flex-wrap gap-2 items-center mt-2">
+                    <div class="flex flex-col gap-2 items-center mt-2">
                         <span
                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                             <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
@@ -171,9 +172,9 @@
                         $total = count($rows);
                         $ok = collect($rows)->where('passed', true)->count();
                         @endphp
-                        <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center justify-center gap-2">
                             <div>
-                                <a href="{{ route('admin.facilities.hipaa', $facility) }}"
+                                <a href="{{ route('admin.facilities.hipaa.interactive', $facility) }}"
                                     class="text-sm font-semibold rounded-full px-2 py-2 border"
                                     style="border-color: {{ $facility->primary_color ?? '#0EA5E9' }}; color: {{ $facility->primary_color ?? '#0EA5E9' }};">
                                     HIPAA Checklist

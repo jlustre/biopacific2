@@ -9,21 +9,7 @@
   <meta name="description" content="{{ $facility['meta_description'] }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: '{{ $colors['primary'] ?? '#047857' }}',
-            secondary: '{{ $colors['secondary'] ?? '#1f2937' }}',
-            accent: '{{ $colors['accent'] ?? '#06b6d4' }}',
-          },
-        }
-      }
-    }
-  </script>
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
   <style>
     :root {
       --color-primary: {
