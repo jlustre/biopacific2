@@ -121,51 +121,7 @@ asset('images/hero1.jpg'));
     </div>
 
     @if(!empty($facility['hero_video_id']))
-    {{-- Optional: video modal (if you provide hero_video_id) --}}
-    <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-        <div class="relative w-full max-w-3xl">
-            <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
-                <button id="closeVideoBtn"
-                    class="absolute top-4 right-4 text-white hover:text-red-400 bg-black/70 rounded-full p-3 backdrop-blur z-10 border border-white/20"
-                    aria-label="Close video">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" title="Facility intro"
-                    allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-            </div>
-        </div>
-    </div>
+    <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#F59E0B'"
+        background="rgba(0,0,0,0.75)" />
     @endif
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-        @if(!empty($facility['hero_video_id']))
-        const playBtn = document.getElementById('playVideoBtn');
-        const modal = document.getElementById('videoModal');
-        const closeBtn = document.getElementById('closeVideoBtn');
-        const iframe = document.getElementById('youtubeIframe');
-        const YT = @json($facility['hero_video_id'] ?? null);
-    
-        if (playBtn && modal && YT) {
-            function openModal(){
-              iframe.src = `https://www.youtube.com/embed/${YT}?autoplay=1&rel=0`;
-              modal.classList.remove('hidden'); modal.classList.add('flex');
-              document.body.style.overflow = 'hidden';
-            }
-            function closeModal(){
-              modal.classList.add('hidden'); modal.classList.remove('flex');
-              document.body.style.overflow = '';
-              iframe.src = '';
-            }
-        
-            playBtn?.addEventListener('click', openModal);
-            closeBtn?.addEventListener('click', closeModal);
-            modal?.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-            document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
-        }
-        @endif
-      });
-    </script>
 </section>

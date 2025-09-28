@@ -1,9 +1,12 @@
 <footer class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
-  <!-- Background decoration -->
-  <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=" 60" height="60" viewBox="0 0 60 60"
-    xmlns="http://www.w3.org/2000/svg" %3E%3Cg fill="none" fill-rule="evenodd" %3E%3Cg fill="%23ffffff"
-    fill-opacity="0.03" %3E%3Ccircle cx="30" cy="30" r="2" /%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
 
+  <!-- Background decoration -->
+  {{-- <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=" 60" height="60" viewBox="0 0 60 60"
+    xmlns="http://www.w3.org/2000/svg" %3E%3Cg fill="none" fill-rule="evenodd" %3E%3Cg fill="%23ffffff"
+    fill-opacity="0.03" %3E%3Ccircle cx="30" cy="30" r="2" /%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50">
+  </div> --}}
+
+  <!--3-column layout -->
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Main footer content -->
     <div class="py-12 lg:py-16">
@@ -11,7 +14,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 max-w-6xl">
 
           <!-- Company Info -->
-          <div class="lg:col-span-1 space-y-6">
+          <div class="space-y-6">
             <div class="flex items-center gap-3">
               <div class="relative">
                 @if(!empty($facility['logo_url']))
@@ -50,7 +53,7 @@
               )
               <div class="font-semibold text-white text-center">Connect With Us</div>
               @endif
-              <div class="flex gap-3">
+              <div class="flex gap-3 justify-center">
                 @if(isset($facility['social']['facebook']) && $facility['social']['facebook'])
                 <a href="{{ $facility['social']['facebook'] }}"
                   class="group inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/50 border border-slate-700 hover:bg-blue-600 hover:border-blue-500 transition-all duration-300 hover:scale-110">
@@ -165,74 +168,70 @@
               Quick Links
             </div>
             <ul class="space-y-3">
-              <li><a href="#services"
+              <li>
+                <a href="{{ url('facility/'.$facility['slug'] . '#services') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Services & Amenities
-                </a></li>
-              <li><a href="#rooms"
+                </a>
+              </li>
+              <li>
+                <a href="{{ url('facility/' . $facility['slug'] . '#rooms') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Rooms & Rates
-                </a></li>
-              <li><a href="#book"
+                </a>
+              </li>
+              <li>
+                <a href="{{ url('facility/' . $facility['slug'] . '#book') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Book A Tour
-                </a></li>
-              <li><a href="#careers"
+                </a>
+              </li>
+              <li>
+                <a href="{{ url('facility/' . $facility['slug'] . '#careers') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Career Opportunities
-                </a></li>
-              <li><a href="#contact"
+                </a>
+              </li>
+              <li>
+                <a href="{{ url('facility/' . $facility['slug'] . '#contact') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Contact & Location
-                </a></li>
+                </a>
+              </li>
             </ul>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Bottom bar -->
-    <div class="border-t border-slate-700 py-6">
-      <div class="flex flex-col gap-4">
-        <!-- Copyright -->
-        <div class="text-slate-400 text-sm text-center">
-          © <span x-text="new Date().getFullYear()"></span> {{ $facility['name'] ?? 'Bio-Pacific' }}. All rights
-          reserved.
-        </div>
-        <!-- Footer Links -->
-        <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm px-4">
-          @if(!empty($facility['slug']))
-          <a href="{{ route('privacy.policy', $facility['slug']) }}"
-            class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
-          @else
-          <a href="#privacy" class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
-          @endif
-          @if(!empty($facility['slug']))
-          <a href="{{ route('notice.privacy.practices', $facility['slug']) }}"
-            class="text-slate-400 hover:text-primary transition-colors">Notice of Privacy Practices</a>
-          @else
-          <a href="#notice-privacy-practices" class="text-slate-400 hover:text-primary transition-colors">Notice of
-            Privacy Practices</a>
-          @endif
-          @if(!empty($facility['slug']))
-          <a href="{{ route('terms.service', $facility['slug']) }}"
-            class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
-          @else
-          <a href="#terms" class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
-          @endif
-          @if(!empty($facility['slug']))
-          <a href="{{ route('accessibility', $facility['slug']) }}"
-            class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
-          @else
-          <a href="#accessibility" class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
-          @endif
         </div>
       </div>
     </div>
   </div>
+
+
+  <!-- Bottom bar -->
+  <div class="border-t border-slate-700 py-6">
+    <div class="flex flex-col gap-4">
+      <!-- Copyright -->
+      <div class="text-slate-400 text-sm text-center">
+        © <span x-text="new Date().getFullYear()"></span> {{ $facility['name'] ?? 'Bio-Pacific' }}. All rights
+        reserved.
+      </div>
+      <!-- Footer Links -->
+      <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm px-4">
+        <a href="{{ url($facility['slug'] .'/privacy-policy') }}"
+          class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
+        <a href="{{ url($facility['slug'] .'/notice-of-privacy-practices') }}"
+          class="text-slate-400 hover:text-primary transition-colors">Notice of Privacy Practices</a>
+        <a href="{{ url($facility['slug'] .'/terms-of-service') }}"
+          class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
+        <a href="{{ url($facility['slug'] .'/accessibility') }}"
+          class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
+      </div>
+    </div>
+  </div>
+
 </footer>

@@ -9,7 +9,7 @@
         ])
 
         <!-- Main Content -->
-        <div class="container-fluid">
+        <div class="container-fluid mt-12">
             <div class="grid md:grid-cols-4 gap-8 items-start mb-16">
                 <!-- Image Side -->
                 <div class="lg:col-span-1 relative">
@@ -181,4 +181,5 @@
             </div>
 
         </div>
+    </div>
 </section>

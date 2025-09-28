@@ -97,28 +97,11 @@ $hasVideo = !empty($facility['hero_video_id']);
       </div>
     </div>
   </div>
+  @if(!empty($facility['hero_video_id']))
+  <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#F59E0B'" />
+  @endif
 </section>
 
-@if(!empty($facility['hero_video_id']))
-<!-- Video Modal -->
-<div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center hidden">
-  <div class="relative w-full max-w-4xl mx-4">
-    <!-- Video container -->
-    <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%; height: 0;">
-      <!-- Prominent close button positioned inside video area -->
-      <button id="closeVideoBtn"
-        class="absolute top-4 right-4 text-white hover:text-red-400 transition-colors duration-200 z-10 bg-black/50 backdrop-blur rounded-full p-2">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-      <iframe id="youtubeIframe" class="absolute top-0 left-0 w-full h-full" src="" frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen></iframe>
-    </div>
-  </div>
-</div>
-@endif
 
 {{-- Styles to handle prefers-reduced-motion (pause video, keep poster) --}}
 <style>
@@ -138,16 +121,6 @@ $hasVideo = !empty($facility['hero_video_id']);
       background-position: center;
     }
   }
-
-  /* Ensure modal is above everything */
-  #videoModal {
-    z-index: 9999;
-  }
-
-  /* Disable scrolling when modal is open */
-  body.modal-open {
-    overflow: hidden;
-  }
 </style>
 
 <script>
@@ -164,71 +137,5 @@ $hasVideo = !empty($facility['hero_video_id']);
     }
   }
 
-  @if(!empty($facility['hero_video_id']))
-  // Video modal functionality
-  console.log('Default: Video functionality initializing...');
-  const playVideoBtn = document.getElementById('playVideoBtn');
-  const videoModal = document.getElementById('videoModal');
-  const closeVideoBtn = document.getElementById('closeVideoBtn');
-  const youtubeIframe = document.getElementById('youtubeIframe');
-
-  console.log('Default: Elements found:', {
-    playVideoBtn: !!playVideoBtn,
-    videoModal: !!videoModal,
-    closeVideoBtn: !!closeVideoBtn,
-    youtubeIframe: !!youtubeIframe
-  });
-
-  // Get YouTube video ID from database
-  const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
-  console.log('Default: Video ID:', youtubeVideoId);
-
-  if (playVideoBtn && videoModal && closeVideoBtn && youtubeIframe && youtubeVideoId) {
-      console.log('Default: Setting up video functionality');
-      playVideoBtn.addEventListener('click', function() {
-          console.log('Default: Button clicked!');
-          // Set the YouTube URL with autoplay
-          youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
-          videoModal.classList.remove('hidden');
-          videoModal.classList.add('flex');
-          document.body.classList.add('modal-open');
-          console.log('Default: Modal should be open now');
-      });
-
-      function closeModal() {
-          console.log('Default: Closing modal');
-          videoModal.classList.add('hidden');
-          videoModal.classList.remove('flex');
-          document.body.classList.remove('modal-open');
-          // Stop the video by clearing the src
-          youtubeIframe.src = '';
-      }
-
-      closeVideoBtn.addEventListener('click', closeModal);
-
-      // Close modal when clicking outside the video
-      videoModal.addEventListener('click', function(e) {
-          if (e.target === videoModal) {
-              closeModal();
-          }
-      });
-
-      // Close modal with Escape key
-      document.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-              closeModal();
-          }
-      });
-  } else {
-      console.log('Default: Setup failed - missing elements or video ID');
-      console.log('Missing elements:', {
-          playVideoBtn: !playVideoBtn,
-          videoModal: !videoModal,
-          closeVideoBtn: !closeVideoBtn,
-          youtubeIframe: !youtubeIframe,
-          youtubeVideoId: !youtubeVideoId
-      });
-  }
-  @endif
 });
 </script>

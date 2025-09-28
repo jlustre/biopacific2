@@ -9,6 +9,7 @@ $serviceImages = [
 'Recreation & Activities' => asset('images/recreation_and_activities_care.png'),
 'Transportation' => asset('images/transportation_care.png')
 ];
+
 $services = [
 [
 'title' => 'Skilled Nursing',
@@ -33,6 +34,7 @@ families with regular updates on their loved one\'s condition.',
 'Regular physician consultations'
 ]
 ],
+
 [
 'title' => 'Rehabilitation',
 'description' => 'Physical, occupational, and speech therapy with goal-driven recovery programs.',
@@ -53,6 +55,7 @@ or illness while building strength, mobility, and confidence.',
 'Progress tracking and family updates'
 ]
 ],
+
 [
 'title' => 'Long-term Care',
 'description' => 'Personalized daily support, assistance with activities, and engaging social programs.',
@@ -71,6 +74,7 @@ a warm, home-like environment.',
 'Family involvement and communication'
 ]
 ],
+
 [
 'title' => 'Memory Care',
 'description' => 'Specialized secure environment and programs for Alzheimer\'s and dementia care.',
@@ -91,6 +95,7 @@ anxiety, and maintain quality of life.',
 'Family education and support groups'
 ]
 ],
+
 [
 'title' => 'Hospice Care',
 'description' => 'Compassionate comfort-focused end-of-life support for residents and families.',
@@ -111,6 +116,7 @@ time.',
 'Peaceful, dignified environment'
 ]
 ],
+
 [
 'title' => 'Dining & Nutrition',
 'description' => 'Chef-planned nutritious menus, special dietary accommodations, and dining experiences.',
@@ -131,6 +137,7 @@ the pleasure of eating.',
 'Flexible dining schedules'
 ]
 ],
+
 [
 'title' => 'Recreation & Activities',
 'description' => 'Social, spiritual, wellness activities, and entertainment programs for all interests.',
@@ -149,6 +156,7 @@ and purpose to their daily lives.',
 'Community outings and events'
 ]
 ],
+
 [
 'title' => 'Transportation',
 'description' => 'Coordinated medical appointments, shopping trips, and community outings.',
@@ -168,6 +176,7 @@ of life.',
 'Flexible scheduling options'
 ]
 ]
+
 ];
 @endphp
 
@@ -346,43 +355,43 @@ of life.',
         </div>
     </div>
     @endforeach
-</section>
 
-<style>
-    .line-clamp-3 {
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
 
-    @media (max-width: 640px) {
-        .grid {
-            grid-template-columns: 1fr;
+    <style>
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-    }
 
-    @media (min-width: 641px) and (max-width: 1023px) {
-        .grid {
-            grid-template-columns: repeat(2, 1fr);
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
-    }
 
-    @media (min-width: 1024px) and (max-width: 1279px) {
-        .grid {
-            grid-template-columns: repeat(3, 1fr);
+        @media (min-width: 641px) and (max-width: 1023px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
-    }
 
-    @media (min-width: 1280px) {
-        .grid {
-            grid-template-columns: repeat(4, 1fr);
+        @media (min-width: 1024px) and (max-width: 1279px) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
-    }
-</style>
 
-<script>
-    function openServiceModal1(modalId, event) {
+        @media (min-width: 1280px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+
+    <script>
+        function openServiceModal1(modalId, event) {
         if (event) event.stopPropagation();
         const modal = document.getElementById(modalId);
         const modalContent = document.getElementById('modal-content-' + modalId.split('-')[1]);
@@ -414,34 +423,35 @@ of life.',
     }
 
     function closeServiceModal1AndNavigate(modalId, targetSection) {
-    closeServiceModal1(modalId);
+        closeServiceModal1(modalId);
 
-    setTimeout(() => {
-        document.querySelector(targetSection).scrollIntoView({
-        behavior: 'smooth'
-        });
-    }, 350);
+        setTimeout(() => {
+            document.querySelector(targetSection).scrollIntoView({
+            behavior: 'smooth'
+            });
+        }, 350);
     }
 
 // Close modal when clicking outside
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('backdrop-blur-sm')) {
-    const modals = document.querySelectorAll('[id^="modal-"]');
-    modals.forEach(modal => {
-      const modalId = modal.id;
-      closeModal(modalId);
+    document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('backdrop-blur-sm')) {
+        const modals = document.querySelectorAll('[id^="modal-"]');
+        modals.forEach(modal => {
+        const modalId = modal.id;
+        closeModal(modalId);
+        });
+    }
     });
-  }
-});
 
-// Close modal with ESC key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    const modals = document.querySelectorAll('[id^="modal-"]');
-    modals.forEach(modal => {
-      const modalId = modal.id;
-      closeModal(modalId);
+    // Close modal with ESC key
+    document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('[id^="modal-"]');
+        modals.forEach(modal => {
+        const modalId = modal.id;
+        closeModal(modalId);
+        });
+    }
     });
-  }
-});
-</script>
+    </script>
+</section>

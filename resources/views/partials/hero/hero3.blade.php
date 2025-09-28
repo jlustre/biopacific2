@@ -10,7 +10,6 @@ $poster = url('images/' . $posterFilename);
 } else {
 $poster = asset('images/hero1.jpg');
 }
-$hasVideo = !empty($facility['hero_video_id']);
 @endphp
 
 <section class="relative isolate overflow-hidden min-h-[78vh] md:min-h-screen">
@@ -94,7 +93,7 @@ $hasVideo = !empty($facility['hero_video_id']);
                         Quick Contact
                     </a>
 
-                    @if($hasVideo)
+                    @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white backdrop-blur ring-1 ring-white/30 hover:brightness-110 hover:scale-[1.02] transition-all duration-200"
                         style="background: {{ $accent }}">
@@ -109,114 +108,8 @@ $hasVideo = !empty($facility['hero_video_id']);
         </div>
     </div>
 
-    {{-- Optional lightweight video modal --}}
-    @if($hasVideo)
-    <div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center hidden">
-        <div class="relative w-full max-w-3xl mx-4">
-            <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
-                <!-- Close button positioned inside video container for better visibility -->
-                <button id="closeVideoBtn"
-                    class="absolute top-2 right-2 z-20 text-white hover:text-red-400 bg-black/70 rounded-full p-2 transition-colors duration-200"
-                    aria-label="Close video">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" title="Intro video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen frameborder="0"></iframe>
-            </div>
-        </div>
-    </div>
+    @if(!empty($facility['hero_video_id']))
+    <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#F59E0B'"
+        background="rgba(0,0,0,0.75)" />
     @endif
 </section>
-
-@push('styles')
-<style>
-    @media (prefers-reduced-motion: reduce) {
-        /* Turn off bg-fixed on reduced motion (handled by <img> already) */
-    }
-</style>
-@endpush
-
-@push('styles')
-<style>
-    @media (prefers-reduced-motion: reduce) {
-        /* Turn off bg-fixed on reduced motion (handled by <img> already) */
-    }
-
-    /* Ensure modal is above everything */
-    #videoModal {
-        z-index: 9999;
-    }
-
-    /* Disable scrolling when modal is open */
-    body.modal-open {
-        overflow: hidden;
-    }
-</style>
-@endpush
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    @if($hasVideo)
-    // Video modal functionality
-    console.log('Hero6: Initializing video modal...');
-    const playVideoBtn = document.getElementById('playVideoBtn');
-    const videoModal = document.getElementById('videoModal');
-    const closeVideoBtn = document.getElementById('closeVideoBtn');
-    const youtubeIframe = document.getElementById('youtubeIframe');
-
-    // Get YouTube video ID from database
-    const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
-    
-    console.log('Hero6: Elements found:', {
-        playVideoBtn: !!playVideoBtn,
-        videoModal: !!videoModal,
-        closeVideoBtn: !!closeVideoBtn,
-        youtubeIframe: !!youtubeIframe,
-        youtubeVideoId: youtubeVideoId
-    });
-
-    if (playVideoBtn && youtubeVideoId) {
-        console.log('Hero6: Setting up video functionality');
-        playVideoBtn.addEventListener('click', function() {
-            console.log('Hero6: Play button clicked');
-            // Set the YouTube URL with autoplay
-            youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
-            videoModal.classList.remove('hidden');
-            videoModal.classList.add('flex');
-            document.body.classList.add('modal-open');
-        });
-
-        function closeModal() {
-            console.log('Hero6: Closing modal');
-            videoModal.classList.add('hidden');
-            videoModal.classList.remove('flex');
-            document.body.classList.remove('modal-open');
-            // Stop the video by clearing the src
-            youtubeIframe.src = '';
-        }
-
-        closeVideoBtn.addEventListener('click', closeModal);
-
-        // Close modal when clicking outside the video
-        videoModal.addEventListener('click', function(e) {
-            if (e.target === videoModal) {
-                closeModal();
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-                closeModal();
-            }
-        });
-    } else {
-        console.log('Hero6: Video setup failed - missing elements or video ID');
-    }
-    @endif
-});
-</script>

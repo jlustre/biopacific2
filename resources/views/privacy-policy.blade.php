@@ -103,7 +103,8 @@
                     </p>
                     @endif
                     @if(!empty($facility['phone']))
-                    <p class="text-slate-700">Phone: {{ $facility['phone'] }}</p>
+                    <p class="text-slate-700">Phone: {{ $facility['phone'] ? '(' . substr($facility['phone'],0,3) . ') '
+                        . substr($facility['phone'],3,3) . '-' . substr($facility['phone'],6,4) : 'N/A' }}</p>
                     @endif
                     @if(!empty($facility['email']))
                     <p class="text-slate-700">Email: {{ $facility['email'] }}</p>
@@ -115,13 +116,6 @@
                     We may update this Privacy Policy from time to time. Any changes will be posted on this page with an
                     updated revision date. We encourage you to review this policy periodically.
                 </p>
-
-                <div class="bg-blue-50 rounded-xl p-6 mt-8">
-                    <p class="text-blue-800 text-sm">
-                        <strong>Note:</strong> This is a template privacy policy. Please consult with legal counsel to
-                        ensure compliance with applicable laws and regulations specific to your facility and location.
-                    </p>
-                </div>
             </div>
         </div>
 

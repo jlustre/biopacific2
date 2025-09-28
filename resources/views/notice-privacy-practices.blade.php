@@ -137,7 +137,8 @@
                     </p>
                     @endif
                     @if(!empty($facility['phone']))
-                    <p class="text-slate-700">Phone: {{ $facility['phone'] }}</p>
+                    <p class="text-slate-700">Phone: {{ $facility['phone'] ? '(' . substr($facility['phone'],0,3) . ') '
+                        . substr($facility['phone'],3,3) . '-' . substr($facility['phone'],6,4) : 'N/A' }}</p>
                     @endif
                     @if(!empty($facility['email']))
                     <p class="text-slate-700">Email: {{ $facility['email'] }}</p>

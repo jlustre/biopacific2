@@ -37,7 +37,7 @@
                     </a>
                     <!-- Sidebar Toggle Button (Right of Logo/Name) -->
                     <button x-data="{}" @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
-                        class="ml-2 bg-primary text-white rounded-full shadow-lg p-1 hover:bg-primary/80 transition-all w-8 h-8 flex items-center justify-center">
+                        class="ml-2 bg-teal-100 text-teal-700 rounded-full shadow-lg p-1 hover:bg-teal-200 transition-all w-8 h-8 flex items-center justify-center">
                         <i class="fas fa-bars text-sm"></i>
                     </button>
                 </div>
@@ -64,7 +64,7 @@
                                 class="h-8 w-8 rounded-full border bg-gray-200" />
                             @else
                             <span
-                                class="h-8 w-8 flex items-center justify-center rounded-full bg-primary text-white font-bold text-lg border">{{
+                                class="h-8 w-8 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 font-bold text-lg border">{{
                                 $initials }}</span>
                             @endif
                             <span class="ml-2 text-gray-700 font-medium">{{ $userName }}</span>

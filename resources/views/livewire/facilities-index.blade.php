@@ -4,7 +4,7 @@
       <h1 class="text-3xl font-bold">{{ config('app.name') }} Facilities</h1>
 
       @can('create facilities')
-      <a href="{{ route('facilities.create') }}"
+      <a href="{{ route('admin.facilities.create') }}"
         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
         Add New Facility
       </a>
@@ -37,7 +37,7 @@
 
       @can('edit facilities')
       <div class="p-4 border-t bg-gray-50">
-        <a href="{{ route('facilities.edit', $facility->id) }}"
+        <a href="{{ route('admin.facilities.edit', $facility->id) }}"
           class="text-blue-600 hover:text-blue-800 text-sm">Edit</a>
         @can('delete facilities')
         <button class="text-red-600 hover:text-red-800 text-sm ml-4">Delete</button>

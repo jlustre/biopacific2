@@ -1,6 +1,33 @@
 @extends('layouts.dashboard')
 
 @section('content')
+<style>
+    :root {
+        --color-primary: {
+                {
+                $facility->primary_color ?? '#007bff'
+            }
+        }
+
+        ;
+
+        --color-secondary: {
+                {
+                $facility->secondary_color ?? '#6c757d'
+            }
+        }
+
+        ;
+
+        --color-accent: {
+                {
+                $facility->accent_color ?? '#28a745'
+            }
+        }
+
+        ;
+    }
+</style>
 <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b">
@@ -320,14 +347,14 @@
                                             $heroImages[] = [
                                             'filename' => $file,
                                             'name' => $name,
-                                            'sort_key' => $name
+                                            'sort_key' => $name,
                                             ];
                                             }
                                             }
                                             }
 
                                             // Sort hero images naturally (hero1, hero2, hero10, hero11, etc.)
-                                            usort($heroImages, function($a, $b) {
+                                            usort($heroImages, function ($a, $b) {
                                             return strnatcmp($a['sort_key'], $b['sort_key']);
                                             });
                                             @endphp
@@ -476,7 +503,8 @@
                                         </option>
                                         @endforeach
                                     </select>
-                                    @error('layout_template')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @error('layout_template')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                     @enderror
                                 </div>
                             </div>
@@ -497,7 +525,7 @@
                             'contact' => 'Contact Section',
                             'faqs' => 'FAQs Section',
                             'resources' => 'Resources Section',
-                            'footer' => 'Footer Section'
+                            'footer' => 'Footer Section',
                             ];
 
                             $sectionVariances = [];
@@ -598,8 +626,9 @@
             <!-- Save Button -->
             <div class="flex justify-end">
                 <button type="submit" id="save-button"
-                    class="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary/80 transition-colors font-medium">
-                    Save Changes
+                    class="text-white px-8 py-3 rounded-lg transition-colors font-medium bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    style="border: 2px solid var(--color-accent); opacity: 1 !important; pointer-events: auto !important; display: block !important; visibility: visible !important; z-index: 9999 !important; position: relative !important; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">Save
+                    Changes
                 </button>
             </div>
         </form>

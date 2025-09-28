@@ -60,7 +60,7 @@
     </main>
 
     <!-- Footer -->
-    @include('partials.footer.default')
+    @include('partials.footer.default', ['facility' => $facility ?? []])
 
     <!-- Toast -->
     @include('partials.toast')

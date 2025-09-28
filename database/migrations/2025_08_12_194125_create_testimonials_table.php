@@ -15,8 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('facility_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->string('title', 100)->nullable();
             $table->text('quote');
             $table->string('photo_url')->nullable();
+            $table->string('relationship', 100)->nullable();
+            $table->integer('rating')->nullable();
+            $table->boolean('is_active')->default(1);
+            $table->boolean('is_featured')->default(0);
             $table->timestamps();
         });
     }

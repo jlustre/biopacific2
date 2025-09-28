@@ -81,15 +81,12 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                     <button @click="setFilter('All')" class="px-3 py-1.5 rounded-full text-sm ring-1"
                         :class="filter==='All' ? 'text-white' : 'text-slate-700'"
                         :style="filter==='All' ? 'background: var(--primary); border-color: transparent;' : 'border-color:#e5e7eb;'">All</button>
-                    <button @click="setFilter('Family')" class="px-3 py-1.5 rounded-full text-sm ring-1"
-                        :class="filter==='Family' ? 'text-white' : 'text-slate-700'"
-                        :style="filter==='Family' ? 'background: var(--primary); border-color: transparent;' : 'border-color:#e5e7eb;'">Family</button>
-                    <button @click="setFilter('Resident')" class="px-3 py-1.5 rounded-full text-sm ring-1"
-                        :class="filter==='Resident' ? 'text-white' : 'text-slate-700'"
-                        :style="filter==='Resident' ? 'background: var(--primary); border-color: transparent;' : 'border-color:#e5e7eb;'">Residents</button>
-                    <button @click="setFilter('Physician')" class="px-3 py-1.5 rounded-full text-sm ring-1"
-                        :class="filter==='Physician' ? 'text-white' : 'text-slate-700'"
-                        :style="filter==='Physician' ? 'background: var(--primary); border-color: transparent;' : 'border-color:#e5e7eb;'">Physicians</button>
+                    <template x-for="cat in uniqueTags" :key="cat">
+                        <button @click="setFilter(cat)" class="px-3 py-1.5 rounded-full text-sm ring-1"
+                            :class="filter===cat ? 'text-white' : 'text-slate-700'"
+                            :style="filter===cat ? 'background: var(--primary); border-color: transparent;' : 'border-color:#e5e7eb;'"
+                            x-text="cat"></button>
+                    </template>
                     <div class="ml-auto relative w-full sm:w-56">
                         <input x-model="query" type="search" placeholder="Search testimonials…"
                             class="w-full rounded-full border-slate-300 pl-10 pr-3 py-2 focus:border-slate-400 focus:ring-0 text-sm">
@@ -120,7 +117,8 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                                     fill="currentColor" viewBox="0 0 20 20">
                                     <path
                                         d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg></template>
+                                </svg>
+                            </template>
                         </div>
                         <blockquote class="text-xl sm:text-2xl leading-relaxed text-slate-700" x-text="featured.text">
                         </blockquote>
@@ -135,7 +133,6 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                     </div>
                 </div>
                 <div class="relative">
-
                     <img src="{{ asset('images/testimonials.png') }}" alt="Testimonials Photo"
                         class="h-full w-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
@@ -162,7 +159,8 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                                             fill="currentColor" viewBox="0 0 20 20">
                                             <path
                                                 d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg></template>
+                                        </svg>
+                                    </template>
                                 </div>
                             </div>
                             <p class="mt-3 text-sm text-slate-700 line-clamp-5" x-text="t.text"></p>
@@ -195,6 +193,7 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
     </div>
 </section>
 @endif
+
 <script>
     function testimonialsWall(){
     return {
@@ -210,18 +209,21 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
           'text' => $testimonial->quote
         ];
       })->values() : []),
-      filter: 'All',
-      query: '',
-      modal: { open:false, item:{} },
-      featured: {},
-      avgRating: 0,
-      fiveStarPct: 0,
+    filter: 'All',
+    query: '',
+    modal: { open:false, item:{} },
+    featured: {},
+    avgRating: 0,
+    fiveStarPct: 0,
+    uniqueTags: [],
 
       init(){
-        // Pick a featured testimonial (highest rating or first)
-        this.featured = this.all.find(t => t.rating === 5) || this.all[0];
-        // Compute stats
-        this.computeStats();
+          // Pick a featured testimonial (highest rating or first)
+          this.featured = this.all.find(t => t.rating === 5) || this.all[0];
+          // Compute stats
+          this.computeStats();
+          // Get unique tags for filter buttons
+          this.uniqueTags = [...new Set(this.all.map(t => t.tag))];
       },
 
       computeStats(){
@@ -251,7 +253,6 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
       }
     }
   }
-</script>
 </script>
 
 <style>

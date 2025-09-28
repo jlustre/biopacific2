@@ -293,7 +293,7 @@
                         <ul class="dropdown-menu" aria-labelledby="facilityDropdown{{ $facility->id }}">
                             <li><a class="dropdown-item" href="{{ route('facilities.show', $facility->slug) }}"><i
                                         class="fas fa-eye me-2"></i> Preview</a></li>
-                            <li><a class="dropdown-item" href="{{ route('facilities.edit', $facility->slug) }}"><i
+                            <li><a class="dropdown-item" href="{{ route('admin.facilities.edit', $facility->slug) }}"><i
                                         class="fas fa-edit me-2"></i> Edit</a></li>
                             @if($facility->domain)
                             <li><a class="dropdown-item" href="https://{{ $facility->domain }}" target="_blank"><i

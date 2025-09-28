@@ -108,7 +108,7 @@ $hasVideo = !empty($facility['hero_video_id']);
                         <a href="#contact"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold ring-2 hover:bg-slate-50 transition"
                             style="color: {{ $primary }}; border-color: {{ $primary }}">Quick Contact</a>
-
+                        @if(!empty($facility['hero_video_id']))
                         <button id="playVideoBtn"
                             class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-semibold text-white hover:brightness-110 transition"
                             style="background: {{ $accent }}">
@@ -117,6 +117,7 @@ $hasVideo = !empty($facility['hero_video_id']);
                             </svg>
                             Watch Intro
                         </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -139,106 +140,8 @@ $hasVideo = !empty($facility['hero_video_id']);
         </div>
     </div>
 
-    {{-- Optional: lightweight video modal --}}
-    <div id="videoModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-        <div class="relative w-full max-w-3xl">
-            <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
-                <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" title="Intro video"
-                    allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-                <!-- Close button positioned inside video container -->
-                <button id="closeVideoBtn"
-                    class="absolute top-4 right-4 text-white hover:text-red-400 bg-black/50 rounded-full p-2 z-10"
-                    aria-label="Close video">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
+    @if(!empty($facility['hero_video_id']))
+    <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#F59E0B'"
+        background="rgba(0,0,0,0.75)" />
+    @endif
 </section>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    console.log('Hero6 video script loaded');
-    
-    const playBtn = document.getElementById('playVideoBtn');
-    const modal = document.getElementById('videoModal');
-    const closeBtn = document.getElementById('closeVideoBtn');
-    const iframe = document.getElementById('youtubeIframe');
-    const videoId = @json($facility['hero_video_id'] ?? 'dQw4w9WgXcQ'); // Test video as fallback
-    
-    console.log('Video elements:', {
-        playBtn: !!playBtn,
-        modal: !!modal,
-        closeBtn: !!closeBtn,
-        iframe: !!iframe,
-        videoId: videoId
-    });
-    
-    if (playBtn) {
-        playBtn.addEventListener('click', function() {
-            console.log('Play button clicked!');
-            
-            if (!modal || !iframe) {
-                console.error('Modal or iframe missing!');
-                return;
-            }
-            
-            // Set video source
-            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-            console.log('Set video URL:', iframe.src);
-            
-            // Show modal with inline styles to avoid Tailwind conflicts
-            modal.style.display = 'flex';
-            modal.style.alignItems = 'center';
-            modal.style.justifyContent = 'center';
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-            modal.style.zIndex = '9999';
-            
-            document.body.style.overflow = 'hidden';
-            console.log('Modal should be visible now');
-        });
-    } else {
-        console.error('Play button not found!');
-    }
-    
-    function hideModal() {
-        if (modal && iframe) {
-            modal.style.display = 'none';
-            iframe.src = '';
-            document.body.style.overflow = '';
-            console.log('Modal hidden');
-        }
-    }
-    
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            console.log('Close button clicked');
-            hideModal();
-        });
-    }
-    
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                console.log('Clicked outside video');
-                hideModal();
-            }
-        });
-    }
-    
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
-            console.log('Escape pressed');
-            hideModal();
-        }
-    });
-});
-</script>

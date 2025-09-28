@@ -9,12 +9,12 @@
                 <p class="text-gray-600 mt-2">{{ $facility->city }}, {{ $facility->state }}</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('facilities.edit', $facility) }}"
-                   class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <a href="{{ route('admin.facilities.edit', $facility) }}"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     Edit
                 </a>
                 <a href="{{ route('facilities.index') }}"
-                   class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
                     Back to List
                 </a>
             </div>
@@ -22,7 +22,7 @@
 
         <div class="bg-white shadow-md rounded-lg overflow-hidden">
             @if($facility->hero_image_url)
-                <div class="h-64 bg-cover bg-center" style="background-image: url('{{ $facility->hero_image_url }}')"></div>
+            <div class="h-64 bg-cover bg-center" style="background-image: url('{{ $facility->hero_image_url }}')"></div>
             @endif
 
             <div class="p-6">
@@ -47,10 +47,10 @@
                         </div>
 
                         @if($facility->beds)
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700">Number of Beds</label>
-                                <p class="text-gray-900">{{ $facility->beds }}</p>
-                            </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Number of Beds</label>
+                            <p class="text-gray-900">{{ $facility->beds }}</p>
+                        </div>
                         @endif
                     </div>
 
@@ -59,10 +59,11 @@
                         <h3 class="text-lg font-semibold mb-4">Ranking Information</h3>
 
                         @if($facility->ranking_position && $facility->ranking_total)
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700">Ranking</label>
-                                <p class="text-gray-900">{{ $facility->ranking_position }} of {{ $facility->ranking_total }}</p>
-                            </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Ranking</label>
+                            <p class="text-gray-900">{{ $facility->ranking_position }} of {{ $facility->ranking_total }}
+                            </p>
+                        </div>
                         @endif
 
                         <div class="mb-4">
@@ -78,27 +79,27 @@
                 </div>
 
                 @if($facility->description)
-                    <div class="mt-6 pt-6 border-t">
-                        <h3 class="text-lg font-semibold mb-4">Description</h3>
-                        <p class="text-gray-700 whitespace-pre-wrap">{{ $facility->description }}</p>
-                    </div>
+                <div class="mt-6 pt-6 border-t">
+                    <h3 class="text-lg font-semibold mb-4">Description</h3>
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ $facility->description }}</p>
+                </div>
                 @endif
 
                 <!-- Actions -->
                 <div class="mt-8 pt-6 border-t flex justify-between">
                     <form action="{{ route('facilities.destroy', $facility) }}" method="POST"
-                          onsubmit="return confirm('Are you sure you want to delete this facility? This action cannot be undone.')">
+                        onsubmit="return confirm('Are you sure you want to delete this facility? This action cannot be undone.')">
                         @csrf
                         @method('DELETE')
                         <button type="submit"
-                                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
                             Delete Facility
                         </button>
                     </form>
 
                     <div class="flex gap-2">
-                        <a href="{{ route('facilities.edit', $facility) }}"
-                           class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="{{ route('admin.facilities.edit', $facility) }}"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                             Edit Facility
                         </a>
                     </div>

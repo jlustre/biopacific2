@@ -103,14 +103,13 @@ $hasVideo = !empty($facility['hero_video_id']);
               class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 hover:bg-slate-50 transition"
               style="color: {{ $primary }}; border-color: {{ $primary }}">Contact Us</a>
 
-            @if($hasVideo)
-            <button id="playVideoBtn"
-              class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold text-white hover:brightness-110 transition"
-              style="background: {{ $accent }}">
-              <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            @if(!empty($facility['hero_video_id']))
+            <button id="playVideoBtn" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
+              style="background-color: {{ $facility['accent_color'] ?? '#e3342f' }};">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M8 5v10l8-5-8-5z" />
               </svg>
-              Intro
+              Watch Intro
             </button>
             @endif
           </div>
@@ -147,101 +146,7 @@ $hasVideo = !empty($facility['hero_video_id']);
     </div>
   </div>
 
-  {{-- Optional: Video Modal --}}
-  @if($hasVideo)
-  <div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 items-center justify-center hidden">
-    <div class="relative w-full max-w-3xl mx-4">
-      <div class="relative overflow-hidden rounded-2xl bg-black" style="padding-bottom:56.25%;height:0;">
-        <!-- Close button positioned inside video container for better visibility -->
-        <button id="closeVideoBtn"
-          class="absolute top-2 right-2 z-20 text-white hover:text-red-400 bg-black/70 rounded-full p-2 transition-colors duration-200"
-          aria-label="Close video">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <iframe id="youtubeIframe" class="absolute top-0 left-0 h-full w-full" src="" title="Intro video"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen frameborder="0"></iframe>
-      </div>
-    </div>
-  </div>
-  @endif
+  {{-- Video Modal (Reusable Component) --}}
+  <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#F59E0B'"
+    background="rgba(0,0,0,0.75)" />
 </section>
-
-@push('styles')
-<style>
-  /* Ensure modal is above everything */
-  #videoModal {
-    z-index: 9999;
-  }
-
-  /* Disable scrolling when modal is open */
-  body.modal-open {
-    overflow: hidden;
-  }
-</style>
-@endpush
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    @if($hasVideo)
-    // Video modal functionality
-    console.log('Hero2: Initializing video modal...');
-    const playVideoBtn = document.getElementById('playVideoBtn');
-    const videoModal = document.getElementById('videoModal');
-    const closeVideoBtn = document.getElementById('closeVideoBtn');
-    const youtubeIframe = document.getElementById('youtubeIframe');
-
-    // Get YouTube video ID from database
-    const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
-    
-    console.log('Hero2: Elements found:', {
-        playVideoBtn: !!playVideoBtn,
-        videoModal: !!videoModal,
-        closeVideoBtn: !!closeVideoBtn,
-        youtubeIframe: !!youtubeIframe,
-        youtubeVideoId: youtubeVideoId
-    });
-
-    if (playVideoBtn && youtubeVideoId) {
-        console.log('Hero2: Setting up video functionality');
-        playVideoBtn.addEventListener('click', function() {
-            console.log('Hero2: Play button clicked');
-            // Set the YouTube URL with autoplay
-            youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
-            videoModal.classList.remove('hidden');
-            videoModal.classList.add('flex');
-            document.body.classList.add('modal-open');
-        });
-
-        function closeModal() {
-            console.log('Hero2: Closing modal');
-            videoModal.classList.add('hidden');
-            videoModal.classList.remove('flex');
-            document.body.classList.remove('modal-open');
-            // Stop the video by clearing the src
-            youtubeIframe.src = '';
-        }
-
-        closeVideoBtn.addEventListener('click', closeModal);
-
-        // Close modal when clicking outside the video
-        videoModal.addEventListener('click', function(e) {
-            if (e.target === videoModal) {
-                closeModal();
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-                closeModal();
-            }
-        });
-    } else {
-        console.log('Hero2: Video setup failed - missing elements or video ID');
-    }
-    @endif
-});
-</script>

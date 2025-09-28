@@ -123,25 +123,25 @@
               Quick Links
             </div>
             <ul class="space-y-3">
-              <li><a href="#services"
+              <li><a href="{{ route('privacy.policy', $facility['slug']) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
-                  Services & Treatments
+                  Privacy Policy
                 </a></li>
-              <li><a href="#rooms"
+              <li><a href="{{ route('terms.service', $facility['slug']) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
-                  Rooms & Rates
+                  Terms of Service
                 </a></li>
-              <li><a href="#careers"
+              <li><a href="{{ route('notice.privacy.practices', $facility['slug']) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
-                  Career Opportunities
+                  Notice of Privacy Practices
                 </a></li>
-              <li><a href="#contact"
+              <li><a href="{{ route('accessibility', $facility['slug']) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
-                  Contact & Location
+                  Accessibility
                 </a></li>
             </ul>
           </div>

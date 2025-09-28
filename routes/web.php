@@ -14,7 +14,14 @@ use App\Livewire\Settings\Appearance;
 use App\Models\Facility;
 
 // Home & Landing
-Route::get('/', [HomeController::class, 'index'])->name('home');
+use Illuminate\Support\Facades\Auth;
+Route::get('/', function() {
+    if (Auth::check()) {
+        return redirect('/admin/dashboard');
+    }
+    return redirect()->route('login');
+})->name('home');
+
 Route::get('/index', fn() => view('index'))->name('index');
 
 // Public Facility Route (similar to admin preview but public access)
@@ -78,9 +85,12 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
     ]);
 })->name('facility.public');
 
-// Privacy Policy
+// Redirect old privacy-policy route to new one
+Route::get('/facility/{facility:slug}/privacy-policy', function (Facility $facility) {
+    return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
+});
+
 Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
-    // Format facility data like the welcome view does
     $facilityData = $facility->toArray();
     $colors = [
         'primary' => $facility->primary_color ?? '#047857',
@@ -286,7 +296,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
     Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
     Route::post('/facilities', [FacilityAdminController::class, 'store'])->name('facilities.store');
-    Route::get('/facilities/{facility}', [FacilityAdminController::class, 'show'])->name('facilities.show');
+    Route::get('/facilities/{facility:slug}', [FacilityAdminController::class, 'show'])->name('facilities.show');
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::delete('/facilities/{facility}', [FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
@@ -354,8 +364,69 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/profile', Profile::class)->name('settings.profile');
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
-    Route::get('/admin/facility/{facility:slug}', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show');
+    Route::get('/facility/{facility:slug}', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show');
 });
+
+// Public Facility Route (named facility.public)
+Route::get('/facility/{facility:slug}', function (Facility $facility) {
+    $colors = [
+        'primary' => $facility->primary_color ?? '#059669',
+        'secondary' => $facility->secondary_color ?? '#064E3B',
+        'accent' => $facility->accent_color ?? '#FACC15'
+    ];
+
+    $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+    $sections = [];
+    $sectionVariances = [];
+    $layoutTemplate = 'default-template';
+
+    if ($activeWebContent && $activeWebContent->sections) {
+        if (is_string($activeWebContent->sections)) {
+            $sections = json_decode($activeWebContent->sections, true) ?? [];
+        } elseif (is_array($activeWebContent->sections)) {
+            $sections = $activeWebContent->sections;
+        }
+    }
+
+    if ($activeWebContent && isset($activeWebContent->variances)) {
+        if (is_string($activeWebContent->variances)) {
+            $sectionVariances = json_decode($activeWebContent->variances, true) ?? [];
+        } elseif (is_array($activeWebContent->variances)) {
+            $sectionVariances = $activeWebContent->variances;
+        }
+    }
+
+    $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
+
+    // Fetch FAQ data for dynamic FAQ section
+    $faqs = \App\Models\Faq::availableForFacility($facility->id)
+        ->where('is_active', true)
+        ->orderBy('is_featured', 'desc')
+        ->orderBy('sort_order')
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    // Get categories from the retrieved FAQs
+    $categories = $faqs->pluck('category')->filter()->unique()->values();
+
+    // Fetch testimonials for the facility
+    $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
+        ->where('is_active', true)
+        ->orderBy('is_featured', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return view('welcome', [
+        'facility' => $facility->toArray(),
+        'colors' => $colors,
+        'sections' => $sections,
+        'sectionVariances' => $sectionVariances,
+        'layoutTemplate' => $layoutTemplate,
+        'faqs' => $faqs,
+        'categories' => $categories,
+        'testimonials' => $testimonials
+    ]);
+})->name('facility.public');
 
 // Audit Routes
 Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
