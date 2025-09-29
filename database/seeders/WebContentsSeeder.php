@@ -27,7 +27,7 @@ class WebContentsSeeder extends Seeder
             ],
             2 => [
                 'sections' => ['topbar', 'hero', 'about', 'services', 'rooms', 'gallery', 'news', 'testimonials', 'careers', 'book', 'contact', 'faqs', 'resources', 'footer'],
-                'variances' => ['default', 'hero1', 'about1', 'services1', 'default', 'default', 'default', 'testimonials1', 'default', 'book1', 'contact1', 'faqs1', 'default', 'default'],
+                'variances' => ['default', 'hero1', 'about1', 'default', 'default', 'default', 'default', 'testimonials1', 'default', 'book1', 'contact1', 'faqs1', 'default', 'default'],
             ],
             3 => [
                 'sections' => ['topbar', 'hero', 'about', 'services', 'rooms', 'gallery', 'news', 'testimonials', 'careers', 'book', 'contact', 'faqs', 'resources', 'footer'],

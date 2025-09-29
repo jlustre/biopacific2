@@ -518,6 +518,14 @@ class FacilityAdminController extends Controller
         return view('admin.facilities.webcontents.blogs', compact('facilities'));
     }
 
+    public function manageNewsEvents($facilityId)
+    {
+        $facility = \App\Models\Facility::findOrFail($facilityId);
+        $news = \App\Models\News::where('facility_id', $facilityId)->orderByDesc('published_at')->get();
+        $events = \App\Models\Event::where('facility_id', $facilityId)->orderByDesc('event_date')->get();
+        return view('admin.facilities.webcontents.manage-news-events', compact('facility', 'news', 'events'));
+    }
+
     public function careers()
     {
         $facilities = Facility::orderBy('name')->get();

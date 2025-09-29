@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
@@ -12,6 +13,12 @@ use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Appearance;
 use App\Models\Facility;
+use App\Http\Controllers\Admin\EventController;
+
+Route::resource('admin/news', NewsController::class)->names('admin.news');
+Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
+
+
 
 // Home & Landing
 use Illuminate\Support\Facades\Auth;
@@ -317,6 +324,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/web-contents/faqs/defaults/list', [FacilityAdminController::class, 'getDefaultFaqs'])->name('facilities.webcontents.faqs.defaults');
     Route::get('/facilities/web-contents/galleries', [FacilityAdminController::class, 'galleries'])->name('facilities.webcontents.galleries');
     Route::get('/facilities/web-contents/news-events', [FacilityAdminController::class, 'newsEvents'])->name('facilities.webcontents.news-events');
+    Route::get('/admin/facilities/web-contents/news-events', [FacilityAdminController::class, 'newsEvents'])->name('admin.facilities.webcontents.news-events');
+    Route::get('/facilities/{facility}/news-events', [FacilityAdminController::class, 'manageNewsEvents'])->name('admin.facilities.news-events.manage');
     Route::get('/facilities/web-contents/blogs', [FacilityAdminController::class, 'blogs'])->name('facilities.webcontents.blogs');
     Route::get('/facilities/web-contents/careers', [FacilityAdminController::class, 'careers'])->name('facilities.webcontents.careers');
 

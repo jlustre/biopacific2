@@ -103,6 +103,12 @@
                     <!-- FAQs will be loaded here -->
                     <div class="p-6 text-center text-gray-500">
                         <i class="fas fa-question-circle text-4xl text-gray-300 mb-4"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-4 text-gray-300" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="currentColor" />
+                            <text x="12" y="16" text-anchor="middle" font-size="14" fill="white"
+                                font-family="Arial, sans-serif">?</text>
+                        </svg>
                         <p>No FAQs found for this facility.</p>
                         <p class="text-sm mt-2">Click "Add New FAQ" to create the first one.</p>
                     </div>
@@ -115,6 +121,12 @@
             <div class="text-center">
                 <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-4">
                     <i class="fas fa-question-circle text-primary text-xl"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="currentColor" />
+                        <text x="12" y="16" text-anchor="middle" font-size="14" fill="white"
+                            font-family="Arial, sans-serif">?</text>
+                    </svg>
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">FAQs Management</h3>
                 <p class="text-gray-500 mb-6">Select a facility from the dropdown above to manage its FAQs. This
@@ -156,6 +168,13 @@
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                                 <i class="fas fa-question-circle text-lg"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-teal-600" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"
+                                        fill="currentColor" />
+                                    <text x="12" y="16" text-anchor="middle" font-size="14" fill="white"
+                                        font-family="Arial, sans-serif">?</text>
+                                </svg>
                             </div>
                             <div>
                                 <h3 class="text-xl font-bold">Add New FAQ</h3>

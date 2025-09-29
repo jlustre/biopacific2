@@ -29,8 +29,8 @@
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Select a Facility</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 @foreach($facilities as $facility)
-                <div
-                    class="bg-white border border-gray-300 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer group">
+                <a href="{{ url('/admin/facilities/' . $facility->id . '/news-events') }}"
+                    class="bg-white border border-gray-300 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer group block">
                     <div class="flex items-center space-x-3">
                         <div class="flex-shrink-0">
                             <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -47,7 +47,7 @@
                                 class="fas fa-chevron-right text-gray-400 group-hover:text-primary transition-colors"></i>
                         </div>
                     </div>
-                </div>
+                </a>
                 @endforeach
             </div>
         </div>

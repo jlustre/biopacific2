@@ -34,12 +34,8 @@
                 <!-- Icon -->
                 <div
                   class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-open:bg-blue-500 transition-colors duration-200">
-                  @if($faq->icon)
-                  <i class="{{ $faq->icon }} text-blue-600 group-open:text-white transition-colors duration-200"></i>
-                  @else
-                  <i
-                    class="fas fa-question-circle text-blue-600 group-open:text-white transition-colors duration-200"></i>
-                  @endif
+                  <img src="{{ asset('images/blue_question_mark_icon.png') }}" alt="Question Icon"
+                    class="h-7 w-7 object-contain" />
                 </div>
                 <!-- Question -->
                 <div class="flex-1">

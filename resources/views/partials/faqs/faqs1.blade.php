@@ -75,11 +75,11 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                                         <span
                                             class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-white shrink-0"
                                             style="background: {{ $primary }}">
-                                            @if($faq->icon)
-                                            <i class="{{ $faq->icon }} h-5 w-5"></i>
-                                            @else
-                                            <i class="fas fa-question-circle h-5 w-5"></i>
-                                            @endif
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 14h.01M12 8a2 2 0 00-2 2c0 1.1.9 2 2 2s2 .9 2 2-.9 2-2 2" />
+                                            </svg>
                                         </span>
                                         <div class="flex-1">
                                             <div class="flex items-center justify-between gap-3">

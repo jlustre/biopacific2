@@ -91,26 +91,26 @@
       </div>
       <nav class="flex flex-col gap-2 mt-2">
         <a href="#about" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">About</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">About</a>
         <a href="#services" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Services</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Services</a>
         <a href="#rooms" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Rooms
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Rooms
           & Rates</a>
         <a href="#gallery" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Gallery</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Gallery</a>
         <a href="#news" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">News</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">News</a>
         <a href="#testimonials" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Testimonials</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Testimonials</a>
         <a href="#careers" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Careers</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Careers</a>
         <a href="#contact" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Contact</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Contact</a>
         <a href="#faqs" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">FAQs</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">FAQs</a>
         <a href="#resources" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary hover:text-white transition">Resources</a>
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Resources</a>
         <a href="#book" @click="mobileOpen = false"
           class="py-3 px-4 rounded text-lg bg-primary text-white font-semibold hover:bg-primary/90 transition">Book a
           Tour</a>
