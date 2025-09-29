@@ -13,7 +13,8 @@
     @livewireStyles
 </head>
 
-<body class="bg-gray-50">
+<body class="min-h-screen antialiased"
+    style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
     <!-- Go to Top Button -->
     <button x-data="{ show: false }" x-init="window.addEventListener('scroll', () => { show = window.scrollY > 200 })"
         x-show="show" @click="window.scrollTo({top: 0, behavior: 'smooth'})"
@@ -221,7 +222,7 @@
             <div :class="sidebarOpen ? 'pt-20 pl-64' : 'pt-20 pl-4'">
                 <!-- Page Header -->
                 @hasSection('header')
-                <div class="bg-white shadow-sm border-b border-gray-200">
+                <div class="bg-white/60 shadow-sm border-b border-gray-200 rounded-xl">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                         @yield('header')
                     </div>
@@ -229,7 +230,7 @@
                 @endif
 
                 <!-- Main Content -->
-                <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main class="bg-white/60 rounded-xl max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     @yield('content')
                 </main>
             </div>

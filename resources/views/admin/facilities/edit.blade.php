@@ -390,11 +390,23 @@
                     <div id="colors-content" class="tab-pane hidden">
                         <div class="p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-6">Brand Colors</h3>
+                            <div class="mb-6">
+                                <label for="color_scheme" class="block text-sm font-medium text-gray-700 mb-2">Color
+                                    Scheme</label>
+                                <select id="color_scheme"
+                                    class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    <option value="">Select a color scheme...</option>
+                                    @foreach(\DB::table('color_schemes')->orderBy('name')->get() as $scheme)
+                                    <option value="{{ $scheme->id }}" data-primary="{{ $scheme->primary_color }}"
+                                        data-secondary="{{ $scheme->secondary_color }}"
+                                        data-accent="{{ $scheme->accent_color }}">{{ $scheme->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <label for="primary_color"
-                                        class="block text-sm font-medium text-gray-700 mb-2">Primary
-                                        Color</label>
+                                        class="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
                                     <div class="flex items-center gap-3">
                                         <input type="color" id="primary_color" name="primary_color"
                                             value="{{ old('primary_color', $facility->primary_color ?? '#047857') }}"
@@ -407,11 +419,9 @@
                                     @error('primary_color')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                     @enderror
                                 </div>
-
                                 <div>
                                     <label for="secondary_color"
-                                        class="block text-sm font-medium text-gray-700 mb-2">Secondary
-                                        Color</label>
+                                        class="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
                                     <div class="flex items-center gap-3">
                                         <input type="color" id="secondary_color" name="secondary_color"
                                             value="{{ old('secondary_color', $facility->secondary_color ?? '#1f2937') }}"
@@ -424,11 +434,9 @@
                                     @error('secondary_color')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                     @enderror
                                 </div>
-
                                 <div>
                                     <label for="accent_color"
-                                        class="block text-sm font-medium text-gray-700 mb-2">Accent
-                                        Color</label>
+                                        class="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
                                     <div class="flex items-center gap-3">
                                         <input type="color" id="accent_color" name="accent_color"
                                             value="{{ old('accent_color', $facility->accent_color ?? '#06b6d4') }}"
@@ -442,6 +450,26 @@
                                     @enderror
                                 </div>
                             </div>
+                            <script>
+                                document.getElementById('color_scheme').addEventListener('change', function() {
+                                    var selected = this.options[this.selectedIndex];
+                                    var primary = selected.getAttribute('data-primary');
+                                    var secondary = selected.getAttribute('data-secondary');
+                                    var accent = selected.getAttribute('data-accent');
+                                    if(primary) {
+                                        document.getElementById('primary_color').value = primary;
+                                        document.querySelector('input[name="primary_color"][type="text"]').value = primary;
+                                    }
+                                    if(secondary) {
+                                        document.getElementById('secondary_color').value = secondary;
+                                        document.querySelector('input[name="secondary_color"][type="text"]').value = secondary;
+                                    }
+                                    if(accent) {
+                                        document.getElementById('accent_color').value = accent;
+                                        document.querySelector('input[name="accent_color"][type="text"]').value = accent;
+                                    }
+                                });
+                            </script>
                         </div>
                     </div>
 

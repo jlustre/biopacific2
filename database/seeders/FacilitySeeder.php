@@ -222,7 +222,7 @@ class FacilitySeeder extends Seeder
     'primary_color'=>'#06B6D4','secondary_color'=>'#155E75','accent_color'=>'#F59E0B',
     'location_map'=> 'https://maps.google.com/maps?q=Vale+Healthcare+Center,13484+SAN+PABLO+AVENUE%2CSAN+PABLO%2CCA+94806&output=embed',
     'domain'=>'valehealthcarecenter.com','subdomain'=>'valehcc.com','years'=>'20', 'facility_image' => 'valehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
-    'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero17.png'
+    'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero16.png'
   ],
   [
     'name'=>'Village Square Health Care Center',

@@ -9,22 +9,24 @@
     <script src="{{ asset('js/app.js') }}" defer></script>
 </head>
 
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-primary text-white px-6 py-4 shadow">
-        <div class="flex justify-between items-center">
-            <a href="{{ route('admin.news.index') }}" class="font-bold text-lg">Admin Dashboard</a>
-            <div class="flex gap-4">
-                <a href="{{ route('admin.news.index') }}" class="hover:underline">News</a>
-                <a href="{{ route('admin.events.index') }}" class="hover:underline">Events</a>
-                <a href="/" class="hover:underline">Home</a>
+<body class="min-h-screen antialiased"
+    style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
+    <div class="bg-white/60 min-h-screen">
+        <nav class="bg-primary text-white px-6 py-4 shadow">
+            <div class="flex justify-between items-center">
+                <a href="{{ route('admin.news.index') }}" class="font-bold text-lg">Admin Dashboard</a>
+                <div class="flex gap-4">
+                    <a href="{{ route('admin.news.index') }}" class="hover:underline">News</a>
+                    <a href="{{ route('admin.events.index') }}" class="hover:underline">Events</a>
+                    <a href="/" class="hover:underline">Home</a>
+                </div>
             </div>
-        </div>
-    </nav>
-    <main class="py-8">
-        <div class="max-w-5xl mx-auto">
-            @yield('content')
-        </div>
-    </main>
+        </nav>
+        <main class="py-8">
+            <div class="max-w-5xl mx-auto">
+                @yield('content')
+            </div>
+        </main>
 </body>
 
 </html>
