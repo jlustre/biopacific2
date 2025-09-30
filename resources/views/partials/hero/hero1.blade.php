@@ -38,18 +38,27 @@
                         background: rgba(255, 255, 255, 0.18);
                     }
                 </style>
-                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow"
-                    style="color: {{ $facility['primary_color'] ?? '#e3342f' }}">
+                @php
+                if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+                $scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+                $primary = $scheme->primary_color ?? '#e3342f';
+                $accent = $scheme->accent_color ?? '#e3342f';
+                } else {
+                $primary = '#e3342f';
+                $accent = '#e3342f';
+                }
+                @endphp
+                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow" style="color: {{ $primary }}">
                     {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
                 </h1>
                 <p class="mt-4 mx-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>
                 <div class="mt-6 mx-4 pb-4 flex flex-wrap gap-3 flex flex-row justify-between">
                     <a href="#contact" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-                        style="background-color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
+                        style="background-color: {{ $primary }};">
                         Quick Contact
                     </a>
                     <a href="#book" class="inline-flex items-center rounded-xl border px-5 py-3 font-medium"
-                        style="border-color: {{ $facility['primary_color'] ?? '#1a7f37' }}; color: {{ $facility['primary_color'] ?? '#1a7f37' }};">
+                        style="border-color: {{ $primary }}; color: {{ $primary }};">
                         Book a Tour
                     </a>
                     @if(!empty($facility['hero_video_id']))

@@ -1,3 +1,13 @@
+@php
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$primary = $scheme->primary_color ?? '#0EA5E9';
+$accent = $scheme->accent_color ?? '#F59E0B';
+} else {
+$primary = '#0EA5E9';
+$accent = '#F59E0B';
+}
+@endphp
 <section id="news" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50" x-data="{ 
   openModal: false, 
   openAllNewsModal: false,
@@ -93,7 +103,8 @@
 
     <div class="text-center mb-12 mt-6">
       <button @click="showAllNews()"
-        class="inline-flex items-center px-6 py-3 bg-primary text-white font-semibold rounded-full hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl">
+        class="inline-flex items-center px-6 py-3 text-white font-semibold rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
+        style="background: {{ $primary }};">
         View All News
         <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

@@ -1,20 +1,26 @@
 {{-- ABOUT — Version B: Collage + Tabs + Timeline + Accreditations --}}
 <section id="about" class="relative overflow-hidden py-20 md:py-28">
+  @php
+  $scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) :
+  null;
+  $primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
+  $secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
+  $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+  @endphp
   {{-- Background decoration --}}
   <div class="pointer-events-none absolute inset-0 -z-10">
     <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50"></div>
     <div class="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-30"
-      style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}"></div>
+      style="background: {{ $primary }}"></div>
     <div class="absolute -bottom-28 -right-24 h-96 w-96 rounded-full blur-3xl opacity-20"
-      style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></div>
+      style="background: {{ $accent }}"></div>
   </div>
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {{-- Header --}}
     <div class="max-w-3xl">
       <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-        <span style="color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">About</span> {{ $facility['name'] ?? 'Our
-        Facility' }}
+        <span style="color: {{ $primary }}">About</span> {{ $facility['name'] ?? 'Our Facility' }}
       </h2>
       <p class="mt-3 text-lg md:text-xl text-slate-700">
         {{ $facility['subheadline'] ?? 'Dedicated to compassionate, evidence-based care in a warm, family-centered
@@ -41,8 +47,7 @@
               class="h-full w-full object-cover max-w-full h-auto block">
             <div class="absolute bottom-4 right-4 z-10">
               <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
-                <div class="text-2xl md:text-3xl font-black"
-                  style="color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+                <div class="text-2xl md:text-3xl font-black" style="color: {{ $accent }}">
                   {{ $facility['years'] ?? '20' }}+
                 </div>
                 <div class="text-xs md:text-sm text-slate-600">Years of Service</div>
@@ -64,17 +69,17 @@
           <div class="flex flex-wrap gap-2">
             <button @click="tab='mission'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
               :class="tab==='mission' ? 'text-white' : 'text-slate-700'"
-              :style="tab==='mission' ? 'background:{{ $facility['primary_color'] ?? '#0EA5E9' }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
+              :style="tab==='mission' ? 'background:{{ $primary }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
               Mission
             </button>
             <button @click="tab='vision'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
               :class="tab==='vision' ? 'text-white' : 'text-slate-700'"
-              :style="tab==='vision' ? 'background:{{ $facility['secondary_color'] ?? '#155E75' }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
+              :style="tab==='vision' ? 'background:{{ $secondary }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
               Vision
             </button>
             <button @click="tab='values'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
               :class="tab==='values' ? 'text-white' : 'text-slate-700'"
-              :style="tab==='values' ? 'background:{{ $facility['accent_color'] ?? '#F59E0B' }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
+              :style="tab==='values' ? 'background:{{ $accent }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
               Values
             </button>
           </div>
@@ -111,11 +116,10 @@
                 ] as [$title,$desc])
                 <div class="rounded-xl border bg-white p-4 shadow-sm">
                   <div class="inline-flex h-10 w-10 items-center justify-center rounded-lg"
-                    style="background: {{ ($facility['accent_color'] ?? '#F59E0B') }}1A; color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+                    style="background: {{ ($accent) }}1A; color: {{ $accent }}">
                     ★
                   </div>
-                  <div class="mt-2 font-semibold" style="color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">{{ $title
-                    }}</div>
+                  <div class="mt-2 font-semibold" style="color: {{ $primary }}">{{ $title }}</div>
                   <p class="text-sm text-slate-600">{{ $desc }}</p>
                 </div>
                 @endforeach

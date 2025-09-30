@@ -1,209 +1,241 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('admin.dashboard.index') }}" class="text-gray-500 hover:text-gray-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </a>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">Facility Management</h1>
-                        <p class="text-gray-600">Edit and configure your facilities</p>
-                    </div>
-                </div>
-                <div class="bg-primary/10 px-4 py-2 rounded-lg">
-                    <span class="text-primary font-semibold">{{ $facilities->count() }} Total Facilities</span>
-                </div>
-            </div>
+<div x-data="{ showModal: false, enlargeImage: '' }">
+    <!-- Image Modal (global, outside the grid) -->
+    <div x-show="showModal" x-cloak
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        style="display: none;">
+        <div class="relative bg-white rounded-lg shadow-lg max-w-3xl w-full p-4 flex flex-col items-center">
+            <button @click="showModal = false"
+                class="absolute top-2 right-2 text-gray-700 hover:text-red-500 text-2xl font-bold">&times;</button>
+            <img :src="enlargeImage" alt="Enlarged Facility Image" class="max-h-[70vh] w-auto rounded-lg shadow" />
         </div>
     </div>
-
-    <!-- Main Content -->
-    <div class="w-full px-2 sm:px-4 lg:px-8 py-8">
-
-        <!-- Facilities Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($facilities as $facility)
-            <div
-                class="bg-white rounded-2xl border border-gray-300 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full relative">
-
-                <!-- Active/Inactive Badge -->
-                <div class="absolute top-4 right-4 z-10">
-                    <span
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $facility->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} shadow">
-                        {{ $facility->is_active ? 'Active' : 'Inactive' }}
-                    </span>
-                </div>
-                <!-- Facility Header -->
-                <div class="p-6 border-b border-gray-300">
-                    <div class="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
-                        <img src="{{ $facility->facility_image ? asset('images/facilities/'.$facility->facility_image) : asset('images/bplogo.png') }}"
-                            alt="Facility Image" class="w-full h-full object-cover">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <h3 class="text-xl font-bold text-gray-900 text-center mb-1">{{ $facility->name }}</h3>
-                        <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline ?? 'Quality
-                            healthcare
-                            services' }}
-                        </p>
-                        @if($facility->address)
-                        <div class="flex flex-col items-center text-center mb-2">
-                            <span class="text-sm text-gray-500">{{ $facility->address }}</span>
-                            @if($facility->city || $facility->state || $facility->zip)
-                            <span class="text-sm text-gray-400 mt-1">
-                                {{ $facility->city ?? '' }}{{ $facility->city && ($facility->state ||
-                                $facility->zip) ?
-                                ', ' : '' }}{{ $facility->state ?? '' }}{{ $facility->state && $facility->zip ? ' '
-                                : ''
-                                }}{{ $facility->zip ?? '' }}
-                            </span>
-                            @endif
-                        </div>
-                        @endif
-                    </div>
-                    <div class="flex justify-center items-center mt-4">
-                        <span class="text-xl font-bold text-primary tracking-wide">
-                            {{ $facility->phone ? '(' . substr($facility->phone,0,3) . ') ' .
-                            substr($facility->phone,3,3) . '-' . substr($facility->phone,6,4) : 'N/A' }}
-                        </span>
-                    </div>
-                    <!-- Facility Details -->
-                    <div class="p-6 space-y-3 flex flex-col gap-2">
-                        <div class="flex items-center gap-4 mt-2">
-                            @if($facility->layout_template)
-                            <div class="flex items-center gap-2 text-sm">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                                </svg>
-                                <span class="text-gray-600">{{ ucfirst($facility->layout_template) }}</span>
-                            </div>
-                            @endif
-                            @if($facility->beds)
-                            <div class="flex items-center gap-2 text-sm">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                </svg>
-                                <span class="text-gray-600">{{ $facility->beds }} beds</span>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Facility Location Map -->
-                    @if($facility->location_map)
-                    <div class="p-6 pt-0">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Our Location</label>
-                        @if(\Illuminate\Support\Str::startsWith($facility->location_map, ['http://', 'https://']))
-                        <iframe src="{{ $facility->location_map }}" width="100%" height="200" style="border:0;"
-                            allowfullscreen loading="lazy"></iframe>
-                        @else
-                        {!! $facility->location_map !!}
-                        @endif
-                    </div>
-                    @endif
-
-                    <!-- Facility Colors -->
-                    <div class="flex items-center justify-center gap-2 mb-4">
-                        @if($facility->primary_color)
-                        <div class="flex items-center gap-2 text-sm">
-                            <div class="w-5 h-5 rounded border border-gray-300"
-                                style="background-color: {{ $facility->primary_color }};" title="Primary"></div>
-                            <span class="text-sm">Primary</span>
-                        </div>
-                        @endif
-
-                        @if($facility->secondary_color)
-                        <div class="w-5 h-5 rounded border border-gray-300"
-                            style="background-color: {{ $facility->secondary_color }};" title="Secondary"></div>
-                        <span class="text-sm">Secondary</span>
-                        @endif
-
-                        @if($facility->accent_color)
-                        <div class="w-5 h-5 rounded border border-gray-300"
-                            style="background-color: {{ $facility->accent_color }};" title="Accent"></div>
-                        <span class="text-sm">Accent</span>
-                        @endif
-                    </div>
-                    <!-- Action Buttons -->
-                    <div class="p-6 pt-0 mt-auto space-y-3">
-                        <div class="flex gap-2 justify-center">
-                            <a href="{{ route('admin.facilities.edit', $facility->id) }}"
-                                class="bg-blue-600 text-white text-center py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
-                                Edit Details
-                            </a>
-                        </div>
-                        <div class="flex gap-2 justify-center">
-                            <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
-                                class="bg-gray-100 text-gray-700 text-center py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">Preview
-                                Site</a>
-                            @if($facility->domain)
-                            <a href="http://{{ $facility->domain }}" target="_blank"
-                                class="bg-green-100 text-green-700 text-center py-2 px-4 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">Visit
-                                Live</a>
-                            @endif
-                        </div>
-                    </div>
-                    @if($facility->domain)
-                    <div class="flex flex-col gap-2 items-center mt-2">
-                        <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                            <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+    <div class="min-h-screen bg-gray-50">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('admin.dashboard.index') }}" class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
-                            {{ $facility->domain }}
-                        </span>
-
-                        @php
-                        $rows = \App\Support\HipaaWebsiteChecklist::forFacility($facility->toArray(),
-                        $facility->hipaa_flags ?? []);
-                        $total = count($rows);
-                        $ok = collect($rows)->where('passed', true)->count();
-                        @endphp
-                        <div class="flex items-center justify-center gap-2">
-                            <div>
-                                <a href="{{ route('admin.facilities.hipaa.interactive', $facility) }}"
-                                    class="text-sm font-semibold rounded-full px-2 py-2 border"
-                                    style="border-color: {{ $facility->primary_color ?? '#0EA5E9' }}; color: {{ $facility->primary_color ?? '#0EA5E9' }};">
-                                    HIPAA Checklist
-                                </a>
-                            </div>
-                            <div class="inline-flex items-center gap-1 rounded-full px-2 py-2 text-sm ring-1"
-                                @class([ 'bg-emerald-50 text-emerald-700 ring-emerald-200'=> $ok === $total && $total >
-                                0,
-                                'bg-amber-50 text-amber-700 ring-amber-200' => $ok < $total, ])>
-                                    {{ $ok }}/{{ $total }}{{ $ok === $total && $total > 0 ? ' Passed' : '' }}
-                            </div>
+                        </a>
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900">Facility Management</h1>
+                            <p class="text-gray-600">Edit and configure your facilities</p>
                         </div>
                     </div>
-                    @endif
+                    <div class="bg-primary/10 px-4 py-2 rounded-lg">
+                        <span class="text-primary font-semibold">{{ $facilities->count() }} Total Facilities</span>
+                    </div>
                 </div>
             </div>
-            @endforeach
         </div>
 
-        <!-- Empty State -->
-        @if($facilities->isEmpty())
-        <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No facilities found</h3>
-            <p class="mt-1 text-sm text-gray-500">Get started by seeding some facilities.</p>
+        <!-- Main Content -->
+        <div class="w-full px-2 sm:px-4 lg:px-8 py-8">
+
+            <!-- Facilities Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach($facilities as $facility)
+                <div
+                    class="bg-white rounded-2xl border border-gray-300 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full relative">
+                    <!-- Facility ID Badge -->
+                    <div class="absolute top-4 left-4 z-10">
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-400 text-yellow-900 shadow border border-yellow-300">
+                            ID: {{ $facility->id }}
+                        </span>
+                    </div>
+
+                    <!-- Active/Inactive Badge -->
+                    <div class="absolute top-4 right-4 z-10">
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $facility->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} shadow">
+                            {{ $facility->is_active ? 'Active' : 'Inactive' }}
+                        </span>
+                    </div>
+                    <!-- Facility Header -->
+                    <div class="p-6 border-b border-gray-300">
+                        <div class="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer"
+                            @click="enlargeImage = '{{ $facility->facility_image ? asset('images/facilities/'.$facility->facility_image) : asset('images/bplogo.png') }}'; showModal = true;">
+                            <img src="{{ $facility->facility_image ? asset('images/facilities/'.$facility->facility_image) : asset('images/bplogo.png') }}"
+                                alt="Facility Image" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <h3 class="text-xl font-bold text-gray-900 text-center mb-1">{{ $facility->name }}</h3>
+                            <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline ?? 'Quality
+                                healthcare
+                                services' }}
+                            </p>
+                            @if($facility->address)
+                            <div class="flex flex-col items-center text-center mb-2">
+                                <span class="text-sm text-gray-500">{{ $facility->address }}</span>
+                                @if($facility->city || $facility->state || $facility->zip)
+                                <span class="text-sm text-gray-400 mt-1">
+                                    {{ $facility->city ?? '' }}{{ $facility->city && ($facility->state ||
+                                    $facility->zip) ?
+                                    ', ' : '' }}{{ $facility->state ?? '' }}{{ $facility->state && $facility->zip ? ' '
+                                    : ''
+                                    }}{{ $facility->zip ?? '' }}
+                                </span>
+                                @endif
+                            </div>
+                            @endif
+                        </div>
+                        <div class="flex justify-center items-center mt-4">
+                            <span class="text-xl font-bold text-primary tracking-wide">
+                                {{ $facility->phone ? '(' . substr($facility->phone,0,3) . ') ' .
+                                substr($facility->phone,3,3) . '-' . substr($facility->phone,6,4) : 'N/A' }}
+                            </span>
+                        </div>
+                        <!-- Facility Details -->
+                        <div class="p-6 space-y-3 flex flex-col gap-2">
+                            <div class="flex items-center gap-4 mt-2">
+                                @if($facility->layout_template)
+                                <div class="flex items-center gap-2 text-sm">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                    </svg>
+                                    <span class="text-gray-600">{{ ucfirst($facility->layout_template) }}</span>
+                                </div>
+                                @endif
+                                @if($facility->beds)
+                                <div class="flex items-center gap-2 text-sm">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                    </svg>
+                                    <span class="text-gray-600">{{ $facility->beds }} beds</span>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Facility Location Map -->
+                        @if($facility->location_map)
+                        <div class="p-6 pt-0">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Our Location</label>
+                            @if(\Illuminate\Support\Str::startsWith($facility->location_map, ['http://', 'https://']))
+                            <iframe src="{{ $facility->location_map }}" width="100%" height="200" style="border:0;"
+                                allowfullscreen loading="lazy"></iframe>
+                            @else
+                            {!! $facility->location_map !!}
+                            @endif
+                        </div>
+                        @endif
+
+                        <!-- Facility Colors -->
+                        <div class="flex items-center justify-center gap-2 mb-4">
+                            @if($facility->primary_color)
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-5 h-5 rounded border border-gray-300"
+                                    style="background-color: {{ $facility->primary_color }};" title="Primary"></div>
+                                <span class="text-sm">Primary</span>
+                            </div>
+                            @endif
+
+                            @if($facility->secondary_color)
+                            <div class="w-5 h-5 rounded border border-gray-300"
+                                style="background-color: {{ $facility->secondary_color }};" title="Secondary"></div>
+                            <span class="text-sm">Secondary</span>
+                            @endif
+
+                            @if($facility->accent_color)
+                            <div class="w-5 h-5 rounded border border-gray-300"
+                                style="background-color: {{ $facility->accent_color }};" title="Accent"></div>
+                            <span class="text-sm">Accent</span>
+                            @endif
+                        </div>
+                        <!-- Action Buttons -->
+                        <div class="p-6 pt-0 mt-auto space-y-3">
+                            <div class="flex gap-2 justify-center">
+                                <a href="{{ route('admin.facilities.edit', $facility->id) }}"
+                                    class="bg-blue-600 text-white text-center py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                                    Edit Details
+                                </a>
+                            </div>
+                            <div class="flex gap-3 justify-center mt-2">
+                                <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
+                                    class="bg-gray-300 hover:bg-gray-400 text-primary border-2 border-gray-600 shadow-sm text-center py-2 px-5 rounded-xl font-semibold hover:bg-primary hover:text-white hover:shadow-lg transition-all duration-150 text-base">
+                                    Preview Site
+                                </a>
+                                @if($facility->domain)
+                                <a href="http://{{ $facility->domain }}" target="_blank"
+                                    class="bg-green-50 text-green-700 border-2 border-green-600 shadow-sm text-center py-2 px-5 rounded-xl font-semibold hover:bg-green-600 hover:text-white hover:shadow-lg transition-all duration-150 text-base">
+                                    Visit Live
+                                </a>
+                                @endif
+                            </div>
+                        </div>
+                        @if($facility->domain)
+                        <div class="flex flex-col gap-2 items-center mt-2">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                                </svg>
+                                {{ $facility->domain }}
+                            </span>
+
+                            @php
+                            $rows = \App\Support\HipaaWebsiteChecklist::forFacility($facility->toArray(),
+                            $facility->hipaa_flags ?? []);
+                            $total = count($rows);
+                            $ok = collect($rows)->where('passed', true)->count();
+                            @endphp
+                            <div class="flex items-center justify-center gap-2">
+                                <div>
+                                    <a href="{{ route('admin.facilities.hipaa.interactive', $facility) }}"
+                                        class="text-sm font-semibold rounded-full px-2 py-2 border"
+                                        style="border-color: {{ $facility->primary_color ?? '#0EA5E9' }}; color: {{ $facility->primary_color ?? '#0EA5E9' }};">
+                                        HIPAA Checklist
+                                    </a>
+                                </div>
+                                <div class="inline-flex items-center gap-1 rounded-full px-2 py-2 text-sm ring-1"
+                                    @class([ 'bg-emerald-50 text-emerald-700 ring-emerald-200'=> $ok === $total &&
+                                    $total >
+                                    0,
+                                    'bg-amber-50 text-amber-700 ring-amber-200' => $ok < $total, ])>
+                                        {{ $ok }}/{{ $total }}{{ $ok === $total && $total > 0 ? ' Passed' : '' }}
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            <!-- Empty State -->
+            @if($facilities->isEmpty())
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No facilities found</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by seeding some facilities.</p>
+            </div>
+            @endif
         </div>
-        @endif
+    </div>
+    <!-- Image Modal (global, outside the grid) -->
+    <div x-show="showModal" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;">
+        <div class="relative bg-white rounded-lg shadow-lg max-w-3xl w-full p-4 flex flex-col items-center">
+            <button @click="showModal = false"
+                class="absolute top-2 right-2 text-gray-700 hover:text-red-500 text-2xl font-bold">&times;</button>
+            <img :src="enlargeImage" alt="Enlarged Facility Image" class="max-h-[70vh] w-auto rounded-lg shadow" />
+        </div>
     </div>
     @endsection

@@ -147,6 +147,24 @@
 
                 <!-- Modal Body -->
                 <form id="testimonialForm" class="p-8">
+                    <input type="hidden" id="currentPhotoUrl" name="current_photo_url" value="">
+                    <!-- Photo Upload & Preview -->
+                    <div class="mb-6 flex items-center gap-6">
+                        <div>
+                            <label for="photo" class="block text-sm font-semibold text-gray-700 mb-2">Photo</label>
+                            <input type="file" id="photo" name="photo" accept="image/*" class="block">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="block mb-1 font-semibold">Preview</span>
+                            <img id="photoPreview" src="" alt="Photo Preview"
+                                class="w-16 h-16 rounded-full object-cover border hidden">
+                            <svg id="defaultAvatar" class="w-16 h-16 text-gray-300" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path
+                                    d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" />
+                            </svg>
+                        </div>
+                    </div>
                     <input type="hidden" id="modalFacilityId" name="facility_id">
                     <input type="hidden" id="testimonialId" name="testimonial_id" value="">
                     <input type="hidden" id="isEditMode" name="is_edit" value="false">
@@ -241,6 +259,18 @@
                         </div>
 
                         <div class="space-y-5">
+                            <!-- Title Header -->
+                            <div>
+                                <label for="testimonialTitleHeader"
+                                    class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Testimonial Title/Header
+                                </label>
+                                <input type="text" id="testimonialTitleHeader" name="title_header"
+                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                                    placeholder="e.g. A Journey of Healing, Exceptional Care Experience">
+                                <p class="text-xs text-gray-500 mt-2">Optional: Short headline for this testimonial</p>
+                            </div>
+
                             <!-- Rating -->
                             <div>
                                 <label for="rating"
@@ -267,13 +297,26 @@
                             <!-- Testimonial Content -->
                             <div>
                                 <label for="testimonialText" class="block text-sm font-semibold text-gray-700 mb-2">
-                                    Testimonial Content <span class="text-red-500">*</span>
+                                    Testimonial Content <span class="text-gray-400 text-sm">(Short Version)</span><span
+                                        class="text-red-500">*</span>
                                 </label>
                                 <textarea id="testimonialText" name="quote" rows="6" required
                                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
                                     placeholder="Write the testimonial content here. Share the positive experience and what made our facility special..."></textarea>
                                 <p class="text-xs text-gray-500 mt-2">Minimum 20 characters recommended for a meaningful
                                     testimonial</p>
+                            </div>
+
+                            <!-- Story (Longer Narrative) -->
+                            <div>
+                                <label for="testimonialStory" class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Testimonial Story <span class="text-gray-400 text-sm">(Full story)</span>
+                                </label>
+                                <textarea id="testimonialStory" name="story" rows="4"
+                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
+                                    placeholder="Share a longer story or details about the experience..."></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Optional: Add more details about the testimonial
+                                    experience</p>
                             </div>
                         </div>
                     </div>
@@ -339,503 +382,544 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    const facilitySelect = document.getElementById('facilitySelect');
-    const testimonialsContent = document.getElementById('testimonialsContent');
-    const defaultState = document.getElementById('defaultState');
-    const addTestimonialBtn = document.getElementById('addTestimonialBtn');
-    const modal = document.getElementById('addTestimonialModal');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const cancelModalBtn = document.getElementById('cancelModalBtn');
-    const form = document.getElementById('testimonialForm');
-    
-    let currentFacilityId = null;
-    let currentTestimonials = [];
-    
-    // CSRF Token for API calls
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
-                     document.querySelector('input[name="_token"]')?.value;
-    
-    // Handle facility selection
-    facilitySelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        currentFacilityId = this.value;
-        
-        if (this.value) {
-            // Show testimonials content
-            testimonialsContent.classList.remove('hidden');
-            defaultState.classList.add('hidden');
-            
-            // Update selected facility info
-            document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
-            document.getElementById('selectedFacilityLocation').textContent = 
-                `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
-            
-            // Load testimonials for this facility
-            loadTestimonials(this.value);
-        } else {
-            // Show default state
-            currentFacilityId = null;
-            testimonialsContent.classList.add('hidden');
-            defaultState.classList.remove('hidden');
+        const facilitySelect = document.getElementById('facilitySelect');
+        const testimonialsContent = document.getElementById('testimonialsContent');
+        const defaultState = document.getElementById('defaultState');
+        const addTestimonialBtn = document.getElementById('addTestimonialBtn');
+        const modal = document.getElementById('addTestimonialModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        const form = document.getElementById('testimonialForm');
+
+        let currentFacilityId = null;
+        let currentTestimonials = [];
+
+        // CSRF Token for API calls
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+            document.querySelector('input[name="_token"]')?.value;
+
+        // Load testimonials from API
+        async function loadTestimonials(facilityId) {
+            try {
+                document.getElementById('testimonialsList').innerHTML = '<div class="p-6 text-center"><i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i><p class="mt-2 text-gray-500">Loading testimonials...</p></div>';
+
+                const response = await fetch(`/admin/facilities/web-contents/testimonials/${facilityId}/data`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentTestimonials = result.testimonials;
+                    document.getElementById('testimonialCount').textContent = result.count;
+                    renderTestimonials(result.testimonials);
+                } else {
+                    throw new Error(result.message || 'Failed to load testimonials');
+                }
+            } catch (error) {
+                console.error('Error loading testimonials:', error);
+                document.getElementById('testimonialsList').innerHTML = `
+                    <div class="p-6 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading testimonials</p>
+                        <p class="text-sm mt-1">${error.message}</p>
+                    </div>
+                `;
+            }
         }
-    });
-    
-    // Modal handlers with animations
-    addTestimonialBtn.addEventListener('click', function() {
-        if (currentFacilityId) {
-            document.getElementById('modalFacilityId').value = currentFacilityId;
-            openModal();
+
+        // Render testimonials list
+        function renderTestimonials(testimonials) {
+            const container = document.getElementById('testimonialsList');
+
+            if (testimonials.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center text-gray-500">
+                        <i class="fas fa-quote-right text-4xl text-gray-300 mb-4"></i>
+                        <p>No testimonials found for this facility.</p>
+                        <p class="text-sm mt-2">Click "Add New Testimonial" to create the first one.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = testimonials.map(testimonial => {
+                const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+                const featuredBadge = testimonial.is_featured ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-2"><i class="fas fa-star mr-1"></i>Featured</span>' : '';
+                const statusBadge = testimonial.is_active ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">Active</span>' : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">Inactive</span>';
+
+                // Use uploaded photo or default avatar SVG
+                let photoHtml = '';
+                if (testimonial.photo_url) {
+                    photoHtml = `<img src="${testimonial.photo_url}" alt="Photo" class="w-12 h-12 rounded-full object-cover border mr-4">`;
+                } else {
+                    photoHtml = `<svg class="w-12 h-12 text-gray-300 mr-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" /></svg>`;
+                }
+
+                return `
+                    <div class="p-6 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start flex-1">
+                                ${photoHtml}
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <h4 class="text-lg font-semibold text-gray-900">${testimonial.name}</h4>
+                                        ${testimonial.title_header ? `<span class='ml-2 text-primary font-bold text-base'>${testimonial.title_header}</span>` : ''}
+                                        ${featuredBadge}
+                                        ${statusBadge}
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            ${testimonial.title ? `<span class="font-medium">${testimonial.title}</span>` : ''}
+                                            ${testimonial.title && testimonial.relationship ? '<span class="mx-2">•</span>' : ''}
+                                            ${testimonial.relationship ? `<span>${testimonial.relationship}</span>` : ''}
+                                        </div>
+                                        <div class="flex items-center mt-1">
+                                            <span class="text-yellow-400 mr-2">${stars}</span>
+                                            <span class="text-sm text-gray-500">(${testimonial.rating}/5)</span>
+                                        </div>
+                                    </div>
+
+                                    <blockquote class="text-gray-700 italic border-l-4 border-primary pl-4 py-2">
+                                        "${testimonial.quote}"
+                                    </blockquote>
+                                    ${testimonial.story ? `<div class='mt-2 text-gray-600 text-sm'>${testimonial.story}</div>` : ''}
+
+                                    <div class="mt-3 text-xs text-gray-500">
+                                        Created: ${new Date(testimonial.created_at).toLocaleDateString()}
+                                        ${testimonial.updated_at !== testimonial.created_at ? `• Updated: ${new Date(testimonial.updated_at).toLocaleDateString()}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-2 ml-4">
+                                <button onclick="editTestimonial(${testimonial.id})" class="text-blue-600 hover:text-blue-800 p-2" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteTestimonial(${testimonial.id}, '${testimonial.name}')" class="text-red-600 hover:text-red-800 p-2" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
-    });
-    
-    closeModalBtn.addEventListener('click', () => closeModal());
-    cancelModalBtn.addEventListener('click', () => closeModal());
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeModal();
+
+        // Helper function to update rating stars display
+        function updateRatingDisplay(rating) {
+            const stars = document.querySelectorAll('.rating-star');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.remove('text-gray-300');
+                    star.classList.add('text-yellow-400');
+                } else {
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-gray-300');
+                }
+            });
         }
-    });
-    
-    // Enhanced modal functions with animations
-    function showModal() {
-        modal.classList.remove('hidden');
-        const modalContent = document.getElementById('modalContent');
-        
-        // Trigger animation
-        setTimeout(() => {
-            modalContent.classList.remove('scale-95', 'opacity-0');
-            modalContent.classList.add('scale-100', 'opacity-100');
-        }, 10);
-        
-        // Focus first input
-        setTimeout(() => {
-            document.getElementById('authorName').focus();
-        }, 200);
-    }
-    
-    function openModal() {
-        // Reset form for add mode
-        form.reset();
-        document.getElementById('testimonialId').value = '';
-        document.getElementById('isEditMode').value = 'false';
-        document.getElementById('modalFacilityId').value = currentFacilityId;
-        document.getElementById('isActive').checked = true;
-        
-        // Reset modal title
-        const modalTitle = document.querySelector('#addTestimonialModal h3');
-        const modalSubtitle = document.querySelector('#addTestimonialModal p.text-teal-100');
-        modalTitle.textContent = 'Add New Testimonial';
-        modalSubtitle.textContent = 'Share a positive experience about our facility';
-        
-        // Reset submit button for add mode
-        const submitIcon = document.getElementById('submitIcon');
-        const submitText = document.getElementById('submitText');
-        if (submitIcon && submitText) {
-            submitIcon.className = 'fas fa-plus';
-            submitText.textContent = 'Add Testimonial';
+
+        // Utility functions
+        function showAlert(type, message) {
+            const alertTypes = {
+                success: { bg: 'bg-green-100', text: 'text-green-800', icon: 'fas fa-check-circle' },
+                error: { bg: 'bg-red-100', text: 'text-red-800', icon: 'fas fa-exclamation-circle' },
+                info: { bg: 'bg-blue-100', text: 'text-blue-800', icon: 'fas fa-info-circle' }
+            };
+            const config = alertTypes[type] || alertTypes.info;
+            const alert = document.createElement('div');
+            alert.className = `fixed top-4 right-4 z-50 ${config.bg} ${config.text} px-4 py-3 rounded-lg shadow-lg max-w-sm`;
+            alert.innerHTML = `
+                <div class="flex items-center">
+                    <i class="${config.icon} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(alert);
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
         }
-        
-        // Reset rating display
-        updateRatingDisplay(5);
-        document.getElementById('rating').value = 5;
-        
-        showModal();
-    }
-    
-    function closeModal() {
-        const modalContent = document.getElementById('modalContent');
-        
-        // Animate out
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-        
-        // Hide modal after animation
-        setTimeout(() => {
-            modal.classList.add('hidden');
+
+        // Delete testimonial
+        window.deleteTestimonial = async function(testimonialId, testimonialName) {
+            if (!confirm(`Are you sure you want to delete the testimonial from "${testimonialName}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/facilities/web-contents/testimonials/${testimonialId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', result.message);
+                    if (currentFacilityId) {
+                        loadTestimonials(currentFacilityId);
+                    }
+                } else {
+                    showAlert('error', result.message || 'Error deleting testimonial');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('error', 'Network error occurred while deleting testimonial');
+            }
+        };
+
+        // Edit testimonial function
+        window.editTestimonial = async function(testimonialId) {
+            try {
+                console.log('Fetching testimonial with ID:', testimonialId);
+
+                // Get testimonial data
+                const response = await fetch(`/admin/facilities/web-contents/testimonials/${testimonialId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success) {
+                    console.log('Testimonial data received:', data.testimonial);
+
+                    // Update modal title first
+                    const modalTitle = document.querySelector('#addTestimonialModal h3');
+                    const modalSubtitle = document.querySelector('#addTestimonialModal p.text-teal-100');
+                    if (modalTitle && modalSubtitle) {
+                        modalTitle.textContent = 'Edit Testimonial';
+                        modalSubtitle.textContent = 'Update the testimonial information';
+                    }
+
+                    // Update submit button for edit mode
+                    const submitIcon = document.getElementById('submitIcon');
+                    const submitText = document.getElementById('submitText');
+                    if (submitIcon && submitText) {
+                        submitIcon.className = 'fas fa-save';
+                        submitText.textContent = 'Update Testimonial';
+                    }
+
+                    // Show modal first
+                    showModal();
+
+                    // Wait a bit for modal to be fully rendered before populating
+                    setTimeout(() => {
+                        populateEditForm(data.testimonial);
+                    }, 100);
+                } else {
+                    showAlert('error', 'Failed to load testimonial data');
+                }
+            } catch (error) {
+                console.error('Error details:', error);
+                showAlert('error', `Network error occurred while loading testimonial: ${error.message}`);
+            }
+        };
+
+        // Populate form with testimonial data for editing
+        function populateEditForm(testimonial) {
+            // Show photo preview if available
+            const photoPreview = document.getElementById('photoPreview');
+            const defaultAvatar = document.getElementById('defaultAvatar');
+            const currentPhotoUrlInput = document.getElementById('currentPhotoUrl');
+            if (testimonial.photo_url) {
+                photoPreview.src = testimonial.photo_url;
+                photoPreview.classList.remove('hidden');
+                defaultAvatar.classList.add('hidden');
+                currentPhotoUrlInput.value = testimonial.photo_url;
+            } else {
+                photoPreview.src = '';
+                photoPreview.classList.add('hidden');
+                defaultAvatar.classList.remove('hidden');
+                currentPhotoUrlInput.value = '';
+            }
+            console.log('Populating form with testimonial:', testimonial);
+
+            try {
+                // Set hidden fields
+                const testimonialIdField = document.getElementById('testimonialId');
+                const isEditModeField = document.getElementById('isEditMode');
+                const modalFacilityIdField = document.getElementById('modalFacilityId');
+
+                if (!testimonialIdField) throw new Error('testimonialId field not found');
+                if (!isEditModeField) throw new Error('isEditMode field not found');
+                if (!modalFacilityIdField) throw new Error('modalFacilityId field not found');
+
+                testimonialIdField.value = testimonial.id;
+                isEditModeField.value = 'true';
+                modalFacilityIdField.value = testimonial.facility_id;
+
+                // Populate form fields
+                const authorNameField = document.getElementById('authorName');
+                const authorTitleField = document.getElementById('authorTitle');
+                const relationshipField = document.getElementById('relationship');
+                const quoteField = document.getElementById('testimonialText');
+                const ratingField = document.getElementById('rating');
+                const isActiveField = document.getElementById('isActive');
+                const isFeaturedField = document.getElementById('isFeatured');
+                const titleHeaderField = document.getElementById('testimonialTitleHeader');
+                const storyField = document.getElementById('testimonialStory');
+
+                if (!authorNameField) throw new Error('authorName field not found');
+                if (!authorTitleField) throw new Error('authorTitle field not found');
+                if (!relationshipField) throw new Error('relationship field not found');
+                if (!quoteField) throw new Error('testimonialText field not found');
+                if (!ratingField) throw new Error('rating field not found');
+                if (!isActiveField) throw new Error('isActive field not found');
+                if (!isFeaturedField) throw new Error('isFeatured field not found');
+                if (!titleHeaderField) throw new Error('testimonialTitleHeader field not found');
+                if (!storyField) throw new Error('testimonialStory field not found');
+
+                authorNameField.value = testimonial.name || '';
+                authorTitleField.value = testimonial.title || '';
+                relationshipField.value = testimonial.relationship || '';
+                quoteField.value = testimonial.quote || '';
+                ratingField.value = testimonial.rating || 5;
+                isActiveField.checked = testimonial.is_active == 1;
+                isFeaturedField.checked = testimonial.is_featured == 1;
+                titleHeaderField.value = testimonial.title_header || '';
+                storyField.value = testimonial.story || '';
+
+                // Update rating stars display
+                updateRatingDisplay(testimonial.rating || 5);
+
+                console.log('Form populated successfully');
+            } catch (error) {
+                console.error('Error populating form:', error);
+                showAlert('error', `Error populating form: ${error.message}`);
+            }
+        }
+
+        // Handle facility selection
+        facilitySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            currentFacilityId = this.value;
+
+            if (this.value) {
+                // Show testimonials content
+                testimonialsContent.classList.remove('hidden');
+                defaultState.classList.add('hidden');
+
+                // Update selected facility info
+                document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
+                document.getElementById('selectedFacilityLocation').textContent =
+                    `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
+
+                // Load testimonials for this facility
+                loadTestimonials(this.value);
+            } else {
+                // Show default state
+                currentFacilityId = null;
+                testimonialsContent.classList.add('hidden');
+                defaultState.classList.remove('hidden');
+            }
+        });
+
+        // Modal handlers with animations
+        addTestimonialBtn.addEventListener('click', function() {
+            if (currentFacilityId) {
+                document.getElementById('modalFacilityId').value = currentFacilityId;
+                openModal();
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => closeModal());
+        cancelModalBtn.addEventListener('click', () => closeModal());
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Enhanced modal functions with animations
+        function showModal() {
+            modal.classList.remove('hidden');
+            const modalContent = document.getElementById('modalContent');
+
+            // Trigger animation
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // Focus first input
+            setTimeout(() => {
+                document.getElementById('authorName').focus();
+            }, 200);
+        }
+
+        function openModal() {
+            // Reset form for add mode
             form.reset();
-            document.getElementById('isActive').checked = true;
-            // Reset edit mode fields
             document.getElementById('testimonialId').value = '';
             document.getElementById('isEditMode').value = 'false';
-            
-            // Reset submit button to add mode
+            document.getElementById('modalFacilityId').value = currentFacilityId;
+            document.getElementById('isActive').checked = true;
+            // Reset new fields
+            document.getElementById('testimonialTitleHeader').value = '';
+            document.getElementById('testimonialStory').value = '';
+            // Reset photo preview to default icon
+            const photoPreview = document.getElementById('photoPreview');
+            const defaultAvatar = document.getElementById('defaultAvatar');
+            const currentPhotoUrlInput = document.getElementById('currentPhotoUrl');
+            photoPreview.src = '';
+            photoPreview.classList.add('hidden');
+            defaultAvatar.classList.remove('hidden');
+            currentPhotoUrlInput.value = '';
+
+            // Reset modal title
+            const modalTitle = document.querySelector('#addTestimonialModal h3');
+            const modalSubtitle = document.querySelector('#addTestimonialModal p.text-teal-100');
+            modalTitle.textContent = 'Add New Testimonial';
+            modalSubtitle.textContent = 'Share a positive experience about our facility';
+
+            // Reset submit button for add mode
             const submitIcon = document.getElementById('submitIcon');
             const submitText = document.getElementById('submitText');
             if (submitIcon && submitText) {
                 submitIcon.className = 'fas fa-plus';
                 submitText.textContent = 'Add Testimonial';
             }
-        }, 300);
-    }
-    
-    // Form submission with API integration
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const isEdit = formData.get('is_edit') === 'true';
-        const testimonialId = formData.get('testimonial_id');
-        
-        const data = {
-            facility_id: parseInt(formData.get('facility_id')),
-            name: formData.get('name'),
-            title: formData.get('title') || null,
-            relationship: formData.get('relationship') || null,
-            quote: formData.get('quote'),
-            rating: parseInt(formData.get('rating')),
-            is_active: formData.get('is_active') ? true : false,
-            is_featured: formData.get('is_featured') ? true : false
-        };
-        
-        try {
-            let url, method;
-            if (isEdit) {
-                url = `/admin/facilities/web-contents/testimonials/${testimonialId}`;
-                method = 'PUT';
-            } else {
-                url = '{{ route("admin.facilities.webcontents.testimonials.store") }}';
-                method = 'POST';
-            }
-            
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                const actionText = isEdit ? 'updated' : 'created';
-                showAlert('success', `Testimonial ${actionText} successfully!`);
-                closeModal();
-                
-                // Reload testimonials for current facility
-                if (currentFacilityId) {
-                    loadTestimonials(currentFacilityId);
-                }
-            } else {
-                showAlert('error', result.message || `Error ${isEdit ? 'updating' : 'creating'} testimonial`);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            const actionText = isEdit ? 'updating' : 'creating';
-            showAlert('error', `Network error occurred while ${actionText} testimonial`);
+
+            // Reset rating display
+            updateRatingDisplay(5);
+            document.getElementById('rating').value = 5;
+
+            showModal();
         }
-    });
-    
-    // Load testimonials from API
-    async function loadTestimonials(facilityId) {
-        try {
-            document.getElementById('testimonialsList').innerHTML = '<div class="p-6 text-center"><i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i><p class="mt-2 text-gray-500">Loading testimonials...</p></div>';
-            
-            const response = await fetch(`/admin/facilities/web-contents/testimonials/${facilityId}/data`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                currentTestimonials = result.testimonials;
-                document.getElementById('testimonialCount').textContent = result.count;
-                renderTestimonials(result.testimonials);
-            } else {
-                throw new Error(result.message || 'Failed to load testimonials');
-            }
-        } catch (error) {
-            console.error('Error loading testimonials:', error);
-            document.getElementById('testimonialsList').innerHTML = `
-                <div class="p-6 text-center text-red-500">
-                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                    <p>Error loading testimonials</p>
-                    <p class="text-sm mt-1">${error.message}</p>
-                </div>
-            `;
-        }
-    }
-    
-    // Render testimonials list
-    function renderTestimonials(testimonials) {
-        const container = document.getElementById('testimonialsList');
-        
-        if (testimonials.length === 0) {
-            container.innerHTML = `
-                <div class="p-6 text-center text-gray-500">
-                    <i class="fas fa-quote-right text-4xl text-gray-300 mb-4"></i>
-                    <p>No testimonials found for this facility.</p>
-                    <p class="text-sm mt-2">Click "Add New Testimonial" to create the first one.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = testimonials.map(testimonial => {
-            const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
-            const featuredBadge = testimonial.is_featured ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-2"><i class="fas fa-star mr-1"></i>Featured</span>' : '';
-            const statusBadge = testimonial.is_active ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">Active</span>' : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">Inactive</span>';
-            
-            return `
-                <div class="p-6 hover:bg-gray-50 transition-colors">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center mb-2">
-                                <h4 class="text-lg font-semibold text-gray-900">${testimonial.name}</h4>
-                                ${featuredBadge}
-                                ${statusBadge}
-                            </div>
-                            
-                            <div class="mb-2">
-                                <div class="flex items-center text-sm text-gray-600">
-                                    ${testimonial.title ? `<span class="font-medium">${testimonial.title}</span>` : ''}
-                                    ${testimonial.title && testimonial.relationship ? '<span class="mx-2">•</span>' : ''}
-                                    ${testimonial.relationship ? `<span>${testimonial.relationship}</span>` : ''}
-                                </div>
-                                <div class="flex items-center mt-1">
-                                    <span class="text-yellow-400 mr-2">${stars}</span>
-                                    <span class="text-sm text-gray-500">(${testimonial.rating}/5)</span>
-                                </div>
-                            </div>
-                            
-                            <blockquote class="text-gray-700 italic border-l-4 border-primary pl-4 py-2">
-                                "${testimonial.quote}"
-                            </blockquote>
-                            
-                            <div class="mt-3 text-xs text-gray-500">
-                                Created: ${new Date(testimonial.created_at).toLocaleDateString()}
-                                ${testimonial.updated_at !== testimonial.created_at ? `• Updated: ${new Date(testimonial.updated_at).toLocaleDateString()}` : ''}
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 ml-4">
-                            <button onclick="editTestimonial(${testimonial.id})" class="text-blue-600 hover:text-blue-800 p-2" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteTestimonial(${testimonial.id}, '${testimonial.name}')" class="text-red-600 hover:text-red-800 p-2" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-    
-    // Delete testimonial
-    window.deleteTestimonial = async function(testimonialId, testimonialName) {
-        if (!confirm(`Are you sure you want to delete the testimonial from "${testimonialName}"? This action cannot be undone.`)) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/admin/facilities/web-contents/testimonials/${testimonialId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                showAlert('success', result.message);
-                if (currentFacilityId) {
-                    loadTestimonials(currentFacilityId);
-                }
-            } else {
-                showAlert('error', result.message || 'Error deleting testimonial');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showAlert('error', 'Network error occurred while deleting testimonial');
-        }
-    };
-    
-    // Edit testimonial function
-    window.editTestimonial = async function(testimonialId) {
-        try {
-            console.log('Fetching testimonial with ID:', testimonialId);
-            
-            // Get testimonial data
-            const response = await fetch(`/admin/facilities/web-contents/testimonials/${testimonialId}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            });
-            
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Response error:', errorText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            console.log('Response data:', data);
-            
-            if (data.success) {
-                console.log('Testimonial data received:', data.testimonial);
-                
-                // Update modal title first
-                const modalTitle = document.querySelector('#addTestimonialModal h3');
-                const modalSubtitle = document.querySelector('#addTestimonialModal p.text-teal-100');
-                if (modalTitle && modalSubtitle) {
-                    modalTitle.textContent = 'Edit Testimonial';
-                    modalSubtitle.textContent = 'Update the testimonial information';
-                }
-                
-                // Update submit button for edit mode
+
+        function closeModal() {
+            const modalContent = document.getElementById('modalContent');
+
+            // Animate out
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+
+            // Hide modal after animation
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                form.reset();
+                document.getElementById('isActive').checked = true;
+                // Reset edit mode fields
+                document.getElementById('testimonialId').value = '';
+                document.getElementById('isEditMode').value = 'false';
+
+                // Reset submit button to add mode
                 const submitIcon = document.getElementById('submitIcon');
                 const submitText = document.getElementById('submitText');
                 if (submitIcon && submitText) {
-                    submitIcon.className = 'fas fa-save';
-                    submitText.textContent = 'Update Testimonial';
+                    submitIcon.className = 'fas fa-plus';
+                    submitText.textContent = 'Add Testimonial';
                 }
-                
-                // Show modal first
-                showModal();
-                
-                // Wait a bit for modal to be fully rendered before populating
-                setTimeout(() => {
-                    populateEditForm(data.testimonial);
-                }, 100);
-            } else {
-                showAlert('error', 'Failed to load testimonial data');
-            }
-        } catch (error) {
-            console.error('Error details:', error);
-            showAlert('error', `Network error occurred while loading testimonial: ${error.message}`);
+            }, 300);
         }
-    };
-    
-    // Populate form with testimonial data for editing
-    function populateEditForm(testimonial) {
-        console.log('Populating form with testimonial:', testimonial);
-        
+
+        // Form submission with API integration
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+        // Fix checkbox values for boolean fields
+        const formData = new FormData(this);
+        // Ensure is_active and is_featured are always sent as '1' or '0'
+        formData.set('is_active', document.getElementById('isActive').checked ? '1' : '0');
+        formData.set('is_featured', document.getElementById('isFeatured').checked ? '1' : '0');
+        const isEdit = formData.get('is_edit') === 'true';
+        const testimonialId = formData.get('testimonial_id');
         try {
-            // Set hidden fields
-            const testimonialIdField = document.getElementById('testimonialId');
-            const isEditModeField = document.getElementById('isEditMode');
-            const modalFacilityIdField = document.getElementById('modalFacilityId');
-            
-            if (!testimonialIdField) {
-                throw new Error('testimonialId field not found');
+                let url, method;
+                if (isEdit) {
+                    url = `/admin/facilities/web-contents/testimonials/${testimonialId}`;
+                    method = 'POST'; // Use POST with _method=PUT for file upload
+                    formData.append('_method', 'PUT');
+                } else {
+                    url = '{{ route("admin.facilities.webcontents.testimonials.store") }}';
+                    method = 'POST';
+                }
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const actionText = isEdit ? 'updated' : 'created';
+                    showAlert('success', `Testimonial ${actionText} successfully!`);
+                    closeModal();
+                    if (currentFacilityId) {
+                        loadTestimonials(currentFacilityId);
+                    }
+                } else {
+                    showAlert('error', result.message || `Error ${isEdit ? 'updating' : 'creating'} testimonial`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const actionText = isEdit ? 'updating' : 'creating';
+                showAlert('error', `Network error occurred while ${actionText} testimonial`);
             }
-            if (!isEditModeField) {
-                throw new Error('isEditMode field not found');
-            }
-            if (!modalFacilityIdField) {
-                throw new Error('modalFacilityId field not found');
-            }
-            
-            testimonialIdField.value = testimonial.id;
-            isEditModeField.value = 'true';
-            modalFacilityIdField.value = testimonial.facility_id;
-            
-            // Populate form fields
-            const authorNameField = document.getElementById('authorName');
-            const authorTitleField = document.getElementById('authorTitle');
-            const relationshipField = document.getElementById('relationship');
-            const quoteField = document.getElementById('testimonialText');
-            const ratingField = document.getElementById('rating');
-            const isActiveField = document.getElementById('isActive');
-            const isFeaturedField = document.getElementById('isFeatured');
-            
-            if (!authorNameField) {
-                throw new Error('authorName field not found');
-            }
-            if (!authorTitleField) {
-                throw new Error('authorTitle field not found');
-            }
-            if (!relationshipField) {
-                throw new Error('relationship field not found');
-            }
-            if (!quoteField) {
-                throw new Error('testimonialText field not found');
-            }
-            if (!ratingField) {
-                throw new Error('rating field not found');
-            }
-            if (!isActiveField) {
-                throw new Error('isActive field not found');
-            }
-            if (!isFeaturedField) {
-                throw new Error('isFeatured field not found');
-            }
-            
-            authorNameField.value = testimonial.name || '';
-            authorTitleField.value = testimonial.title || '';
-            relationshipField.value = testimonial.relationship || '';
-            quoteField.value = testimonial.quote || '';
-            ratingField.value = testimonial.rating || 5;
-            isActiveField.checked = testimonial.is_active == 1;
-            isFeaturedField.checked = testimonial.is_featured == 1;
-            
-            // Update rating stars display
-            updateRatingDisplay(testimonial.rating || 5);
-            
-            console.log('Form populated successfully');
-        } catch (error) {
-            console.error('Error populating form:', error);
-            showAlert('error', `Error populating form: ${error.message}`);
+        }); // End of form submit handler
+
+        // Photo preview logic (must be outside form submit handler, inside DOMContentLoaded)
+        const photoInput = document.getElementById('photo');
+        const photoPreview = document.getElementById('photoPreview');
+        const defaultAvatar = document.getElementById('defaultAvatar');
+        if (photoInput) {
+            photoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        photoPreview.src = evt.target.result;
+                        photoPreview.classList.remove('hidden');
+                        defaultAvatar.classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // If no new file, show last uploaded photo if available, else icon
+                    const currentPhotoUrl = document.getElementById('currentPhotoUrl').value;
+                    if (currentPhotoUrl) {
+                        photoPreview.src = currentPhotoUrl;
+                        photoPreview.classList.remove('hidden');
+                        defaultAvatar.classList.add('hidden');
+                    } else {
+                        photoPreview.src = '';
+                        photoPreview.classList.add('hidden');
+                        defaultAvatar.classList.remove('hidden');
+                    }
+                }
+            });
         }
-    }
-    
-    // Helper function to update rating stars display
-    function updateRatingDisplay(rating) {
-        const stars = document.querySelectorAll('.rating-star');
-        stars.forEach((star, index) => {
-            if (index < rating) {
-                star.classList.remove('text-gray-300');
-                star.classList.add('text-yellow-400');
-            } else {
-                star.classList.remove('text-yellow-400');
-                star.classList.add('text-gray-300');
-            }
-        });
-    }
-    
-    // Utility functions
-    function showAlert(type, message) {
-        const alertTypes = {
-            success: { bg: 'bg-green-100', text: 'text-green-800', icon: 'fas fa-check-circle' },
-            error: { bg: 'bg-red-100', text: 'text-red-800', icon: 'fas fa-exclamation-circle' },
-            info: { bg: 'bg-blue-100', text: 'text-blue-800', icon: 'fas fa-info-circle' }
-        };
-        
-        const config = alertTypes[type] || alertTypes.info;
-        
-        const alert = document.createElement('div');
-        alert.className = `fixed top-4 right-4 z-50 ${config.bg} ${config.text} px-4 py-3 rounded-lg shadow-lg max-w-sm`;
-        alert.innerHTML = `
-            <div class="flex items-center">
-                <i class="${config.icon} mr-2"></i>
-                <span>${message}</span>
-            </div>
-        `;
-        
-        document.body.appendChild(alert);
-        
-        setTimeout(() => {
-            alert.remove();
-        }, 5000);
-    }
-});
+    }); // End of DOMContentLoaded
 </script>
+@endpush
 @endsection

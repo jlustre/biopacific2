@@ -47,9 +47,15 @@ utilize state-of-the-art equipment and evidence-based techniques to help residen
 injury,
 or illness while building strength, mobility, and confidence.',
 'features' => [
-'Physical therapy for mobility and strength',
-'Occupational therapy for daily living skills',
-'Speech therapy for communication and swallowing',
+// Palette from color scheme
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$brandPrimary = $scheme->primary_color ?? '#0EA5E9';
+$brandAccent = $scheme->accent_color ?? '#F59E0B';
+} else {
+$brandPrimary = '#0EA5E9';
+$brandAccent = '#F59E0B';
+}
 'Modern rehabilitation equipment',
 'Individualized treatment plans',
 'Progress tracking and family updates'

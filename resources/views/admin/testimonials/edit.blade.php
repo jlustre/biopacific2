@@ -3,7 +3,8 @@
 @section('content')
 <div class="max-w-xl mx-auto">
     <h1 class="text-2xl font-bold mb-6">Edit Testimonial</h1>
-    <form method="POST" action="{{ route('admin.facilities.testimonials.update', [$facility->id, $testimonial->id]) }}">
+    <form method="POST" action="{{ route('admin.facilities.testimonials.update', [$facility->id, $testimonial->id]) }}"
+        enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <div class="mb-4">
@@ -16,10 +17,28 @@
             <input type="text" name="role" class="w-full border rounded px-3 py-2"
                 value="{{ old('role', $testimonial->role) }}">
         </div>
-        <div class="mb-4">
-            <label class="block mb-1 font-semibold">Avatar URL</label>
-            <input type="url" name="avatar" class="w-full border rounded px-3 py-2"
-                value="{{ old('avatar', $testimonial->avatar) }}">
+        <div class="mb-4 flex items-center gap-4">
+            <div>
+                <label class="block mb-1 font-semibold">Photo</label>
+                <input type="file" name="photo" accept="image/*" class="block">
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="block mb-1 font-semibold">Preview</span>
+                @php
+                $avatar = old('avatar', $testimonial->avatar ?? null);
+                $photoUrl = $testimonial->photo_url ?? null;
+                @endphp
+                @if ($photoUrl)
+                <img src="{{ $photoUrl }}" alt="Photo" class="w-16 h-16 rounded-full object-cover border">
+                @elseif ($avatar)
+                <img src="{{ $avatar }}" alt="Avatar" class="w-16 h-16 rounded-full object-cover border">
+                @else
+                <svg class="w-16 h-16 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" />
+                </svg>
+                @endif
+            </div>
         </div>
         <div class="mb-4">
             <label class="block mb-1 font-semibold">Rating</label>

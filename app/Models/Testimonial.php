@@ -13,6 +13,8 @@ class Testimonial extends Model
         'facility_id',
         'name',
         'title',
+        'title_header',
+        'story',
         'quote',
         'relationship',
         'rating',

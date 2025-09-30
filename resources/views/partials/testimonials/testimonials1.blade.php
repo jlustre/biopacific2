@@ -1,7 +1,14 @@
 @php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? '#F59E0B';
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$primary = $scheme->primary_color ?? '#0EA5E9';
+$secondary = $scheme->secondary_color ?? '#1E293B';
+$accent = $scheme->accent_color ?? '#F59E0B';
+} else {
+$primary = '#0EA5E9';
+$secondary = '#1E293B';
+$accent = '#F59E0B';
+}
 @endphp
 
 @if(isset($testimonials) && $testimonials && $testimonials->count() > 0)
@@ -111,6 +118,9 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                         </svg>
                     </div>
                     <div class="relative">
+                        <template x-if="featured.title_header">
+                            <div class="text-primary text-lg font-bold mb-2" x-text="featured.title_header"></div>
+                        </template>
                         <div class="flex items-center gap-1 mb-4">
                             <template x-for="i in 5"><svg class="h-5 w-5"
                                     :class="i <= featured.rating ? 'text-yellow-400' : 'text-slate-300'"
@@ -122,6 +132,9 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                         </div>
                         <blockquote class="text-xl sm:text-2xl leading-relaxed text-slate-700" x-text="featured.text">
                         </blockquote>
+                        <template x-if="featured.story">
+                            <div class="mt-2 text-slate-700 text-base" x-text="featured.story"></div>
+                        </template>
                         <div class="mt-6 flex items-center gap-4">
                             <img :src="featured.avatar" :alt="featured.name"
                                 class="w-14 h-14 rounded-full object-cover ring-4 ring-white shadow">
@@ -144,6 +157,9 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
         <div class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <template x-for="(t, i) in filtered" :key="i">
                 <article class="rounded-3xl ring-1 ring-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+                    <template x-if="t.title_header">
+                        <div class="text-primary text-base font-bold mb-1" x-text="t.title_header"></div>
+                    </template>
                     <div class="flex items-start gap-3">
                         <img :src="t.avatar" :alt="t.name"
                             class="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow">
@@ -164,6 +180,9 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
                                 </div>
                             </div>
                             <p class="mt-3 text-sm text-slate-700 line-clamp-5" x-text="t.text"></p>
+                            <template x-if="t.story">
+                                <div class="mt-2 text-slate-700 text-xs" x-text="t.story"></div>
+                            </template>
                             <div class="mt-4 flex items-center justify-between">
                                 <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ring-1"
                                     :style="`border-color:#e5e7eb; color:${t.tag==='Family' ? 'var(--primary)' : (t.tag==='Resident' ? '#0f766e' : '#6b21a8')}`"
@@ -199,15 +218,17 @@ $accent = $facility['accent_color'] ?? '#F59E0B';
     return {
       // Database testimonials
       all: @js(isset($testimonials) ? $testimonials->map(function($testimonial) {
-        return [
-          'name' => $testimonial->name,
-          'role' => $testimonial->relationship,
-          'tag' => $testimonial->relationship,
-          'rating' => $testimonial->rating ?? 5,
-          'avatar' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-          'photo' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200&fit=crop',
-          'text' => $testimonial->quote
-        ];
+                return [
+                    'name' => $testimonial->name,
+                    'role' => $testimonial->relationship,
+                    'tag' => $testimonial->relationship,
+                    'rating' => $testimonial->rating ?? 5,
+                    'avatar' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+                    'photo' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200&fit=crop',
+                    'text' => $testimonial->quote,
+                    'title_header' => $testimonial->title_header,
+                    'story' => $testimonial->story
+                ];
       })->values() : []),
     filter: 'All',
     query: '',

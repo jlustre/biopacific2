@@ -44,6 +44,8 @@ return new class extends Migration
             $table->string('accent_color')->nullable();
             $table->json('hipaa_flags')->nullable();
             $table->string('npp_url')->nullable(); 
+            $table->unsignedBigInteger('color_scheme_id')->nullable()->default(1);
+            $table->foreign('color_scheme_id')->references('id')->on('color_schemes')->nullOnDelete();
             $table->timestamps();
         });
     }

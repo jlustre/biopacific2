@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Bio-Pacific Healthcare - Admin Dashboard')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     {{-- Alpine.js is included with Livewire, no need for separate include --}}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -101,10 +102,11 @@
 
     <!-- Responsive Sidebar Layout -->
     <div class="flex min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
-        @toggle-sidebar.window="sidebarOpen = !sidebarOpen">
+        @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+        x-init="window.addEventListener('resize', () => { sidebarOpen = window.innerWidth >= 1024 })">
         <!-- Sidebar (Fixed) -->
         <aside
-            class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30"
+            class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30 transform"
             :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
             <nav class="flex flex-col space-y-2">
                 <a href="{{ route('admin.dashboard.index') }}"
@@ -239,6 +241,8 @@
 
     @stack('scripts')
     @livewireScripts
+    <link rel="stylesheet" href="/css/color-scheme-dropdown.css">
+    <script src="/js/color-scheme-dropdown.js"></script>
 </body>
 
 </html>

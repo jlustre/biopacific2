@@ -1,5 +1,18 @@
+@php
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->where('id', $facility['color_scheme_id'])->first();
+$primary = $scheme ? ($scheme->primary_color ?? '#0EA5E9') : '#0EA5E9';
+$secondary = $scheme ? ($scheme->secondary_color ?? '#1E293B') : '#1E293B';
+$accent = $scheme ? ($scheme->accent_color ?? '#F59E0B') : '#F59E0B';
+} else {
+$primary = '#0EA5E9';
+$secondary = '#1E293B';
+$accent = '#F59E0B';
+}
+@endphp
 <section id="careers" x-data="{ openApply: false, applyRole: '' }"
-  class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
+  class="py-16 sm:py-24 bg-gradient-to-br from-slate-50"
+  style="background: linear-gradient(to bottom right, #f8fafc, {{ $primary }});">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
     @include('partials.section_header', [
@@ -24,12 +37,13 @@
       <div
         class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
         <!-- Card gradient overlay -->
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent"></div>
+        <div class="absolute top-0 left-0 w-full h-1"
+          style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"></div>
 
         <div class="p-6 sm:p-8">
           <!-- Icon -->
-          <div
-            class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+            style="background: linear-gradient(to bottom right, {{ $primary }}, {{ $accent }});">
             @if($icon === 'stethoscope')
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -59,7 +73,8 @@
           </div>
 
           <!-- Job title -->
-          <h3 class="text-xl font-bold text-secondary mb-2 group-hover:text-primary transition-colors">
+          <h3 class="text-xl font-bold mb-2 group-hover:text-primary transition-colors"
+            style="color: {{ $secondary }};">
             {{ $role }}
           </h3>
 
@@ -80,7 +95,7 @@
 
     <!-- Benefits Section -->
     <div class="bg-white rounded-2xl shadow-lg p-8 mb-12">
-      <h3 class="text-2xl font-bold text-secondary text-center mb-8">Why Work With Us?</h3>
+      <h3 class="text-2xl font-bold text-center mb-8" style="color: {{ $secondary }};">Why Work With Us?</h3>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         @foreach([
         ['Medical Benefits', 'Comprehensive health, dental, and vision coverage', 'shield-check'],
@@ -89,9 +104,9 @@
         ['Competitive Pay', 'Above-market compensation and performance bonuses', 'currency-dollar']
         ] as [$title, $desc, $icon])
         <div class="text-center">
-          <div
-            class="w-16 h-16 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style="background: linear-gradient(to bottom right, {{ $primary }}1A, {{ $accent }}1A);">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: {{ $primary }};">
               @if($icon === 'shield-check')
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -106,8 +121,8 @@
               @endif
             </svg>
           </div>
-          <h4 class="font-semibold text-secondary mb-2">{{ $title }}</h4>
-          <p class="text-sm text-slate-600">{{ $desc }}</p>
+          <h4 class="font-semibold mb-2" style="color: {{ $secondary }};">{{ $title }}</h4>
+          <p class="text-sm" style="color: #64748b;">{{ $desc }}</p>
         </div>
         @endforeach
       </div>
@@ -129,8 +144,8 @@
       <!-- Modal Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h3 class="text-2xl font-bold text-secondary">Apply for Position</h3>
-          <p class="text-accent font-semibold" x-text="applyRole"></p>
+          <h3 class="text-2xl font-bold" style="color: {{ $secondary }};">Apply for Position</h3>
+          <p class="font-semibold" x-text="applyRole" style="color: {{ $accent }};"></p>
         </div>
         <button @click="openApply=false" class="text-slate-400 hover:text-slate-600 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,29 +159,29 @@
         <div class="grid sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-2">First Name *</label>
-            <input type="text" required
-              class="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            <input type="text" required class="w-full border rounded-lg px-4 py-3 transition-colors"
+              style="border-color: #cbd5e1; focus:ring: 2px {{ $primary }}20; focus:border-color: {{ $primary }};"
               placeholder="Enter first name">
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-2">Last Name *</label>
-            <input type="text" required
-              class="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            <input type="text" required class="w-full border rounded-lg px-4 py-3 transition-colors"
+              style="border-color: #cbd5e1; focus:ring: 2px {{ $primary }}20; focus:border-color: {{ $primary }};"
               placeholder="Enter last name">
           </div>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
-          <input type="email" required
-            class="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+          <input type="email" required class="w-full border rounded-lg px-4 py-3 transition-colors"
+            style="border-color: #cbd5e1; focus:ring: 2px {{ $primary }}20; focus:border-color: {{ $primary }};"
             placeholder="your.email@example.com">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-2">Phone Number *</label>
-          <input type="tel" required
-            class="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+          <input type="tel" required class="w-full border rounded-lg px-4 py-3 transition-colors"
+            style="border-color: #cbd5e1; focus:ring: 2px {{ $primary }}20; focus:border-color: {{ $primary }};"
             placeholder="(555) 123-4567">
         </div>
 
@@ -176,26 +191,27 @@
             class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
             <input type="file" accept=".pdf,.doc,.docx" class="hidden" id="resume-upload">
             <label for="resume-upload" class="cursor-pointer">
-              <svg class="w-12 h-12 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                style="color: #94a3b8;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <p class="text-slate-600">Click to upload or drag and drop</p>
-              <p class="text-sm text-slate-400">PDF, DOC, DOCX (max 10MB)</p>
+              <p style="color: #64748b;">Click to upload or drag and drop</p>
+              <p class="text-sm" style="color: #94a3b8;">PDF, DOC, DOCX (max 10MB)</p>
             </label>
           </div>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-2">Cover Letter (Optional)</label>
-          <textarea rows="4"
-            class="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+          <textarea rows="4" class="w-full border rounded-lg px-4 py-3 transition-colors"
+            style="border-color: #cbd5e1; focus:ring: 2px {{ $primary }}20; focus:border-color: {{ $primary }};"
             placeholder="Tell us why you're interested in this position..."></textarea>
         </div>
 
         <div class="bg-slate-50 rounded-lg p-4">
           <label class="flex items-start gap-3 text-sm text-slate-600 cursor-pointer">
-            <input type="checkbox" required class="mt-1 rounded border-slate-300 text-primary focus:ring-primary/20">
+            <input type="checkbox" required class="mt-1 rounded" style="border-color: #cbd5e1; color: {{ $primary }};">
             <span>I consent to be contacted regarding this application. I understand that no protected health
               information (PHI) will be shared during the recruitment process. *</span>
           </label>
@@ -203,12 +219,13 @@
 
         <!-- Form Actions -->
         <div class="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
-          <button type="button" @click="openApply=false"
-            class="px-6 py-3 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors">
+          <button type="button" @click="openApply=false" class="px-6 py-3 rounded-lg border transition-colors"
+            style="border-color: #cbd5e1; color: #334155; background: #f8fafc;">
             Cancel
           </button>
           <button type="submit" @click.prevent="toast('Application submitted successfully!'); openApply=false"
-            class="px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-accent text-white font-semibold hover:from-primary-600 hover:to-accent-600 transition-all duration-300 transform hover:scale-105">
+            class="px-6 py-3 rounded-lg text-white font-semibold transition-all duration-300 transform hover:scale-105"
+            style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});">
             Submit Application
           </button>
         </div>

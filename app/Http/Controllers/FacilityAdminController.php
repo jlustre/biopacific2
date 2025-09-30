@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Http\Request;
 use App\Models\Facility;
 use App\Models\Testimonial;
@@ -55,19 +57,12 @@ class FacilityAdminController extends Controller
         } else {
             $facility = Facility::where('slug', $identifier)->firstOrFail();
         }
-        $facilities = Facility::orderBy('name')->get(); // <-- Add this line
+        $facilities = Facility::orderBy('name')->get();
         $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4'];
-
-        // Get all webcontents for reference
         $webContents = $facility->webcontents()->get();
-
-        // Get the active webcontent directly from the database
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-
-        // Get the active layout template and sections
         $selectedLayoutTemplate = $activeWebContent ? $activeWebContent->layout_template : null;
         $selectedSections = [];
-
         if ($activeWebContent && $activeWebContent->sections) {
             if (is_string($activeWebContent->sections)) {
                 $selectedSections = json_decode($activeWebContent->sections, true) ?? [];
@@ -75,7 +70,6 @@ class FacilityAdminController extends Controller
                 $selectedSections = $activeWebContent->sections;
             }
         }
-
         $faqs = \App\Models\Faq::availableForFacility($facility->id)
             ->where('is_active', true)
             ->orderBy('is_featured', 'desc')
@@ -83,6 +77,7 @@ class FacilityAdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         $categories = $faqs->pluck('category')->filter()->unique()->values();
+        $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
         return view('admin.facilities.edit', compact(
             'facility',
             'facilities', 
@@ -92,7 +87,8 @@ class FacilityAdminController extends Controller
             'selectedLayoutTemplate',
             'selectedSections',
             'faqs',
-            'categories'
+            'categories',
+            'colorSchemes'
         ));
     }
 
@@ -120,9 +116,7 @@ class FacilityAdminController extends Controller
             'email' => 'nullable|email|max:255',
             'beds' => 'nullable|integer|min:1',
             'hours' => 'nullable|string|max:255',
-            'primary_color' => 'nullable|string|max:7',
-            'secondary_color' => 'nullable|string|max:7',
-            'accent_color' => 'nullable|string|max:7',
+            'color_scheme_id' => 'required|exists:color_schemes,id',
             'headline' => 'nullable|string|max:255',
             'subheadline' => 'nullable|string|max:500',
             'about_text' => 'nullable|string',
@@ -159,9 +153,7 @@ class FacilityAdminController extends Controller
             'email' => $validated['email'],
             'beds' => $validated['beds'],
             'hours' => $validated['hours'],
-            'primary_color' => $validated['primary_color'],
-            'secondary_color' => $validated['secondary_color'],
-            'accent_color' => $validated['accent_color'],
+            'color_scheme_id' => $validated['color_scheme_id'],
             'headline' => $validated['headline'],
             'subheadline' => $validated['subheadline'],
             'about_text' => $validated['about_text'],
@@ -272,7 +264,9 @@ class FacilityAdminController extends Controller
             'facility_id' => 'required|exists:facilities,id',
             'name' => 'required|string|max:255',
             'title' => 'nullable|string|max:255',
+            'title_header' => 'nullable|string|max:100',
             'quote' => 'required|string',
+            'story' => 'nullable|string',
             'relationship' => 'nullable|string|max:255',
             'rating' => 'required|integer|min:1|max:5',
             'is_active' => 'boolean',
@@ -321,14 +315,32 @@ class FacilityAdminController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'title' => 'nullable|string|max:255',
+            'title_header' => 'nullable|string|max:100',
             'quote' => 'required|string',
+            'story' => 'nullable|string',
             'relationship' => 'nullable|string|max:255',
             'rating' => 'required|integer|min:1|max:5',
             'is_active' => 'boolean',
-            'is_featured' => 'boolean'
+            'is_featured' => 'boolean',
+            'photo' => 'nullable|image|max:2048',
         ]);
 
-        $testimonial->update($validated);
+
+        $testimonial->fill($validated);
+        // Handle photo upload after fill so it is not overwritten
+        if ($request->hasFile('photo')) {
+            // Delete old photo if it exists and is in storage
+            if ($testimonial->photo_url && strpos($testimonial->photo_url, '/storage/testimonials/') === 0) {
+                $oldPath = str_replace('/storage/', '', $testimonial->photo_url);
+                Storage::disk('public')->delete($oldPath);
+            }
+            $photo = $request->file('photo');
+            $path = $photo->store('testimonials', 'public');
+            $testimonial->photo_url = '/storage/' . $path;
+        } else if ($request->has('current_photo_url')) {
+            $testimonial->photo_url = $request->input('current_photo_url');
+        }
+        $testimonial->save();
 
         return response()->json([
             'success' => true,

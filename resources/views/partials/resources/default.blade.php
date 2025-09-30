@@ -1,3 +1,11 @@
+@php
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$primary = $scheme->primary_color ?? '#0EA5E9';
+} else {
+$primary = '#0EA5E9';
+}
+@endphp
 <section id="resources" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
@@ -10,7 +18,8 @@
     <!-- Mobile Menu Button -->
     <div class="mb-6 block sm:hidden text-center">
       <button onclick="toggleResourceMenu()"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium shadow hover:bg-primary/90 transition-colors duration-200">
+        class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg font-medium shadow transition-colors duration-200"
+        style="background: {{ $primary }};">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
@@ -50,7 +59,8 @@
 
           <!-- Download Button -->
           <a href="{{ $href }}"
-            class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors duration-200 group-hover:scale-105 transform">
+            class="inline-flex items-center gap-2 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 group-hover:scale-105 transform"
+            style="background: {{ $primary }};">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 10v6m0 0l-4-4m4 4l4-4m-4-8H8a2 2 0 00-2 2v16a2 2 0 002 2h8a2 2 0 002-2V8a2 2 0 00-2-2z"></path>

@@ -11,9 +11,15 @@ $serviceImages = [
 'Transportation' => asset('images/transportation_care.png'),
 ];
 
-// Palette fallbacks
-$brandPrimary = $facility['primary_color'] ?? '#0EA5E9';
-$brandAccent = $facility['accent_color'] ?? '#F59E0B';
+// Palette from color scheme
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$brandPrimary = $scheme->primary_color ?? '#0EA5E9';
+$brandAccent = $scheme->accent_color ?? '#F59E0B';
+} else {
+$brandPrimary = '#0EA5E9';
+$brandAccent = '#F59E0B';
+}
 @endphp
 
 <section id="services" class="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-white">

@@ -1,5 +1,15 @@
 @if(isset($testimonials) && $testimonials && $testimonials->count() > 0)
-<section id="testimonials" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
+@php
+$scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) : null;
+$primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
+$secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
+$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+@endphp
+@php
+@include('components.color-scheme-vars')
+@endphp
+<section id="testimonials" class="py-16 sm:py-24"
+  style="background: linear-gradient(90deg, {{ $primary }}11 0%, {{ $accent }}11 100%);">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
     @include('partials.section_header', [
@@ -13,55 +23,65 @@
       testimonials: @js(isset($testimonials) ? $testimonials->map(function($testimonial) {
         return [
           'name' => $testimonial->name,
+          'title' => $testimonial->title,
           'relationship' => $testimonial->relationship,
-          'text' => $testimonial->quote,
+          'title_header' => $testimonial->title_header,
+          'quote' => $testimonial->quote,
+          'story' => $testimonial->story,
           'rating' => $testimonial->rating ?? 5,
+          'is_active' => $testimonial->is_active,
+          'is_featured' => $testimonial->is_featured,
+          'created_at' => $testimonial->created_at,
+          'updated_at' => $testimonial->updated_at,
           'avatar' => $testimonial->photo_url ?? 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
         ];
       })->values() : [])
     }">
 
-      <!-- Main Testimonial Card -->
-      <div class="bg-green-50 rounded-3xl shadow-xl overflow-hidden -pt-6">
-        <div class="relative">
-          <!-- Background Pattern -->
-          <div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5"></div>
-
-          <!-- Quote Icon -->
-          <div class="absolute top-6 left-6 text-primary/20">
-            <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z" />
-            </svg>
+      <!-- Redesigned Testimonial Card -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col md:flex-row gap-6 items-start">
+        <img :src="testimonials[currentIndex].avatar" :alt="testimonials[currentIndex].name"
+          class="w-20 h-20 rounded-full object-cover border mr-4">
+        <div class="flex-1">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <span class="font-semibold text-xl text-gray-900" x-text="testimonials[currentIndex].name"></span>
+            <template x-if="testimonials[currentIndex].title_header">
+              <span class="ml-2 text-primary font-bold text-lg" x-text="testimonials[currentIndex].title_header"></span>
+            </template>
+            <template x-if="testimonials[currentIndex].is_active">
+              <span class="ml-2 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Active</span>
+            </template>
           </div>
-
-          <div class="relative p-8 sm:p-12">
-            <!-- Rating Stars -->
-            <div class="flex items-center gap-1 mb-6">
-              <template x-for="star in 5" :key="star">
-                <svg class="w-5 h-5"
-                  :class="star <= testimonials[currentIndex].rating ? 'text-yellow-400' : 'text-gray-300'"
-                  fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              </template>
-            </div>
-
-            <!-- Testimonial Text -->
-            <blockquote class="text-xl sm:text-2xl leading-relaxed text-slate-700 mb-8"
-              x-text="testimonials[currentIndex].text">
-            </blockquote>
-
-            <!-- Author Info -->
-            <div class="flex items-center gap-4">
-              <img :src="testimonials[currentIndex].avatar" :alt="testimonials[currentIndex].name"
-                class="w-16 h-16 rounded-full object-cover ring-4 ring-white shadow-lg">
-              <div>
-                <div class="font-semibold text-lg text-secondary" x-text="testimonials[currentIndex].name"></div>
-                <div class="text-slate-500" x-text="testimonials[currentIndex].relationship"></div>
-              </div>
-            </div>
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="text-gray-500" x-text="testimonials[currentIndex].title"></span>
+            <span class="mx-1 text-gray-400">•</span>
+            <span class="text-gray-500" x-text="testimonials[currentIndex].relationship"></span>
+          </div>
+          <div class="flex items-center gap-2 mb-2">
+            <template x-for="star in 5" :key="star">
+              <svg class="w-5 h-5"
+                :class="star <= testimonials[currentIndex].rating ? 'text-yellow-400' : 'text-gray-300'"
+                fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </template>
+            <span class="text-gray-500 text-sm" x-text="'(' + testimonials[currentIndex].rating + '/5)'"></span>
+          </div>
+          <blockquote class="text-gray-700 italic border-l-4 border-primary pl-4 py-2 mb-2">
+            <span
+              x-html="testimonials[currentIndex].quote ? `&ldquo;${testimonials[currentIndex].quote}&rdquo;` : '&mdash;' "></span>
+          </blockquote>
+          <template x-if=" testimonials[currentIndex].story">
+            <div class="mb-2 text-gray-700 text-base" x-text="testimonials[currentIndex].story"></div>
+          </template>
+          <div class="mt-3 text-xs text-gray-500">
+            Created: <span x-text="(new Date(testimonials[currentIndex].created_at)).toLocaleDateString()"></span>
+            <template
+              x-if="testimonials[currentIndex].updated_at && testimonials[currentIndex].updated_at !== testimonials[currentIndex].created_at">
+              <span>• Updated: <span
+                  x-text="(new Date(testimonials[currentIndex].updated_at)).toLocaleDateString()"></span></span>
+            </template>
           </div>
         </div>
       </div>
@@ -70,12 +90,12 @@
       <div class="flex items-center justify-between mt-8">
         <!-- Previous Button -->
         <button @click="currentIndex = (currentIndex - 1 + testimonials.length) % testimonials.length"
-          class="flex items-center gap-2 px-6 py-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
-          <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor"
-            viewBox="0 0 24 24">
+          class="bg-teal-600 hover:bg-teal-500 flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
+          <svg class="text-teal-300 w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-          <span class="font-medium text-secondary hover:text-white">Previous</span>
+          <span class="text-teal-300 font-medium text-secondary hover:text-white">Previous</span>
         </button>
 
         <!-- Dots Indicator -->
@@ -89,10 +109,10 @@
 
         <!-- Next Button -->
         <button @click="currentIndex = (currentIndex + 1) % testimonials.length"
-          class="flex items-center gap-2 px-6 py-3 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
-          <span class="font-medium text-secondary hover:text-white">Next</span>
-          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-            viewBox="0 0 24 24">
+          class="bg-teal-600 hover:bg-teal-500 flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
+          <span class="text-teal-300 font-medium text-secondary hover:text-white">Next</span>
+          <svg class="text-teal-300 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </button>

@@ -1,25 +1,29 @@
-<nav x-data="{ mobileOpen: false }" class="w-full bg-white shadow-md">
-  <div class="max-w-7xl mx-auto px-4">
-    <div class="flex justify-between items-center h-16">
+<nav x-data="{ mobileOpen: false }" class="w-full bg-transparent shadow-md lg:-ml-7 lg:-mr-16 mb-2">
+  <div class="w-full px-0">
+    <div class="flex justify-between items-center h-16 w-full">
       <!-- Logo and site name -->
       <div class="flex items-center justify-start">
-        <span class="inline-flex h-10 w-10 items-center justify-center bg-primary/10 text-primary font-bold mr-3">
-          <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-14 lg:h-16 w-auto object-contain">
+        <span class=" inline-flex h-10 w-10 items-center justify-center bg-primary/10 text-primary font-bold mr-3 ml-0
+        lg:ml-0 xl:ml-0">
+          <a href="#top" class="flex items-center gap-1">
+            <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-14 lg:h-16 w-auto object-contain">
+          </a>
         </span>
         <a href="#top" class="flex items-center gap-1">
           <div class="flex flex-col">
             <div class="lg:text-xl font-semibold">{{ $facility['name'] }}</div>
             @if(!empty($facility['tagline']))
-            <div class="hidden md:block text-xs text-slate-500 dark:text-slate-400">{{ $facility['tagline'] }}</div>
+            <div class="md:block text-xs text-slate-500 dark:text-slate-400">{{ $facility['tagline'] }}</div>
             @endif
           </div>
         </a>
       </div>
       <!-- Desktop Navigation -->
-      <div class="hidden md:flex gap-2 items-center px-4 py-2">
+      <div class="hidden md:flex gap-2 items-center pl-4 py-2 ml-auto mr-0 lg:mr-0 xl:mr-0">
         <!-- About & Services Dropdown -->
         <div x-data="{ open: false }" class="relative">
-          <button @click="open = !open" class="hover:text-primary transition flex items-center gap-1">
+          <button @click="open = !open"
+            class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
             About & Services
             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -27,15 +31,16 @@
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition style="display: none;"
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            <a href="#about" class="block px-4 py-2 hover:bg-primary/10">About</a>
-            <a href="#services" class="block px-4 py-2 hover:bg-primary/10">Services</a>
-            <a href="#testimonials" class="block px-4 py-2 hover:bg-primary/10">Testimonials</a>
-            <a href="#careers" class="block px-4 py-2 hover:bg-primary/10">Careers</a>
+            <a href="#about" class="block px-4 py-2 hover:bg-teal-100">About</a>
+            <a href="#services" class="block px-4 py-2 hover:bg-teal-100">Services</a>
+            <a href="#testimonials" class="block px-4 py-2 hover:bg-teal-100">Testimonials</a>
+            <a href="#careers" class="block px-4 py-2 hover:bg-teal-100">Careers</a>
           </div>
         </div>
         <!-- Rooms & Gallery Dropdown -->
         <div x-data="{ open: false }" class="relative">
-          <button @click="open = !open" class="hover:text-primary transition flex items-center gap-1">
+          <button @click="open = !open"
+            class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
             Rooms & Gallery
             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -43,14 +48,15 @@
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition style="display: none;"
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            <a href="#rooms" class="block px-4 py-2 hover:bg-primary/10">Rooms & Rates</a>
-            <a href="#gallery" class="block px-4 py-2 hover:bg-primary/10">Gallery</a>
-            <a href="#news" class="block px-4 py-2 hover:bg-primary/10">News</a>
+            <a href="#rooms" class="block px-4 py-2 hover:bg-teal-100">Rooms & Rates</a>
+            <a href="#gallery" class="block px-4 py-2 hover:bg-teal-100">Gallery</a>
+            <a href="#news" class="block px-4 py-2 hover:bg-teal-100">News</a>
           </div>
         </div>
         <!-- Contact & More Dropdown -->
         <div x-data="{ open: false }" class="relative">
-          <button @click="open = !open" class="hover:text-primary transition flex items-center gap-1">
+          <button @click="open = !open"
+            class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
             Contact & More
             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -58,19 +64,20 @@
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition style="display: none;"
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            <a href="#contact" class="block px-4 py-2 hover:bg-primary/10">Contact</a>
-            <a href="#faqs" class="block px-4 py-2 hover:bg-primary/10">FAQs</a>
-            <a href="#resources" class="block px-4 py-2 hover:bg-primary/10">Resources</a>
+            <a href="#contact" class="block px-4 py-2 hover:bg-teal-100">Contact</a>
+            <a href="#faqs" class="block px-4 py-2 hover:bg-teal-100">FAQs</a>
+            <a href="#resources" class="block px-4 py-2 hover:bg-teal-100">Resources</a>
           </div>
         </div>
         <!-- Book a Tour Button -->
         <a href="#book"
-          class="ml-4 px-4 py-2 rounded bg-primary text-white font-semibold hover:bg-primary/90 transition">Book a
+          class="bg-teal-600 ml-4 px-3 mr-0 py-2 rounded text-white font-semibold hover:bg-teal-500 transition text-center">Book
+          a
           Tour</a>
       </div>
       <!-- Hamburger Icon -->
       <button @click="mobileOpen = true"
-        class="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center">
+        class="hover:cursor-pointer hover:bg-teal-100 md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center">
         <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>

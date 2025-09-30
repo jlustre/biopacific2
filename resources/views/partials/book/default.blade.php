@@ -1,8 +1,16 @@
 {{-- BOOK A TOUR — beautiful, responsive, accessible --}}
 @php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? '#F59E0B';
+
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$primary = $scheme->primary_color ?? '#0EA5E9';
+$secondary = $scheme->secondary_color ?? '#1E293B';
+$accent = $scheme->accent_color ?? '#F59E0B';
+} else {
+$primary = '#0EA5E9';
+$secondary = '#1E293B';
+$accent = '#F59E0B';
+}
 @endphp
 
 <section id="book" class="relative isolate overflow-hidden py-16 sm:py-24">

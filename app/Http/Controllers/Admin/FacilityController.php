@@ -14,21 +14,18 @@ class FacilityController extends Controller
     public function edit($id)
     {
         $facility = Facility::findOrFail($id);
-
-        $layoutTemplates = ['default-template', 'layout2', 'layout3']; // Your templates
-
+        $layoutTemplates = ['default-template', 'layout2', 'layout3'];
         $activeWebContent = $facility->webContent;
         $selectedLayoutTemplate = $activeWebContent->layout_template ?? 'default-template';
-
-        // Fetch all web contents for this facility (adjust if needed)
         $webContents = \App\Models\WebContent::where('facility_id', $facility->id)->get();
-
+        $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
         return view('admin.facilities.edit', compact(
             'facility',
             'layoutTemplates',
             'activeWebContent',
             'selectedLayoutTemplate',
-            'webContents' // <-- Add this line
+            'webContents',
+            'colorSchemes'
         ));
     }
 

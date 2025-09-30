@@ -1,7 +1,14 @@
 @php
+// Color scheme logic
+$scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) : null;
+$primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
+$secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
+$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+
+// Social links
 $facility['social'] = [
 'facebook' => 'https://facebook.com/yourpage',
-'x' => 'https://x.com/yourhandle', // or 'twitter' => '...'
+'x' => 'https://x.com/yourhandle',
 'linkedin' => 'https://linkedin.com/company/yourcompany',
 'instagram' => 'https://instagram.com/yourhandle',
 'youtube' => 'https://youtube.com/@yourhandle',
@@ -13,9 +20,9 @@ $facility['social'] = [
   <div class="pointer-events-none absolute inset-0 -z-10">
     <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50"></div>
     <div class="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-25"
-      style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}"></div>
+      style="background: {{ $primary }}"></div>
     <div class="absolute -bottom-28 -right-24 h-96 w-96 rounded-full blur-3xl opacity-20"
-      style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></div>
+      style="background: {{ $accent }}"></div>
   </div>
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -50,7 +57,7 @@ $facility['social'] = [
           {{-- Phone --}}
           <div class="flex gap-4">
             <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-              style="background: {{ ($facility['primary_color'] ?? '#0EA5E9') }}1A; color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+              style="background: {{ $primary }}1A; color: {{ $primary }};">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 5a2 2 0 012-2h2.6a1 1 0 01.95.69l1.3 3.9a1 1 0 01-.47 1.2l-1.8.9a10.5 10.5 0 005.3 5.3l.9-1.8a1 1 0 011.2-.47l3.9 1.3a1 1 0 01.69.95V19a2 2 0 01-2 2h-1C9.16 21 3 14.84 3 7V5z" />
@@ -69,7 +76,7 @@ $facility['social'] = [
           {{-- Email --}}
           <div class="flex gap-4">
             <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-              style="background: {{ ($facility['secondary_color'] ?? '#155E75') }}1A; color: {{ $facility['secondary_color'] ?? '#155E75' }}">
+              style="background: {{ $secondary }}1A; color: {{ $secondary }};">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 8l7.9 4.3a2 2 0 002.2 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5A2 2 0 003 7v10a2 2 0 002 2z" />
@@ -90,7 +97,7 @@ $facility['social'] = [
           {{-- Address --}}
           <div class="flex gap-4">
             <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-              style="background: {{ ($facility['accent_color'] ?? '#F59E0B') }}1A; color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+              style="background: {{ $accent }}1A; color: {{ $accent }};">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M17.7 17.7L12 23l-5.7-5.3A8 8 0 1117.7 17.7z" />

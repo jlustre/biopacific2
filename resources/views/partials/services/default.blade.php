@@ -11,17 +11,20 @@ $serviceImages = [
 'Transportation' => asset('images/transportation_care.png'),
 ];
 
-// Palette fallbacks
-$brandPrimary = $facility['primary_color'] ?? '#0EA5E9';
-$brandAccent = $facility['accent_color'] ?? '#F59E0B';
+
+// Include color scheme vars
+include base_path('resources/views/components/color-scheme-vars.blade.php');
+$primary = $primary ?? (isset($scheme) && $scheme ? ($scheme->primary_color ?? '#0EA5E9') : '#0EA5E9');
+$secondary = $secondary ?? (isset($scheme) && $scheme ? ($scheme->secondary_color ?? '#1E293B') : '#1E293B');
+$accent = $accent ?? (isset($scheme) && $scheme ? ($scheme->accent_color ?? '#F59E0B') : '#F59E0B');
 @endphp
 
 <section id="services" class="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-white">
   {{-- Decorative brand glows (very subtle) --}}
   <div class="pointer-events-none absolute -z-10 -top-24 -left-24 h-64 w-64 rounded-full blur-3xl opacity-15"
-    style="background: {{ $brandPrimary }}"></div>
+    style="background: {{ $primary }}"></div>
   <div class="pointer-events-none absolute -z-10 -bottom-28 -right-24 h-72 w-72 rounded-full blur-3xl opacity-10"
-    style="background: {{ $brandAccent }}"></div>
+    style="background: {{ $accent }}"></div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     {{-- Section header (kept) --}}
@@ -187,7 +190,7 @@ $brandAccent = $facility['accent_color'] ?? '#F59E0B';
             class="h-44 w-full object-cover object-top sm:object-center md:object-[50%_20%] transition-transform duration-700 group-hover:scale-105"
             loading="lazy" decoding="async">
           {{-- Brand accent bar --}}
-          <div class="absolute bottom-0 left-0 right-0 h-1.5" style="background: {{ $brandPrimary }}"></div>
+          <div class="absolute bottom-0 left-0 right-0 h-1.5" style="background: {{ $primary }}"></div>
         </div>
 
         {{-- Body --}}
@@ -203,7 +206,7 @@ $brandAccent = $facility['accent_color'] ?? '#F59E0B';
           <div class="mt-4 flex items-center justify-center">
             <button onclick="openServiceModal('modal-{{ $index }}')"
               class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style="background: {{ $brandAccent }};" aria-controls="modal-{{ $index }}" aria-expanded="false">
+              style="background: {{ $accent }};" aria-controls="modal-{{ $index }}" aria-expanded="false">
               Details
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -229,16 +232,22 @@ $brandAccent = $facility['accent_color'] ?? '#F59E0B';
           <div class="flex flex-col sm:flex-row gap-3 justify-start md:justify-end">
             <a href="#contact"
               class="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-white font-semibold shadow hover:shadow-md transition"
-              style="background: {{ $brandPrimary }}">
+              style="background: {{ $primary }}">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" @php $primary=$primary ??
+                  ($scheme->primary_color ?? '#0EA5E9');
+                  $secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
+                  $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+                  @endphp
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0
+                  005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3
+                  14.284 3 6V5z" />
               </svg>
               Contact Us
             </a>
             <a href="#about"
               class="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold ring-2 transition bg-white text-slate-900 hover:bg-slate-50"
-              style="--ring: {{ $brandPrimary }}; border-color: {{ $brandPrimary }};">
+              style="--ring: {{ $primary }}; border-color: {{ $primary }};">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -317,7 +326,7 @@ $brandAccent = $facility['accent_color'] ?? '#F59E0B';
         <div class="mt-6 flex flex-col sm:flex-row gap-3">
           <a href="#contact"
             class="flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition shadow"
-            style="background: {{ $brandPrimary }};" onclick="closeServiceModal('modal-{{ $index }}')">
+            style="background: {{ $primary }};" onclick="closeServiceModal('modal-{{ $index }}')">
             Contact Us About This Service
           </a>
           <button

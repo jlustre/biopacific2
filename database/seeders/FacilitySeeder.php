@@ -3,10 +3,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use App\Models\Facility;
 use App\Models\FacilityValue;
 use App\Models\Service;
-use App\Models\Testimonial;
 use App\Models\GalleryImage;
 
 class FacilitySeeder extends Seeder
@@ -28,6 +28,10 @@ class FacilitySeeder extends Seeder
       'https://images.unsplash.com/photo-1576765607924-5e5b5a2f5d8b?auto=format&fit=crop&w=800&q=80',
     ];
 
+    // Fetch all color schemes for mapping
+  $colorSchemes = DB::table('color_schemes')->get();
+
+
     $services = [
       ['title'=>'24/7 Nursing Care','description'=>'Round-the-clock skilled nursing by licensed staff.','icon'=>'<svg class="w-6 h-6" viewBox="0 0 24 24"></svg>'],
       ['title'=>'Rehabilitation','description'=>'Physical, occupational, and speech therapy.','icon'=>'<svg class="w-6 h-6" viewBox="0 0 24 24"></svg>'],
@@ -43,7 +47,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Healing With Heart in San Jose',
     'subheadline'=>'Providing compassionate rehabilitation and skilled nursing care you can trust.',
     'address'=>'2065 LOS GATOS-ALMADEN ROAD','phone'=>'4083779275','city'=>'SAN JOSE','state'=>'CA','zip'=>'95124','beds'=>77,
-    'primary_color'=>'#059669','secondary_color'=>'#064e3b','accent_color'=>'#facc15',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Almaden+Health+and+Rehabilitation++Center,2065+LOS+GATOS-ALMADEN+ROAD%2CSAN+JOSE%2CCA+95124&output=embed',
     'domain'=>'almadenhealthandrehabilitationcenter.com','subdomain'=>'almadenhrc.com','years'=>'20', 'facility_image' => 'almadenhcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero.jpg'
@@ -54,7 +58,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Care That Feels Like Home',
     'subheadline'=>'Bringing comfort, dignity, and healing to every day in Glendale.',
     'address'=>'430 N. GLENDALE AVE','phone'=>'8182465677','city'=>'GLENDALE','state'=>'CA','zip'=>'91206','beds'=>92,
-    'primary_color'=>'#059669','secondary_color'=>'#064E3B','accent_color'=>'#FACC15',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://www.google.com/maps?q=Autumn+Hills+Health+Care+Center,430+N.GLENDALE+AVE%2CGLENDALE%2CCA+91206&output=embed',
     'domain'=>'autumnhillshealthcarecenter.com','subdomain'=>'autumnhillshcc.com','years'=>'20', 'facility_image' => 'autumnhillshcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero2.png'
@@ -65,7 +69,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Your Community, Your Care',
     'subheadline'=>'Dedicated to bringing together community support and compassionate nursing.',
     'address'=>'1900 CHURCH LANE','phone'=>'5102355514','city'=>'SAN PABLO','state'=>'CA','zip'=>'94806','beds'=>80,
-    'primary_color'=>'#0EA5E9','secondary_color'=>'#0369A1','accent_color'=>'#FBBF24',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Creekside+Healthcare+Center,1900+CHURCH+LANE%2CSAN+PABLO%2CCA+94806&output=embed',
     'domain'=>'creeksidehealthcarecenter.com','subdomain'=>'creeksidehcc.com','years'=>'20', 'facility_image' => 'creeksidehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero3.png'
@@ -76,7 +80,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Rebuilding Lives, One Step at a Time',
     'subheadline'=>'Offering skilled nursing and rehabilitation designed to restore health and independence.',
     'address'=>'19700 HESPERIAN BOULEVARD','phone'=>'5107852880','city'=>'HAYWARD','state'=>'CA','zip'=>'94541','beds'=>88,
-    'primary_color'=>'#10B981','secondary_color'=>'#065F46','accent_color'=>'#FDBA74',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Driftwood+Healthcare+Center+-+Hayward,19700+HESPERIAN+BOULEVARD%2CHAYWARD%2CCA+94541&output=embed',
     'domain'=>'driftwoodhealthcarecenter-hayward.com','subdomain'=>'driftwoodhcc-hayward.com','years'=>'20', 'facility_image' => 'driftwood-hayward.jpeg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero4.png'
@@ -87,7 +91,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Compassion by the Coast',
     'subheadline'=>'Delivering dignified care and trusted support for Santa Cruz families.',
     'address'=>'675 24TH AVENUE','phone'=>'8314756323','city'=>'SANTA CRUZ','state'=>'CA','zip'=>'95062','beds'=>92,
-    'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Driftwood+Healthcare+Center+-+Santa+Cruz,675+24TH+AVENUE%2CSANTA+CRUZ%2CCA+95062&output=embed',
     'domain'=>'driftwoodhealthcarecenter-santacruz.com','subdomain'=>'driftwoodhcc-santacruz.com','years'=>'20', 'facility_image' => 'driftwood-santacruz.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero5.png'
@@ -98,7 +102,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Excellence in Every <br>Journey of Care',
     'subheadline'=>'Skilled professionals in Fremont dedicated to recovery and wellness.',
     'address'=>'39022 PRESIDIO WAY','phone'=>'5107923743','city'=>'FREMONT','state'=>'CA','zip'=>'94538','beds'=>115,
-    'primary_color'=>'#7C3AED','secondary_color'=>'#4C1D95','accent_color'=>'#60A5FA',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Fremont+Healthcare+Center,39022+PRESIDIO+WAY%2CFREMONT%2CCA+94538&output=embed',
     'domain'=>'fremonthealthcarecenter.com','subdomain'=>'fremonthcc.com','years'=>'20', 'facility_image' => 'fremonthcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero6.png'
@@ -109,7 +113,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Serving Oakland With Heart',
     'subheadline'=>'Providing quality healthcare for generations, rooted in dignity and compassion.',
     'address'=>'3020 EAST 15TH STREET','phone'=>'5102615613','city'=>'OAKLAND','state'=>'CA','zip'=>'94601','beds'=>140,
-    'primary_color'=>'#16A34A','secondary_color'=>'#14532D','accent_color'=>'#F59E0B',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Fruitvale+Healthcare+Center,3020+EAST+15TH+STREET%2COAKLAND%2CCA+94601&output=embed',
     'domain'=>'fruitvalehealthcarecenter.com','subdomain'=>'fruitvalehcc.com','years'=>'20', 'facility_image' => 'fruitvalehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero7.png'
@@ -120,7 +124,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Your Path to Healing in Glendale',
     'subheadline'=>'Providing personalized transitional care and rehabilitation services to restore independence and quality of life.',
     'address'=>'1509 Wilson Terrace, North Tower, 2nd Floor','phone'=>'8184098072','city'=>'GLENDALE','state'=>'CA','zip'=>'91206','beds'=>92,
-    'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Glendale+Transitional+Care+Center,1509+Wilson+Terrace%2C+North+Tower%2C+2nd+Floor%2CGLENDALE%2CCA+91206&output=embed',
     'domain'=>'glendaletransitionalcarecenter.com','subdomain'=>'glendaletcc.com','years'=>'20', 'facility_image' => 'glendaletransitionalcarecenter.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero8.png'
@@ -131,7 +135,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Restoring Health in the Heart of Hayward',
     'subheadline'=>'Delivering personalized skilled nursing and rehabilitation services designed to support recovery, dignity, and independence',
     'address'=>'1768 B Street','phone'=>'5105384424','city'=>'HAYWARD','state'=>'CA','zip'=>'94541','beds'=>92,
-    'primary_color'=>'#22D3EE','secondary_color'=>'#0E7490','accent_color'=>'#F472B6',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Hayward+Hills+Health+Care+Center,1768+B+Street%2CHAYWARD%2CCA+94541&output=embed',
     'domain'=>'haywardhillshealthcarecenter.com','subdomain'=>'haywardhillshcc.com','years'=>'20', 'facility_image' => 'haywardhillshcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero9.png'
@@ -142,7 +146,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Caring for Life in Inglewood',
     'subheadline'=>'Delivering trusted long-term care and rehabilitation for your loved ones.',
     'address'=>'100 S. HILLCREST BLVD','phone'=>'3106779114','city'=>'INGLEWOOD','state'=>'CA','zip'=>'90301','beds'=>99,
-    'primary_color'=>'#DB2777','secondary_color'=>'#831843','accent_color'=>'#38BDF8',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Inglewood+Health+Care+Center,100+S.+HILLCREST+BLVD%2CINGLEWOOD%2CCA+90301&output=embed',
     'domain'=>'inglewoodhealthcarecenter.com','subdomain'=>'inglewoodhcc.com','years'=>'20', 'facility_image' => 'inglewoodhcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero10.png'
@@ -153,7 +157,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Trusted Care Close to Home',
     'subheadline'=>'Enhancing lives in La Crescenta with compassion, comfort, and dignity.',
     'address'=>'3050 MONTROSE AVE','phone'=>'8189570850','city'=>'LA CRESCENTA','state'=>'CA','zip'=>'91214','beds'=>92,
-    'primary_color'=>'#0EA5A4','secondary_color'=>'#134E4A','accent_color'=>'#A78BFA',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=La+Crescenta+Healthcare+Center,3050+MONTROSE+AVE%2CLA+CRESCENTA%2CCA+91214&output=embed',
     'domain'=>'lacrescentahealthcarecenter.com','subdomain'=>'lacrescentahcc.com','years'=>'20', 'facility_image' => 'lacrescentahcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero11.png'
@@ -164,7 +168,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Compassionate Care <br>in Palm Desert',
     'subheadline'=>'Offering healing warmth, skilled nursing, and rehabilitation under the palms.',
     'address'=>'44610 MONTEREY AVENUE','phone'=>'7607767700','city'=>'PALM DESERT','state'=>'CA','zip'=>'92260','beds'=>99,
-    'primary_color'=>'#F97316','secondary_color'=>'#9A3412','accent_color'=>'#22C55E',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Monterey+Palms+Health+Care+Center,44610+MONTEREY+AVENUE%2CPALM+DESERT%2CCA+92260&output=embed',
     'domain'=>'montereypalmshealthcarecenter.com','subdomain'=>'montereypalmshcc.com','years'=>'20', 'facility_image' => 'montereypalms.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero12.png'
@@ -175,7 +179,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Where Quality Meets Compassion',
     'subheadline'=>'Delivering personalized care and rehabilitation in the heart of Palm Springs.',
     'address'=>'277 S SUNRISE WAY','phone'=>'7603278541','city'=>'PALM SPRINGS','state'=>'CA','zip'=>'92262','beds'=>99,
-    'primary_color'=>'#E11D48','secondary_color'=>'#881337','accent_color'=>'#84CC16',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Palm+Springs+Healthcare++and++Rehabilitation+Center,277+S+SUNRISE+WAY%2CPALM+SPRINGS%2CCA+92262&output=embed',
     'domain'=>'palmspringshealthandrehabilitationcenter.com','subdomain'=>'palmspringshrc.com','years'=>'20', 'facility_image' => 'palmspringshrc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero13.png'
@@ -186,7 +190,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Strong Roots, Compassionate Care',
     'subheadline'=>'Supporting health, dignity, and independence with every resident we serve.',
     'address'=>'45 PROFESSIONAL CENTER PKWY','phone'=>'4154793610','city'=>'SAN RAFAEL','state'=>'CA','zip'=>'94903','beds'=>101,
-    'primary_color'=>'#2563EB','secondary_color'=>'#1D4ED8','accent_color'=>'#FDE047',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Pine+Ridge+Care+Center,45+PROFESSIONAL+CENTER+PKWY%2CSAN+RAFAEL%2CCA+94903&output=embed',
     'domain'=>'pineridgecarecenter.com','subdomain'=>'pineridgehcc.com','years'=>'20', 'facility_image' => 'pineridgehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero14.png'
@@ -197,7 +201,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Dedicated to Santa Monica Families',
     'subheadline'=>'Providing nurturing care and enriching lives with dignity and compassion.',
     'address'=>'1320 20TH STREET','phone'=>'3102552800','city'=>'SANTA MONICA','state'=>'CA','zip'=>'90404','beds'=>59,
-    'primary_color'=>'#64748B','secondary_color'=>'#0F172A','accent_color'=>'#F59E0B',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Santa+Monica+Health+Care+Center,1320+20TH+STREET%2CSANTA+MONICA%2CCA+90404&output=embed',
     'domain'=>'santamonicahealthcarecenter.com','subdomain'=>'santamonicahcc.com','years'=>'20', 'facility_image' => 'santamonicahcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero15.png'
@@ -208,7 +212,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Rising With Compassionate Care',
     'subheadline'=>'Delivering skilled nursing and rehabilitation that elevates quality of life.',
     'address'=>'2065 FOREST AVENUE','phone'=>'4082802500','city'=>'SAN JOSE','state'=>'CA','zip'=>'95128','beds'=>253,
-    'primary_color'=>'#0EA5E9','secondary_color'=>'#155E75','accent_color'=>'#F59E0B',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Skyline+Healthcare+Center+-+San+Jose,2065+FOREST+AVENUE%2CSAN+JOSE%2CCA+95128&output=embed',
     'domain'=>'skylinehealthcarecenter-sanjose.com','subdomain'=>'skylinehcc.com','years'=>'20', 'facility_image' => 'skylinehcc.jpeg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero16.png'
@@ -219,7 +223,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'A Legacy of Care in San Pablo',
     'subheadline'=>'Providing skilled nursing and rehabilitation built on trust, compassion, and excellence.',
     'address'=>'13484 SAN PABLO AVENUE','phone'=>'5102325945','city'=>'SAN PABLO','state'=>'CA','zip'=>'94806','beds'=>202,
-    'primary_color'=>'#06B6D4','secondary_color'=>'#155E75','accent_color'=>'#F59E0B',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Vale+Healthcare+Center,13484+SAN+PABLO+AVENUE%2CSAN+PABLO%2CCA+94806&output=embed',
     'domain'=>'valehealthcarecenter.com','subdomain'=>'valehcc.com','years'=>'20', 'facility_image' => 'valehcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero16.png'
@@ -230,7 +234,7 @@ class FacilitySeeder extends Seeder
     'headline'=>'Together We Heal, Together We Thrive',
     'subheadline'=>'Supporting families with skilled care that fosters strength and independence.',
     'address'=>'1586 W. SAN MARCOS BLVD','phone'=>'7604712986','city'=>'SAN MARCOS','state'=>'CA','zip'=>'92078','beds'=>118,
-    'primary_color'=>'#15803D','secondary_color'=>'#052E16','accent_color'=>'#84CC16',
+    'color_scheme_id'=> 1,
     'location_map'=> 'https://maps.google.com/maps?q=Village+Square+Healthcare+Center,1586+W.+SAN+MARCOS+BLVD%2CSAN+MARCOS%2CCA+92078&output=embed',
     'domain'=>'villagesquarehealthcarecenter.com','subdomain'=>'villagesquarehcc.com','years'=>'20', 'facility_image' => 'villagesquarehcc.jpeg', 'hours'=>'8:30 AM - 7:30 PM', 
     'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero18.png'
@@ -238,9 +242,12 @@ class FacilitySeeder extends Seeder
 ];
 $bplogo = 'images/bplogo.png';
 
-unset($item);
+    unset($item);
     foreach ($items as $i) {
+      $color_scheme_id = $i['color_scheme_id'] ?? 1;
       $facility = Facility::create([
+        // ...existing code...
+        'color_scheme_id' => $color_scheme_id,
         'name' => $i['name'],
         'tagline' => $i['tagline'],
         'slug' => Str::slug($i['name']),
@@ -265,9 +272,7 @@ unset($item);
         'facebook' => 'https://facebook.com',
         'twitter' => 'https://twitter.com',
         'instagram' => 'https://instagram.com',
-        'primary_color'   => $i['primary_color'],
-        'secondary_color' => $i['secondary_color'],
-        'accent_color'    => $i['accent_color'],
+        'color_scheme_id' => $color_scheme_id,
         'location_map'    => $i['location_map'],
         'years'    => $i['years'],
         // Additional columns found in database
@@ -294,34 +299,6 @@ unset($item);
       }
       foreach ($services as $svc) {
         Service::create($svc + ['facility_id'=>$facility->id]);
-      }
-      for ($t=0;$t<3;$t++) {
-        Testimonial::create([
-          'facility_id'=>$facility->id,
-          'name'=> fake()->name(),
-          'title'=> fake()->randomElement(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', '']),
-          'quote'=> fake()->randomElement([
-            'The therapy team worked miracles with my father. After his surgery, we thought he might never walk again. Thanks to their dedication and expertise, he is now mobile and independent.',
-            'The staff here are caring and professional. They made my mother feel at home during her recovery.',
-            'Feels like home, with genuine compassion. The nurses go above and beyond every single day.',
-            'They go above and beyond every day. The rehabilitation program helped me regain my strength.',
-            'Our family is grateful for the amazing care. The facility is clean and well-maintained.',
-            'The environment is warm and welcoming. Staff truly care about each resident\'s wellbeing.',
-            'Residents feel truly valued here. The activities and social programs are wonderful.',
-            'The medical team is exceptional. They kept us informed every step of the way.',
-            'Outstanding physical therapy services. My recovery exceeded all expectations.',
-            'Compassionate care when we needed it most. Highly recommend this facility.',
-          ]),
-          'relationship' => fake()->randomElement([
-            'Current Patient', 'Former Patient', 'Patient Family Member', 'Visitor', 
-            'Current Staff', 'Former Staff', 'Healthcare Professional', 'Volunteer',
-            'Community Member', 'other'
-          ]),
-          'rating' => fake()->numberBetween(4, 5),
-          'is_active' => true,
-          'is_featured' => fake()->boolean(20), // 20% chance of being featured
-          'photo_url'=>'https://randomuser.me/api/portraits/'.(rand(0,1)?'women':'men').'/'.rand(10,90).'.jpg',
-        ]);
       }
       foreach ($galleryImages as $img) {
         GalleryImage::create(['facility_id'=>$facility->id,'thumbnail_url'=>$img]);

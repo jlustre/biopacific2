@@ -8,6 +8,16 @@ $poster = url('images/' . $posterFilename);
 $poster = asset('images/hero1.jpg');
 }
 $hasVideo = !empty($facility['hero_video_id']);
+if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
+$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
+$primary = $primary ?? ($scheme->primary_color ?? '#047857');
+$secondary = $secondary ?? ($scheme->secondary_color ?? '#000000');
+$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+} else {
+$primary = $primary ?? '#047857';
+$secondary = $secondary ?? '#000000';
+$accent = $accent ?? '#F59E0B';
+}
 @endphp
 
 <section class="relative min-h-[80vh] md:min-h-screen overflow-hidden isolate">
@@ -31,10 +41,11 @@ $hasVideo = !empty($facility['hero_video_id']);
 
       {{-- Readability overlays --}}
       <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50"></div>
+
       <div class="pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full blur-3xl opacity-30"
-        style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}"></div>
+        style="background: {{ $primary }}"></div>
       <div class="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full blur-3xl opacity-25"
-        style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></div>
+        style="background: {{ $accent }}"></div>
   </div>
 
   {{-- Content --}}
@@ -42,8 +53,7 @@ $hasVideo = !empty($facility['hero_video_id']);
     <div class="max-w-2xl">
       <span
         class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/30">
-        <span class="inline-block h-2.5 w-2.5 rounded-full"
-          style="background: {{ $facility['accent_color'] ?? '#F59E0B' }}"></span>
+        <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
         Family-centered • Evidence-based • Compassion
       </span>
 
@@ -59,19 +69,26 @@ $hasVideo = !empty($facility['hero_video_id']);
 
       <div class="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <a href="#contact"
-          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
-          style="background-color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition hover:brightness-120"
+          style="background-color: {{ $primary }}">
           Quick Contact
         </a>
         <a href="#book"
-          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold bg-white/15 backdrop-blur text-white ring-1 ring-white/40 hover:bg-white/25 transition"
-          style="--btn: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold border-2 shadow-lg transition-all duration-200"
+          style="
+            color: {{ $secondary }};
+            border-color: {{ $secondary }};
+            background: linear-gradient(135deg, white 0%, #fff8 100%);
+            box-shadow: 0 2px 8px 0 {{ $secondary }}22;
+          "
+          onmouseover="this.style.background='linear-gradient(135deg, {{ $secondary }}33 0%, #fff 100%)'; this.style.color='#fff'; this.style.borderColor='{{ $secondary }}'; this.style.boxShadow='0 4px 16px 0 {{ $secondary }}44';"
+          onmouseout="this.style.background='linear-gradient(135deg, white 0%, #fff8 100%)'; this.style.color='{{ $secondary }}'; this.style.borderColor='{{ $secondary }}'; this.style.boxShadow='0 2px 8px 0 {{ $secondary }}22';">
           Book a Tour
         </a>
         @if(!empty($facility['hero_video_id']))
         <button id="playVideoBtn"
-          class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white transition hover:brightness-110"
-          style="background-color: {{ $facility['accent_color'] ?? '#F59E0B' }}">
+          class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white transition hover:brightness-120"
+          style="background-color: {{ $accent }}">
           <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M8 5v10l8-5-8-5z" />
           </svg>
