@@ -244,8 +244,9 @@ $accent = '#F59E0B';
                             <span>I agree to be contacted about this tour request. I understand this form should not
                                 include sensitive medical information.</span>
                         </label>
-                        <p>See our <a href="{{ $facility['npp_url'] ?? url('/privacy-practices') }}" class="underline"
-                                style="color: {{ $primary }}">Notice of Privacy Practices</a>.</p>
+                        <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
+                                class="underline" style="color: {{ $primary }}" target="_blank"
+                                rel="noopener noreferrer">Notice of Privacy Practices</a>.</p>
                     </div>
 
                     {{-- honeypot --}}

@@ -22,6 +22,11 @@
     </div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl mb-8">
+            <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800">
+                ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics privately.
+            </div>
+        </div>
         @include('partials.section_header', [
         'section_header' => 'Get in Touch',
         'section_sub_header' => "Have questions? We're here to help you every step of the
@@ -158,6 +163,18 @@
                         ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics
                         privately.
                     </div>
+
+                    <div class="flex items-center mb-4">
+                        <input id="no-phi" name="no_phi" type="checkbox" required
+                            class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                        <label for="no-phi" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                            I confirm that I will not include any Protected Health Information (PHI) in this form.
+                        </label>
+                    </div>
+                    <p class="text-xs mt-2">See our <a
+                            href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}" class="underline"
+                            style="color: {{ $primary }}" target="_blank" rel="noopener noreferrer">Notice of Privacy
+                            Practices</a>.</p>
 
                     <div>
                         <label for="contact_name" class="block text-sm font-medium text-slate-700 mb-2">Full Name

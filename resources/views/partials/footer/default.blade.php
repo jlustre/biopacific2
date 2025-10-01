@@ -230,6 +230,9 @@
           class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
         <a href="{{ url($facility['slug'] .'/accessibility') }}"
           class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
+        <span class="mx-2">|</span>
+        <a href="{{ url($facility['slug'] .'/webmaster/contact') }}"
+          class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
       </div>
     </div>
   </div>

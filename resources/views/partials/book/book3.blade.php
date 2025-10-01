@@ -1,436 +1,133 @@
-{{-- ==========================================
-BOOK A TOUR — Split Calendar Layout Variant
-- Left: selectable calendar (next 21 days) + time slots
-- Right: compact contact form
-- Mobile: sticky CTA + stacked sections
-========================================== --}}
+{{-- Book a Tour Variant 3 — Bold, Modern, Responsive Redesign --}}
 @php
 $primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
 $accent = $facility['accent_color'] ?? '#F59E0B';
 @endphp
 
-<section id="book" class="relative isolate overflow-hidden py-16 sm:py-20">
-    {{-- Ambient brand background --}}
-    <div class="pointer-events-none absolute inset-0 -z-10">
+<section id="book"
+    class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 py-10 overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none -z-10">
         <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-15"
             style="background: {{ $primary }}"></div>
         <div class="absolute -bottom-28 -right-24 h-80 w-80 rounded-full blur-3xl opacity-10"
             style="background: {{ $accent }}"></div>
         <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-50/70"></div>
     </div>
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {{-- Header --}}
-        <div class="text-center max-w-3xl mx-auto">
-            <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-                style="color: {{ $primary }}; border-color: {{ $primary }};">
-                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
-                Quick & Easy Scheduling
-            </span>
-            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold text-slate-900">
-                Book a Tour at {{ $facility['name'] ?? 'Our Community' }}
-            </h2>
-            <p class="mt-2 text-slate-600 md:text-lg">
-                Choose a date and time that works for you—then tell us how we can tailor your visit.
-            </p>
-        </div>
-
-        {{-- Content Grid --}}
-        <div class="mt-10 grid gap-8 lg:grid-cols-[1.05fr,0.95fr] items-start">
-            {{-- LEFT: Calendar & Time --}}
-            <div class="space-y-6">
-                <div class="rounded-3xl bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden relative">
-                    {{-- Calendar Header --}}
-                    <div class="flex items-center justify-between gap-3 p-6 border-b border-slate-200">
-                        <div>
-                            <div class="text-sm text-slate-600">Pick a date</div>
-                            <div id="calMonthLabel" class="text-lg font-semibold text-slate-900">—</div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button id="calPrev"
-                                class="h-9 w-9 inline-flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200"
-                                aria-label="Previous week">‹</button>
-                            <button id="calNext"
-                                class="h-9 w-9 inline-flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200"
-                                aria-label="Next week">›</button>
-                        </div>
-                    </div>
-
-                    {{-- Calendar Grid (3 weeks rolling) --}}
-                    <div class="p-4 sm:p-6">
-                        <div class="grid grid-cols-7 gap-2 text-center text-xs text-slate-500 uppercase tracking-wide">
-                            <div>Sun</div>
-                            <div>Mon</div>
-                            <div>Tue</div>
-                            <div>Wed</div>
-                            <div>Thu</div>
-                            <div>Fri</div>
-                            <div>Sat</div>
-                        </div>
-
-                        <div id="calDays" class="mt-2 grid grid-cols-7 gap-2">
-                            {{-- JS will populate next 21 days as buttons --}}
-                        </div>
-
-                        {{-- Quick help --}}
-                        <div class="mt-4 grid gap-3 sm:grid-cols-3 text-xs text-slate-600">
-                            <div class="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">Tours last 20–30 minutes
-                            </div>
-                            <div class="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">Private tours available
-                            </div>
-                            <div class="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">Free on-site parking
-                            </div>
-                        </div>
+    <div class="w-full max-w-4xl mx-auto px-2 sm:px-6 z-10">
+        <div class="flex flex-col md:flex-row gap-8 items-stretch">
+            <!-- Left: Illustration -->
+            <div class="hidden md:flex md:w-1/2 flex-col items-center">
+                <img src="/images/tour-illustration.png" alt="Book a Tour"
+                    class="w-full h-auto rounded-3xl shadow-2xl border-4 border-white/60 bg-white/30 backdrop-blur-lg object-cover">
+                <div class="mt-6 w-full max-w-xs bg-white/80 rounded-2xl shadow p-4 border border-blue-100">
+                    <h3 class="text-base font-semibold text-blue-900 mb-2 text-center">What to Expect on Your Tour</h3>
+                    <ol class="list-decimal list-inside text-sm text-slate-700 space-y-1">
+                        <li>Warm welcome and introduction to our team</li>
+                        <li>Guided walk-through of our facility and amenities</li>
+                        <li>Overview of our care programs and services</li>
+                        <li>Opportunity to ask questions and discuss your needs</li>
+                        <li>Review of next steps and resources</li>
+                    </ol>
+                    <div class="mt-3 text-xs text-slate-600 text-center">
+                        <strong>Estimated duration:</strong> 30–45 minutes
                     </div>
                 </div>
-
-                {{-- Time Slots --}}
-                <div class="rounded-3xl bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden relative">
-                    <div class="p-6 border-b border-slate-200">
-                        <h3 class="text-lg font-semibold text-slate-900">Pick a time</h3>
-                        <p class="text-sm text-slate-600">We’ll confirm or suggest the closest available slot.</p>
+                <div class="mt-5 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                    <div
+                        class="flex items-center gap-2 rounded-2xl bg-amber-50 px-4 py-2 ring-2 ring-amber-200 text-sm font-semibold text-amber-900 shadow-sm">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 text-amber-500' fill='none'
+                            viewBox='0 0 24 24' stroke='currentColor'>
+                            <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                                d='M3 17v-2a4 4 0 014-4h10a4 4 0 014 4v2M6 17v2a2 2 0 002 2h8a2 2 0 002-2v-2' />
+                        </svg>
+                        Free on-site parking
                     </div>
-
-                    <div class="p-6">
-                        <div id="timeSlots" class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                            @foreach(['9:00 AM','10:30 AM','1:00 PM','2:30 PM','4:00 PM'] as $slot)
-                            <label class="group relative">
-                                <input type="radio" name="preferred_time" value="{{ $slot }}" class="peer sr-only">
-                                <span class="block rounded-xl border bg-white px-3 py-2 text-sm text-slate-700
-                               peer-checked:text-white peer-checked:shadow transition select-none cursor-pointer"
-                                    style="border-color:#e5e7eb;">
-                                    {{ $slot }}
-                                </span>
-                                <style>
-                                    .peer:checked+span {
-                                        background: {
-                                                {
-                                                $primary
-                                            }
-                                        }
-
-                                        ;
-                                        border-color: transparent;
-                                    }
-                                </style>
-                            </label>
-                            @endforeach
-                        </div>
-
-                        {{-- Mobile sticky CTA mirrors summary --}}
-                        <div class="mt-6 lg:hidden">
-                            <div
-                                class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <div id="mDate" class="font-semibold">Date: —</div>
-                                        <div id="mTime" class="text-slate-600 text-xs">Time: —</div>
-                                    </div>
-                                    <a href="#tourFormWrap"
-                                        class="inline-flex items-center rounded-xl px-3 py-2 text-sm font-semibold text-white"
-                                        style="background: {{ $primary }}">Continue</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Trust badges --}}
-                <div class="grid gap-3 sm:grid-cols-3 relative">
-                    <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-4 text-center">
-                        <div class="text-xs uppercase tracking-wide text-slate-500">Location</div>
-                        <div class="mt-1 font-semibold text-slate-900">
-                            {{ $facility['city'] ?? '—' }}{{ isset($facility['state']) ? ', '.$facility['state'] : '' }}
-                        </div>
-                    </div>
-                    <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-4 text-center">
-                        <div class="text-xs uppercase tracking-wide text-slate-500">Tours</div>
-                        <div class="mt-1 font-semibold text-slate-900">{{ $facility['hours'] ?? '9AM–7PM' }}</div>
-                    </div>
-                    <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-4 text-center">
-                        <div class="text-xs uppercase tracking-wide text-slate-500">Phone</div>
-                        <div class="mt-1 font-semibold text-slate-900">
+                    <div
+                        class="flex items-center gap-2 rounded-2xl bg-blue-50 px-4 py-2 ring-2 ring-blue-200 text-sm font-semibold text-blue-900 shadow-sm">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 text-blue-500' fill='none'
+                            viewBox='0 0 24 24' stroke='currentColor'>
+                            <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                                d='M3 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm0 12a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2zm12-12a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zm0 12a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' />
+                        </svg>
+                        <span>Phone:</span>
+                        <a href="tel:{{ $facility['phone'] ?? '' }}" class="underline hover:text-blue-700">
                             {{ isset($facility['phone']) ? preg_replace('/(\d{3})(\d{3})(\d{4})/','($1)
                             $2-$3',$facility['phone']) : '—' }}
-                        </div>
+                        </a>
                     </div>
                 </div>
             </div>
-
-            {{-- RIGHT: Compact Form --}}
-            <div id="tourFormWrap" class="rounded-3xl bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-slate-200 bg-slate-50/60">
-                    <h3 class="text-lg font-semibold text-slate-900">Tell us about you</h3>
-                    <p class="text-sm text-slate-600">We’ll confirm within one business day.</p>
-                </div>
-
-                <form method="POST" action="{{ route('tours.store') }}" id="tourForm" class="p-6 sm:p-8" novalidate>
-                    @csrf
-                    <input type="hidden" name="type" value="in_person">
-                    <input type="hidden" name="preferred_date" id="preferred_date">
-                    <input type="hidden" name="preferred_time_hidden" id="preferred_time_hidden">
-
-                    <div class="mb-4 p-3 rounded-lg bg-amber-100 text-amber-800 border border-amber-200">
-                        <strong>Warning:</strong> Do not include any Protected Health Information (PHI) in this request
-                        form.
-                    </div>
-
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="full_name" class="text-sm font-medium text-slate-700">Full name *</label>
-                            <input id="full_name" name="full_name" required placeholder="Jane Doe"
-                                class="mt-1 block w-full rounded-md border border-gray-300 focus:border-slate-400 focus:ring-0 px-3 py-2" />
-                        </div>
-                        <div>
-                            <label for="relationship" class="text-sm font-medium text-slate-700">Relationship</label>
-                            <select id="relationship" name="relationship"
-                                class="mt-1 block w-full rounded-md border border-gray-300 focus:border-slate-400 focus:ring-0 px-3 py-2">
-                                <option value="">Select…</option>
-                                <option>Self</option>
-                                <option>Spouse</option>
-                                <option>Parent</option>
-                                <option>Adult child</option>
-                                <option>Relative</option>
-                                <option>Friend</option>
-                                <option>Care manager</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="phone" class="text-sm font-medium text-slate-700">Phone *</label>
-                            <input id="phone" name="phone" type="tel" required placeholder="(555) 555-1234"
-                                class="mt-1 block w-full rounded-md border border-gray-300 focus:border-slate-400 focus:ring-0 px-3 py-2" />
-                        </div>
-                        <div>
-                            <label for="email" class="text-sm font-medium text-slate-700">Email *</label>
-                            <input id="email" name="email" type="email" required placeholder="you@example.com"
-                                class="mt-1 block w-full rounded-md border border-gray-300 focus:border-slate-400 focus:ring-0 px-3 py-2" />
+            <!-- Right: Form Card -->
+            <div class="w-full md:w-1/2 flex flex-col justify-center">
+                <div class="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-blue-100 p-6 md:p-10">
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-blue-900 mb-2 text-center">Book a Tour</h2>
+                    <p class="text-blue-700 mb-5 text-center text-sm">Schedule a visit to experience our facility
+                        firsthand. Fill out the form and our team will contact you soon.</p>
+                    <!-- Booking Only Statement -->
+                    <div class="mb-3">
+                        <div class="rounded-xl bg-blue-50 p-3 ring-1 ring-blue-200 text-xs text-blue-800 text-center">
+                            <strong>Note:</strong> Please use this form only if you are booking a tour.<br>
+                            For all other inquiries, <a href="/contact"
+                                class="underline text-blue-700 hover:text-blue-900">contact us here</a>.
                         </div>
                     </div>
-
-                    {{-- Guests & Interests --}}
-                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="guests" class="text-sm font-medium text-slate-700">Guests</label>
-                            <input id="guests" name="guests" type="number" min="1" max="6" value="1"
-                                class="mt-1 block w-full rounded-md border border-gray-300 focus:border-slate-400 focus:ring-0 px-3 py-2" />
+                    <!-- PHI Warning -->
+                    <div class="mb-4">
+                        <div
+                            class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800 text-center">
+                            ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics
+                            privately.
                         </div>
-                        <div>
-                            <label class="text-sm font-medium text-slate-700">Areas of interest</label>
-                            <div class="mt-1 grid grid-cols-2 gap-2">
-                                @foreach(['Skilled Nursing','Rehabilitation','Memory Care','Long-term Care'] as $opt)
-                                <label
-                                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-                                    <input type="checkbox" name="interests[]" value="{{ $opt }}"
-                                        class="rounded border border-gray-300 text-sky-600 focus:ring-sky-500">
-                                    <span>{{ $opt }}</span>
-                                </label>
-                                @endforeach
+                    </div>
+                    <form method="POST" action="{{ route('tours.store') }}" class="space-y-4">
+                        @csrf
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label for="name" class="block text-blue-800 font-semibold mb-1 text-xs">Full
+                                    Name</label>
+                                <input type="text" id="name" name="name" required
+                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
+                            </div>
+                            <div>
+                                <label for="email" class="block text-blue-800 font-semibold mb-1 text-xs">Email</label>
+                                <input type="email" id="email" name="email" required
+                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mt-4">
-                        <label for="message" class="text-sm font-medium text-slate-700">Notes (optional)</label>
-                        <textarea id="message" name="message" rows="4"
-                            class="mt-1 block w-full rounded-md border border-gray-300 focus:border-slate-400 focus:ring-0 px-3 py-2"
-                            placeholder="Accessibility needs, questions, preferences…"></textarea>
-                    </div>
-
-                    <div class="mt-5 space-y-2 text-xs text-slate-600">
-                        <label class="inline-flex items-start gap-2">
-                            <input type="checkbox" name="consent" required
-                                class="mt-0.5 rounded border border-gray-300 text-sky-600 focus:ring-sky-500">
-                            <span>I agree to be contacted about this request. Please do not include sensitive medical
-                                information.</span>
-                        </label>
-                        <p>See our <a href="{{ $facility['npp_url'] ?? url('/privacy-practices') }}" class="underline"
-                                style="color: {{ $primary }}">Notice of Privacy Practices</a>.</p>
-                    </div>
-
-                    {{-- Honeypot --}}
-                    <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
-
-                    <div class="mt-6 flex flex-col sm:flex-row gap-3 items-center">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label for="phone" class="block text-blue-800 font-semibold mb-1 text-xs">Phone</label>
+                                <input type="text" id="phone" name="phone"
+                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
+                            </div>
+                            <div>
+                                <label for="date" class="block text-blue-800 font-semibold mb-1 text-xs">Preferred
+                                    Date</label>
+                                <input type="date" id="date" name="date"
+                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="message" class="block text-blue-800 font-semibold mb-1 text-xs">Message</label>
+                            <textarea id="message" name="message" rows="2"
+                                class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90"></textarea>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="phi_ack" name="phi_ack" required class="accent-blue-600">
+                            <label for="phi_ack" class="text-xs text-blue-800">I understand not to include Protected
+                                Health Information (PHI).</label>
+                        </div>
+                        <div class="text-xs text-blue-700 mb-2">
+                            By submitting, you agree to our <a href="/npp" target="_blank"
+                                class="underline hover:text-blue-900">Notice of Privacy Practices</a>.
+                        </div>
                         <button type="submit"
-                            class="inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl hover:bg-green-600 transition"
-                            style="background: {{ $primary }}">Request Tour</button>
-                        <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <a href="tel:{{ $facility['phone'] ?? '' }}"
-                                class="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-semibold ring-2 transition bg-white text-slate-900 hover:bg-slate-200"
-                                style="border-color: {{ $primary }}">Call Us</a>
-                            <span class="text-sm text-slate-700 font-medium">{{ isset($facility['phone']) ?
-                                preg_replace('/(\d{3})(\d{3})(\d{4})/','($1) $2-$3',$facility['phone']) : '' }}</span>
-                        </div>
-                    </div>
+                            class="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition text-base">Book
+                            Tour</button>
+                    </form>
+                </div>
 
-                    {{-- Inline Summary --}}
-                    <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-slate-700">
-                        <div class="flex flex-wrap items-center gap-4">
-                            <div><span class="text-slate-500">Date:</span> <span id="sumDate">—</span></div>
-                            <div><span class="text-slate-500">Time:</span> <span id="sumTime">—</span></div>
-                            <div><span class="text-slate-500">Guests:</span> <span id="sumGuests">1</span></div>
-                        </div>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
 </section>
-
-<script>
-    // Colors
-  const BRAND_PRIMARY = "{{ $primary }}";
-
-
-    // Generate next 21 days in a rolling 7x3 grid, aligned to correct weekday
-    const calDays = document.getElementById('calDays');
-    const calMonthLabel = document.getElementById('calMonthLabel');
-    const preferredDateInput = document.getElementById('preferred_date');
-    const timeInputs = document.querySelectorAll('input[name="preferred_time"]');
-    const timeHidden = document.getElementById('preferred_time_hidden');
-
-    const mDate = document.getElementById('mDate');
-    const mTime = document.getElementById('mTime');
-    const sumDate = document.getElementById('sumDate');
-    const sumTime = document.getElementById('sumTime');
-    const sumGuests = document.getElementById('sumGuests');
-
-    let startOffset = 0;   // weeks offset for prev/next
-    let selectedDate = null;
-
-    function fmtDate(d){
-        return d.toISOString().slice(0,10); // yyyy-mm-dd
-    }
-    function humanDate(d){
-        const opts = { weekday:'short', month:'short', day:'numeric' };
-        return d.toLocaleDateString(undefined, opts);
-    }
-    function updateMonthLabel(d){
-        const opts = { month:'long', year:'numeric' };
-        calMonthLabel.textContent = d.toLocaleDateString(undefined, opts);
-    }
-
-    function renderCalendar(){
-        if (!calDays) return;
-        calDays.innerHTML = '';
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
-        // Move window by startOffset weeks
-        const start = new Date(today);
-        start.setDate(start.getDate() + startOffset * 7);
-
-        // Find the weekday of the start date
-        const startWeekday = start.getDay();
-        // Back up to the previous Sunday
-        start.setDate(start.getDate() - startWeekday);
-
-        const previewDay = new Date(start);
-        updateMonthLabel(previewDay);
-
-        for (let i=0; i<21; i++){
-            const d = new Date(start);
-            d.setDate(start.getDate() + i);
-
-            const isPast = d < today;
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'cal-day group relative w-full aspect-square rounded-2xl border text-sm transition';
-            btn.style.borderColor = '#e5e7eb';
-            btn.setAttribute('aria-label', 'Select ' + humanDate(d));
-            btn.dataset.date = fmtDate(d);
-
-            const weekday = d.getDay();
-            if (weekday === 0 || weekday === 6) {
-                // weekends subtly muted, still selectable
-                btn.classList.add('bg-slate-50');
-            } else {
-                btn.classList.add('bg-white');
-            }
-
-            if (isPast) {
-                btn.disabled = true;
-                btn.classList.add('opacity-40','cursor-not-allowed');
-            } else {
-                btn.addEventListener('click', () => selectDate(d, btn));
-            }
-
-            btn.innerHTML = `
-                <div class="flex h-full items-center justify-center font-semibold text-slate-900">${d.getDate()}</div>
-            `;
-            calDays.appendChild(btn);
-        }
-
-        // Reselect previous date if still visible
-        if (selectedDate) {
-            document.querySelectorAll('.cal-day').forEach(el=>{
-                if (el.dataset.date === fmtDate(selectedDate)) {
-                    highlightDateButton(el);
-                }
-            });
-        }
-    }
-
-  function clearDateHighlights(){
-    document.querySelectorAll('.cal-day').forEach(el=>{
-      el.style.background = '';
-      el.style.borderColor = '#e5e7eb';
-      el.style.color = '';
-      el.classList.remove('ring-2');
-    });
-  }
-
-  function highlightDateButton(btn){
-    clearDateHighlights();
-    btn.classList.add('ring-2');
-    btn.style.borderColor = 'transparent';
-    btn.style.background = BRAND_PRIMARY;
-    btn.style.color = '#fff';
-  }
-
-  function selectDate(d, btn){
-    selectedDate = d;
-    preferredDateInput.value = fmtDate(d);
-    highlightDateButton(btn);
-    // mobile + summary mirrors
-    const label = humanDate(d);
-    if (mDate) mDate.textContent = 'Date: ' + label;
-    if (sumDate) sumDate.textContent = label;
-  }
-
-  // Time selection mirror
-  timeInputs.forEach(r=>{
-    r.addEventListener('change', ()=>{
-      timeHidden.value = r.value;
-      if (mTime) mTime.textContent = 'Time: ' + r.value;
-      if (sumTime) sumTime.textContent = r.value;
-    });
-  });
-
-  // Guests mirror
-  document.getElementById('guests')?.addEventListener('input', (e)=>{
-    if (sumGuests) sumGuests.textContent = e.target.value || '1';
-  });
-
-  // Prev/Next week
-  document.getElementById('calPrev')?.addEventListener('click', ()=>{
-    startOffset = Math.max(0, startOffset - 1); // do not allow navigating before today
-    renderCalendar();
-  });
-  document.getElementById('calNext')?.addEventListener('click', ()=>{
-    startOffset += 1;
-    renderCalendar();
-  });
-
-  // Init
-  document.addEventListener('DOMContentLoaded', ()=>{
-    renderCalendar();
-    // Auto-select today by default
-    const todayBtn = document.querySelector('.cal-day:not([disabled])');
-    if (todayBtn) {
-      const d = new Date(todayBtn.dataset.date);
-      selectDate(d, todayBtn);
-    }
-  });
-</script>

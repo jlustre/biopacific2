@@ -239,7 +239,20 @@ $facility['social'] = [
             <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off"> {{-- honeypot --}}
           </div>
 
-          <div class="flex flex-col sm:flex-row justify-end gap-3">
+          <div class="flex flex-col gap-2 mt-4">
+            <div class="flex items-center">
+              <input id="no-phi" name="no_phi" type="checkbox" required
+                class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+              <label for="no-phi" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                I confirm that I will not include any Protected Health Information (PHI) in this form.
+              </label>
+            </div>
+            <p class="text-xs">See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
+                class="underline" style="color: {{ $primary }}" target="_blank" rel="noopener noreferrer">Notice of
+                Privacy Practices</a>.</p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
             <button type="reset"
               class="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
               Clear Form

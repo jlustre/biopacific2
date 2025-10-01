@@ -38,24 +38,26 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
             <h2 class="mt-3 text-3xl md:text-5xl font-extrabold leading-tight">
                 Book a Tour at {{ $facility['name'] ?? 'Our Community' }}
             </h2>
-            <p class="mt-3 md:text-lg text-white/90">
-                Walk our spaces, meet our team, and learn how we support residents and families every day in
-                {{ $facility['city'] ?? '' }}{{ isset($facility['state']) ? ', '.$facility['state'] : '' }}.
-            </p>
-
-            {{-- Micro trust chips --}}
-            <div class="mt-4 flex flex-wrap gap-2 text-xs">
-                @foreach(['Wheelchair accessible','Private tours','Free on-site parking'] as $chip)
-                <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/25">
-                    <svg class="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span class="text-white/90">{{ $chip }}</span>
-                </span>
-                @endforeach
-            </div>
         </div>
+
+        <p class="mt-3 md:text-lg text-white/90">
+            Walk our spaces, meet our team, and learn how we support residents and families every day in
+            {{ $facility['city'] ?? '' }}{{ isset($facility['state']) ? ', '.$facility['state'] : '' }}.
+        </p>
+
+        {{-- Micro trust chips --}}
+        <div class="mt-4 flex flex-wrap gap-2 text-xs">
+            @foreach(['Wheelchair accessible','Private tours','Free on-site parking'] as $chip)
+            <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 ring-1 ring-white/25">
+                <svg class="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-white/90">{{ $chip }}</span>
+            </span>
+            @endforeach
+        </div>
+    </div>
     </div>
 
     {{-- Floating glass form --}}
@@ -74,6 +76,12 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                         <div>
                             <h3 class="text-lg font-semibold text-slate-900">Schedule your in-person visit</h3>
                             <p class="text-sm text-slate-600">We’ll confirm within one business day.</p>
+                        </div>
+                    </div>
+                    <div class="mx-auto max-w-2xl mt-6">
+                        <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800">
+                            ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics
+                            privately.
                         </div>
                     </div>
 
@@ -194,8 +202,9 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                                 <span>I agree to be contacted about this tour request. Please do not include sensitive
                                     medical information.</span>
                             </label>
-                            <p>See our <a href="{{ $facility['npp_url'] ?? url('/privacy-practices') }}"
-                                    class="underline" style="color: {{ $primary }}">Notice of Privacy Practices</a>.</p>
+                            <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
+                                    class="underline" style="color: {{ $primary }}" target="_blank"
+                                    rel="noopener noreferrer">Notice of Privacy Practices</a>.</p>
                         </div>
 
                         {{-- Honeypot --}}

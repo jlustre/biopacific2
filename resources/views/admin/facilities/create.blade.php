@@ -54,6 +54,13 @@
             <input type="file" name="photo" class="mt-1 block w-full text-gray-700 dark:text-gray-300">
         </div>
         <div class="flex justify-end">
+            <div class="flex items-center mb-4">
+                <input id="no-phi" name="no_phi" type="checkbox" required
+                    class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                <label for="no-phi" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    I confirm that I will not include any Protected Health Information (PHI) in this form.
+                </label>
+            </div>
             <a href="{{ route('admin.dashboard.index') }}"
                 class="inline-flex items-center px-6 py-2 mr-3 rounded-lg bg-gray-200 text-gray-800 font-semibold shadow hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                 Cancel

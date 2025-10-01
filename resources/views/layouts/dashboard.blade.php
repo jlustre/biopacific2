@@ -46,11 +46,7 @@
                 <!-- Topbar Right Section -->
                 <div class="flex items-center space-x-6">
                     <!-- Notifications -->
-                    <button class="relative text-gray-600 hover:text-primary focus:outline-none">
-                        <i class="fas fa-bell fa-lg"></i>
-                        <span
-                            class="absolute -top-1 -right-2 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">3</span>
-                    </button>
+                    <x-admin.webmaster-contact-notifications />
                     <!-- Profile Dropdown -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="flex items-center focus:outline-none">

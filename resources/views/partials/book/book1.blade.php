@@ -40,6 +40,11 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
             <p class="mt-2 text-white/90 md:text-lg">See our rooms, meet our care team, and learn how we support
                 families.</p>
         </div>
+        <div class="mx-auto max-w-2xl mt-6">
+            <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800">
+                ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics privately.
+            </div>
+        </div>
     </div>
 
     {{-- Content grid --}}
@@ -154,8 +159,10 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                             <span>I agree to be contacted about this tour request. Please do not include sensitive
                                 medical information.</span>
                         </label>
-                        <p>See our <a href="{{ $facility['npp_url'] ?? url('/privacy-practices') }}" class="underline"
-                                style="color: {{ $primary }}">Notice of Privacy Practices</a>.</p>
+                        <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
+                                class="underline" style="color: {{ $primary }}" target="_blank"
+                                rel="noopener noreferrer">Notice of
+                                Privacy Practices</a>.</p>
                     </div>
 
                     {{-- Honeypot --}}

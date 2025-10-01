@@ -1,7 +1,7 @@
-use App\Http\Controllers\FacilityAdminController;
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FacilityAdminController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DashboardController;
@@ -18,6 +18,15 @@ use App\Http\Controllers\Admin\EventController;
 Route::resource('admin/news', NewsController::class)->names('admin.news');
 Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
 
+// Webmaster Contact
+Route::get('/{facility:slug}/webmaster/contact', function(App\Models\Facility $facility) {
+    return view('webmaster.contact', [
+        'facility' => $facility,
+        'sections' => ['topbar'],
+        'sectionVariances' => ['topbar' => 'legal'],
+    ]);
+})->name('webmaster.contact');
+Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.submit');
 
 
 // Home & Landing
@@ -310,7 +319,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
 
     // Web Contents Routes
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
-    Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
+        Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'showTestimonial'])->name('facilities.webcontents.testimonials.show');
     Route::post('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'storeTestimonial'])->name('facilities.webcontents.testimonials.store');
     Route::put('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'updateTestimonial'])->name('facilities.webcontents.testimonials.update');
@@ -448,6 +457,9 @@ Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 
 // FAQ Section
 Route::get('/faqs', [FaqController::class, 'index'])->name('faqs.index');
+
+// Register admin webmaster contacts routes
+require __DIR__.'/admin_webmaster_contacts.php';
 
 // Auth routes
 require __DIR__.'/auth.php';
