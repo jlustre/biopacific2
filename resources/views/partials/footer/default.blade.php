@@ -51,7 +51,7 @@
               (!empty($facility['social']['linkedin']) && $facility['social']['linkedin']) ||
               (!empty($facility['social']['youtube']) && $facility['social']['youtube'])
               )
-              <div class="font-semibold text-white text-center">Connect With Us</div>
+              <div class="font-semibold text-white text-center mt-2">Connect With Us</div>
               @endif
               <div class="flex gap-3 justify-center">
                 @if(isset($facility['social']['facebook']) && $facility['social']['facebook'])
@@ -203,6 +203,13 @@
                   Contact & Location
                 </a>
               </li>
+              <li>
+                <a href="{{ url($facility['slug'] . '/webmaster/contact') }}"
+                  class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
+                  <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
+                  Contact Webmaster
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -230,9 +237,6 @@
           class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
         <a href="{{ url($facility['slug'] .'/accessibility') }}"
           class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
-        <span class="mx-2">|</span>
-        <a href="{{ url($facility['slug'] .'/webmaster/contact') }}"
-          class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
       </div>
     </div>
   </div>

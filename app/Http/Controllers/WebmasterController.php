@@ -28,7 +28,7 @@ class WebmasterController extends Controller
         if ($request->hasFile('screenshots')) {
             foreach ($request->file('screenshots') as $file) {
                 if ($file && $file->isValid()) {
-                    $path = $file->store('webmaster_screenshots');
+                    $path = $file->store('webmaster_screenshots', 'public');
                     $screenshotPaths[] = $path;
                 }
             }
@@ -40,8 +40,9 @@ class WebmasterController extends Controller
             'email' => $validated['email'],
             'subject' => $validated['subject'],
             'message' => $validated['message'],
-            'urgent' => $request->has('urgent'),
+            'urgent' => (bool) $request->input('urgent', false),
             'screenshots' => $screenshotPaths,
+            'facility_id' => $request->input('facility_id'),
         ]);
 
         // Send email to webmaster (set in .env or config)

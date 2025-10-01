@@ -27,14 +27,6 @@
             <!-- Desktop Navigation -->
             <div class="hidden md:flex gap-2 items-center px-4 py-2">
                 <!-- Back to Home Link -->
-                <a href="/facility/{{ $facility['slug'] ?? 'facility' }}"
-                    class="hover:text-primary transition flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Back to Home
-                </a>
 
                 <!-- About & Services Dropdown -->
                 <div x-data="{ open: false }" class="relative">
@@ -86,7 +78,7 @@
                 </div>
                 <!-- Book a Tour Button -->
                 <a href="{{ $baseUrl }}#book"
-                    class="ml-4 px-4 py-2 rounded bg-primary text-white font-semibold hover:bg-primary/90 transition">Book
+                    class="ml-4 px-4 py-2 rounded bg-teal-600 text-white font-semibold hover:bg-teal-700 transition">Book
                     a
                     Tour</a>
             </div>

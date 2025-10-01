@@ -19,15 +19,33 @@
     <!-- Content Section -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-8 md:p-12">
+            @if(session('success'))
+            <div class="mb-4 p-3 rounded bg-green-100 text-green-800 border border-green-300">
+                {{ session('success') }}
+            </div>
+            @endif
+            @if($errors->any())
+            <div class="mb-4 p-3 rounded bg-red-100 text-red-800 border border-red-300">
+                <ul class="list-disc pl-5">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
             <div class="prose max-w-none mb-8">
                 <p class="text-slate-700 mb-2">
                     Use this form to report website errors, request changes, or notify us of issues that need attention.
-                    For general inquiries, please use our <a href="/contact"
+                    For general inquiries, please use our <a
+                        href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
                         class="underline text-blue-700 hover:text-blue-900">Contact Us</a> page.
                 </p>
             </div>
             <form method="POST" action="{{ route('webmaster.contact.submit') }}" class="space-y-5"
                 enctype="multipart/form-data">
+                @if(isset($facility) && isset($facility['id']))
+                <input type="hidden" name="facility_id" value="{{ $facility['id'] }}">
+                @endif
                 @csrf
                 <div>
                     <label for="name" class="block text-slate-700 text-sm font-medium mb-1">Your Name</label>
@@ -60,7 +78,8 @@
                         class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 </div>
                 <div class="flex items-center gap-2">
-                    <input type="checkbox" id="urgent" name="urgent" class="accent-red-600">
+                    <input type="hidden" name="urgent" value="0">
+                    <input type="checkbox" id="urgent" name="urgent" value="1" class="accent-red-600">
                     <label for="urgent" class="text-xs text-red-700">Mark as urgent</label>
                 </div>
                 <button type="submit"
@@ -69,7 +88,8 @@
             </form>
             <div class="mt-6 text-xs text-slate-500 text-center">This form is for website technical issues only. For
                 privacy
-                or general questions, use the <a href="/contact" class="underline">Contact Us</a> page.</div>
+                or general questions, use the <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
+                    class="underline">Contact Us</a> page.</div>
         </div>
     </div>
 </div>

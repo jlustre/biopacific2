@@ -179,7 +179,7 @@ $social = $facility['social'] ?? [];
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-4 mt-2">
-                            <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+                            <label class="inline-flex items-center gap-2 text-sm text-slate-600">
                                 <input type="checkbox"
                                     class="rounded border-slate-300 text-primary focus:ring-primary/30">
                                 I consent to be contacted about my inquiry.
