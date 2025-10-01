@@ -1,3 +1,4 @@
+use App\Http\Controllers\FacilityAdminController;
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -7,7 +8,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\FaqController;
-use App\Http\Controllers\FacilityAdminController;
 use App\Livewire\FacilitiesIndex;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\Password;
@@ -297,16 +297,16 @@ Route::get('/{facility:slug}/accessibility', function (Facility $facility) {
 
 // Admin Routes (auth + admin role)
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(function () {
-    // Facility CRUD (use FacilityAdminController)
+    // Facility CRUD (use Admin\FacilityController)
     // Route::resource('facilities', App\Http\Controllers\Admin\FacilityController::class); // <-- Remove or comment this line
 
-    Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
-    Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
-    Route::post('/facilities', [FacilityAdminController::class, 'store'])->name('facilities.store');
-    Route::get('/facilities/{facility:slug}', [FacilityAdminController::class, 'show'])->name('facilities.show');
-    Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
-    Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
-    Route::delete('/facilities/{facility}', [FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
+    Route::get('/facilities', [\App\Http\Controllers\FacilityAdminController::class, 'index'])->name('facilities.index');
+    Route::get('/facilities/create', [\App\Http\Controllers\FacilityAdminController::class, 'create'])->name('facilities.create');
+    Route::post('/facilities', [\App\Http\Controllers\FacilityAdminController::class, 'store'])->name('facilities.store');
+    Route::get('/facilities/{facility:slug}', [\App\Http\Controllers\FacilityAdminController::class, 'show'])->name('facilities.show');
+    Route::get('/facilities/{facility}/edit', [\App\Http\Controllers\FacilityAdminController::class, 'edit'])->name('facilities.edit');
+    Route::put('/facilities/{facility}', [\App\Http\Controllers\FacilityAdminController::class, 'update'])->name('facilities.update');
+    Route::delete('/facilities/{facility}', [\App\Http\Controllers\FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
 
     // Web Contents Routes
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');

@@ -71,62 +71,85 @@
 
     <!-- Facilities by State -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Facilities by State</h2>
-            <p class="text-gray-600 dark:text-gray-400">Manage all your facilities organized by state</p>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Our Facilities</h2>
+                <p class="text-gray-600 dark:text-gray-400">Manage all your facilities</p>
+            </div>
         </div>
-
         <div class="p-6">
             @if($facilitiesByState->count() > 0)
             <div class="space-y-6">
                 @foreach($facilitiesByState as $state => $stateFacilities)
                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                    {{-- <div
+                        class="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
                         <h3 class="text-base font-medium text-gray-900 dark:text-white">
-                            {{ $state ?: 'No State Specified' }}
                             <span class="text-sm text-gray-500 dark:text-gray-400">({{ $stateFacilities->count() }}
                                 facilities)</span>
                         </h3>
-                    </div>
+                    </div> --}}
                     <div class="p-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach($stateFacilities as $facility)
                             <div
-                                class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <h4 class="font-medium text-gray-900 dark:text-white">{{ $facility->name }}
-                                        </h4>
+                                class="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm hover:shadow-lg transition group overflow-hidden">
+                                <!-- Facility ID badge (top left) -->
+                                <div class="absolute top-2 left-2 z-10">
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-900 shadow">
+                                        ID: {{ $facility->id }}
+                                    </span>
+                                </div>
+                                <!-- Active/Inactive badge (top right, closer to edge) -->
+                                <div class="absolute top-2 right-2 z-10">
+                                    @if($facility->is_active)
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-800 dark:bg-green-900 dark:text-green-200 shadow">
+                                        <flux:icon name="check-circle" class="w-4 h-4 mr-1" /> Active
+                                    </span>
+                                    @else
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 shadow">
+                                        <flux:icon name="x-circle" class="w-4 h-4 mr-1" /> Inactive
+                                    </span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-4 my-2">
+                                    <div class="flex-shrink-0 bg-primary/10 rounded-xl p-1">
+                                        <flux:icon name="building-office-2"
+                                            class="w-8 h-8 text-primary text-teal-500" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-lg font-bold text-gray-900 dark:text-white truncate">{{
+                                            $facility->name }}</h4>
                                         @if($facility->tagline)
-                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{
-                                            Str::limit($facility->tagline, 50) }}</p>
-                                        @endif
-                                        <div class="flex items-center mt-2 space-x-2">
-                                            @if($facility->is_active)
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                                Active
-                                            </span>
-                                            @else
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                                                Inactive
-                                            </span>
-                                            @endif
-                                            @if($facility->beds)
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-                                                $facility->beds }} beds</span>
-                                            @endif
-                                        </div>
-                                        @if($facility->city)
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $facility->city
-                                            }}</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">{{
+                                            Str::limit($facility->tagline, 60) }}</p>
                                         @endif
                                     </div>
                                 </div>
+                                <div class="flex flex-wrap gap-2 mb-2 text-center">
+                                    @if($facility->beds)
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                        <flux:icon name="user-group" class="w-4 h-4 mr-1" /> {{ $facility->beds }}
+                                        beds
+                                    </span>
+                                    @endif
 
+                                    @if($facility->city || $facility->state)
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                        <flux:icon name="map-pin" class="w-4 h-4 mr-1" />
+                                        {{ $facility->city }}@if($facility->city && $facility->state), @endif{{
+                                        $facility->state }}
+                                    </span>
+                                    @endif
+                                    </span>
+                                </div>
                                 <div
-                                    class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                                    class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                                     <div class="flex space-x-2">
                                         <flux:button size="xs" href="{{ route('admin.facilities.edit', $facility) }}"
                                             icon="pencil-square" variant="ghost">

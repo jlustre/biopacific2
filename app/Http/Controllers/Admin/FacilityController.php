@@ -9,7 +9,43 @@ use Illuminate\Http\Request;
 
 class FacilityController extends Controller
 {
-    // ...existing methods...
+    /**
+     * Show the form for creating a new facility.
+     */
+    public function create()
+    {
+        return view('admin.facilities.create');
+    }
+
+    /**
+     * Store a newly created facility in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'tagline' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+            'beds' => 'nullable|integer|min:0',
+            'domain' => 'nullable|string|max:255',
+            'is_active' => 'required|boolean',
+            'photo' => 'nullable|image|max:2048',
+        ]);
+
+        $facility = new Facility($validated);
+        $facility->is_active = (bool) $request->input('is_active');
+
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('facilities', 'public');
+            $facility->photo_url = $path;
+        }
+
+        $facility->save();
+
+        return redirect()->route('admin.facilities.index')->with('success', 'Facility created successfully.');
+    }
 
     public function edit($id)
     {
