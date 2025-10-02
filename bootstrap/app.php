@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
         ]);
 
+        // Register CheckFacilityShutdown as global middleware
+        $middleware->append(\App\Http\Middleware\CheckFacilityShutdown::class);
+
         // Note: We're not adding ResolveTenant to the web group globally
         // Instead, we'll apply it selectively in routes/web.php
     })

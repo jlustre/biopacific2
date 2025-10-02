@@ -168,6 +168,10 @@ class FacilityAdminController extends Controller
             'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
             'sections' => 'array',
             'variances' => 'array', // <-- Added validation for variances
+            // Shutdown fields
+            'is_shutdown' => 'nullable|boolean',
+            'shutdown_message' => 'nullable|string|max:255',
+            'shutdown_eta' => 'nullable|date',
         ]);
 
         $domain = $validated['domain'];
@@ -201,6 +205,10 @@ class FacilityAdminController extends Controller
             'twitter' => $validated['twitter'],
             'instagram' => $validated['instagram'],
             'location_map' => $this->formatLocationMap($validated['location_map'] ?? null),
+            // Shutdown fields
+            'is_shutdown' => $request->has('is_shutdown'),
+            'shutdown_message' => $validated['shutdown_message'] ?? null,
+            'shutdown_eta' => $validated['shutdown_eta'] ?? null,
         ]);
 
         $layoutTemplate = $validated['layout_template'];

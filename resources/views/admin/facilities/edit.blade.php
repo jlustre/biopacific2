@@ -178,309 +178,524 @@ $sectionVariances[$key][] = $name;
                         <!-- Basic Information Tab -->
                         <div id="basic-content" class="tab-pane">
                             <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Basic Information</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label for="name" class="block text-sm font-bold text-gray-700 mb-2">Facility
-                                            Name<span class="text-red-500">*</span></label>
-                                        <input type="text" id="name" name="name"
-                                            value="{{ old('name', $facility->name) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
-                                            required>
-                                        @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
+                                <!-- Facility Shutdown Controls -->
+                                <div class="mb-8 p-4 bg-yellow-100 border-l-4 border-yellow-400 rounded">
+                                    <h3 class="text-lg font-semibold text-yellow-800 mb-2 flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+                                        </svg>
+                                        Facility Shutdown (Maintenance Mode)
+                                    </h3>
+                                    <div class="flex items-center mb-2">
+                                        <input type="checkbox" id="is_shutdown" name="is_shutdown" value="1" {{
+                                            old('is_shutdown', $facility->is_shutdown) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-yellow-600 focus:border-yellow-600
+                                        focus:ring-yellow-600">
+                                        <label for="is_shutdown"
+                                            class="ml-2 text-sm font-medium text-yellow-900">Temporarily disable this
+                                            facility website</label>
                                     </div>
-
-                                    <div>
-                                        <label for="tagline"
-                                            class="block text-sm font-bold text-gray-700 mb-2">Tagline</label>
-                                        <input type="text" id="tagline" name="tagline"
-                                            value="{{ old('tagline', $facility->tagline) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('tagline')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
+                                    <div class="mb-2" id="shutdown-message-group">
+                                        <label for="shutdown_message"
+                                            class="block text-sm font-medium text-yellow-900 mb-1">Shutdown
+                                            Message</label>
+                                        <input type="text" id="shutdown_message" name="shutdown_message"
+                                            value="{{ old('shutdown_message', ($facility->shutdown_message ?? '') !== '' ? $facility->shutdown_message : 'This facility is temporarily unavailable due to maintenance.') }}"
+                                            class="w-full rounded border border-yellow-300 bg-yellow-50 px-4 shadow-sm focus:border-yellow-600 focus:ring-yellow-600">
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function() {
+                                                var shutdownCheckbox = document.getElementById('is_shutdown');
+                                                var messageInput = document.getElementById('shutdown_message');
+                                                var defaultMsg = 'This facility is temporarily unavailable due to maintenance.';
+                                                if (shutdownCheckbox && messageInput) {
+                                                    shutdownCheckbox.addEventListener('change', function() {
+                                                        if (this.checked && !messageInput.value) {
+                                                            messageInput.value = defaultMsg;
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        </script>
+                                        <small class="text-yellow-700">This message will be shown to users during
+                                            shutdown.</small>
                                     </div>
-
-                                    <div>
-                                        <label for="domain"
-                                            class="block text-sm font-bold text-gray-700 mb-2">Domain</label>
-                                        <input type="text" id="domain" name="domain"
-                                            value="{{ old('domain', $facility->domain) }}" placeholder="example.com"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('domain')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="subdomain"
-                                            class="block text-sm font-bold text-gray-700 mb-2">Subdomain</label>
-                                        <input type="text" id="subdomain" name="subdomain"
-                                            value="{{ old('subdomain', $facility->subdomain) }}"
-                                            placeholder="facility-name"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('subdomain')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="md:col-span-2">
-                                        <div class="flex items-center mb-4">
-                                            <input type="checkbox" id="is_active" name="is_active" value="1" {{
-                                                old('is_active', $facility->is_active) ? 'checked' : '' }}
-                                            class="rounded border-gray-300 text-primary focus:border-primary
-                                            focus:ring-primary">
-                                            <label for="is_active"
-                                                class="ml-2 text-sm font-medium text-gray-700">Facility
-                                                is
-                                                active</label>
-                                        </div>
-                                        <div class="mb-4">
-                                            <label for="location_map"
-                                                class="block text-sm font-bold text-gray-700 mb-2">Location
-                                                Map</label>
-                                            @if($facility->location_map)
-                                            @if(Str::startsWith($facility->location_map, ['http://', 'https://']))
-                                            <div class="mb-2">
-                                                <iframe src="{{ $facility->location_map }}" width="100%" height="200"
-                                                    style="border:0;" allowfullscreen loading="lazy"></iframe>
+                                    <div id="shutdown-eta-group">
+                                        <label for="shutdown_eta"
+                                            class="block text-sm font-medium text-yellow-900 mb-1">Estimated Re-Enable
+                                            Time</label>
+                                        <div
+                                            class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2 w-full">
+                                            <div class="flex items-center gap-1 w-full sm:w-auto">
+                                                <input type="number" min="1" step="1" id="shutdown_eta_hours"
+                                                    placeholder="Hours"
+                                                    class="w-20 rounded border border-yellow-300 bg-yellow-50 px-2 py-1 shadow-sm focus:border-yellow-600 focus:ring-yellow-600" />
+                                                <span class="text-sm text-yellow-700">hours</span>
                                             </div>
-                                            @else
-                                            <div class="mb-2">
-                                                {!! $facility->location_map !!}
-                                            </div>
-                                            @endif
-                                            @endif
-                                            <input type="text" id="location_map" name="location_map"
-                                                value="{{ old('location_map', $facility->location_map) }}"
-                                                class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
-                                                placeholder="Paste Google Maps embed code or URL here">
-                                            @error('location_map')<p class="mt-1 text-sm text-red-600">{{ $message
-                                                }}</p>
-                                            @enderror
+                                            <input type="datetime-local" id="shutdown_eta" name="shutdown_eta"
+                                                value="{{ old('shutdown_eta', $facility->shutdown_eta ? \Carbon\Carbon::parse($facility->shutdown_eta)->format('Y-m-d\\TH:i') : '' ) }}"
+                                                class="flex-1 min-w-0 rounded border border-yellow-300 bg-yellow-50 px-4 shadow-sm focus:border-yellow-600 focus:ring-yellow-600" />
+                                            <span id="eta-countdown"
+                                                class="text-blue-700 font-semibold whitespace-nowrap"></span>
                                         </div>
+                                        <small class="text-yellow-700">Let users know when the site is expected to be
+                                            available again. You can enter a date/time directly or specify hours
+                                            above.</small>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Contact Information Tab -->
-                        <div id="contact-content" class="tab-pane hidden">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Contact Information</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="md:col-span-2">
-                                        <label for="address"
-                                            class="block text-sm font-bold text-gray-700 mb-2">Address</label>
-                                        <input type="text" id="address" name="address"
-                                            value="{{ old('address', $facility->address) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('address')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="city"
-                                            class="block text-sm font-bold text-gray-700 mb-2">City</label>
-                                        <input type="text" id="city" name="city"
-                                            value="{{ old('city', $facility->city) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('city')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="state"
-                                            class="block text-sm font-bold text-gray-700 mb-2">State</label>
-                                        <input type="text" id="state" name="state"
-                                            value="{{ old('state', $facility->state) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('state')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="phone"
-                                            class="block text-sm font-bold text-gray-700 mb-2">Phone</label>
-                                        <input type="tel" id="phone" name="phone"
-                                            value="{{ old('phone', $facility->phone) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="email"
-                                            class="block text-sm font-bold text-gray-700 mb-2">Email</label>
-                                        <input type="email" id="email" name="email"
-                                            value="{{ old('email', $facility->email) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="beds" class="block text-sm font-bold text-gray-700 mb-2">Number
-                                            of
-                                            Beds</label>
-                                        <input type="number" id="beds" name="beds"
-                                            value="{{ old('beds', $facility->beds) }}" min="1"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('beds')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="hours" class="block text-sm font-bold text-gray-700 mb-2">Operating
-                                            Hours</label>
-                                        <input type="text" id="hours" name="hours"
-                                            value="{{ old('hours', $facility->hours) }}"
-                                            placeholder="24/7 or specific hours"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('hours')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Content & Branding Tab -->
-                        <div id="content-content" class="tab-pane hidden">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Content & Branding</h3>
-                                <div class="space-y-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label for="headline"
-                                                class="block text-sm font-bold text-gray-700 mb-2">Hero
-                                                Headline</label>
-                                            <input type="text" id="headline" name="headline"
-                                                value="{{ old('headline', $facility->headline) }}"
-                                                class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                            @error('headline')<p class="mt-1 text-sm text-red-600">{{ $message }}
-                                            </p>
-                                            @enderror
-                                        </div>
-
-                                        <div>
-                                            <label for="subheadline"
-                                                class="block text-sm font-bold text-gray-700 mb-2">Hero
-                                                Subheadline</label>
-                                            <input type="text" id="subheadline" name="subheadline"
-                                                value="{{ old('subheadline', $facility->subheadline) }}"
-                                                class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                            @error('subheadline')<p class="mt-1 text-sm text-red-600">{{ $message }}
-                                            </p>
-                                            @enderror
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label for="about_text" class="block text-sm font-bold text-gray-700 mb-2">About
-                                            Text</label>
-                                        <textarea id="about_text" name="about_text" rows="4"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">{{ old('about_text', $facility->about_text) }}</textarea>
-                                        @error('about_text')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div>
-                                            <label for="logo_url"
-                                                class="block text-sm font-bold text-gray-700 mb-2">Logo
-                                                URL</label>
-                                            <input type="text" id="logo_url" name="logo_url"
-                                                value="{{ old('logo_url', $facility->logo_url) }}"
-                                                class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                            @error('logo_url')<p class="mt-1 text-sm text-red-600">{{ $message }}
-                                            </p>
-                                            @enderror
-                                        </div>
-
-                                        <div>
-                                            <label for="hero_image_url"
-                                                class="block text-sm font-bold text-gray-700 mb-2">Hero
-                                                Image</label>
-                                            <select id="hero_image_url" name="hero_image_url"
-                                                class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                                <option value="">Select a hero image...</option>
-                                                @php
-                                                // Get all hero images dynamically from the images directory
-                                                $heroImages = [];
-                                                $imagesPath = public_path('images');
-
-                                                if (is_dir($imagesPath)) {
-                                                $files = scandir($imagesPath);
-                                                foreach ($files as $file) {
-                                                if (str_starts_with($file, 'hero') && (str_ends_with($file, '.png')
-                                                ||
-                                                str_ends_with($file, '.jpg') || str_ends_with($file, '.jpeg') ||
-                                                str_ends_with($file, '.webp'))) {
-                                                // Extract number/name for sorting
-                                                $name = pathinfo($file, PATHINFO_FILENAME);
-                                                $heroImages[] = [
-                                                'filename' => $file,
-                                                'name' => $name,
-                                                'sort_key' => $name,
-                                                ];
-                                                }
-                                                }
-                                                }
-
-                                                // Sort hero images naturally (hero1, hero2, hero10, hero11, etc.)
-                                                usort($heroImages, function ($a, $b) {
-                                                return strnatcmp($a['sort_key'], $b['sort_key']);
-                                                });
-                                                @endphp
-
-                                                @foreach($heroImages as $image)
-                                                <option value="{{ $image['filename'] }}" {{ old('hero_image_url',
-                                                    $facility->
-                                                    hero_image_url) == $image['filename'] ? 'selected' : '' }}>
-                                                    {{ ucwords(str_replace('-', ' ', $image['name'])) }}
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                            @error('hero_image_url')<p class="mt-1 text-sm text-red-600">{{ $message
-                                                }}</p>
-                                            @enderror
-                                        </div>
-
-                                        <div>
-                                            <label for="about_image_url"
-                                                class="block text-sm font-medium text-gray-700 mb-2">About
-                                                Image URL</label>
-                                            <input type="text" id="about_image_url" name="about_image_url"
-                                                value="{{ old('about_image_url', $facility->about_image_url) }}"
-                                                class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                            @error('about_image_url')<p class="mt-1 text-sm text-red-600">{{
-                                                $message }}</p>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Colors Tab -->
-                        <div id="colors-content" class="tab-pane hidden">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Brand Colors</h3>
-                                <div class="mb-6">
-                                    <label for="color_scheme_id"
-                                        class="block text-sm font-medium text-gray-700 mb-2">Color
-                                        Scheme</label>
-                                    <select id="color_scheme_id" name="color_scheme_id"
-                                        class="w-full md:w-1/2 lg:w-1/3 rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @foreach($colorSchemes as $scheme)
-                                        <option value="{{ $scheme->id }}" data-primary="{{ $scheme->primary_color }}"
-                                            data-secondary="{{ $scheme->secondary_color }}"
-                                            data-accent="{{ $scheme->accent_color }}" {{ ($facility->color_scheme_id ??
-                                            1) == $scheme->id ? 'selected' : '' }}>
-                                            {{ $scheme->name }}
-                                        </option>
-                                        @endforeach
-                                    </select>
                                     <script>
-                                        function showSchemePreview() {
+                                        function updateEtaCountdown() {
+                                            var etaInput = document.getElementById('shutdown_eta');
+                                            var countdownEl = document.getElementById('eta-countdown');
+                                            if (!etaInput || !countdownEl) return;
+                                            var etaVal = etaInput.value;
+                                            if (!etaVal) {
+                                                countdownEl.textContent = '';
+                                                return;
+                                            }
+                                            var eta = new Date(etaVal);
+                                            if (isNaN(eta.getTime())) {
+                                                countdownEl.textContent = 'Invalid ETA';
+                                                return;
+                                            }
+                                            function tick() {
+                                                var now = new Date();
+                                                var diff = eta - now;
+                                                if (diff <= 0) {
+                                                    countdownEl.textContent = 'Now online!';
+                                                    return;
+                                                }
+                                                var hours = Math.floor(diff / (1000 * 60 * 60));
+                                                diff -= hours * 1000 * 60 * 60;
+                                                var minutes = Math.floor(diff / (1000 * 60));
+                                                diff -= minutes * 1000 * 60;
+                                                var seconds = Math.floor(diff / 1000);
+                                                countdownEl.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
+                                                countdownEl._timeout = setTimeout(tick, 1000);
+                                            }
+                                            if (countdownEl._timeout) clearTimeout(countdownEl._timeout);
+                                            tick();
+                                        }
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            var hoursInput = document.getElementById('shutdown_eta_hours');
+                                            var etaInput = document.getElementById('shutdown_eta');
+                                            var shutdownCheckbox = document.getElementById('is_shutdown');
+                                            var etaGroup = document.getElementById('shutdown-eta-group');
+                                            var messageGroup = document.getElementById('shutdown-message-group');
+                                            var messageInput = document.getElementById('shutdown_message');
+                                            function toggleShutdownFields() {
+                                                if (shutdownCheckbox.checked) {
+                                                    etaGroup.style.display = '';
+                                                    messageGroup.style.display = '';
+                                                    if (etaInput) etaInput.disabled = false;
+                                                    if (messageInput) messageInput.disabled = false;
+                                                } else {
+                                                    etaGroup.style.display = 'none';
+                                                    messageGroup.style.display = 'none';
+                                                    if (etaInput) {
+                                                        etaInput.value = '';
+                                                        etaInput.disabled = true;
+                                                    }
+                                                    if (hoursInput) {
+                                                        hoursInput.value = '';
+                                                    }
+                                                    if (messageInput) {
+                                                        messageInput.value = '';
+                                                        messageInput.disabled = true;
+                                                    }
+                                                    var countdownEl = document.getElementById('eta-countdown');
+                                                    if (countdownEl) countdownEl.textContent = '';
+                                                }
+                                            }
+                                            if (shutdownCheckbox && etaGroup && messageGroup) {
+                                                shutdownCheckbox.addEventListener('change', toggleShutdownFields);
+                                                toggleShutdownFields();
+                                            }
+                                            if (hoursInput && etaInput) {
+                                                hoursInput.addEventListener('input', function() {
+                                                    var hours = parseInt(this.value, 10);
+                                                    if (!isNaN(hours) && hours > 0) {
+                                                        var now = new Date();
+                                                        now.setHours(now.getHours() + hours);
+                                                        var year = now.getFullYear();
+                                                        var month = String(now.getMonth() + 1).padStart(2, '0');
+                                                        var day = String(now.getDate()).padStart(2, '0');
+                                                        var hour = String(now.getHours()).padStart(2, '0');
+                                                        var minute = String(now.getMinutes()).padStart(2, '0');
+                                                        var localDatetime = `${year}-${month}-${day}T${hour}:${minute}`;
+                                                        etaInput.value = localDatetime;
+                                                        updateEtaCountdown();
+                                                    }
+                                                });
+                                            }
+                                            if (etaInput) {
+                                                etaInput.addEventListener('input', updateEtaCountdown);
+                                                updateEtaCountdown();
+                                            }
+                                            // On form submit, if shutdown is unchecked, clear eta and message fields
+                                            var form = etaInput && etaInput.form;
+                                            if (form) {
+                                                form.addEventListener('submit', function() {
+                                                    if (shutdownCheckbox && !shutdownCheckbox.checked) {
+                                                        if (etaInput) etaInput.value = '';
+                                                        if (messageInput) messageInput.value = '';
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    </script>
+                                    <script>
+                                        function updateEtaCountdown() {
+                                                var etaInput = document.getElementById('shutdown_eta');
+                                                var countdownEl = document.getElementById('eta-countdown');
+                                                if (!etaInput || !countdownEl) return;
+                                                var etaVal = etaInput.value;
+                                                if (!etaVal) {
+                                                    countdownEl.textContent = '';
+                                                    return;
+                                                }
+                                                var eta = new Date(etaVal);
+                                                if (isNaN(eta.getTime())) {
+                                                    countdownEl.textContent = 'Invalid ETA';
+                                                    return;
+                                                }
+                                                function tick() {
+                                                    var now = new Date();
+                                                    var diff = eta - now;
+                                                    if (diff <= 0) {
+                                                        countdownEl.textContent = 'Now online!';
+                                                        return;
+                                                    }
+                                                    var hours = Math.floor(diff / (1000 * 60 * 60));
+                                                    diff -= hours * 1000 * 60 * 60;
+                                                    var minutes = Math.floor(diff / (1000 * 60));
+                                                    diff -= minutes * 1000 * 60;
+                                                    var seconds = Math.floor(diff / 1000);
+                                                    countdownEl.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
+                                                    countdownEl._timeout = setTimeout(tick, 1000);
+                                                }
+                                                if (countdownEl._timeout) clearTimeout(countdownEl._timeout);
+                                                tick();
+                                            }
+                                            document.addEventListener('DOMContentLoaded', function() {
+                                                var hoursInput = document.getElementById('shutdown_eta_hours');
+                                                var etaInput = document.getElementById('shutdown_eta');
+                                                if (hoursInput && etaInput) {
+                                                    hoursInput.addEventListener('input', function() {
+                                                        var hours = parseInt(this.value, 10);
+                                                        if (!isNaN(hours) && hours > 0) {
+                                                            var now = new Date();
+                                                            now.setHours(now.getHours() + hours);
+                                                            var year = now.getFullYear();
+                                                            var month = String(now.getMonth() + 1).padStart(2, '0');
+                                                            var day = String(now.getDate()).padStart(2, '0');
+                                                            var hour = String(now.getHours()).padStart(2, '0');
+                                                            var minute = String(now.getMinutes()).padStart(2, '0');
+                                                            var localDatetime = `${year}-${month}-${day}T${hour}:${minute}`;
+                                                            etaInput.value = localDatetime;
+                                                            updateEtaCountdown();
+                                                        }
+                                                    });
+                                                }
+                                                if (etaInput) {
+                                                    etaInput.addEventListener('input', updateEtaCountdown);
+                                                    updateEtaCountdown();
+                                                }
+                                            });
+                                    </script>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-6">Basic Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="name" class="block text-sm font-bold text-gray-700 mb-2">Facility
+                                        Name<span class="text-red-500">*</span></label>
+                                    <input type="text" id="name" name="name" value="{{ old('name', $facility->name) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
+                                        required>
+                                    @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="tagline"
+                                        class="block text-sm font-bold text-gray-700 mb-2">Tagline</label>
+                                    <input type="text" id="tagline" name="tagline"
+                                        value="{{ old('tagline', $facility->tagline) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('tagline')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="domain"
+                                        class="block text-sm font-bold text-gray-700 mb-2">Domain</label>
+                                    <input type="text" id="domain" name="domain"
+                                        value="{{ old('domain', $facility->domain) }}" placeholder="example.com"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('domain')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="subdomain"
+                                        class="block text-sm font-bold text-gray-700 mb-2">Subdomain</label>
+                                    <input type="text" id="subdomain" name="subdomain"
+                                        value="{{ old('subdomain', $facility->subdomain) }}" placeholder="facility-name"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('subdomain')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <div class="flex items-center mb-4">
+                                        <input type="checkbox" id="is_active" name="is_active" value="1" {{
+                                            old('is_active', $facility->is_active) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-primary focus:border-primary
+                                        focus:ring-primary">
+                                        <label for="is_active" class="ml-2 text-sm font-medium text-gray-700">Facility
+                                            is
+                                            active</label>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="location_map"
+                                            class="block text-sm font-bold text-gray-700 mb-2">Location
+                                            Map</label>
+                                        @if($facility->location_map)
+                                        @if(Str::startsWith($facility->location_map, ['http://', 'https://']))
+                                        <div class="mb-2">
+                                            <iframe src="{{ $facility->location_map }}" width="100%" height="200"
+                                                style="border:0;" allowfullscreen loading="lazy"></iframe>
+                                        </div>
+                                        @else
+                                        <div class="mb-2">
+                                            {!! $facility->location_map !!}
+                                        </div>
+                                        @endif
+                                        @endif
+                                        <input type="text" id="location_map" name="location_map"
+                                            value="{{ old('location_map', $facility->location_map) }}"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
+                                            placeholder="Paste Google Maps embed code or URL here">
+                                        @error('location_map')<p class="mt-1 text-sm text-red-600">{{ $message
+                                            }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Tab -->
+                    <div id="contact-content" class="tab-pane hidden">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-6">Contact Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="md:col-span-2">
+                                    <label for="address"
+                                        class="block text-sm font-bold text-gray-700 mb-2">Address</label>
+                                    <input type="text" id="address" name="address"
+                                        value="{{ old('address', $facility->address) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('address')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="city" class="block text-sm font-bold text-gray-700 mb-2">City</label>
+                                    <input type="text" id="city" name="city" value="{{ old('city', $facility->city) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('city')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="state" class="block text-sm font-bold text-gray-700 mb-2">State</label>
+                                    <input type="text" id="state" name="state"
+                                        value="{{ old('state', $facility->state) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('state')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="phone" class="block text-sm font-bold text-gray-700 mb-2">Phone</label>
+                                    <input type="tel" id="phone" name="phone"
+                                        value="{{ old('phone', $facility->phone) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="email" class="block text-sm font-bold text-gray-700 mb-2">Email</label>
+                                    <input type="email" id="email" name="email"
+                                        value="{{ old('email', $facility->email) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="beds" class="block text-sm font-bold text-gray-700 mb-2">Number
+                                        of
+                                        Beds</label>
+                                    <input type="number" id="beds" name="beds"
+                                        value="{{ old('beds', $facility->beds) }}" min="1"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('beds')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="hours" class="block text-sm font-bold text-gray-700 mb-2">Operating
+                                        Hours</label>
+                                    <input type="text" id="hours" name="hours"
+                                        value="{{ old('hours', $facility->hours) }}"
+                                        placeholder="24/7 or specific hours"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('hours')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content & Branding Tab -->
+                    <div id="content-content" class="tab-pane hidden">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-6">Content & Branding</h3>
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="headline" class="block text-sm font-bold text-gray-700 mb-2">Hero
+                                            Headline</label>
+                                        <input type="text" id="headline" name="headline"
+                                            value="{{ old('headline', $facility->headline) }}"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                        @error('headline')<p class="mt-1 text-sm text-red-600">{{ $message }}
+                                        </p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="subheadline" class="block text-sm font-bold text-gray-700 mb-2">Hero
+                                            Subheadline</label>
+                                        <input type="text" id="subheadline" name="subheadline"
+                                            value="{{ old('subheadline', $facility->subheadline) }}"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                        @error('subheadline')<p class="mt-1 text-sm text-red-600">{{ $message }}
+                                        </p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="about_text" class="block text-sm font-bold text-gray-700 mb-2">About
+                                        Text</label>
+                                    <textarea id="about_text" name="about_text" rows="4"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">{{ old('about_text', $facility->about_text) }}</textarea>
+                                    @error('about_text')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <label for="logo_url" class="block text-sm font-bold text-gray-700 mb-2">Logo
+                                            URL</label>
+                                        <input type="text" id="logo_url" name="logo_url"
+                                            value="{{ old('logo_url', $facility->logo_url) }}"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                        @error('logo_url')<p class="mt-1 text-sm text-red-600">{{ $message }}
+                                        </p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="hero_image_url"
+                                            class="block text-sm font-bold text-gray-700 mb-2">Hero
+                                            Image</label>
+                                        <select id="hero_image_url" name="hero_image_url"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                            <option value="">Select a hero image...</option>
+                                            @php
+                                            // Get all hero images dynamically from the images directory
+                                            $heroImages = [];
+                                            $imagesPath = public_path('images');
+
+                                            if (is_dir($imagesPath)) {
+                                            $files = scandir($imagesPath);
+                                            foreach ($files as $file) {
+                                            if (str_starts_with($file, 'hero') && (str_ends_with($file, '.png')
+                                            ||
+                                            str_ends_with($file, '.jpg') || str_ends_with($file, '.jpeg') ||
+                                            str_ends_with($file, '.webp'))) {
+                                            // Extract number/name for sorting
+                                            $name = pathinfo($file, PATHINFO_FILENAME);
+                                            $heroImages[] = [
+                                            'filename' => $file,
+                                            'name' => $name,
+                                            'sort_key' => $name,
+                                            ];
+                                            }
+                                            }
+                                            }
+
+                                            // Sort hero images naturally (hero1, hero2, hero10, hero11, etc.)
+                                            usort($heroImages, function ($a, $b) {
+                                            return strnatcmp($a['sort_key'], $b['sort_key']);
+                                            });
+                                            @endphp
+
+                                            @foreach($heroImages as $image)
+                                            <option value="{{ $image['filename'] }}" {{ old('hero_image_url',
+                                                $facility->
+                                                hero_image_url) == $image['filename'] ? 'selected' : '' }}>
+                                                {{ ucwords(str_replace('-', ' ', $image['name'])) }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @error('hero_image_url')<p class="mt-1 text-sm text-red-600">{{ $message
+                                            }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="about_image_url"
+                                            class="block text-sm font-medium text-gray-700 mb-2">About
+                                            Image URL</label>
+                                        <input type="text" id="about_image_url" name="about_image_url"
+                                            value="{{ old('about_image_url', $facility->about_image_url) }}"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                        @error('about_image_url')<p class="mt-1 text-sm text-red-600">{{
+                                            $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Colors Tab -->
+                    <div id="colors-content" class="tab-pane hidden">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-6">Brand Colors</h3>
+                            <div class="mb-6">
+                                <label for="color_scheme_id" class="block text-sm font-medium text-gray-700 mb-2">Color
+                                    Scheme</label>
+                                <select id="color_scheme_id" name="color_scheme_id"
+                                    class="w-full md:w-1/2 lg:w-1/3 rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @foreach($colorSchemes as $scheme)
+                                    <option value="{{ $scheme->id }}" data-primary="{{ $scheme->primary_color }}"
+                                        data-secondary="{{ $scheme->secondary_color }}"
+                                        data-accent="{{ $scheme->accent_color }}" {{ ($facility->color_scheme_id ??
+                                        1) == $scheme->id ? 'selected' : '' }}>
+                                        {{ $scheme->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                                <script>
+                                    function showSchemePreview() {
                                             var select = document.getElementById('color_scheme_id');
                                             var selectedId = select.value;
                                             document.querySelectorAll('.color-scheme-preview').forEach(function(div) {
@@ -497,28 +712,25 @@ $sectionVariances[$key][] = $name;
                                                 showSchemePreview();
                                             }, 50);
                                         });
-                                    </script>
-                                    </select>
+                                </script>
+                                </select>
 
-                                    <div id="color-preview" class="mt-6 flex gap-6">
-                                        <div class="flex flex-col items-center">
-                                            <span class="block w-10 h-10 rounded-full border"
-                                                id="preview-primary"></span>
-                                            <span class="text-xs mt-2">Primary</span>
-                                        </div>
-                                        <div class="flex flex-col items-center">
-                                            <span class="block w-10 h-10 rounded-full border"
-                                                id="preview-secondary"></span>
-                                            <span class="text-xs mt-2">Secondary</span>
-                                        </div>
-                                        <div class="flex flex-col items-center">
-                                            <span class="block w-10 h-10 rounded-full border"
-                                                id="preview-accent"></span>
-                                            <span class="text-xs mt-2">Accent</span>
-                                        </div>
+                                <div id="color-preview" class="mt-6 flex gap-6">
+                                    <div class="flex flex-col items-center">
+                                        <span class="block w-10 h-10 rounded-full border" id="preview-primary"></span>
+                                        <span class="text-xs mt-2">Primary</span>
                                     </div>
-                                    <script>
-                                        function updateColorPreview() {
+                                    <div class="flex flex-col items-center">
+                                        <span class="block w-10 h-10 rounded-full border" id="preview-secondary"></span>
+                                        <span class="text-xs mt-2">Secondary</span>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <span class="block w-10 h-10 rounded-full border" id="preview-accent"></span>
+                                        <span class="text-xs mt-2">Accent</span>
+                                    </div>
+                                </div>
+                                <script>
+                                    function updateColorPreview() {
                                             var select = document.getElementById('color_scheme_id');
                                             if (!select) return;
                                             var selected = select.options[select.selectedIndex];
@@ -541,126 +753,123 @@ $sectionVariances[$key][] = $name;
                                             });
                                             document.getElementById('color_scheme_id').addEventListener('change', updateColorPreview);
                                         });
-                                    </script>
-                                </div>
+                                </script>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Social Media Tab -->
-                        <div id="social-content" class="tab-pane hidden">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-6">Social Media</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div>
-                                        <label for="facebook"
-                                            class="block text-sm font-medium text-gray-700 mb-2">Facebook
-                                            URL</label>
-                                        <input type="url" id="facebook" name="facebook"
-                                            value="{{ old('facebook', $facility->facebook) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('facebook')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="twitter"
-                                            class="block text-sm font-medium text-gray-700 mb-2">Twitter
-                                            URL</label>
-                                        <input type="url" id="twitter" name="twitter"
-                                            value="{{ old('twitter', $facility->twitter) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('twitter')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="instagram"
-                                            class="block text-sm font-medium text-gray-700 mb-2">Instagram
-                                            URL</label>
-                                        <input type="url" id="instagram" name="instagram"
-                                            value="{{ old('instagram', $facility->instagram) }}"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
-                                        @error('instagram')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Layout & Sections Tab -->
-                        <div id="sections-content" class="tab-pane hidden">
-                            <div class="p-6">
-                                <div class="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-900">Layout & Sections</h3>
-                                        <p class="text-sm text-gray-600">Choose which sections to display on the
-                                            website</p>
-                                    </div>
-                                    <div>
-                                        <label for="layout_template"
-                                            class="block text-sm font-bold text-gray-700 mb-1">Layout
-                                            Template<span class="text-red-500">*</span></label>
-                                        <select id="layout_template" name="layout_template"
-                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
-                                            required>
-                                            @foreach($layoutTemplates as $template)
-                                            <option value="{{ $template }}" {{ old('layout_template',
-                                                $selectedLayoutTemplate)===$template ? 'selected' : '' }}>
-                                                {{ ucfirst($template) }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                        @error('layout_template')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
+                    <!-- Social Media Tab -->
+                    <div id="social-content" class="tab-pane hidden">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-6">Social Media</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label for="facebook" class="block text-sm font-medium text-gray-700 mb-2">Facebook
+                                        URL</label>
+                                    <input type="url" id="facebook" name="facebook"
+                                        value="{{ old('facebook', $facility->facebook) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('facebook')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
+                                <div>
+                                    <label for="twitter" class="block text-sm font-medium text-gray-700 mb-2">Twitter
+                                        URL</label>
+                                    <input type="url" id="twitter" name="twitter"
+                                        value="{{ old('twitter', $facility->twitter) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('twitter')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
 
-
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    @foreach($availableSections as $key => $label)
-                                    @php
-                                    $isActive = in_array($key, $activeSections ?? []);
-                                    $selectedVariance = $activeWebContent->variances[$key] ?? 'default';
-                                    @endphp
-                                    <div class="flex flex-col">
-                                        <div class="flex items-center mb-2">
-                                            <input type="checkbox" id="section_{{ $key }}" name="sections[{{ $key }}]"
-                                                value="1" {{ $isActive ? 'checked' : '' }}
-                                                class="rounded border-gray-300 text-primary focus:border-primary focus:ring-primary section-toggle"
-                                                data-section="{{ $key }}">
-                                            <label for="section_{{ $key }}"
-                                                class="ml-2 text-sm font-medium text-gray-700">
-                                                {{ $label }}
-                                            </label>
-                                        </div>
-                                        <select name="variances[{{ $key }}]" id="variance_{{ $key }}"
-                                            class="rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
-                                            {{ $isActive ? '' : 'disabled' }}>
-                                            @foreach($sectionVariances[$key] ?? ['default'] as $variance)
-                                            <option value="{{ $variance }}" {{ $selectedVariance===$variance
-                                                ? 'selected' : '' }}>
-                                                {{ ucfirst($variance) }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    @endforeach
+                                <div>
+                                    <label for="instagram"
+                                        class="block text-sm font-medium text-gray-700 mb-2">Instagram
+                                        URL</label>
+                                    <input type="url" id="instagram" name="instagram"
+                                        value="{{ old('instagram', $facility->instagram) }}"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                                    @error('instagram')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Save Button -->
-                <div class="flex justify-end">
-                    <button type="submit" id="save-button"
-                        class="text-white px-8 py-3 rounded-lg transition-colors font-medium bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        style="border: 2px solid var(--color-accent); opacity: 1 !important; pointer-events: auto !important; display: block !important; visibility: visible !important; z-index: 9999 !important; position: relative !important; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">Save
-                        Changes
-                    </button>
+                    <!-- Layout & Sections Tab -->
+                    <div id="sections-content" class="tab-pane hidden">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Layout & Sections</h3>
+                                    <p class="text-sm text-gray-600">Choose which sections to display on the
+                                        website</p>
+                                </div>
+                                <div>
+                                    <label for="layout_template"
+                                        class="block text-sm font-bold text-gray-700 mb-1">Layout
+                                        Template<span class="text-red-500">*</span></label>
+                                    <select id="layout_template" name="layout_template"
+                                        class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
+                                        required>
+                                        @foreach($layoutTemplates as $template)
+                                        <option value="{{ $template }}" {{ old('layout_template',
+                                            $selectedLayoutTemplate)===$template ? 'selected' : '' }}>
+                                            {{ ucfirst($template) }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    @error('layout_template')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                @foreach($availableSections as $key => $label)
+                                @php
+                                $isActive = in_array($key, $activeSections ?? []);
+                                $selectedVariance = $activeWebContent->variances[$key] ?? 'default';
+                                @endphp
+                                <div class="flex flex-col">
+                                    <div class="flex items-center mb-2">
+                                        <input type="checkbox" id="section_{{ $key }}" name="sections[{{ $key }}]"
+                                            value="1" {{ $isActive ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-primary focus:border-primary focus:ring-primary section-toggle"
+                                            data-section="{{ $key }}">
+                                        <label for="section_{{ $key }}" class="ml-2 text-sm font-medium text-gray-700">
+                                            {{ $label }}
+                                        </label>
+                                    </div>
+                                    <select name="variances[{{ $key }}]" id="variance_{{ $key }}"
+                                        class="rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
+                                        {{ $isActive ? '' : 'disabled' }}>
+                                        @foreach($sectionVariances[$key] ?? ['default'] as $variance)
+                                        <option value="{{ $variance }}" {{ $selectedVariance===$variance ? 'selected'
+                                            : '' }}>
+                                            {{ ucfirst($variance) }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex justify-end">
+                <button type="submit" id="save-button"
+                    class="text-white px-8 py-3 rounded-lg transition-colors font-medium bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    style="border: 2px solid var(--color-accent); opacity: 1 !important; pointer-events: auto !important; display: block !important; visibility: visible !important; z-index: 9999 !important; position: relative !important; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">Save
+                    Changes
+                </button>
+            </div>
         </form>
     </div>
 </div>

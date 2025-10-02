@@ -44,13 +44,25 @@
                 @foreach($facilities as $facility)
                 <div
                     class="bg-white rounded-2xl border border-gray-300 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full relative">
+
                     <!-- Facility ID Badge -->
                     <div class="absolute top-4 left-4 z-10">
                         <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-400 text-yellow-900 shadow border border-yellow-300">
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 shadow border border-amber-500"
+                            style="background-color: #fbbf24; color: #92400e; border-color: #f59e42;">
                             ID: {{ $facility->id }}
                         </span>
                     </div>
+
+                    <!-- Shutdown Badge -->
+                    @if($facility->is_shutdown)
+                    <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+                        <span
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-600 text-white shadow border border-red-800 uppercase tracking-wide animate-pulse">
+                            Shutdown
+                        </span>
+                    </div>
+                    @endif
 
                     <!-- Active/Inactive Badge -->
                     <div class="absolute top-4 right-4 z-10">
@@ -158,7 +170,8 @@
                         <div class="p-6 pt-0 mt-auto space-y-3">
                             <div class="flex gap-2 justify-center">
                                 <a href="{{ route('admin.facilities.edit', $facility->id) }}"
-                                    class="bg-blue-600 text-white text-center py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                                    class="bg-blue-600 text-white text-center py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                                    style="background-color: #2563eb; color: #fff;">
                                     Edit Details
                                 </a>
                             </div>
