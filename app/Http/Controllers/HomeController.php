@@ -25,11 +25,15 @@ class HomeController extends Controller
         $layoutTemplate = 'default-template';
 
         if ($facility) {
-            // Don't convert to array, keep as Eloquent model
+            // Prefer color scheme if set
+            $colorScheme = null;
+            if (!empty($facility->color_scheme_id)) {
+                $colorScheme = \App\Models\ColorScheme::find($facility->color_scheme_id);
+            }
             $colors = [
-                'primary' => $facility->primary_color ?? '#059669',
-                'secondary' => $facility->secondary_color ?? '#064E3B',
-                'accent' => $facility->accent_color ?? '#FACC15'
+                'primary' => $colorScheme->primary_color ?? $facility->primary_color ?? '#059669',
+                'secondary' => $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B',
+                'accent' => $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15'
             ];
 
             // Now you can call relationships
@@ -73,6 +77,16 @@ class HomeController extends Controller
             ->get();
     }
     
-    return view('welcome', compact('facility', 'colors', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials'));
+    return view('welcome', [
+        'facility' => $facility,
+        'layoutTemplate' => $layoutTemplate,
+        'sections' => $sections,
+        'faqs' => $faqs,
+        'categories' => $categories,
+        'testimonials' => $testimonials,
+        'primary' => $colors['primary'],
+        'secondary' => $colors['secondary'],
+        'accent' => $colors['accent']
+    ]);
     }
 }

@@ -1,4 +1,5 @@
-<nav x-data="{ mobileOpen: false }" class="w-full bg-transparent shadow-md lg:-ml-7 lg:-mr-16 mb-2">
+<nav x-data="{ mobileOpen: false }" class="w-full bg-transparent shadow-md lg:-ml-7 lg:-mr-16 mb-2"
+  style="position: sticky; top: 0; z-index: 100;">
   <div class="w-full px-0">
     <div class="flex justify-between items-center h-16 w-full">
       <!-- Logo and site name -->
@@ -75,13 +76,23 @@
           a
           Tour</a>
       </div>
-      <!-- Hamburger Icon -->
-      <button @click="mobileOpen = true"
-        class="hover:cursor-pointer hover:bg-teal-100 md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center">
-        <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      <!-- Book a Tour Icon (Mobile Only) & Hamburger Icon -->
+      <div class="flex items-center gap-2 md:hidden">
+        <a href="#book"
+          class="flex items-center justify-center p-2 rounded text-teal-600 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-primary"
+          title="Book a Tour">
+          <svg class="h-7 w-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5V6.5A2.5 2.5 0 0 1 6.5 4H20v13m-16 2.5V6.5m0 13V19.5z" />
+          </svg>
+        </a>
+        <button @click="mobileOpen = true"
+          class="hover:cursor-pointer hover:bg-teal-100 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center">
+          <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
   <!-- Mobile Menu -->

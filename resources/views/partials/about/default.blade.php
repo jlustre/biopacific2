@@ -1,5 +1,5 @@
 {{-- ABOUT — Version B: Collage + Tabs + Timeline + Accreditations --}}
-<section id="about" class="relative overflow-hidden py-20 md:py-28">
+<section class="relative overflow-hidden py-20 md:py-28" id="about">
   @php
   $scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) :
   null;
@@ -17,10 +17,12 @@
   </div>
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    {{-- Header --}}
+    <p class="mt-3 text-lg md:text-xl text-slate-700">
+      {{-- Header --}}
     <div class="max-w-3xl">
       <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-        <span style="color: {{ $primary }}">About</span> {{ $facility['name'] ?? 'Our Facility' }}
+        <span class="text-primary">About</span> <span style="color: {{ $primary }}">{{ $facility['name'] ??
+          'Our Facility' }}</span>
       </h2>
       <p class="mt-3 text-lg md:text-xl text-slate-700">
         {{ $facility['subheadline'] ?? 'Dedicated to compassionate, evidence-based care in a warm, family-centered
@@ -119,7 +121,7 @@
                     style="background: {{ ($accent) }}1A; color: {{ $accent }}">
                     ★
                   </div>
-                  <div class="mt-2 font-semibold" style="color: {{ $primary }}">{{ $title }}</div>
+                  <div class="mt-2 font-semibold text-primary">{{ $title }}</div>
                   <p class="text-sm text-slate-600">{{ $desc }}</p>
                 </div>
                 @endforeach
@@ -185,9 +187,9 @@
             <div class="flex gap-3">
               <a href="#book"
                 class="inline-flex items-center rounded-xl px-2 py-1 font-semibold text-white shadow transition"
-                style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">Book a Tour</a>
+                style="background: {{ $primary }}">Book a Tour</a>
               <a href="#contact" class="inline-flex items-center rounded-xl px-2 py-1 font-semibold border transition"
-                style="border-color: {{ $facility['primary_color'] ?? '#0EA5E9' }}; color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">Contact
+                style="border-color: {{ $secondary }}; color: {{ $secondary }}">Contact
                 Us</a>
             </div>
           </div>

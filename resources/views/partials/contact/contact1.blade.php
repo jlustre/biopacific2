@@ -173,7 +173,7 @@
                     </div>
                     <p class="text-xs mt-2">See our <a
                             href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}" class="underline"
-                            style="color: {{ $primary }}" target="_blank" rel="noopener noreferrer">Notice of Privacy
+                            class="text-primary" target="_blank" rel="noopener noreferrer">Notice of Privacy
                             Practices</a>.</p>
 
                     <div>

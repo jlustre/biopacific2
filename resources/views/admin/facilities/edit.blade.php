@@ -39,7 +39,7 @@ $sectionVariances[$key][] = $name;
     :root {
         --color-primary: {
                 {
-                optional($colorSchemes->firstWhere('id', $facility->color_scheme_id ?? 1))->primary_color ?? '#007bff'
+                $facility->colorScheme->primary_color ?? '#007bff'
             }
         }
 
@@ -47,7 +47,7 @@ $sectionVariances[$key][] = $name;
 
         --color-secondary: {
                 {
-                optional($colorSchemes->firstWhere('id', $facility->color_scheme_id ?? 1))->secondary_color ?? '#6c757d'
+                $facility->colorScheme->secondary_color ?? '#6c757d'
             }
         }
 
@@ -55,7 +55,7 @@ $sectionVariances[$key][] = $name;
 
         --color-accent: {
                 {
-                optional($colorSchemes->firstWhere('id', $facility->color_scheme_id ?? 1))->accent_color ?? '#28a745'
+                $facility->colorScheme->accent_color ?? '#28a745'
             }
         }
 
@@ -690,7 +690,7 @@ $sectionVariances[$key][] = $name;
                                         data-secondary="{{ $scheme->secondary_color }}"
                                         data-accent="{{ $scheme->accent_color }}" {{ ($facility->color_scheme_id ??
                                         1) == $scheme->id ? 'selected' : '' }}>
-                                        {{ $scheme->name }}
+                                        {{ $scheme->id }}: {{ $scheme->name }}
                                     </option>
                                     @endforeach
                                 </select>

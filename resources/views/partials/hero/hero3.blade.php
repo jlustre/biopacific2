@@ -1,16 +1,4 @@
-{{-- HERO — Center-Stacked, Parallax Image, Sticky Action Bar --}}
 @php
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $scheme->primary_color ?? '#0EA5E9';
-$secondary = $scheme->secondary_color ?? '#1E293B';
-$accent = $scheme->accent_color ?? '#F59E0B';
-} else {
-$primary = '#0EA5E9';
-$secondary = '#1E293B';
-$accent = '#F59E0B';
-}
-// Build poster image URL for background
 $posterFilename = $facility['hero_image_url'] ?? null;
 if (!empty($posterFilename)) {
 $poster = url('images/' . $posterFilename);
@@ -20,49 +8,48 @@ $poster = asset('images/hero1.jpg');
 @endphp
 
 <section class="relative isolate overflow-hidden min-h-[78vh] md:min-h-screen">
-    {{-- Background: image with subtle parallax / fixed on desktop --}}
+    <!-- Background: image with subtle parallax / fixed on desktop -->
     <div class="absolute inset-0 -z-10">
         <div class="hidden md:block absolute inset-0 bg-fixed bg-cover bg-top"
             style="background-image:url('{{ $poster }}')"></div>
         <img src="{{ $poster }}" alt="Residents and caregivers at {{ $facility['name'] ?? 'our facility' }}"
             class="md:hidden absolute inset-0 w-full h-full object-cover object-top">
 
-        {{-- Framing gradients for contrast (top+bottom, not full overlay) --}}
+        <!-- Framing gradients for contrast (top+bottom, not full overlay) -->
         <div class="absolute inset-x-0 top-0 h-40 md:h-64 bg-gradient-to-b from-black/50 to-transparent"></div>
         <div class="absolute inset-x-0 bottom-0 h-48 md:h-64 bg-gradient-to-t from-black/60 to-transparent"></div>
 
-        {{-- Soft brand glows (very faint) --}}
+        <!-- Soft brand glows (very faint) -->
         <div class="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-15"
             style="background: {{ $primary }}"></div>
         <div class="pointer-events-none absolute -bottom-28 -right-24 h-80 w-80 rounded-full blur-3xl opacity-15"
             style="background: {{ $accent }}"></div>
     </div>
 
-    {{-- Content (centered) --}}
+    <!-- Content (centered) -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="min-h-[78vh] md:min-h-screen flex items-center">
             <div class="w-full text-center">
-                {{-- Tagline pill --}}
+                <!-- Tagline pill -->
                 <span
-                    class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white/90 backdrop-blur-sm"
-                    style="color: {{ $primary }}; border-color: {{ $primary }};">
+                    class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white/90 backdrop-blur-sm text-primary border-primary">
                     <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                     {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                 </span>
 
-                {{-- Headline --}}
+                <!-- Headline -->
                 <h1
                     class="mt-4 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,.35)] font-black leading-[1.05] text-4xl md:text-6xl">
                     {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
                 </h1>
 
-                {{-- Subheadline --}}
+                <!-- Subheadline -->
                 <p class="mt-3 md:mt-4 text-slate-50/95 md:text-xl max-w-3xl mx-auto">
                     {!! $facility['subheadline'] ?? 'Skilled nursing, rehabilitation, memory care, and hospice in a
                     warm, dignified setting.' !!}
                 </p>
 
-                {{-- Floating stat chips (auto-wrap) --}}
+                <!-- Floating stat chips (auto-wrap) -->
                 <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
                     <span
                         class="inline-flex items-center gap-2 rounded-full bg-white/45 backdrop-blur px-3 py-1 text-xs font-medium ring-1 ring-white/60 text-slate-900">
@@ -89,21 +76,22 @@ $poster = asset('images/hero1.jpg');
                     </span>
                 </div>
 
-                {{-- Primary CTAs (stack on mobile) --}}
+                <!-- Primary CTAs (stack on mobile) -->
                 <div class="mt-7 mb-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
                     <a href="#book"
                         class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:brightness-110 hover:scale-[1.02]"
                         style="background: {{ $primary }}">Book a Tour</a>
 
                     <a href="#contact"
-                        class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold bg-white/60 backdrop-blur text-slate-900 ring-2 ring-white/80 hover:bg-white/80 hover:ring-white transition-all duration-200">
+                        class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold bg-white/60 backdrop-blur text-slate-900 ring-2 ring-white/80 hover:bg-white/80 hover:ring-white transition-all duration-200"
+                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
                         Quick Contact
                     </a>
 
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white backdrop-blur ring-1 ring-white/30 hover:brightness-110 hover:scale-[1.02] transition-all duration-200"
-                        style="background: {{ $accent }}">
+                        style="background: {{ $accent }};">
                         <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>
@@ -114,7 +102,6 @@ $poster = asset('images/hero1.jpg');
             </div>
         </div>
     </div>
-
     @if(!empty($facility['hero_video_id']))
     <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#F59E0B'"
         background="rgba(0,0,0,0.75)" />

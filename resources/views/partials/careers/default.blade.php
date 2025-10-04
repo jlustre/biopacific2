@@ -23,7 +23,7 @@ $accent = '#F59E0B';
 
 
     <!-- Job Cards Grid -->
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
       @foreach([
       ['Registered Nurse (RN)','Full-time • San Pablo, CA', 'Provide exceptional patient care in our state-of-the-art
       facility.', 'stethoscope'],
@@ -73,8 +73,7 @@ $accent = '#F59E0B';
           </div>
 
           <!-- Job title -->
-          <h3 class="text-xl font-bold mb-2 group-hover:text-primary transition-colors"
-            style="color: {{ $secondary }};">
+          <h3 class="text-xl font-bold mb-2 group-hover:text-primary transition-colors" class="text-secondary">
             {{ $role }}
           </h3>
 
@@ -95,7 +94,7 @@ $accent = '#F59E0B';
 
     <!-- Benefits Section -->
     <div class="bg-white rounded-2xl shadow-lg p-8 mb-12">
-      <h3 class="text-2xl font-bold text-center mb-8" style="color: {{ $secondary }};">Why Work With Us?</h3>
+      <h3 class="text-2xl font-bold text-center mb-8 text-secondary">Why Work With Us?</h3>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         @foreach([
         ['Medical Benefits', 'Comprehensive health, dental, and vision coverage', 'shield-check'],
@@ -106,7 +105,7 @@ $accent = '#F59E0B';
         <div class="text-center">
           <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
             style="background: linear-gradient(to bottom right, {{ $primary }}1A, {{ $accent }}1A);">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: {{ $primary }};">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               @if($icon === 'shield-check')
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -121,7 +120,7 @@ $accent = '#F59E0B';
               @endif
             </svg>
           </div>
-          <h4 class="font-semibold mb-2" style="color: {{ $secondary }};">{{ $title }}</h4>
+          <h4 class="font-semibold mb-2 text-secondary">{{ $title }}</h4>
           <p class="text-sm" style="color: #64748b;">{{ $desc }}</p>
         </div>
         @endforeach
@@ -144,8 +143,8 @@ $accent = '#F59E0B';
       <!-- Modal Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h3 class="text-2xl font-bold" style="color: {{ $secondary }};">Apply for Position</h3>
-          <p class="font-semibold" x-text="applyRole" style="color: {{ $accent }};"></p>
+          <h3 class="text-2xl font-bold text-secondary">Apply for Position</h3>
+          <p class="font-semibold text-accent" x-text="applyRole"></p>
         </div>
         <button @click="openApply=false" class="text-slate-400 hover:text-slate-600 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

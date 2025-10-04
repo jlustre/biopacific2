@@ -4,8 +4,7 @@ $scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->fin
 $primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
 $secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
 $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
-@endphp
-@php
+
 @include('components.color-scheme-vars')
 @endphp
 <section id="testimonials" class="py-16 sm:py-24"

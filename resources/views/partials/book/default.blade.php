@@ -1,18 +1,4 @@
 {{-- BOOK A TOUR — beautiful, responsive, accessible --}}
-@php
-
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $scheme->primary_color ?? '#0EA5E9';
-$secondary = $scheme->secondary_color ?? '#1E293B';
-$accent = $scheme->accent_color ?? '#F59E0B';
-} else {
-$primary = '#0EA5E9';
-$secondary = '#1E293B';
-$accent = '#F59E0B';
-}
-@endphp
-
 <section id="book" class="relative isolate overflow-hidden py-16 sm:py-24">
     {{-- Brand tints / background --}}
     <div class="pointer-events-none absolute inset-0 -z-10">
@@ -27,12 +13,12 @@ $accent = '#F59E0B';
         {{-- Header --}}
         <div class="mx-auto max-w-3xl text-center">
             <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-                style="color: {{ $primary }}; border-color: {{ $primary }};">
+                class="text-primary border-primary">
                 <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                 Schedule Your Visit
             </span>
             <h2 class="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight text-primary">
-                Book a Tour at {{ $facility['name'] ?? 'Our Community' }}
+                Book a Tour at <span style="color: {{ $primary }};">{{ $facility['name'] ?? 'Our Community' }}</span>
             </h2>
             <p class="mt-3 text-slate-600 md:text-lg">
                 Use this section when you want to book a tour to see our rooms, meet our care team, and explore our
@@ -245,8 +231,8 @@ $accent = '#F59E0B';
                                 include sensitive medical information.</span>
                         </label>
                         <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
-                                class="underline" style="color: {{ $primary }}" target="_blank"
-                                rel="noopener noreferrer">Notice of Privacy Practices</a>.</p>
+                                class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
+                                Privacy Practices</a>.</p>
                     </div>
 
                     {{-- honeypot --}}
@@ -264,7 +250,7 @@ $accent = '#F59E0B';
                             style="--ring: {{ $primary }}; border-color: {{ $primary }};">
                             Call Us Instead:
                             @if($facility['phone'])
-                            <span style="color: {{ $primary }};">&nbsp;&nbsp;
+                            <span class="text-primary">&nbsp;&nbsp;
                                 {{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $facility['phone']) }}
                             </span>
                             @endif

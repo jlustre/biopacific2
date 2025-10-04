@@ -72,6 +72,14 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Get color scheme from DB if available
+        $colorScheme = null;
+        if (!empty($facility->color_scheme_id)) {
+            $colorScheme = \App\Models\ColorScheme::find($facility->color_scheme_id);
+        }
+    $primary = $colorScheme->primary_color ?? $facility->primary_color ?? '#059669';
+    $secondary = $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B';
+    $accent = $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15';
         return view('welcome', [
             'facility' => $facility,
             'layoutTemplate' => $facility->layout_template ?? 'default-template',
@@ -80,6 +88,9 @@ class DashboardController extends Controller
             'faqs' => $faqs,
             'categories' => $categories,
             'testimonials' => $testimonials,
+            'primary' => $primary,
+            'secondary' => $secondary,
+            'accent' => $accent,
         ]);
     }
 

@@ -39,9 +39,6 @@ return new class extends Migration
             $table->string('instagram')->nullable();
             $table->string('meta_title')->nullable();
             $table->string('meta_description')->nullable();
-            $table->string('primary_color')->nullable();
-            $table->string('secondary_color')->nullable();
-            $table->string('accent_color')->nullable();
             $table->json('hipaa_flags')->nullable();
             $table->string('npp_url')->nullable(); 
             $table->unsignedBigInteger('color_scheme_id')->nullable()->default(1);

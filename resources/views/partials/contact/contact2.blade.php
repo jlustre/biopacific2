@@ -197,8 +197,8 @@ $social = $facility['social'] ?? [];
                             </div>
                             <p class="text-xs">See our <a
                                     href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
-                                    class="underline" style="color: {{ $primary }}" target="_blank"
-                                    rel="noopener noreferrer">Notice of Privacy Practices</a>.</p>
+                                    class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
+                                    Privacy Practices</a>.</p>
                         </div>
                         <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                             <button type="reset"

@@ -1,7 +1,4 @@
 @php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? '#F59E0B';
 $cityState = trim(($facility['city'] ?? '').(isset($facility['state']) ? ', '.$facility['state'] : ''));
 $beds = $facility['beds'] ?? null;
 
@@ -10,7 +7,7 @@ $aboutHero = asset('images/about-hero.png');
 $aboutPeople = asset('images/about-people.png');
 @endphp
 
-<section id="about" class="relative isolate overflow-hidden py-16 sm:py-24">
+<section id="about" class="relative isolate overflow-hidden py-16 sm:py-24 scroll-mt-24">
   {{-- Ambient brand backdrop --}}
   <div class="pointer-events-none absolute inset-0 -z-10">
     <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-15"
@@ -25,12 +22,12 @@ $aboutPeople = asset('images/about-people.png');
     <div class="grid lg:grid-cols-2 gap-10 items-center">
       <div>
         <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-          style="color: {{ $primary }}; border-color: {{ $primary }};">
+          class="text-primary border-primary">
           <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
           About {{ $facility['name'] ?? 'Our Community' }}
         </span>
 
-        <h2 class="mt-3 text-3xl md:text-4xl font-extrabold text-slate-900">
+        <h2 class="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight text-primary">
           {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
         </h2>
         <p class="mt-3 text-slate-600 md:text-lg">
@@ -67,7 +64,7 @@ $aboutPeople = asset('images/about-people.png');
 
     {{-- Value pillars --}}
     <div class="mt-14">
-      <h3 class="text-2xl font-bold text-slate-900">What sets us apart</h3>
+      <h3 class="text-2xl font-bold text-secondary">What sets us apart</h3>
       <p class="mt-2 text-slate-600">Care that blends clinical excellence with genuine warmth.</p>
 
       <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -109,7 +106,7 @@ $aboutPeople = asset('images/about-people.png');
     {{-- Care model --}}
     <div class="mt-14 grid lg:grid-cols-2 gap-8 items-start">
       <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8">
-        <h3 class="text-2xl font-bold text-slate-900">Our Care Model</h3>
+        <h3 class="text-2xl font-bold text-secondary">Our Care Model</h3>
         <p class="mt-2 text-slate-600">Integrated teams deliver consistent, coordinated care.</p>
 
         <ol class="mt-4 space-y-4">
@@ -154,7 +151,7 @@ $aboutPeople = asset('images/about-people.png');
       <div class="space-y-4">
         {{-- Accreditations / assurances --}}
         <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8">
-          <h3 class="text-lg font-semibold text-slate-900">Assurances</h3>
+          <h3 class="text-2xl font-bold text-secondary">Assurances</h3>
           <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-slate-600">
             <div class="rounded-xl ring-1 ring-slate-200 p-3 text-center">
               <div class="h-6"></div>
@@ -180,7 +177,7 @@ $aboutPeople = asset('images/about-people.png');
         <div
           class="mt-14 rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <div class="text-xl font-bold text-slate-900">See our care in action</div>
+            <div class="text-xl font-bold text-secondary">See our care in action</div>
             <p class="text-sm text-slate-600">Schedule a private tour—meet our team, ask questions, and explore.</p>
           </div>
           <div class="flex gap-3">
@@ -190,7 +187,7 @@ $aboutPeople = asset('images/about-people.png');
             @if(!empty($facility['phone']))
             <a href="tel:{{ $facility['phone'] }}"
               class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"
-              style="color: {{ $primary }}; border-color: {{ $primary }}">Call Us</a>
+              class="text-primary border-primary">Call Us</a>
             @endif
           </div>
         </div>

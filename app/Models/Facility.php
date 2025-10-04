@@ -6,6 +6,11 @@ use App\Models\Content;
 
 class Facility extends Model
 {
+  public function colorScheme()
+  {
+    return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
+  }
+
   public function __toString()
   {
     return (string) $this->name;

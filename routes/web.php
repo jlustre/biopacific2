@@ -42,10 +42,15 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
     }
 
     // Public view logic (no admin preview redirect)
+    // Fetch color scheme from the database (color_schemes table)
+    $colorScheme = null;
+    if (!empty($facility->color_scheme_id)) {
+        $colorScheme = \App\Models\ColorScheme::find($facility->color_scheme_id);
+    }
     $colors = [
-        'primary' => $facility->primary_color ?? '#059669',
-        'secondary' => $facility->secondary_color ?? '#064E3B',
-        'accent' => $facility->accent_color ?? '#FACC15'
+        'primary' => $colorScheme->primary_color ?? $facility->primary_color ?? '#059669',
+        'secondary' => $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B',
+        'accent' => $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15'
     ];
 
     $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
@@ -91,7 +96,9 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
 
     return view('welcome', [
         'facility' => $facility->toArray(),
-        'colors' => $colors,
+        'primary' => $colors['primary'],
+        'secondary' => $colors['secondary'],
+        'accent' => $colors['accent'],
         'sections' => $sections,
         'sectionVariances' => $sectionVariances,
         'layoutTemplate' => $layoutTemplate,

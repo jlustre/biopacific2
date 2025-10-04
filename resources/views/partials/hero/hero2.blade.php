@@ -1,8 +1,6 @@
 {{-- HERO — Curved Mask Image, Right-Rail Content, Vertical Facts --}}
 @php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? '#F59E0B';
+// Color variables ($primary, $secondary, $accent) are now passed from the controller.
 // Build poster image URL for background
 $posterFilename = $facility['hero_image_url'] ?? null;
 $poster = !empty($posterFilename) ? url('images/' . $posterFilename) : asset('images/hero1.jpg');
@@ -13,15 +11,7 @@ $hasVideo = !empty($facility['hero_video_id']);
   {{-- Brand glows --}}
   <div class="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-20"
     style="background: {{ $primary }}"></div>
-  @php
-  if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-  } else {
-  $primary = '#0EA5E9';
-  $secondary = '#1E293B';
-  $accent = '#F59E0B';
-  }
-  @include('components.color-scheme-vars')
-  @endphp
+  {{-- Color variables are now passed from the controller. --}}
 
   <div class="grid lg:grid-cols-12 gap-8 md:gap-10 items-stretch pt-10 md:pt-14 pb-8 md:pb-12">
 
@@ -83,7 +73,7 @@ $hasVideo = !empty($facility['hero_video_id']);
 
         {{-- Tagline --}}
         <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1"
-          style="color: {{ $primary }}; border-color: {{ $primary }};">
+          class="text-primary border-primary">
           <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
           {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
         </span>
@@ -107,7 +97,7 @@ $hasVideo = !empty($facility['hero_video_id']);
 
           <a href="#contact"
             class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 hover:bg-slate-50 transition"
-            style="color: {{ $secondary }}; border-color: {{ $secondary }}">Contact Us</a>
+            style="border-color: {{ $secondary }}; color: {{ $secondary }};">Contact Us</a>
 
           @if(!empty($facility['hero_video_id']))
           <button id="playVideoBtn" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"

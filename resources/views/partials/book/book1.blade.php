@@ -1,13 +1,4 @@
-{{-- ================================
-BOOK A TOUR — Single Mode, Visual Variant
-- Left: form
-- Right: visuals + quick stats
-- Uses facility colors
-================================ --}}
 @php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? '#F59E0B';
 $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
 @endphp
 
@@ -35,7 +26,7 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                 Come See Us
             </span>
             <h2 class="mt-4 text-3xl md:text-4xl font-extrabold">
-                Book a Tour at {{ $facility['name'] ?? 'Our Community' }}
+                Book a Tour at <span style="color: {{ $primary }};">{{ $facility['name'] ?? 'Our Community' }}</span>
             </h2>
             <p class="mt-2 text-white/90 md:text-lg">See our rooms, meet our care team, and learn how we support
                 families.</p>
@@ -160,8 +151,7 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                                 medical information.</span>
                         </label>
                         <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
-                                class="underline" style="color: {{ $primary }}" target="_blank"
-                                rel="noopener noreferrer">Notice of
+                                class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
                                 Privacy Practices</a>.</p>
                     </div>
 
@@ -175,10 +165,13 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                             style="background: {{ $primary }}">
                             Request Tour
                         </button>
+
                         <a href="tel:{{ $facility['phone'] ?? '' }}"
-                            class="inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-6 py-3 font-semibold ring-2 transition bg-white text-slate-900 hover:bg-slate-50"
-                            style="border-color: {{ $primary }}">
-                            Call Us
+                            class="inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-6 py-3 font-semibold ring-2 transition bg-white hover:bg-slate-50"
+                            style="border-color: {{ $secondary }}; color: {{ $secondary }};">
+                            Call Us: {{ isset($facility['phone']) ? preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1)
+                            $2-$3',
+                            preg_replace('/\D/', '', $facility['phone'])) : '' }}
                         </a>
                     </div>
 

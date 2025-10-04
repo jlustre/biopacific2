@@ -9,8 +9,9 @@
 'iframeId' => 'youtubeIframe',
 ])
 @if($videoId)
-<div id="{{ $modalId }}" class="fixed inset-0 z-{{ $zIndex }} items-center justify-center hidden"
-    style="background: {{ $background }};">
+<!-- DEBUG: Video Modal Rendered (ID: {{ $modalId }}) -->
+<div id="{{ $modalId }}" class="fixed inset-0 items-center justify-center hidden"
+    style="background: {{ $background }}; z-index: {{ $zIndex }} !important;">
     <div class="relative w-full max-w-4xl mx-4">
         <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%; height: 0;">
             <button id="{{ $closeBtnId }}"

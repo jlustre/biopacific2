@@ -1,7 +1,6 @@
 <!docty <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality Care For Your Loved Ones' }}</title>
   <meta name="description" content="{{ $facility['meta_description'] }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   @vite(['resources/css/app.css', 'resources/js/app.js'])ml>
   <html lang="en" x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}"
     class="scroll-smooth">
@@ -12,7 +11,6 @@
     <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality care for your loved ones' }}</title>
     <meta name="description" content="{{ $facility['meta_description'] }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
       :root {
         --color-primary: {

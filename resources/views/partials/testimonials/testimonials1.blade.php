@@ -27,7 +27,7 @@ $accent = '#F59E0B';
         {{-- Header --}}
         <div class="text-center max-w-3xl mx-auto">
             <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-                style="color: {{ $primary }}; border-color: {{ $primary }};">
+                class="text-primary border-primary">
                 <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                 Voices from Our Community
             </span>
@@ -206,7 +206,7 @@ $accent = '#F59E0B';
                     class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow"
                     style="background: {{ $primary }}">Book a Tour</a>
                 <a href="#contact" class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"
-                    style="color: {{ $primary }}; border-color: {{ $primary }}">Contact Us</a>
+                    class="text-primary border-primary">Contact Us</a>
             </div>
         </div>
     </div>

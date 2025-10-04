@@ -1,20 +1,9 @@
 {{-- HERO — Diagonal Split, Gradient Strip, KPIs Column --}}
 @php
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $scheme->primary_color ?? '#0EA5E9';
-$secondary = $scheme->secondary_color ?? '#1E293B';
-$accent = $scheme->accent_color ?? '#F59E0B';
-} else {
-$primary = '#0EA5E9';
-$secondary = '#1E293B';
-$accent = '#F59E0B';
-}
-
+// Color variables ($primary, $secondary, $accent) are now passed from the controller.
 // Background poster
 $posterFilename = $facility['hero_image_url'] ?? null;
 $poster = !empty($posterFilename) ? url('images/' . $posterFilename) : asset('images/hero1.jpg');
-
 $hasVideo = !empty($facility['hero_video_id']);
 @endphp
 
@@ -65,7 +54,7 @@ $hasVideo = !empty($facility['hero_video_id']);
                     {{-- Tagline pill --}}
                     <span
                         class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white"
-                        style="color: {{ $primary }}; border-color: {{ $primary }};">
+                        class="text-primary border-primary">
                         <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                         {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                     </span>
@@ -114,7 +103,7 @@ $hasVideo = !empty($facility['hero_video_id']);
 
                         <a href="#contact"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold ring-2 hover:bg-slate-50 transition"
-                            style="color: {{ $primary }}; border-color: {{ $primary }}">Quick Contact</a>
+                            style="border-color: {{ $secondary }}; color: {{ $secondary }};">Quick Contact</a>
                         @if(!empty($facility['hero_video_id']))
                         <button id="playVideoBtn"
                             class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-semibold text-white hover:brightness-110 transition"

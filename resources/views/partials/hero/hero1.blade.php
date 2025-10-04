@@ -38,17 +38,8 @@
                         background: rgba(255, 255, 255, 0.18);
                     }
                 </style>
-                @php
-                if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-                $scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-                $primary = $scheme->primary_color ?? '#e3342f';
-                $accent = $scheme->accent_color ?? '#e3342f';
-                } else {
-                $primary = '#e3342f';
-                $accent = '#e3342f';
-                }
-                @endphp
-                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow" style="color: {{ $primary }}">
+                {{-- Color variables ($primary, $secondary, $accent) are now passed from the controller. --}}
+                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow text-primary">
                     {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
                 </h1>
                 <p class="mt-4 mx-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>
@@ -58,13 +49,13 @@
                         Quick Contact
                     </a>
                     <a href="#book" class="inline-flex items-center rounded-xl border px-5 py-3 font-medium"
-                        style="border-color: {{ $primary }}; color: {{ $primary }};">
+                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
                         Book a Tour
                     </a>
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-                        style="background-color: {{ $facility['accent_color'] ?? '#e3342f' }};">
+                        style="background-color: {{ $accent }};">
                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>

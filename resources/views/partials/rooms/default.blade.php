@@ -52,8 +52,8 @@ $accent = '#F59E0B';
           <div>
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
               <div class="mb-4 lg:mb-0">
-                <h3 class="text-3xl lg:text-4xl font-bold mb-2" style="color: {{ $secondary }};">Private Room</h3>
-                <p class="font-semibold text-lg" style="color: {{ $primary }};">Premium Care Experience</p>
+                <h3 class="text-3xl lg:text-4xl font-bold mb-2 text-secondary">Private Room</h3>
+                <p class="font-semibold text-lg text-primary">Premium Care Experience</p>
               </div>
               <div class="flex items-center text-amber-500 bg-amber-50 px-3 py-2 rounded-xl w-fit">
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">

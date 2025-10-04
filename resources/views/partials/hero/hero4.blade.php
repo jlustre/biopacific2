@@ -11,16 +11,7 @@ asset('images/hero1.jpg'));
     <div
         class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.7),transparent_60%)]">
     </div>
-    @php
-    if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-    $scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-    $primary = $scheme->primary_color ?? '#0EA5E9';
-    $accent = $scheme->accent_color ?? '#F59E0B';
-    } else {
-    $primary = '#0EA5E9';
-    $accent = '#F59E0B';
-    }
-    @endphp
+    {{-- Color variables ($primary, $secondary, $accent) are now passed from the controller. --}}
     <div class="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-20"
         style="background: {{ $primary }}"></div>
     <div class="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl opacity-15"
@@ -31,7 +22,7 @@ asset('images/hero1.jpg'));
             {{-- LEFT: Copy + CTAs --}}
             <div class="order-2 lg:order-1">
                 <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-                    style="color: {{ $primary }}; border-color: currentColor;">
+                    class="text-primary border-current">
                     <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                     {{ $facility['hero_config']['badge'] ?? 'Family-centered • Evidence-based • Compassion' }}
                 </span>
@@ -58,7 +49,7 @@ asset('images/hero1.jpg'));
                     @endif
                     <a href="#book"
                         class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold ring-1 transition"
-                        style="color: {{ $primary }}; border-color: currentColor;">
+                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
                         Book a Tour
                     </a>
                     @if(!empty($facility['hero_video_id']))
@@ -118,7 +109,7 @@ asset('images/hero1.jpg'));
                                 </div>
                                 <a href="#contact"
                                     class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-white"
-                                    style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+                                    style="background: {{ $primary }}">
                                     Contact
                                 </a>
                             </div>

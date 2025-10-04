@@ -83,7 +83,12 @@ class FacilityAdminController extends Controller
                 $sections = $activeWebContent->sections;
             }
         }
-        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials'));
+        // Get color scheme values
+        $scheme = $facility->colorScheme ?? null;
+        $primary = $scheme->primary_color ?? '#0EA5E9';
+        $secondary = $scheme->secondary_color ?? '#1E293B';
+        $accent = $scheme->accent_color ?? '#F59E0B';
+        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials', 'primary', 'secondary', 'accent'));
     }
 
     public function edit($identifier)

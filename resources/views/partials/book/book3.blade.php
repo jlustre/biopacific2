@@ -1,9 +1,4 @@
 {{-- Book a Tour Variant 3 — Bold, Modern, Responsive Redesign --}}
-@php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$accent = $facility['accent_color'] ?? '#F59E0B';
-@endphp
-
 <section id="book"
     class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 py-10 overflow-hidden">
     <div class="absolute inset-0 pointer-events-none -z-10">

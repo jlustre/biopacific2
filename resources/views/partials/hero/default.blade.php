@@ -1,5 +1,6 @@
 {{-- HERO — Version C: Full-width background video with image fallback --}}
 @php
+// Color variables ($primary, $secondary, $accent) are now passed from the controller.
 // Build poster image URL for video background
 $posterFilename = $facility['hero_image_url'] ?? null;
 if (!empty($posterFilename)) {
@@ -8,16 +9,6 @@ $poster = url('images/' . $posterFilename);
 $poster = asset('images/hero1.jpg');
 }
 $hasVideo = !empty($facility['hero_video_id']);
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $primary ?? ($scheme->primary_color ?? '#047857');
-$secondary = $secondary ?? ($scheme->secondary_color ?? '#000000');
-$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
-} else {
-$primary = $primary ?? '#047857';
-$secondary = $secondary ?? '#000000';
-$accent = $accent ?? '#F59E0B';
-}
 @endphp
 
 <section class="relative min-h-[80vh] md:min-h-screen overflow-hidden isolate">
@@ -69,8 +60,8 @@ $accent = $accent ?? '#F59E0B';
 
       <div class="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <a href="#contact"
-          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition hover:brightness-120"
-          style="background-color: {{ $primary }}">
+          class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition hover:brightness-120 bg-primary"
+          style="background-color: {{ $primary }};">
           Quick Contact
         </a>
         <a href="#book"

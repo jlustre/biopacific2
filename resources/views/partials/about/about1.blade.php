@@ -1,8 +1,8 @@
-<section id="about" class="py-16 sm:py-24 bg-gradient-to-br from-blue-50 to-green-50">
+<section class="py-16 sm:py-24 bg-gradient-to-br from-blue-50 to-green-50">
     <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- SectionHeader -->
         @include('partials.section_header', [
-        'section_header' => '<span class="text-primary">About Us</span>',
+        'section_header' => "<span style=\"color: $primary\" class=\"text-primary\">About Us</span>",
         'section_sub_header' => $facility['subheadline'] ?? 'Dedicated to providing compassionate care and creating a
         warm,
         supportive environment where residents thrive.'
@@ -22,7 +22,8 @@
                     <!-- Floating Card -->
                     <div
                         class="absolute -bottom-4 -right-4 bg-white p-4 lg:p-6 rounded-2xl shadow-xl border-l-4 border-accent">
-                        <div class="text-2xl lg:text-3xl font-bold text-accent">{{ $facility['years'] ?? '20' }}+</div>
+                        <div class="text-2xl lg:text-3xl font-bold text-accent">{{ $facility['years']
+                            ?? '20' }}+</div>
                         <div class="text-xs lg:text-sm text-slate-600">Years of Service</div>
                     </div>
                 </div>
@@ -35,7 +36,7 @@
                     </p>
                     @endif
                     <div class="space-y-4">
-                        <h3 class="text-3xl font-bold text-primary">Our Mission</h3>
+                        <h3 class="text-3xl font-bold text-secondary">Our Mission</h3>
                         <p class="text-slate-700 leading-relaxed text-xl">
                             Founded on the principles of dignity, respect, and clinical excellence, <strong>{{
                                 $facility['name']

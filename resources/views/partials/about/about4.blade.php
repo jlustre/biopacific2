@@ -1,19 +1,12 @@
 {{-- ABOUT — Version G: Magazine Banner, Editorial Grid, Vertical Milestones, Stats Band, Leadership, Compliance --}}
 @php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$secondary = $facility['secondary_color'] ?? '#1E293B';
-$accent = $facility['accent_color'] ?? <div
-    class="aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100">
-    <img src="{{ asset('images/transportation_care.png') }}"
-        alt="Transportation and care services throughout our journey" class="w-full h-full object-cover">
-</div>
 $years = (int)($facility['years'] ?? 20);
 $poster = !empty($facility['about_image_url'])
 ? url('images/' . $facility['about_image_url'])
 : asset('images/physical-therapy-session.png');
 @endphp
 
-<section id="about" class="relative overflow-hidden">
+<section class="relative overflow-hidden" id="about">
     {{-- Subtle backdrop glows --}}
     <div class="pointer-events-none absolute inset-0 -z-10">
         <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50"></div>
@@ -46,19 +39,17 @@ $poster = !empty($facility['about_image_url'])
                         </div>
                     </div>
                 </div>
-
-                {{-- Title overlay --}}
-                <div class="absolute bottom-4 right-4 text-right">
-                    <h2 class="text-white/95 text-2xl md:text-4xl font-black drop-shadow-[0_2px_10px_rgba(0,0,0,.35)]">
-                        About <span style="color: {{ $accent }}">{{ $facility['name'] ?? 'Our Facility' }}</span>
-                    </h2>
-                </div>
             </div>
         </div>
     </div>
+    <div class="text-center pt-4">
+        <h2 class="text-2xl md:text-4xl font-black drop-shadow-[0_2px_10px_rgba(0,0,0,.35)]">
+            About <span class="text-primary">{{ $facility['name'] ?? 'Our Facility' }}</span>
+        </h2>
+    </div>
 
     {{-- 2) Editorial intro (3-column at lg) --}}
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         <div class="grid gap-6 lg:grid-cols-3">
             <div class="lg:col-span-2">
                 <p class="text-slate-700 md:text-lg leading-relaxed">
@@ -154,7 +145,7 @@ $poster = !empty($facility['about_image_url'])
                     {{-- Mission Tab --}}
                     <div x-show="activeTab === 'mission'" class="grid md:grid-cols-2 gap-8">
                         <div>
-                            <h3 class="text-xl font-bold text-slate-900 mb-4">Our Mission</h3>
+                            <h3 class="text-2xl font-bold mb-4 text-secondary">Our Mission</h3>
                             <p class="text-slate-600 leading-relaxed">
                                 {{ $facility['mission'] ?? 'To provide compassionate, person-centered care that honors
                                 the dignity of every individual while supporting families through life\'s most
@@ -182,7 +173,7 @@ $poster = !empty($facility['about_image_url'])
                     {{-- Vision Tab --}}
                     <div x-show="activeTab === 'vision'" class="grid md:grid-cols-2 gap-8">
                         <div>
-                            <h3 class="text-xl font-bold text-slate-900 mb-4">Our Vision</h3>
+                            <h3 class="text-2xl font-bold mb-4 text-secondary">Our Vision</h3>
                             <p class="text-slate-600 leading-relaxed">
                                 {{ $facility['vision'] ?? 'To be the leading provider of healthcare services, setting
                                 the standard for quality care and innovation while creating an environment where
@@ -210,7 +201,7 @@ $poster = !empty($facility['about_image_url'])
                     {{-- Values Tab --}}
                     <div x-show="activeTab === 'values'" class="grid md:grid-cols-2 gap-8">
                         <div>
-                            <h3 class="text-xl font-bold text-slate-900 mb-4">Our Values</h3>
+                            <h3 class="text-2xl font-bold mb-4 text-secondary">Our Values</h3>
                             <div class="space-y-4">
                                 <div class="flex items-start gap-3">
                                     <div class="h-6 w-6 rounded-full flex items-center justify-center text-white text-xs"
@@ -251,7 +242,7 @@ $poster = !empty($facility['about_image_url'])
                     {{-- Journey Tab --}}
                     <div x-show="activeTab === 'journey'" class="grid md:grid-cols-2 gap-8">
                         <div>
-                            <h3 class="text-xl font-bold text-slate-900 mb-4">Our Journey</h3>
+                            <h3 class="text-2xl font-bold mb-4 text-secondary">Our Journey</h3>
                             <ul class="space-y-4">
                                 @php
                                 $start = now()->year - $years;
@@ -314,7 +305,7 @@ $poster = !empty($facility['about_image_url'])
 
     {{-- 5) Leadership micro-cards --}}
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-10">
-        <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-4">Leadership</h3>
+        <h3 class="text-xl md:text-2xl font-bold mb-4 text-secondary">Leadership</h3>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach([
             ['Administrator','Committed to resident experience'],

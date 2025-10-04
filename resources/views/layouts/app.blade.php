@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Alpine.js and Collapse plugin for x-collapse support -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     {{-- Title --}}
     <title>{{ $metaTitle ?? ($title ?? 'Bio Pacific Facilities') }}</title>
 
@@ -139,7 +145,7 @@
         }
 
         .navbar {
-            z-index: 1030;
+            z-index: 1000;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
@@ -342,6 +348,7 @@
 
     {{-- Bootstrap JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    @stack('modals')
     @livewireScripts
 
     <script>
@@ -435,6 +442,7 @@
             });
         });
     </script>
+
 </body>
 
 </html>

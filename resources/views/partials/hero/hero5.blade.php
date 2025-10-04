@@ -1,16 +1,6 @@
 {{-- HERO — Split with Angled Media Panel + Compact Actions --}}
 @php
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $scheme->primary_color ?? '#0EA5E9';
-$secondary = $scheme->secondary_color ?? '#1E293B';
-$accent = $scheme->accent_color ?? '#F59E0B';
-} else {
-$primary = '#0EA5E9';
-$secondary = '#1E293B';
-$accent = '#F59E0B';
-}
-
+// Color variables ($primary, $secondary, $accent) are now passed from the controller.
 // Build poster image URL - try multiple approaches for compatibility
 $posterFilename = $facility['hero_image_url'] ?? null;
 if (!empty($posterFilename)) {
@@ -37,12 +27,12 @@ $poster = asset('images/hero1.jpg');
                 {{-- Tagline pill --}}
                 <span
                     class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white"
-                    style="color: {{ $primary }}; border-color: {{ $primary }};">
+                    class="text-primary border-primary">
                     <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                     {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                 </span>
 
-                <h1 class="mt-4 text-4xl md:text-5xl xl:text-6xl font-black text-slate-900 leading-[1.05]">
+                <h1 class="mt-4 text-3xl md:text-4xl xl:text-5xl font-black text-slate-900 leading-[1.05]">
                     {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
                 </h1>
 
@@ -86,7 +76,7 @@ $poster = asset('images/hero1.jpg');
 
                     <a href="#contact"
                         class="inline-flex justify-center items-center rounded-xl px-4 py-2 text-sm font-semibold bg-transparent ring-1 transition-all duration-200 hover:bg-white/10 hover:backdrop-blur"
-                        style="color: {{ $primary }}; border-color: {{ $primary }}">
+                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
                         Quick Contact
                     </a>
 
@@ -153,7 +143,7 @@ $poster = asset('images/hero1.jpg');
                                     style="background: {{ $primary }}">Book a Tour</a>
                                 <a href="#contact"
                                     class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold ring-1 hover:bg-slate-50"
-                                    style="color: {{ $primary }}; border-color: {{ $primary }}">Contact</a>
+                                    style="border-color: {{ $secondary }}; color: {{ $secondary }};">Contact</a>
                             </div>
                             @if(!empty($facility['phone']))
                             @php

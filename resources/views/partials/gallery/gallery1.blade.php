@@ -28,7 +28,7 @@ asset('images/gallery/nursinghome_image9.png'),
         {{-- Header --}}
         <div class="text-center max-w-3xl mx-auto">
             <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-                style="color: {{ $primary }}; border-color: {{ $primary }};">
+                class="text-primary border-primary">
                 <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                 Photo Gallery
             </span>

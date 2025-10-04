@@ -12,11 +12,7 @@ $serviceImages = [
 ];
 
 
-// Include color scheme vars
-include base_path('resources/views/components/color-scheme-vars.blade.php');
-$primary = $primary ?? (isset($scheme) && $scheme ? ($scheme->primary_color ?? '#0EA5E9') : '#0EA5E9');
-$secondary = $secondary ?? (isset($scheme) && $scheme ? ($scheme->secondary_color ?? '#1E293B') : '#1E293B');
-$accent = $accent ?? (isset($scheme) && $scheme ? ($scheme->accent_color ?? '#F59E0B') : '#F59E0B');
+// Color scheme variables ($primary, $secondary, $accent) are now passed from the controller.
 @endphp
 
 <section id="services" class="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-white">

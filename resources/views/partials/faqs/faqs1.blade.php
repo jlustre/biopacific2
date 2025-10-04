@@ -26,11 +26,12 @@ $accent = '#F59E0B';
         {{-- Header --}}
         <div class="text-center max-w-3xl mx-auto">
             <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
-                style="color: {{ $primary }}; border-color: {{ $primary }};">
+                class="text-primary border-primary">
                 <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
                 We’re here to help
             </span>
-            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold text-slate-900">Frequently Asked Questions</h2>
+            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold" style="color: {{ $primary }};">Frequently Asked
+                Questions</h2>
             <p class="mt-2 text-slate-600 md:text-lg">Answers to common questions about care, visits, dining, safety,
                 and more.</p>
         </div>
@@ -117,7 +118,7 @@ $accent = '#F59E0B';
                                                 </div>
                                                 <span
                                                     class="ml-3 inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-700 group-aria-expanded:rotate-45 transition"
-                                                    style="color: {{ $primary }}">＋</span>
+                                                    class="text-primary">＋</span>
                                             </div>
                                             {{-- Panel --}}
                                             <div id="faq-panel-{{ $idx }}"
