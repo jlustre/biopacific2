@@ -1,7 +1,7 @@
 @props([
 'videoId' => null,
 'accentColor' => '#F59E0B',
-'zIndex' => 50,
+'zIndex' => 2001,
 'background' => 'rgba(0,0,0,0.75)',
 'modalId' => 'videoModal',
 'playBtnId' => 'playVideoBtn',
@@ -10,20 +10,22 @@
 ])
 @if($videoId)
 <!-- DEBUG: Video Modal Rendered (ID: {{ $modalId }}) -->
-<div id="{{ $modalId }}" class="fixed inset-0 items-center justify-center hidden"
-    style="background: {{ $background }}; z-index: {{ $zIndex }} !important;">
-    <div class="relative w-full max-w-4xl mx-4">
-        <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%; height: 0;">
+<div id="{{ $modalId }}" class="fixed inset-0 z-[{{ $zIndex }}] flex items-start justify-center hidden">
+    <div class="absolute inset-0 bg-black/80"></div>
+    <div class="relative w-full max-w-5xl mx-4 flex justify-center items-center mt-[80px] z-10">
+        <div
+            class="relative bg-white rounded-2xl shadow-2xl p-2 md:p-6 max-w-4xl w-[95vw] md:w-[70vw] max-h-[85vh] flex flex-col items-center">
             <button id="{{ $closeBtnId }}"
-                class="absolute top-4 right-4 text-white hover:text-red-400 transition-colors duration-200 z-10 bg-black/50 backdrop-blur rounded-full p-2"
+                class="absolute top-3 right-3 z-10 text-white bg-black/80 hover:bg-red-600 rounded-full p-2 md:p-3 shadow-lg focus:outline-none transition-all duration-150"
                 aria-label="Close video">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                <svg class="h-7 w-7 md:h-8 md:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
-            <iframe id="{{ $iframeId }}" class="absolute top-0 left-0 w-full h-full" src="" frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen></iframe>
+            <div class="w-full aspect-video rounded-xl overflow-hidden">
+                <iframe id="{{ $iframeId }}" class="w-full h-full rounded-xl" src="" frameborder="0"
+                    allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
         </div>
     </div>
 </div>
@@ -53,6 +55,12 @@
         const closeVideoBtn = document.getElementById(@json($closeBtnId));
         const youtubeIframe = document.getElementById(@json($iframeId));
         const youtubeVideoId = @json($videoId);
+        function closeModal() {
+            videoModal.classList.add('hidden');
+            videoModal.classList.remove('flex');
+            document.body.classList.remove('modal-open');
+            youtubeIframe.src = '';
+        }
         if (playVideoBtn && videoModal && closeVideoBtn && youtubeIframe && youtubeVideoId) {
             playVideoBtn.addEventListener('click', function() {
                 youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
@@ -60,12 +68,6 @@
                 videoModal.classList.add('flex');
                 document.body.classList.add('modal-open');
             });
-            function closeModal() {
-                videoModal.classList.add('hidden');
-                videoModal.classList.remove('flex');
-                document.body.classList.remove('modal-open');
-                youtubeIframe.src = '';
-            }
             closeVideoBtn.addEventListener('click', closeModal);
             videoModal.addEventListener('click', function(e) {
                 if (e.target === videoModal) {
@@ -76,6 +78,14 @@
                 if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
                     closeModal();
                 }
+            });
+            // Hide modal when a menu link is clicked
+            document.querySelectorAll('nav a, .menu a, .navbar a, .mobile-menu a').forEach(link => {
+                link.addEventListener('click', function() {
+                    if (!videoModal.classList.contains('hidden')) {
+                        closeModal();
+                    }
+                });
             });
         }
     })();

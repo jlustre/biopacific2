@@ -5,213 +5,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Alpine.js and Collapse plugin for x-collapse support -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js and Collapse plugin for x-collapse support (moved to end of body) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    @livewireScripts
 
-    {{-- Title --}}
-    <title>{{ $metaTitle ?? ($title ?? 'Bio Pacific Facilities') }}</title>
+    <!-- Alpine.js and Collapse plugin for x-collapse support (now loaded at end of body) -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        // Alpine.js debug: log when Alpine initializes
+        document.addEventListener('alpine:init', () => {
+            console.log('Alpine initialized');
+        });
+    </script>
+    align-items: center;
+    padding: 12px 16px;
+    }
 
-    {{-- Basic SEO --}}
-    <meta name="description" content="{{ $metaDescription ?? 'Compassionate senior care across California.' }}">
-    @isset($metaKeywords)
-    <meta name="keywords" content="{{ $metaKeywords }}">
-    @endisset
-    <meta name="robots" content="{{ $robots ?? 'index,follow' }}">
+    .nav-link:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    transform: translateX(5px);
+    }
 
-    {{-- Canonical --}}
-    @isset($canonical)
-    <link rel="canonical" href="{{ $canonical }}">
-    @endisset
+    .nav-link.active {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
 
-    {{-- Open Graph / Facebook --}}
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="{{ $metaTitle ?? ($title ?? 'Bio Pacific Nursing Home Sites') }}">
-    <meta property="og:description" content="{{ $metaDescription ?? 'Compassionate senior care across California.' }}">
-    @isset($ogImage)
-    <meta property="og:image" content="{{ $ogImage }}">
-    @endisset
-    @isset($canonical)
-    <meta property="og:url" content="{{ $canonical }}">
-    @endisset
+    .sidebar-footer {
+    background: rgba(0, 0, 0, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    }
 
-    {{-- Twitter Card --}}
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $metaTitle ?? ($title ?? 'Bio Pacific Nursing Home Sites') }}">
-    <meta name="twitter:description" content="{{ $metaDescription ?? 'Compassionate senior care across California.' }}">
-    @isset($ogImage)
-    <meta name="twitter:image" content="{{ $ogImage }}">
-    @endisset
+    .content-wrapper {
+    margin-left: 280px;
+    margin-top: 56px;
+    transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 56px);
+    }
 
-    {{-- Per-page extra head content (e.g., JSON-LD) --}}
-    @stack('meta')
+    .content-wrapper.expanded {
+    margin-left: 0;
+    }
 
-    {{-- Bootstrap CSS --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    .main-content {
+    background: #f8f9fa;
+    min-height: calc(100vh - 56px);
+    }
 
-    {{-- Font Awesome for icons --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    .navbar {
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-    @vite(['resources/css/app.css','resources/js/app.js'])
-    @livewireStyles
+    .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1020;
+    }
 
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    @media (max-width: 768px) {
+    .sidebar {
+    margin-left: -280px;
+    }
 
-        .sidebar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            transition: all 0.3s ease;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-            position: fixed;
-            top: 56px;
-            left: 0;
-            width: 280px;
-            z-index: 1025;
-            overflow-y: auto;
-        }
+    .sidebar.show {
+    margin-left: 0;
+    }
 
-        .sidebar.collapsed {
-            margin-left: -280px;
-        }
+    .content-wrapper {
+    margin-left: 0 !important;
+    }
 
-        .sidebar-toggler {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
+    .sidebar-overlay.show {
+    display: block;
+    }
+    }
 
-        .sidebar-toggler:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
+    /* Additional improvements */
+    .dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    }
 
-        .sidebar-brand {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+    .dropdown-item {
+    transition: all 0.3s ease;
+    }
 
-        .nav-link {
-            color: rgba(255, 255, 255, 0.8) !important;
-            border-radius: 10px;
-            margin: 0.2rem 0;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-        }
+    .dropdown-item:hover {
+    background: #f8f9fa;
+    transform: translateX(5px);
+    }
 
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
-            color: white !important;
-            transform: translateX(5px);
-        }
+    /* Multi-level dropdown support */
+    .dropdown-submenu {
+    position: relative;
+    }
 
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.3) !important;
-            color: white !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
+    .dropdown-submenu>.dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -6px;
+    margin-left: 0.1rem;
+    border-radius: 8px;
+    }
 
-        .sidebar-footer {
-            background: rgba(0, 0, 0, 0.1);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-
-        .content-wrapper {
-            margin-left: 280px;
-            margin-top: 56px;
-            transition: margin-left 0.3s ease;
-            min-height: calc(100vh - 56px);
-        }
-
-        .content-wrapper.expanded {
-            margin-left: 0;
-        }
-
-        .main-content {
-            background: #f8f9fa;
-            min-height: calc(100vh - 56px);
-        }
-
-        .navbar {
-            z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1020;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                margin-left: -280px;
-            }
-
-            .sidebar.show {
-                margin-left: 0;
-            }
-
-            .content-wrapper {
-                margin-left: 0 !important;
-            }
-
-            .sidebar-overlay.show {
-                display: block;
-            }
-        }
-
-        /* Additional improvements */
-        .dropdown-menu {
-            border: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
-        }
-
-        .dropdown-item {
-            transition: all 0.3s ease;
-        }
-
-        .dropdown-item:hover {
-            background: #f8f9fa;
-            transform: translateX(5px);
-        }
-
-        /* Multi-level dropdown support */
-        .dropdown-submenu {
-            position: relative;
-        }
-
-        .dropdown-submenu>.dropdown-menu {
-            top: 0;
-            left: 100%;
-            margin-top: -6px;
-            margin-left: 0.1rem;
-            border-radius: 8px;
-        }
-
-        .dropdown-submenu>.dropdown-item:after {
-            content: "\f105";
-            font-family: 'FontAwesome';
-            float: right;
-        }
+    .dropdown-submenu>.dropdown-item:after {
+    content: "\f105";
+    font-family: 'FontAwesome';
+    float: right;
+    }
     </style>
 </head>
 
@@ -441,8 +357,15 @@
                 });
             });
         });
+
+    // Alpine.js debug: log when Alpine initializes
+    document.addEventListener('alpine:init', () => {
+        console.log('Alpine initialized');
+    });
     </script>
 
 </body>
+
+<!-- DEBUG: This is layouts/app.blade.php -->
 
 </html>

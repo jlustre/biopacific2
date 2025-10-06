@@ -79,6 +79,27 @@ $facilityData = $facility ?? [];
     @include('partials.footer.footer', ['facility' => $facilityData])
 
     @livewireScripts
+
+    <!-- DEBUG: Using layouts/dynamic.blade.php -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DEBUG: Alpine.js layout script loaded (dynamic.blade.php)');
+        });
+    </script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        document.addEventListener("livewire:navigated", () => {
+            if (window.Alpine && Alpine.initTree) {
+                Alpine.initTree(document.body);
+            }
+        });
+        document.addEventListener("livewire:load", () => {
+            if (window.Alpine && Alpine.initTree) {
+                Alpine.initTree(document.body);
+            }
+        });
+    </script>
 </body>
 
 </html>

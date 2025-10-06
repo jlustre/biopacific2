@@ -20,7 +20,8 @@ $hasVideo = !empty($facility['hero_video_id']);
       @if(!empty($facility['hero_video_webm']))
       <source src="{{ asset($facility['hero_video_webm']) }}" type="video/webm">
       @endif
-      <source src="{{ asset($facility['hero_video_mp4'] ?? 'videos/hero.mp4') }}" type="video/mp4">
+      {{--
+      <source src="{{ asset($facility['hero_video_mp4'] ?? 'videos/hero.mp4') }}" type="video/mp4"> --}}
       {{-- If the browser can't play the video, it will show the poster automatically --}}
     </video>
 
