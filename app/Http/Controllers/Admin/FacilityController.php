@@ -76,9 +76,32 @@ class FacilityController extends Controller
             // ...other validations...
         ]);
 
-        $facility->name = $request->input('name');
-        $facility->address = $request->input('address');
-        // ...update other fields...
+        // Log the incoming request value for hero_video_id
+        \Log::info('Facility update request', [
+            'all' => $request->all(),
+            'hero_video_id_in_request' => $request->input('hero_video_id'),
+        ]);
+
+        // Assign all fillable fields from top-level request (not all_data)
+        foreach ($facility->getFillable() as $key) {
+            $value = $request->input($key);
+            if ($value !== null) {
+                $facility->$key = $value;
+            }
+        }
+
+        // Log the value assigned to the model before save
+        \Log::info('Facility hero_video_id before save', [
+            'hero_video_id' => $facility->hero_video_id,
+        ]);
+
+        $facility->save();
+
+        // Log the value after save (reload from DB)
+        $fresh = Facility::find($facility->id);
+        \Log::info('Facility hero_video_id after save', [
+            'hero_video_id' => $fresh->hero_video_id,
+        ]);
 
         // Save active sections and variances
         $sections = $request->input('sections', []); // array of keys

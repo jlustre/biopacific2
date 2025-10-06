@@ -10,11 +10,12 @@
 ])
 @if($videoId)
 <!-- DEBUG: Video Modal Rendered (ID: {{ $modalId }}) -->
-<div id="{{ $modalId }}" class="fixed inset-0 z-[{{ $zIndex }}] flex items-start justify-center hidden">
-    <div class="absolute inset-0 bg-black/80"></div>
-    <div class="relative w-full max-w-5xl mx-4 flex justify-center items-center mt-[80px] z-10">
+<div id="{{ $modalId }}" class="fixed inset-0 z-[9999] flex items-start justify-center hidden">
+    <!-- Black mask overlay behind video container -->
+    <div class="absolute inset-0 bg-black/80 z-[9998]"></div>
+    <div class="relative w-full max-w-5xl mx-4 flex justify-center items-center mt-[80px] z-[10000]">
         <div
-            class="relative bg-white rounded-2xl shadow-2xl p-2 md:p-6 max-w-4xl w-[95vw] md:w-[70vw] max-h-[85vh] flex flex-col items-center">
+            class="relative bg-white rounded-2xl shadow-2xl p-0 md:p-2 max-w-4xl w-[95vw] md:w-[70vw] max-h-[85vh] flex flex-col items-center">
             <button id="{{ $closeBtnId }}"
                 class="absolute top-3 right-3 z-10 text-white bg-black/80 hover:bg-red-600 rounded-full p-2 md:p-3 shadow-lg focus:outline-none transition-all duration-150"
                 aria-label="Close video">

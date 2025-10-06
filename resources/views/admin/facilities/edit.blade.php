@@ -661,6 +661,19 @@ $sectionVariances[$key][] = $name;
                                     </div>
 
                                     <div>
+                                        <label for="hero_video_id"
+                                            class="block text-sm font-bold text-gray-700 mb-2">YouTube Video ID</label>
+                                        <input type="text" id="hero_video_id" name="hero_video_id"
+                                            value="{{ old('hero_video_id', $facility->hero_video_id) }}"
+                                            class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
+                                            placeholder="e.g. dQw4w9WgXcQ">
+                                        @error('hero_video_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                        <p class="text-sm text-gray-500 mt-1">Enter the YouTube video ID (the part after
+                                            v= in the URL).</p>
+                                    </div>
+
+                                    <div>
                                         <label for="about_image_url"
                                             class="block text-sm font-medium text-gray-700 mb-2">About
                                             Image URL</label>

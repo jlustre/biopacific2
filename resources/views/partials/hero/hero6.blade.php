@@ -8,6 +8,7 @@ $hasVideo = !empty($facility['hero_video_id']);
 @endphp
 
 <section class="relative isolate overflow-hidden">
+
     {{-- Background image with diagonal mask --}}
     <div class="absolute inset-0 -z-10">
         <img src="{{ $poster }}" alt="Residents and caregivers at {{ $facility['name'] ?? 'our facility' }}"
@@ -27,6 +28,20 @@ $hasVideo = !empty($facility['hero_video_id']);
             style="background: {{ $primary }}"></div>
         <div class="pointer-events-none absolute -bottom-28 -right-28 h-96 w-96 rounded-full blur-3xl opacity-20"
             style="background: {{ $accent }}"></div>
+
+        {{-- Phone number positioned at top right of the image, behind modal overlay --}}
+        <div class="absolute top-6 right-6 z-0">
+            @if(!empty($facility['phone']))
+            <a href="tel:{{ $facility['phone'] }}"
+                class="inline-flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur px-4 py-3 text-slate-800 hover:bg-white shadow-lg hover:shadow-xl transition text-lg font-semibold">
+                <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-2.26 1.13a11.05 11.05 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2H18C9.72 21 3 14.28 3 6V5z" />
+                </svg>
+                Call Us: {{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $facility['phone']) }}
+            </a>
+            @endif
+        </div>
     </div>
 
     {{-- Content container --}}
@@ -115,13 +130,32 @@ $hasVideo = !empty($facility['hero_video_id']);
                         </button>
                         @endif
                     </div>
+                    {{-- On small screens, show tours/location in one row below buttons, aligned left/right --}}
+                    <div class="block md:hidden mt-2 mb-2">
+                        <div class="flex justify-between gap-2 max-w-[350px] mx-auto">
+                            <div
+                                class="rounded-xl bg-white/30 backdrop-blur ring-1 ring-slate-200/30 shadow-sm p-1 md:p-3 w-[48%]">
+                                <div class="text-[10px] text-slate-600 uppercase tracking-wide">Tours</div>
+                                <div class="mt-0.5 text-sm font-bold text-slate-900">{{ $facility['hours'] ?? '9AM–7PM'
+                                    }}</div>
+                            </div>
+                            <div
+                                class="rounded-xl bg-white/30 backdrop-blur ring-1 ring-slate-200/30 shadow-sm p-1 md:p-3 w-[48%] text-right">
+                                <div class="text-[10px] text-slate-600 uppercase tracking-wide">Location</div>
+                                <div class="mt-0.5 text-sm font-bold text-slate-900">
+                                    {{ ($facility['city'] ?? '') }}@if(!empty($facility['state'])), {{
+                                    $facility['state'] }}@endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- Tours and Location cards positioned at bottom right --}}
-        <div class="absolute bottom-6 right-6 z-10">
-            <div class="grid grid-cols-1 gap-2 max-w-[200px]">
+        {{-- Tours and Location cards: responsive positioning --}}
+        <div class="absolute bottom-6 right-6 z-10 hidden md:block mb-2">
+            <div class="grid grid-cols-1 gap-2 max-w-[220px]">
                 <div class="rounded-xl bg-white/30 backdrop-blur ring-1 ring-slate-200/30 shadow-sm p-3">
                     <div class="text-[10px] text-slate-600 uppercase tracking-wide">Tours</div>
                     <div class="mt-0.5 text-sm font-bold text-slate-900">{{ $facility['hours'] ?? '9AM–7PM' }}</div>
@@ -134,6 +168,8 @@ $hasVideo = !empty($facility['hero_video_id']);
                 </div>
             </div>
         </div>
+
+
     </div>
 
     @if(!empty($facility['hero_video_id']))

@@ -18,7 +18,7 @@
                 <div>
                     <label for="name" class="block text-sm text-gray-700 mb-2 font-bold">Facility Name</label>
                     <input type="text" id="name" name="name" value="{{ old('name', $facility->name) }}"
-                        class="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @else border-gray-400 @enderror"
                         required>
                     @error('name')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -29,7 +29,7 @@
                 <div>
                     <label for="slug" class="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
                     <input type="text" id="slug" name="slug" value="{{ old('slug', $facility->slug) }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @else border-gray-300 @enderror"
                         required>
                     @error('slug')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -40,7 +40,7 @@
                 <div>
                     <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City *</label>
                     <input type="text" id="city" name="city" value="{{ old('city', $facility->city) }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('city') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('city') border-red-500 @else border-gray-300 @enderror"
                         required>
                     @error('city')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -51,7 +51,7 @@
                 <div>
                     <label for="state" class="block text-sm font-medium text-gray-700 mb-2">State *</label>
                     <input type="text" id="state" name="state" value="{{ old('state', $facility->state) }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('state') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('state') border-red-500 @else border-gray-300 @enderror"
                         required>
                     @error('state')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -62,7 +62,7 @@
                 <div>
                     <label for="beds" class="block text-sm font-medium text-gray-700 mb-2">Number of Beds</label>
                     <input type="number" id="beds" name="beds" value="{{ old('beds', $facility->beds) }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('beds') border-red-500 @enderror"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('beds') border-red-500 @else border-gray-300 @enderror"
                         min="0">
                     @error('beds')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -82,6 +82,7 @@
                 </div>
                 @endif
 
+
                 <!-- Hero Image -->
                 <div class="md:col-span-2">
                     <label for="hero_image" class="block text-sm font-medium text-gray-700 mb-2">
@@ -89,7 +90,7 @@
                     </label>
                     <input type="text" id="hero_image" name="hero_image"
                         value="{{ old('hero_image', $facility->hero_image_url) }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('hero_image') border-red-500 @enderror">
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('hero_image') border-red-500 @else border-gray-300 @enderror">
                     @error('hero_image')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -101,11 +102,25 @@
                     </p>
                 </div>
 
+                <!-- YouTube Video ID -->
+                <div class="md:col-span-2">
+                    <label for="hero_video_id" class="block text-sm font-medium text-gray-700 mb-2">YouTube Video
+                        ID</label>
+                    <input type="text" id="hero_video_id" name="hero_video_id"
+                        value="{{ old('hero_video_id', $facility->hero_video_id) }}"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('hero_video_id') border-red-500 @else border-gray-300 @enderror"
+                        placeholder="e.g. dQw4w9WgXcQ">
+                    @error('hero_video_id')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-sm text-gray-500 mt-1">Enter the YouTube video ID (the part after v= in the URL).</p>
+                </div>
+
                 <!-- Description -->
                 <div class="md:col-span-2">
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
                     <textarea id="description" name="description" rows="4"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @enderror">{{ old('description', $facility->description) }}</textarea>
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @else border-gray-300 @enderror">{{ old('description', $facility->description) }}</textarea>
                     @error('description')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror

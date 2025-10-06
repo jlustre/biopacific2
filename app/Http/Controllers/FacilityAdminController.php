@@ -169,6 +169,7 @@ class FacilityAdminController extends Controller
             'twitter' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
             'location_map' => 'nullable|string|max:1000',
+            'hero_video_id' => 'nullable|string|max:50',
             // 'webcontents' => 'array',
             'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
             'sections' => 'array',
@@ -210,6 +211,7 @@ class FacilityAdminController extends Controller
             'twitter' => $validated['twitter'],
             'instagram' => $validated['instagram'],
             'location_map' => $this->formatLocationMap($validated['location_map'] ?? null),
+            'hero_video_id' => $validated['hero_video_id'] ?? null,
             // Shutdown fields
             'is_shutdown' => $request->has('is_shutdown'),
             'shutdown_message' => $validated['shutdown_message'] ?? null,

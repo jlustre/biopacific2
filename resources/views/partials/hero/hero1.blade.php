@@ -19,7 +19,7 @@
     </div>
 
     <!-- Positioned content at left bottom -->
-    <div class="absolute left-0 bottom-24 z-10 w-full">
+    <div class="absolute left-0 bottom-24 z-0 w-full">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">
             <div class="max-w-xl bg-white/60 backdrop-blur rounded-2xl p-8 shadow-xl">
                 <!-- Add a dark text stroke for better contrast -->
