@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FacilityAdminController;
@@ -344,6 +344,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/{facility:slug}', [\App\Http\Controllers\FacilityAdminController::class, 'show'])->name('facilities.show');
     Route::get('/facilities/{facility}/edit', [\App\Http\Controllers\FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [\App\Http\Controllers\FacilityAdminController::class, 'update'])->name('facilities.update');
+    Route::post('/facilities/{facility}/services', [\App\Http\Controllers\FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
+    // ...existing code...
     Route::delete('/facilities/{facility}', [\App\Http\Controllers\FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
 
     // Web Contents Routes
@@ -375,6 +377,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     
     // Interactive HIPAA checklist for testing
     Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('admin.facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
+
+    // Service CRUD routes
+    Route::get('/services/create', [\App\Http\Controllers\Admin\ServiceController::class, 'create'])->name('services.create');
+    Route::get('/services/{service}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
+    Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
+    Route::delete('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('admin.service.destroy');
+
 });
 
 // AJAX endpoint for HIPAA flag updates
@@ -422,6 +432,7 @@ Route::post('/audit/export', [AuditController::class, 'export'])->name('audit.ex
 Route::get('/audit/stats', [AuditController::class, 'stats'])->name('audit.stats');
 
 // Tour Booking
+Route::get('/book', [TourController::class, 'showForm'])->name('tours.form');
 Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 
 // FAQ Section

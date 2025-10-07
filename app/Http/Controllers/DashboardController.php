@@ -11,7 +11,7 @@ class DashboardController extends Controller
     {
         // Get all active facilities
         $facilities = Facility::where('is_active', true)
-                             ->orderBy('name')
+                             ->orderBy('title')
                              ->get();
 
         // Group facilities by state for better organization

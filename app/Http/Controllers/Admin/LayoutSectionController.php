@@ -11,7 +11,7 @@ class LayoutSectionController extends Controller
 {
     public function index()
     {
-        $sections = LayoutSection::orderBy('name')->paginate(12);
+    $sections = LayoutSection::orderBy('name')->paginate(12);
         return view('admin.sections.index', compact('sections'));
     }
 

@@ -54,7 +54,7 @@ class FacilityController extends Controller
         $activeWebContent = $facility->webContent;
         $selectedLayoutTemplate = $activeWebContent->layout_template ?? 'default-template';
         $webContents = \App\Models\WebContent::where('facility_id', $facility->id)->get();
-        $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
+    $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
         return view('admin.facilities.edit', compact(
             'facility',
             'layoutTemplates',

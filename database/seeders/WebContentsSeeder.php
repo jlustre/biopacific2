@@ -23,7 +23,7 @@ class WebContentsSeeder extends Seeder
         $facilityCustomizations = [
             1 => [
                 'sections' => ['topbar', 'hero', 'about', 'services', 'rooms', 'gallery', 'news', 'testimonials', 'careers', 'book', 'contact', 'faqs', 'resources', 'footer'],
-                'variances' => ['default', 'default', 'default', 'default', 'default', 'default', 'default', 'default', 'default', 'book1', 'contact1', 'faqs1', 'default', 'default'],
+                'variances' => ['default', 'hero5', 'default', 'default', 'default', 'default', 'default', 'default', 'default', 'book1', 'contact1', 'faqs1', 'default', 'default'],
             ],
             2 => [
                 'sections' => ['topbar', 'hero', 'about', 'services', 'rooms', 'gallery', 'news', 'testimonials', 'careers', 'book', 'contact', 'faqs', 'resources', 'footer'],

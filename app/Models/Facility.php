@@ -6,9 +6,15 @@ use App\Models\Content;
 
 class Facility extends Model
 {
+
   public function colorScheme()
   {
     return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
+  }
+
+  public function services()
+  {
+    return $this->belongsToMany(Service::class, 'facility_service');
   }
 
   public function __toString()
@@ -67,7 +73,6 @@ class Facility extends Model
 
   // Existing relationships
   public function values() { return $this->hasMany(FacilityValue::class); }
-  public function services() { return $this->hasMany(Service::class)->orderBy('order'); }
   public function testimonials() { return $this->hasMany(Testimonial::class); }
   public function galleryImages() { return $this->hasMany(GalleryImage::class); }
 }

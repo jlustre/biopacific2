@@ -4,8 +4,17 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
+use App\Models\Service;
+
 class TourController extends Controller
 {
+    public function showForm()
+    {
+        // Fetch active services for dynamic interests
+        $services = Service::where('is_active', true)->orderBy('order')->get();
+        return view('partials.book.book1', compact('services'));
+    }
+
     public function store(Request $request)
     {
         // Validate input

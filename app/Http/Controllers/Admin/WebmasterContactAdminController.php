@@ -54,7 +54,7 @@ class WebmasterContactAdminController extends Controller
         $contacts = $query->orderByDesc('created_at')->paginate(20)->appends(request()->query());
 
         // For filter dropdowns
-        $facilities = \App\Models\Facility::orderBy('name')->get(['id','name']);
+    $facilities = \App\Models\Facility::orderBy('name')->get(['id','name']);
 
         return view('admin.webmaster_contacts.index', compact('contacts', 'facilities'));
     }

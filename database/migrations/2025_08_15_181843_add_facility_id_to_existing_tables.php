@@ -11,14 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add facility_id to services table if it doesn't exist
-        if (!Schema::hasColumn('services', 'facility_id')) {
-            Schema::table('services', function (Blueprint $table) {
-                $table->foreignId('facility_id')->after('id')->constrained()->onDelete('cascade');
-                $table->index(['facility_id', 'created_at']);
-            });
-        }
-
         // Add facility_id to testimonials table if it doesn't exist
         if (!Schema::hasColumn('testimonials', 'facility_id')) {
             Schema::table('testimonials', function (Blueprint $table) {
@@ -49,11 +41,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('services', function (Blueprint $table) {
-            $table->dropForeign(['facility_id']);
-            // $table->dropIndex(['facility_id', 'created_at']); // Commented out to prevent migration error
-            $table->dropColumn('facility_id');
-        });
 
         Schema::table('testimonials', function (Blueprint $table) {
             $table->dropForeign(['facility_id']);

@@ -10,8 +10,7 @@ class Service extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'facility_id',
-        'name',
+        'title',
         'description',
         'icon',
         'image_url',
@@ -24,4 +23,9 @@ class Service extends Model
         'is_featured' => 'boolean',
         'is_active' => 'boolean'
     ];
+
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class, 'facility_service');
+    }
 }

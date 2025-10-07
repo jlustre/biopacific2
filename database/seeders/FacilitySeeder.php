@@ -47,10 +47,10 @@ class FacilitySeeder extends Seeder
     'headline'=>'Healing With Heart in San Jose',
     'subheadline'=>'Providing compassionate rehabilitation and skilled nursing care you can trust.',
     'address'=>'2065 LOS GATOS-ALMADEN ROAD','phone'=>'4083779275','city'=>'SAN JOSE','state'=>'CA','zip'=>'95124','beds'=>77,
-    'color_scheme_id'=> 1,
+    'color_scheme_id'=> 4,
     'location_map'=> 'https://maps.google.com/maps?q=Almaden+Health+and+Rehabilitation++Center,2065+LOS+GATOS-ALMADEN+ROAD%2CSAN+JOSE%2CCA+95124&output=embed',
     'domain'=>'almadenhealthandrehabilitationcenter.com','subdomain'=>'almadenhrc.com','years'=>'20', 'facility_image' => 'almadenhcc.jpg', 'hours'=>'8:30 AM - 7:30 PM', 
-    'hero_video_id'=>'u31qwQUeGuM', 'hero_image_url' => 'hero.jpg'
+    'hero_video_id'=>'uLhPSFyuhbE', 'hero_image_url' => 'hero7.jpg'
   ],
   [
     'name'=>'Autumn Hills Health Care Center',
@@ -298,7 +298,8 @@ $bplogo = 'images/bplogo.png';
         FacilityValue::create(['facility_id'=>$facility->id,'value'=>$v]);
       }
       foreach ($services as $svc) {
-        Service::create($svc + ['facility_id'=>$facility->id]);
+        $service = Service::firstOrCreate(['title' => $svc['title']], $svc);
+        $facility->services()->syncWithoutDetaching([$service->id]);
       }
       foreach ($galleryImages as $img) {
         GalleryImage::create(['facility_id'=>$facility->id,'thumbnail_url'=>$img]);

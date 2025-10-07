@@ -120,6 +120,7 @@ class FacilityAdminController extends Controller
             ->get();
         $categories = $faqs->pluck('category')->filter()->unique()->values();
         $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
+    $allServices = \App\Models\Service::orderBy('title')->get();
         return view('admin.facilities.edit', compact(
             'facility',
             'facilities', 
@@ -130,7 +131,8 @@ class FacilityAdminController extends Controller
             'selectedSections',
             'faqs',
             'categories',
-            'colorSchemes'
+            'colorSchemes',
+            'allServices'
         ));
     }
 
@@ -145,7 +147,7 @@ class FacilityAdminController extends Controller
             'all_data' => $request->all()
         ]);
 
-        $validated = $request->validate([
+    $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:500',
             'domain' => 'required|string|max:255|unique:facilities,domain,' . $facility->id,
@@ -252,8 +254,13 @@ class FacilityAdminController extends Controller
 
         Log::info('WebContent update result', ['result' => $result]);
 
-        return redirect()->route('admin.facilities.edit', $facility->id)
-                        ->with('success', 'Facility updated successfully!');
+    // Sync services if present
+    $serviceIds = $request->input('services', []);
+    \Log::info('Facility update: incoming services', ['services' => $serviceIds, 'facility_id' => $facility->id]);
+    $syncResult = $facility->services()->sync($serviceIds);
+    \Log::info('Facility update: sync result', ['result' => $syncResult]);
+    return redirect()->route('admin.facilities.edit', $facility->id)
+        ->with('success', 'Facility updated successfully!');
     }
 
     // public function preview(Facility $facility)
@@ -594,5 +601,14 @@ class FacilityAdminController extends Controller
     {
         $facilities = Facility::orderBy('name')->get();
         return view('admin.facilities.webcontents.careers', compact('facilities'));
+    }
+    /**
+     * Update the services available for a facility.
+     */
+    public function updateServices(Request $request, Facility $facility)
+    {
+        $serviceIds = $request->input('services', []);
+        $facility->services()->sync($serviceIds);
+        return redirect()->route('admin.facilities.edit', $facility->slug)->with('success', 'Services updated successfully.');
     }
 }
