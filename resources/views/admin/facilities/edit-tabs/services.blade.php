@@ -4,7 +4,8 @@
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Services</h3>
             <a href="{{ route('admin.services.create', ['facility_id' => $facility->id]) }}"
-                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Service</a>
+                class="text-white px-4 py-2 rounded-lg transition-colors font-medium bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                style="border: 2px solid var(--color-accent);">Add Service</a>
         </div>
         <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             @foreach($allServices->unique('title') as $service)
@@ -17,21 +18,9 @@
                 <div class="flex items-center gap-2">
                     <a href="{{ route('admin.services.edit', $service->id) }}"
                         class="ml-2 text-blue-600 hover:underline text-sm">Edit</a>
-                    <form method="POST" action="" class="inline-block"
-                        onsubmit="return confirmDeleteService({{ $service->facilities()->count() }});">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit"
-                            class="ml-2 text-red-600 hover:underline text-sm bg-transparent border-none p-0">Delete</button>
-                    </form>
-                    <script>
-                        function confirmDeleteService(facilityCount) {
-                            if (facilityCount > 0) {
-                                return confirm('Warning: This service is still assigned to ' + facilityCount + ' facility(s). Are you sure you want to delete?');
-                            }
-                            return confirm('Are you sure you want to delete this service?');
-                        }
-                    </script>
+                    {{-- <a href="#" class="ml-2 text-red-600 hover:underline text-sm"
+                        onclick="event.preventDefault(); document.getElementById('delete-service-{{ $service->id }}').submit(); return false;">Delete</a>
+                    --}}
                 </div>
             </div>
             @endforeach

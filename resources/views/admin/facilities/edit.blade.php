@@ -132,7 +132,7 @@ $sectionVariances[$key][] = $name;
                     @include('admin.facilities.edit-tabs.colors', ['facility' => $facility])
 
                     <!-- Services Tab -->
-                    {{-- @include('admin.facilities.edit-tabs.services', ['facility' => $facility]) --}}
+                    @include('admin.facilities.edit-tabs.services', ['facility' => $facility])
 
                     <!-- Social Media Tab -->
                     @include('admin.facilities.edit-tabs.social', ['facility' => $facility])
@@ -153,6 +153,26 @@ $sectionVariances[$key][] = $name;
                 </button>
             </div>
         </form>
+
+        <!-- Service Delete Forms: Place OUTSIDE the main facility form -->
+        @if(isset($allServices) && $allServices->count())
+        <div class="mt-8">
+            <h4 class="text-lg font-semibold mb-4">Delete Service</h4>
+            @foreach($allServices->unique('title') as $service)
+            <div class="flex items-center gap-2 mb-2">
+                <span class="font-medium">{{ $service->title }}</span>
+                <form method="POST" action="{{ route('admin.services.destroy', $service->id) }}" class="inline-block"
+                    id="delete-service-{{ $service->id }}"
+                    onsubmit="return confirmDeleteService({{ $service->facilities()->count() }});">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                        class="ml-2 text-red-600 hover:underline text-sm bg-transparent border-none p-0">Delete</button>
+                </form>
+            </div>
+            @endforeach
+        </div>
+        @endif
     </div>
 </div>
 

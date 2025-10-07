@@ -10,9 +10,9 @@ class DashboardController extends Controller
     public function index()
     {
         // Get all active facilities
-        $facilities = Facility::where('is_active', true)
-                             ->orderBy('title')
-                             ->get();
+            $facilities = Facility::where('is_active', true)
+                                 ->orderBy('name')
+                                 ->get();
 
         // Group facilities by state for better organization
         $facilitiesByState = $facilities->groupBy('state');

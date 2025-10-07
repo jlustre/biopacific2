@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             FaqSeeder::class,
             TestimonialSeeder::class,
             ServiceSeeder::class,
+            FacilityServiceSeeder::class,
         ]);
 
         // User::factory()->create([

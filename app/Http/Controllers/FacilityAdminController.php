@@ -256,9 +256,7 @@ class FacilityAdminController extends Controller
 
     // Sync services if present
     $serviceIds = $request->input('services', []);
-    \Log::info('Facility update: incoming services', ['services' => $serviceIds, 'facility_id' => $facility->id]);
     $syncResult = $facility->services()->sync($serviceIds);
-    \Log::info('Facility update: sync result', ['result' => $syncResult]);
     return redirect()->route('admin.facilities.edit', $facility->id)
         ->with('success', 'Facility updated successfully!');
     }
