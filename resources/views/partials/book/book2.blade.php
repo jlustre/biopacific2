@@ -210,13 +210,12 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                             <fieldset>
                                 <legend class="text-base font-medium text-slate-700">Areas of interest</legend>
                                 <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    @foreach(['Skilled Nursing','Rehabilitation','Memory Care','Long-term Care','Dining
-                                    & Nutrition','Activities'] as $opt)
+                                    @foreach($services as $service)
                                     <label
                                         class="inline-flex items-center gap-2 rounded-xl border border-slate-500 bg-slate-50 px-3 py-2 text-base">
-                                        <input type="checkbox" name="interests[]" value="{{ $opt }}"
+                                        <input type="checkbox" name="interests[]" value="{{ $service->title }}"
                                             class="rounded border-slate-500 focus:border-slate-600 text-sky-600 focus:ring-sky-500">
-                                        <span>{{ $opt }}</span>
+                                        <span>{{ $service->title }}</span>
                                     </label>
                                     @endforeach
                                 </div>

@@ -24,7 +24,8 @@
 @include('partials.services.' . ($sectionVariances['services'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
-'accent' => $accent
+'accent' => $accent,
+'services' => $services ?? []
 ])
 @endif
 
@@ -72,7 +73,8 @@
 @include('partials.book.' . ($sectionVariances['book'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
-'accent' => $accent
+'accent' => $accent,
+'services' => $services ?? []
 ])
 @endif
 

@@ -81,7 +81,7 @@ $sectionVariances[$key][] = $name;
                 </div>
                 <div class="flex gap-3">
                     <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
-                        class="bg-gray-100 text-gray-700 px-2 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                        class="bg-teal-100 text-gray-700 px-2 py-2 rounded-lg hover:bg-teal-200 transition-colors text-sm font-medium">
                         Preview Site
                     </a>
                 </div>
@@ -155,7 +155,7 @@ $sectionVariances[$key][] = $name;
         </form>
 
         <!-- Service Delete Forms: Place OUTSIDE the main facility form -->
-        @if(isset($allServices) && $allServices->count())
+        {{-- @if(isset($allServices) && $allServices->count())
         <div class="mt-8">
             <h4 class="text-lg font-semibold mb-4">Delete Service</h4>
             @foreach($allServices->unique('title') as $service)
@@ -172,7 +172,7 @@ $sectionVariances[$key][] = $name;
             </div>
             @endforeach
         </div>
-        @endif
+        @endif --}}
     </div>
 </div>
 

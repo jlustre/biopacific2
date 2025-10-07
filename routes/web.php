@@ -93,7 +93,8 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
         ->orderBy('is_featured', 'desc')
         ->orderBy('created_at', 'desc')
         ->get();
-
+    $services = \App\Models\Service::orderBy('title')->get();
+  
     return view('welcome', [
         'facility' => $facility->toArray(),
         'primary' => $colors['primary'],
@@ -101,6 +102,7 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
         'accent' => $colors['accent'],
         'sections' => $sections,
         'sectionVariances' => $sectionVariances,
+        'services' => $services,
         'layoutTemplate' => $layoutTemplate,
         'faqs' => $faqs,
         'categories' => $categories,

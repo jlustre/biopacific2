@@ -35,18 +35,9 @@
       {{-- Left: Image collage + years badge --}}
       <div class="lg:col-span-5">
         <div class="grid grid-cols-2 gap-3 sm:gap-4">
-          <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg flex items-start">
-            <img src="{{ asset('images/nursehuggingpatient.jpg') }}" alt="Nurse supporting a resident"
-              style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
-          </div>
-          <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg flex items-start">
-            <img src="{{ asset('images/recreation_activities-room.png') }}"
-              alt="Residents enjoying recreation activities"
-              style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
-          </div>
           <div class="aspect-[3/2] overflow-hidden rounded-2xl shadow-lg col-span-2 relative">
-            <img src="{{ asset('images/physical-therapy-session.png') }}" alt="Physical therapy session"
-              class="h-full w-full object-cover max-w-full h-auto block">
+            <img src="{{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }}"
+              alt="Physical therapy session" class="h-full w-full object-cover max-w-full h-auto block">
             <div class="absolute bottom-4 right-4 z-10">
               <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
                 <div class="text-2xl md:text-3xl font-black" style="color: {{ $accent }}">
@@ -56,6 +47,16 @@
               </div>
             </div>
           </div>
+          <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg flex items-start">
+            <img src="{{ asset('images/nursehuggingpatient.jpg') }}" alt="Nurse supporting a resident"
+              style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
+          </div>
+          <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg flex items-start">
+            <img src="{{ asset('images/recreation_activities-room.png') }}"
+              alt="Residents enjoying recreation activities"
+              style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
+          </div>
+
         </div>
       </div>
 

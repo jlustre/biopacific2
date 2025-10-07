@@ -95,72 +95,20 @@
                     <div>
                         <label class="block text-base font-medium text-slate-700 mb-2">Services of Interest</label>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach($services ?? [] as $service)
                             <div class="flex items-center">
-                                <input type="checkbox" id="service-assisted-living" name="services[]"
-                                    value="Assisted Living" class="accent-blue-600 mr-2">
-                                <label for="service-assisted-living" class="text-slate-700">Assisted Living</label>
+                                <input type="checkbox" id="service-{{ Str::slug($service->title) }}" name="services[]"
+                                    value="{{ $service->title }}" class="accent-blue-600 mr-2">
+                                <label for="service-{{ Str::slug($service->title) }}" class="text-slate-700">{{
+                                    $service->title }}</label>
                             </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-memory-care" name="services[]" value="Memory Care"
-                                    class="accent-blue-600 mr-2">
-                                <label for="service-memory-care" class="text-slate-700">Memory Care</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-respite-care" name="services[]" value="Respite Care"
-                                    class="accent-blue-600 mr-2">
-                                <label for="service-respite-care" class="text-slate-700">Respite Care</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-independent-living" name="services[]"
-                                    value="Independent Living" class="accent-blue-600 mr-2">
-                                <label for="service-independent-living" class="text-slate-700">Independent
-                                    Living</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-skilled-nursing" name="services[]"
-                                    value="Skilled Nursing" class="accent-blue-600 mr-2">
-                                <label for="service-skilled-nursing" class="text-slate-700">Skilled Nursing</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-rehabilitation" name="services[]"
-                                    value="Rehabilitation" class="accent-blue-600 mr-2">
-                                <label for="service-rehabilitation" class="text-slate-700">Rehabilitation</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-hospice-care" name="services[]" value="Hospice Care"
-                                    class="accent-blue-600 mr-2">
-                                <label for="service-hospice-care" class="text-slate-700">Hospice Care</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-palliative-care" name="services[]"
-                                    value="Palliative Care" class="accent-blue-600 mr-2">
-                                <label for="service-palliative-care" class="text-slate-700">Palliative Care</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-adult-day-care" name="services[]"
-                                    value="Adult Day Care" class="accent-blue-600 mr-2">
-                                <label for="service-adult-day-care" class="text-slate-700">Adult Day Care</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-home-care" name="services[]" value="Home Care"
-                                    class="accent-blue-600 mr-2">
-                                <label for="service-home-care" class="text-slate-700">Home Care</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-wellness-programs" name="services[]"
-                                    value="Wellness Programs" class="accent-blue-600 mr-2">
-                                <label for="service-wellness-programs" class="text-slate-700">Wellness Programs</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="service-other" name="services[]" value="Other"
-                                    class="accent-blue-600 mr-2">
-                                <label for="service-other" class="text-slate-700">Other</label>
-                            </div>
+                            @endforeach
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 bg-yellow-100 p-2">
                         <input type="checkbox" id="phi_ack" name="phi_ack" required class="accent-blue-600">
-                        <label for="phi_ack" class="text-sm text-slate-700">I understand not to include Protected Health
+                        <label for="phi_ack" class="text-sm text-slate-700">I understand not to include
+                            Protected Health
                             Information (PHI).</label>
                     </div>
                     <div class="text-sm text-slate-600 mb-1">

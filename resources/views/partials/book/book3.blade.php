@@ -27,6 +27,14 @@
                         <strong>Estimated duration:</strong> 30–45 minutes
                     </div>
                 </div>
+                <!-- Booking Only Statement -->
+                <div class="mb-3 mt-3">
+                    <div class="rounded-xl bg-blue-50 p-3 ring-1 ring-blue-200 text-xs text-blue-800 text-center">
+                        <strong>Note:</strong> Please use the form in this section, only if you are booking a tour.<br>
+                        For all other inquiries, <a href="#contact"
+                            class="underline text-blue-700 hover:text-blue-900">contact us here</a>.
+                    </div>
+                </div>
                 <div class="mt-5 flex flex-col sm:flex-row gap-3 justify-center items-center">
                     <div
                         class="flex items-center gap-2 rounded-2xl bg-amber-50 px-4 py-2 ring-2 ring-amber-200 text-sm font-semibold text-amber-900 shadow-sm">
@@ -58,14 +66,6 @@
                     <h2 class="text-2xl md:text-3xl font-extrabold text-blue-900 mb-2 text-center">Book a Tour</h2>
                     <p class="text-blue-700 mb-5 text-center text-sm">Schedule a visit to experience our facility
                         firsthand. Fill out the form and our team will contact you soon.</p>
-                    <!-- Booking Only Statement -->
-                    <div class="mb-3">
-                        <div class="rounded-xl bg-blue-50 p-3 ring-1 ring-blue-200 text-xs text-blue-800 text-center">
-                            <strong>Note:</strong> Please use this form only if you are booking a tour.<br>
-                            For all other inquiries, <a href="/contact"
-                                class="underline text-blue-700 hover:text-blue-900">contact us here</a>.
-                        </div>
-                    </div>
                     <!-- PHI Warning -->
                     <div class="mb-4">
                         <div
@@ -76,19 +76,30 @@
                     </div>
                     <form method="POST" action="{{ route('tours.store') }}" class="space-y-4">
                         @csrf
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label for="name" class="block text-blue-800 font-semibold mb-1 text-xs">Full
-                                    Name</label>
-                                <input type="text" id="name" name="name" required
-                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
-                            </div>
-                            <div>
-                                <label for="email" class="block text-blue-800 font-semibold mb-1 text-xs">Email</label>
-                                <input type="email" id="email" name="email" required
-                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
-                            </div>
+                        <div>
+                            <label for="name" class="block text-blue-800 font-semibold mb-1 text-xs">Full
+                                Name</label>
+                            <input type="text" id="name" name="name" required
+                                class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
                         </div>
+                        <div>
+                            <label for="email" class="block text-blue-800 font-semibold mb-1 text-xs">Email</label>
+                            <input type="email" id="email" name="email" required
+                                class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
+                        </div>
+                        <fieldset>
+                            <legend class="block text-blue-800 font-semibold mb-2 text-xs">Areas of Interest</legend>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                                @foreach($services as $service)
+                                <label
+                                    class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-slate-50 px-3 py-2 text-sm">
+                                    <input type="checkbox" name="interests[]" value="{{ $service->title }}"
+                                        class="rounded border-blue-400 text-blue-600 focus:ring-blue-500">
+                                    <span>{{ $service->title }}</span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </fieldset>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label for="phone" class="block text-blue-800 font-semibold mb-1 text-xs">Phone</label>
@@ -121,8 +132,9 @@
                             Tour</button>
                     </form>
                 </div>
-
             </div>
+
         </div>
+    </div>
     </div>
 </section>

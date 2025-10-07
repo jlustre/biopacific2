@@ -74,6 +74,7 @@ class FacilityAdminController extends Controller
         $categories = $faqs->pluck('category')->filter()->unique()->values();
         // Get active webcontent and layout info for welcome view
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+        $services = \App\Models\Service::orderBy('title')->get();
         $sections = [];
         $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
         if ($activeWebContent && $activeWebContent->sections) {
@@ -88,7 +89,7 @@ class FacilityAdminController extends Controller
         $primary = $scheme->primary_color ?? '#0EA5E9';
         $secondary = $scheme->secondary_color ?? '#1E293B';
         $accent = $scheme->accent_color ?? '#F59E0B';
-        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials', 'primary', 'secondary', 'accent'));
+        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials', 'primary', 'secondary', 'accent', 'services'));
     }
 
     public function edit($identifier)
@@ -120,7 +121,8 @@ class FacilityAdminController extends Controller
             ->get();
         $categories = $faqs->pluck('category')->filter()->unique()->values();
         $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
-    $allServices = \App\Models\Service::orderBy('title')->get();
+        $allServices = \App\Models\Service::orderBy('title')->get();
+        $services = \App\Models\Service::orderBy('title')->get();
         return view('admin.facilities.edit', compact(
             'facility',
             'facilities', 
@@ -132,6 +134,7 @@ class FacilityAdminController extends Controller
             'faqs',
             'categories',
             'colorSchemes',
+            'services',
             'allServices'
         ));
     }

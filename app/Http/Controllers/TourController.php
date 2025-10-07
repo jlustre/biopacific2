@@ -8,11 +8,11 @@ use App\Models\Service;
 
 class TourController extends Controller
 {
-    public function showForm()
+    public function showForm($view = 'book1')
     {
         // Fetch active services for dynamic interests
-        $services = Service::where('is_active', true)->orderBy('order')->get();
-        return view('partials.book.book1', compact('services'));
+        $services = Service::orderBy('title')->get();
+        return view('partials.book.' . $view, compact('services'));
     }
 
     public function store(Request $request)

@@ -11,7 +11,8 @@ class FacilityController extends Controller
     public function index()
     {
         $facilities = Facility::all();
-        return view('facilities.index', compact('facilities'));
+        $services = \App\Models\Service::orderBy('title')->get();
+        return view('facilities.index', compact('facilities', 'services'));
     }
 
     public function create()

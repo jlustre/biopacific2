@@ -188,13 +188,12 @@
                     <fieldset class="mt-4">
                         <legend class="text-sm font-medium text-slate-700">Areas of interest</legend>
                         <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            @foreach(['Skilled Nursing','Rehabilitation','Memory Care','Long-term Care','Dining &
-                            Nutrition','Activities'] as $opt)
+                            @foreach($services as $service)
                             <label
                                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                                <input type="checkbox" name="interests[]" value="{{ $opt }}"
+                                <input type="checkbox" name="interests[]" value="{{ $service->title }}"
                                     class="rounded-md border border-gray-400 text-sky-600 focus:ring-sky-500 px-2 py-1">
-                                <span>{{ $opt }}</span>
+                                <span>{{ $service->title }}</span>
                             </label>
                             @endforeach
                         </div>

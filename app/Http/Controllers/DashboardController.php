@@ -80,6 +80,7 @@ class DashboardController extends Controller
     $primary = $colorScheme->primary_color ?? $facility->primary_color ?? '#059669';
     $secondary = $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B';
     $accent = $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15';
+    $services = \App\Models\Service::orderBy('title')->get();
         return view('welcome', [
             'facility' => $facility,
             'layoutTemplate' => $facility->layout_template ?? 'default-template',
@@ -91,6 +92,7 @@ class DashboardController extends Controller
             'primary' => $primary,
             'secondary' => $secondary,
             'accent' => $accent,
+            'services' => $services,
         ]);
     }
 

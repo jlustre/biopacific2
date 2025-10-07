@@ -76,6 +76,7 @@ class HomeController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
     }
+    $services = \App\Models\Service::orderBy('title')->get();
     
     return view('welcome', [
         'facility' => $facility,
@@ -84,6 +85,7 @@ class HomeController extends Controller
         'faqs' => $faqs,
         'categories' => $categories,
         'testimonials' => $testimonials,
+        'services' => $services,
         'primary' => $colors['primary'],
         'secondary' => $colors['secondary'],
         'accent' => $colors['accent']

@@ -1,4 +1,4 @@
-<section class="py-16 sm:py-24 bg-gradient-to-br from-blue-50 to-green-50">
+<section class="py-16 sm:py-24 bg-gradient-to-br from-blue-50 to-green-50" id="about">
     <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- SectionHeader -->
         @include('partials.section_header', [
@@ -14,12 +14,10 @@
                 <!-- Image Side -->
                 <div class="lg:col-span-1 relative">
                     <div class="relative overflow-hidden rounded-3xl shadow-2xl">
-                        <img src="{{ asset('images/nursehuggingpatient.jpg') }}"
-                            alt="Caring nursing staff helping elderly residents"
-                            class="w-full h-80 lg:h-96 object-cover">
+                        <img src="{{ asset('images/'.($facility['about_image_url'] ?? 'nursehuggingpatient.jpg')) }}"
+                            alt="About Us" class="w-full h-80 lg:h-96 object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
-                    <!-- Floating Card -->
                     <div
                         class="absolute -bottom-4 -right-4 bg-white p-4 lg:p-6 rounded-2xl shadow-xl border-l-4 border-accent">
                         <div class="text-2xl lg:text-3xl font-bold text-accent">{{ $facility['years']
@@ -35,66 +33,96 @@
                         {{ $facility['about_text'] }}
                     </p>
                     @endif
-                    <div class="space-y-4">
-                        <h3 class="text-3xl font-bold text-secondary">Our Mission</h3>
-                        <p class="text-slate-700 leading-relaxed text-xl">
-                            Founded on the principles of dignity, respect, and clinical excellence, <strong>{{
-                                $facility['name']
-                                }}</strong> provides
-                            comprehensive skilled nursing, rehabilitation, and long-term care services. We believe every
-                            resident
-                            deserves personalized attention and compassionate care in a home-like environment.
-                        </p>
+                    <!-- Tabs for Mission, Vision, Values -->
+                    <div x-data="{ tab: 'mission' }" class="space-y-4">
+                        <div class="flex space-x-2 mb-4">
+                            <button @click="tab = 'mission'"
+                                :style="tab === 'mission' ? 'background-color: {{ $primary }}; color: #fff;' : 'background-color: #fff; color: {{ $primary }};'"
+                                class="px-4 py-2 rounded-t-lg font-semibold border">Our Mission</button>
+                            <button @click="tab = 'vision'"
+                                :style="tab === 'vision' ? 'background-color:  {{ $secondary }}; color: #fff;' : 'background-color: #fff; color: {{ $secondary }};'"
+                                class="px-4 py-2 rounded-t-lg font-semibold border">Our Vision</button>
+                            <button @click="tab = 'values'"
+                                :style="tab === 'values' ? 'background-color:  {{ $accent }}; color: #fff;' : 'background-color: #fff; color: {{ $accent }};'"
+                                class="px-4 py-2 rounded-t-lg font-semibold border">Our Values</button>
+                        </div>
+                        <div x-show="tab === 'mission'" class="p-4 bg-white rounded-b-lg shadow">
+                            <h3 class="text-3xl font-bold mb-2" style="color: {{ $secondary }};">Our
+                                Mission</h3>
+                            <p class="text-slate-700 leading-relaxed text-xl">
+                                Founded on the principles of dignity, respect, and clinical excellence, <strong>{{
+                                    $facility['name'] }}</strong> provides comprehensive skilled nursing,
+                                rehabilitation, and long-term care services. We believe every resident deserves
+                                personalized attention and compassionate care in a home-like environment.
+                            </p>
+                        </div>
+                        <div x-show="tab === 'vision'" x-cloak class="p-4 bg-white rounded-b-lg shadow">
+                            <h3 class="text-3xl font-bold mb-2" style="color: {{ $secondary }};">Our
+                                Vision</h3>
+                            <p class="text-slate-700 leading-relaxed text-xl">
+                                To be the leading provider of compassionate, innovative, and personalized care,
+                                empowering residents to live with dignity and purpose in a nurturing environment.
+                            </p>
+                        </div>
+                        <div x-show="tab === 'values'" x-cloak class="p-4 bg-white rounded-b-lg shadow">
+                            <h3 class="text-3xl font-bold mb-2" style="color: {{ $secondary }};">Our
+                                Values</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-6">
+                                <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
+                                    <div
+                                        class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="font-semibold text-primary">Integrity</div>
+                                    <p class="text-sm text-slate-600 mt-1">Honesty and transparency</p>
+                                </div>
+                                <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
+                                    <div
+                                        class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div class="font-semibold text-primary">Compassion</div>
+                                    <p class="text-sm text-slate-600 mt-1">Caring with heart</p>
+                                </div>
+                                <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
+                                    <div
+                                        class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="font-semibold text-primary">Excellence</div>
+                                    <p class="text-sm text-slate-600 mt-1">Quality in everything</p>
+                                </div>
+                                <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
+                                    <div
+                                        class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div class="font-semibold text-primary">Community</div>
+                                    <p class="text-sm text-slate-600 mt-1">Building connections</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <!-- Key Values -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-6">
-                        <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-                            <div
-                                class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="font-semibold text-primary">Integrity</div>
-                            <p class="text-sm text-slate-600 mt-1">Honesty and transparency</p>
-                        </div>
-                        <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-                            <div
-                                class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="font-semibold text-primary">Compassion</div>
-                            <p class="text-sm text-slate-600 mt-1">Caring with heart</p>
-                        </div>
-                        <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-                            <div
-                                class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="font-semibold text-primary">Excellence</div>
-                            <p class="text-sm text-slate-600 mt-1">Quality in everything</p>
-                        </div>
-                        <div class="text-center p-4 bg-white rounded-xl shadow-sm border">
-                            <div
-                                class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="font-semibold text-primary">Community</div>
-                            <p class="text-sm text-slate-600 mt-1">Building connections</p>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
