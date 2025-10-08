@@ -89,7 +89,20 @@ class FacilityAdminController extends Controller
         $primary = $scheme->primary_color ?? '#0EA5E9';
         $secondary = $scheme->secondary_color ?? '#1E293B';
         $accent = $scheme->accent_color ?? '#F59E0B';
-        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials', 'primary', 'secondary', 'accent', 'services'));
+
+        // Fetch news items for the facility (same as edit)
+        $newsItems = $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
+            return [
+                'title' => $item->title,
+                'desc' => $item->content,
+                'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
+                'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
+                'type' => $item->scope,
+                'color' => 'bg-blue-500', // You can set color logic here
+            ];
+        })->toArray();
+
+        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials', 'primary', 'secondary', 'accent', 'services', 'newsItems'));
     }
 
     public function edit($identifier)
@@ -123,6 +136,19 @@ class FacilityAdminController extends Controller
         $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
         $allServices = \App\Models\Service::orderBy('title')->get();
         $services = \App\Models\Service::orderBy('title')->get();
+
+        // Fetch news items for the facility
+        $newsItems = $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
+            return [
+                'title' => $item->title,
+                'desc' => $item->content,
+                    'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
+                    'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
+                'type' => $item->scope,
+                'color' => 'bg-blue-500', // You can set color logic here
+            ];
+        })->toArray();
+
         return view('admin.facilities.edit', compact(
             'facility',
             'facilities', 
@@ -136,6 +162,7 @@ class FacilityAdminController extends Controller
             'colorSchemes',
             'services',
             'allServices'
+            ,'newsItems'
         ));
     }
 

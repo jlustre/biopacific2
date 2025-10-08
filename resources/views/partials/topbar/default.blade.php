@@ -5,10 +5,10 @@
       <!-- Logo and site name -->
       <div class="flex items-center justify-start min-w-0">
         <span
-          class="inline-flex h-8 w-8 xs:h-10 xs:w-10 items-center justify-center bg-primary/10 text-primary font-bold mr-2 ml-0 flex-shrink-0">
+          class="inline-flex items-center justify-center bg-primary/10 text-primary font-bold mr-2 ml-0 flex-shrink-0">
           <a href="#top" class="flex items-center gap-1">
             <img src="{{ asset('images/bplogo.png') }}" alt="Logo"
-              class="h-8 w-8 xs:h-10 xs:w-10 sm:h-14 lg:h-16 object-contain">
+              class="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-16 lg:w-16 object-contain">
           </a>
         </span>
         <a href="#top" class="flex items-center gap-1 min-w-0 max-w-[70vw]">

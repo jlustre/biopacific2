@@ -34,9 +34,9 @@ return new class extends Migration
         });
 
         // Just ensure the domain column is nullable if needed
-        $facilitiesWithoutDomain = \App\Models\Facility::whereNull('domain')->get();
+        $facilitiesWithoutDomain = DB::table('facilities')->whereNull('domain')->get();
         foreach ($facilitiesWithoutDomain as $index => $facility) {
-            $facility->update([
+            DB::table('facilities')->where('id', $facility->id)->update([
                 'domain' => $facility->slug ? $facility->slug . '.example.com' : 'facility' . ($index + 1) . '.example.com',
                 'subdomain' => $facility->slug ?: 'facility' . ($index + 1),
                 'is_active' => true,

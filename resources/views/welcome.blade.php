@@ -49,7 +49,8 @@
 @include('partials.news.' . ($sectionVariances['news'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
-'accent' => $accent
+'accent' => $accent,
+'newsItems' => $newsItems
 ])
 @endif
 

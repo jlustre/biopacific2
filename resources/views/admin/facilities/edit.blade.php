@@ -137,6 +137,9 @@ $sectionVariances[$key][] = $name;
                     <!-- Social Media Tab -->
                     @include('admin.facilities.edit-tabs.social', ['facility' => $facility])
 
+                    <!-- News Tab -->
+                    @include('admin.facilities.edit-tabs.news', ['facility' => $facility])
+
                     <!-- Layout & Sections Tab -->
                     @include('admin.facilities.edit-tabs.sections', ['facility' => $facility, 'activeSections' =>
                     $activeSections, 'availableSections' => $availableSections, 'sectionVariances' =>

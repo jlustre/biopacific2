@@ -6,10 +6,15 @@ use App\Models\Content;
 
 class Facility extends Model
 {
-
   public function colorScheme()
   {
     return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
+  }
+
+  // News relationship (many-to-many)
+  public function news()
+  {
+    return $this->belongsToMany(News::class, 'facility_news');
   }
 
   public function services()

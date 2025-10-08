@@ -13,7 +13,7 @@
         <button type="button" onclick="showTab('content')" id="content-tab"
             class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {{ ($activeTab ?? '') === 'content' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
             aria-current="{{ ($activeTab ?? '') === 'content' ? 'page' : false }}">
-            Content & Branding
+            Content
         </button>
         <button type="button" onclick="showTab('colors')" id="colors-tab"
             class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {{ ($activeTab ?? '') === 'colors' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
@@ -30,10 +30,15 @@
             aria-current="{{ ($activeTab ?? '') === 'social' ? 'page' : false }}">
             Social Media
         </button>
+        <button type="button" onclick="showTab('news')" id="news-tab"
+            class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {{ ($activeTab ?? '') === 'news' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+            aria-current="{{ ($activeTab ?? '') === 'news' ? 'page' : false }}">
+            News
+        </button>
         <button type="button" onclick="showTab('sections')" id="sections-tab"
             class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm {{ ($activeTab ?? '') === 'sections' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
             aria-current="{{ ($activeTab ?? '') === 'sections' ? 'page' : false }}">
-            Layout & Sections
+            Sections
         </button>
     </nav>
 </div>

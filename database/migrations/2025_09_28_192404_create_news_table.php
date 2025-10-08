@@ -17,10 +17,8 @@ return new class extends Migration
             $table->text('content');
             $table->timestamp('published_at')->nullable();
             $table->boolean('status')->default(true); // true=published, false=draft
-            $table->unsignedBigInteger('facility_id')->nullable();
             $table->enum('scope', ['company', 'facility'])->default('company');
             $table->timestamps();
-            $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('set null');
         });
     }
 

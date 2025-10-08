@@ -1,68 +1,9 @@
-@php
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $scheme->primary_color ?? '#0EA5E9';
-$accent = $scheme->accent_color ?? '#F59E0B';
-} else {
-$primary = '#0EA5E9';
-$accent = '#F59E0B';
-}
-@endphp
 <section id="news" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50" x-data="{ 
   openModal: false, 
   openAllNewsModal: false,
   selectedNews: {},
   phoneNumber: '{{ $facility['phone'] ?? '(555) 123-4567' }}',
-  allNews: [
-    {
-      title: 'Fall Prevention Workshop',
-      date: 'Sept 18',
-      year: '2024',
-      desc: 'Learn safety techniques for residents and families with expert guidance.',
-      type: 'workshop',
-      color: 'bg-emerald-500'
-    },
-    {
-      title: 'Mental Health Awareness Talk',
-      date: 'Nov 5',
-      year: '2024',
-      desc: 'Join our guest speaker for insights and resources on mental wellness.',
-      type: 'seminar',
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Flu Shot Clinic',
-      date: 'Oct 3',
-      year: '2024',
-      desc: 'On-site vaccinations for residents & staff by certified healthcare professionals.',
-      type: 'medical',
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Family BBQ Day',
-      date: 'Oct 20',
-      year: '2024',
-      desc: 'Join us for food, music, and facility tours in a festive atmosphere.',
-      type: 'event',
-      color: 'bg-orange-500'
-    },
-    {
-      title: 'Thanksgiving Celebration',
-      date: 'Nov 28',
-      year: '2024',
-      desc: 'Special Thanksgiving dinner with family-style dining and entertainment.',
-      type: 'event',
-      color: 'bg-amber-500'
-    },
-    {
-      title: 'Winter Safety Seminar',
-      date: 'Dec 15',
-      year: '2024',
-      desc: 'Preparing for winter weather challenges and emergency preparedness.',
-      type: 'seminar',
-      color: 'bg-slate-500'
-    }
-  ],
+  allNews: @js($newsItems),
   showModal(newsItem) {
     this.selectedNews = newsItem;
     this.openModal = true;
@@ -114,70 +55,41 @@ $accent = '#F59E0B';
 
     <!-- News Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-      @foreach([
-      ['Fall Prevention Workshop','Sept 18','2024','Learn safety techniques for residents and families with expert
-      guidance.','workshop','bg-emerald-500'],
-      ['Mental Health Awareness Talk','Nov 5','2024','Join our guest speaker for insights and resources on mental
-      wellness.','seminar','bg-purple-500'],
-      ['Flu Shot Clinic','Oct 3','2024','On-site vaccinations for residents & staff by certified healthcare
-      professionals.','medical','bg-blue-500'],
-      ['Family BBQ Day','Oct 20','2024','Join us for food, music, and facility tours in a festive
-      atmosphere.','event','bg-orange-500'],
-      ] as [$title,$date,$year,$desc,$type,$color])
-      <article
-        class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-200/50">
-        <!-- Date Badge -->
-        <div class="absolute top-4 right-4 z-10">
-          <div class="{{ $color }} text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-            {{ $date }}
+      <template x-for="(news, index) in allNews" :key="index">
+        <article
+          class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-200/50">
+          <!-- Date Badge -->
+          <div class="absolute top-4 right-4 z-10">
+            <div :class="news.color + ' text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide'">
+              <span x-text="news.date"></span>
+            </div>
           </div>
-        </div>
-
-        <!-- Content -->
-        <div class="p-6 pb-8">
-          <!-- Event Type -->
-          <div class="flex items-center mb-3">
-            <div class="w-2 h-2 {{ $color }} rounded-full mr-2"></div>
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">{{ $type }}</span>
+          <!-- Content -->
+          <div class="p-6 pb-8">
+            <div class="flex items-center mb-3">
+              <div class="w-2 h-2 rounded-full mr-2" :class="news.color"></div>
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide" x-text="news.type"></span>
+            </div>
+            <h3 class="text-xl font-bold text-secondary mb-3 group-hover:text-primary transition-colors duration-300"
+              x-text="news.title"></h3>
+            <p class="text-slate-600 text-sm leading-relaxed mb-4" x-text="news.desc"></p>
+            <div class="flex items-center justify-between">
+              <button @click="showModal(news)"
+                class="inline-flex items-center text-primary font-semibold text-sm hover:text-primary/80 transition-colors duration-300 group/link">
+                Learn More
+                <svg class="ml-1 w-4 h-4 transform group-hover/link:translate-x-1 transition-transform duration-300"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+              <div class="text-xs text-slate-400" x-text="news.year"></div>
+            </div>
           </div>
-
-          <!-- Title -->
-          <h3 class="text-xl font-bold text-secondary mb-3 group-hover:text-primary transition-colors duration-300">
-            {{ $title }}
-          </h3>
-
-          <!-- Description -->
-          <p class="text-slate-600 text-sm leading-relaxed mb-4">
-            {{ $desc }}
-          </p>
-
-          <!-- Read More Link -->
-          <div class="flex items-center justify-between">
-            <button @click="showModal({
-              title: @js($title),
-              date: @js($date),
-              year: @js($year),
-              desc: @js($desc),
-              type: @js($type),
-              color: @js($color)
-            })"
-              class="inline-flex items-center text-primary font-semibold text-sm hover:text-primary/80 transition-colors duration-300 group/link">
-              Learn More
-              <svg class="ml-1 w-4 h-4 transform group-hover/link:translate-x-1 transition-transform duration-300"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </button>
-            <div class="text-xs text-slate-400">{{ $year }}</div>
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
           </div>
-        </div>
-
-        <!-- Hover Effect Overlay -->
-        <div
-          class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-        </div>
-      </article>
-      @endforeach
+        </article>
+      </template>
     </div>
 
     <!-- Call to Action -->

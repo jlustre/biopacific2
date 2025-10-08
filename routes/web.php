@@ -106,7 +106,17 @@ Route::get('/facility/{facility:slug}', function (Facility $facility) {
         'layoutTemplate' => $layoutTemplate,
         'faqs' => $faqs,
         'categories' => $categories,
-        'testimonials' => $testimonials
+        'testimonials' => $testimonials,
+        'newsItems' => $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
+            return [
+                'title' => $item->title,
+                'desc' => $item->content,
+                'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
+                'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
+                'type' => $item->scope,
+                'color' => 'bg-blue-500',
+            ];
+        })->toArray()
     ]);
 })->name('facility.public');
 
