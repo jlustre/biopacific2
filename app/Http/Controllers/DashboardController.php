@@ -3,16 +3,24 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
+use App\Models\Testimonial;
+use App\Models\Faq;
+use App\Models\Service;
+use App\Models\News;
+use App\Models\ColorScheme;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         // Get all active facilities
-            $facilities = Facility::where('is_active', true)
-                                 ->orderBy('name')
-                                 ->get();
+        $facilities = Facility::where('is_active', true)
+                                ->orderBy('name')
+                                ->get();
 
         // Group facilities by state for better organization
         $facilitiesByState = $facilities->groupBy('state');
@@ -24,63 +32,30 @@ class DashboardController extends Controller
     {
         $facility = Facility::findOrFail($id);
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-        $sections = [];
-        $sectionVariances = [];
+        $layoutData = FacilityDataHelper::getLayoutData($activeWebContent);
+        $sections = $layoutData['sections'];
+        $sectionVariances = $layoutData['sectionVariances'];
+        $layoutTemplate = $layoutData['layoutTemplate'];
 
-        if ($activeWebContent && $activeWebContent->sections) {
-            if (is_string($activeWebContent->sections)) {
-                $sections = json_decode($activeWebContent->sections, true) ?? [];
-            } elseif (is_array($activeWebContent->sections)) {
-                $sections = $activeWebContent->sections;
-            }
-        }
-
-        if ($activeWebContent && isset($activeWebContent->variances)) {
-            if (is_string($activeWebContent->variances)) {
-                $sectionVariances = json_decode($activeWebContent->variances, true) ?? [];
-            } elseif (is_array($activeWebContent->variances)) {
-                $sectionVariances = $activeWebContent->variances;
-            }
-        }
-
+        // Ensure all sections have a variance (default if missing)
         foreach ($sections as $section) {
             if (!isset($sectionVariances[$section])) {
                 $sectionVariances[$section] = 'default';
             }
         }
 
-        $facility->layout_template = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
-        $facility->layout_sections = $sections
-            ? json_encode($sections)
-            : json_encode([]);
+        $facility->layout_template = $layoutTemplate;
+        $facility->layout_sections = $sections ? json_encode($sections) : json_encode([]);
 
-        // Fetch FAQ data for dynamic FAQ section
-        $faqs = \App\Models\Faq::availableForFacility($facility->id)
-            ->where('is_active', true)
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('sort_order')
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
-        // Get categories from the retrieved FAQs
+        $faqs = FacilityDataHelper::getFaqs($facility);
         $categories = $faqs->pluck('category')->filter()->unique()->values();
+        $testimonials = FacilityDataHelper::getTestimonials($facility);
+        $services = FacilityDataHelper::getServices($facility);
+        $newsItems = FacilityDataHelper::getFormattedNews($facility);
 
-        // Fetch testimonials for the facility
-        $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
-            ->where('is_active', true)
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $colors = FacilityDataHelper::getColors($facility);
+         
 
-        // Get color scheme from DB if available
-        $colorScheme = null;
-        if (!empty($facility->color_scheme_id)) {
-            $colorScheme = \App\Models\ColorScheme::find($facility->color_scheme_id);
-        }
-    $primary = $colorScheme->primary_color ?? $facility->primary_color ?? '#059669';
-    $secondary = $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B';
-    $accent = $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15';
-    $services = \App\Models\Service::orderBy('title')->get();
         return view('welcome', [
             'facility' => $facility,
             'layoutTemplate' => $facility->layout_template ?? 'default-template',
@@ -89,40 +64,13 @@ class DashboardController extends Controller
             'faqs' => $faqs,
             'categories' => $categories,
             'testimonials' => $testimonials,
-            'primary' => $primary,
-            'secondary' => $secondary,
-            'accent' => $accent,
+            'primary' => $colors['primary'],
+            'secondary' => $colors['secondary'],
+            'accent' => $colors['accent'],
             'services' => $services,
-            'newsItems' => $facility && method_exists($facility, 'news') ? $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
-                return [
-                    'title' => $item->title,
-                    'desc' => $item->content,
-                    'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
-                    'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
-                    'type' => $item->scope,
-                    'color' => 'bg-blue-500',
-                ];
-            })->toArray() : []
+            'newsItems' => $newsItems
         ]);
     }
 
     
 }
-
-// Get the active webcontent for this facility
-// $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-
-// // Use the active template and sections, fallback if not found
-// $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
-// $sections = [];
-
-// if ($activeWebContent && $activeWebContent->sections) {
-//     if (is_string($activeWebContent->sections)) {
-//         $sections = json_decode($activeWebContent->sections, true) ?? [];
-//     } elseif (is_array($activeWebContent->sections)) {
-//         $sections = $activeWebContent->sections;
-//     }
-// }
-
-
-// return view('facilities.preview', compact('facility', 'layoutTemplate', 'sections'));

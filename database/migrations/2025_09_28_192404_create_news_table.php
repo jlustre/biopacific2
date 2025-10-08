@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('content');
             $table->timestamp('published_at')->nullable();
             $table->boolean('status')->default(true); // true=published, false=draft
-            $table->enum('scope', ['company', 'facility'])->default('company');
+            $table->boolean('is_global')->default(false)->index();
             $table->timestamps();
         });
     }

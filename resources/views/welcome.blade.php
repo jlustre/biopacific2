@@ -45,6 +45,9 @@
 ])
 @endif
 
+@php
+$newsItems = $newsItems ?? [];
+@endphp
 @if(is_array($sections) && in_array('news', $sections))
 @include('partials.news.' . ($sectionVariances['news'] ?? 'default'), [
 'primary' => $primary,
@@ -58,7 +61,8 @@
 @include('partials.testimonials.' . ($sectionVariances['testimonials'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
-'accent' => $accent
+'accent' => $accent,
+'testimonials' => $testimonials
 ])
 @endif
 
@@ -75,7 +79,7 @@
 'primary' => $primary,
 'secondary' => $secondary,
 'accent' => $accent,
-'services' => $services ?? []
+'services' => $services
 ])
 @endif
 

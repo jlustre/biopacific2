@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('answer');
             $table->text('icon')->nullable();
             $table->string('category')->nullable();
+            $table->boolean('is_global')->default(true)->index();
             $table->timestamps();
         });
     }

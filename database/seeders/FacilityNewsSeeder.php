@@ -12,11 +12,11 @@ class FacilityNewsSeeder extends Seeder
     public function run()
     {
         $facilities = Facility::all();
-        $companyNews = News::where('scope', 'company')->get();
-        $facilityNews = News::where('scope', 'facility')->get();
+        $globalNews = News::where('is_global', true)->get();
+        $facilityNews = News::where('is_global', false)->get();
 
-        // Attach company-wide news to every facility
-        foreach ($companyNews as $news) {
+        // Attach global news to every facility
+        foreach ($globalNews as $news) {
             foreach ($facilities as $facility) {
                 $exists = DB::table('facility_news')
                     ->where('facility_id', $facility->id)
@@ -33,7 +33,7 @@ class FacilityNewsSeeder extends Seeder
             }
         }
 
-        // Randomly assign some facility-scoped news to facilities
+        // Randomly assign some facility-specific news to facilities
         foreach ($facilityNews as $news) {
             // Pick 1-3 random facilities for each news
             $randomFacilities = $facilities->random(rand(1, min(3, $facilities->count())));

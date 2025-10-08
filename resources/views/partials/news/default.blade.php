@@ -42,19 +42,27 @@
     'section_sub_header' => "Stay updated with the latest happenings at ". e($facility['name']) ."."
     ])
 
-    <div class="text-center mb-12 mt-6">
-      <button @click="showAllNews()"
-        class="inline-flex items-center px-6 py-3 text-white font-semibold rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
-        style="background: {{ $primary }};">
-        View All News
-        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </button>
-    </div>
-
     <!-- News Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+    <template x-if="allNews.length === 0">
+      <div class="text-center text-red-500 text-lg py-12">
+        No news or events are available at this time. Please check back later.
+      </div>
+    </template>
+
+    <template x-if="allNews.length > 6">
+      <div class="text-center mb-12 mt-6">
+        <button @click="showAllNews()"
+          class="inline-flex items-center px-6 py-3 text-white font-semibold rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
+          style="background: {{ $primary }};">
+          View All News
+          <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+    </template>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" x-show="allNews.length > 0">
       <template x-for="(news, index) in allNews" :key="index">
         <article
           class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-200/50">

@@ -8,9 +8,15 @@ use Illuminate\Http\Request;
 use App\Models\Facility;
 use App\Models\Testimonial;
 use App\Models\Faq;
+use App\Models\ColorScheme;
+use App\Models\Service;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\FacilityDataHelper;
+use Carbon\Carbon;
+use App\Models\News;
+use App\Models\Event;
 
 class FacilityAdminController extends Controller
 {
@@ -38,7 +44,7 @@ class FacilityAdminController extends Controller
             'photo' => 'nullable|image|max:2048',
         ]);
 
-        $facility = new \App\Models\Facility($validated);
+        $facility = new Facility($validated);
         $facility->is_active = (bool) $request->input('is_active');
 
         // Handle photo upload
@@ -60,49 +66,36 @@ class FacilityAdminController extends Controller
     public function show($id)
     {
         $facility = Facility::findOrFail($id);
-        $faqs = \App\Models\Faq::availableForFacility($facility->id)
-            ->where('is_active', true)
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('sort_order')
-            ->orderBy('created_at', 'desc')
-            ->get();
-        $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
-            ->where('is_active', true)
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
-        $categories = $faqs->pluck('category')->filter()->unique()->values();
-        // Get active webcontent and layout info for welcome view
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-        $services = \App\Models\Service::orderBy('title')->get();
-        $sections = [];
-        $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
-        if ($activeWebContent && $activeWebContent->sections) {
-            if (is_string($activeWebContent->sections)) {
-                $sections = json_decode($activeWebContent->sections, true) ?? [];
-            } elseif (is_array($activeWebContent->sections)) {
-                $sections = $activeWebContent->sections;
-            }
-        }
-        // Get color scheme values
-        $scheme = $facility->colorScheme ?? null;
-        $primary = $scheme->primary_color ?? '#0EA5E9';
-        $secondary = $scheme->secondary_color ?? '#1E293B';
-        $accent = $scheme->accent_color ?? '#F59E0B';
+        $layoutData = FacilityDataHelper::getLayoutData($activeWebContent);
+        $sections = $layoutData['sections'];
+        $layoutTemplate = $layoutData['layoutTemplate'];
+        $sectionVariances = $layoutData['sectionVariances'];
 
-        // Fetch news items for the facility (same as edit)
-        $newsItems = $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
-            return [
-                'title' => $item->title,
-                'desc' => $item->content,
-                'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
-                'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
-                'type' => $item->scope,
-                'color' => 'bg-blue-500', // You can set color logic here
-            ];
-        })->toArray();
+        $faqs = FacilityDataHelper::getFaqs($facility);
+        $categories = $faqs->pluck('category')->filter()->unique()->values();
+        $testimonials = FacilityDataHelper::getTestimonials($facility);
+        $services = FacilityDataHelper::getServices($facility);
+        $newsItems = FacilityDataHelper::getFormattedNews($facility);
+        $colors = FacilityDataHelper::getColors($facility);
+        $primary = $colors['primary'];
+        $secondary = $colors['secondary'];
+        $accent = $colors['accent'];
 
-        return view('welcome', compact('facility', 'layoutTemplate', 'sections', 'faqs', 'categories', 'testimonials', 'primary', 'secondary', 'accent', 'services', 'newsItems'));
+        return view('welcome', compact(
+            'facility',
+            'layoutTemplate', 
+            'sections', 
+            'sectionVariances', 
+            'faqs', 
+            'categories', 
+            'testimonials', 
+            'primary', 
+            'secondary', 
+            'accent', 
+            'services', 
+            'newsItems'
+        ));
     }
 
     public function edit($identifier)
@@ -113,41 +106,22 @@ class FacilityAdminController extends Controller
         } else {
             $facility = Facility::where('slug', $identifier)->firstOrFail();
         }
+
         $facilities = Facility::orderBy('name')->get();
         $layoutTemplates = ['default-template', 'layout2', 'layout3', 'layout4'];
         $webContents = $facility->webcontents()->get();
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-        $selectedLayoutTemplate = $activeWebContent ? $activeWebContent->layout_template : null;
-        $selectedSections = [];
-        if ($activeWebContent && $activeWebContent->sections) {
-            if (is_string($activeWebContent->sections)) {
-                $selectedSections = json_decode($activeWebContent->sections, true) ?? [];
-            } elseif (is_array($activeWebContent->sections)) {
-                $selectedSections = $activeWebContent->sections;
-            }
-        }
-        $faqs = \App\Models\Faq::availableForFacility($facility->id)
-            ->where('is_active', true)
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('sort_order')
-            ->orderBy('created_at', 'desc')
-            ->get();
-        $categories = $faqs->pluck('category')->filter()->unique()->values();
-        $colorSchemes = \App\Models\ColorScheme::orderBy('name')->get();
-        $allServices = \App\Models\Service::orderBy('title')->get();
-        $services = \App\Models\Service::orderBy('title')->get();
+        $layoutData = FacilityDataHelper::getLayoutData($activeWebContent);
+        $selectedLayoutTemplate = $layoutData['layoutTemplate'];
+        $selectedSections = $layoutData['sections'];
 
-        // Fetch news items for the facility
-        $newsItems = $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
-            return [
-                'title' => $item->title,
-                'desc' => $item->content,
-                    'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
-                    'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
-                'type' => $item->scope,
-                'color' => 'bg-blue-500', // You can set color logic here
-            ];
-        })->toArray();
+        $colorSchemes = ColorScheme::orderBy('name')->get();
+        $allServices = Service::orderBy('title')->get();
+        $services = Service::orderBy('title')->get();
+        
+        $faqs = FacilityDataHelper::getFaqs($facility);
+        $categories = $faqs->pluck('category')->filter()->unique()->values();
+        $newsItems = FacilityDataHelper::getFormattedNews($facility);
 
         return view('admin.facilities.edit', compact(
             'facility',
@@ -161,23 +135,15 @@ class FacilityAdminController extends Controller
             'categories',
             'colorSchemes',
             'services',
-            'allServices'
-            ,'newsItems'
+            'allServices',
+            'newsItems'
         ));
     }
 
     public function update(Request $request, Facility $facility)
     {
-        // Debug: Log the request data
-        Log::info('Facility Update Request', [
-            'facility_id' => $facility->id,
-            'facility_slug' => $facility->slug,
-            'sections' => $request->input('sections'),
-            'variances' => $request->input('variances'),
-            'all_data' => $request->all()
-        ]);
 
-    $validated = $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:500',
             'domain' => 'required|string|max:255|unique:facilities,domain,' . $facility->id,
@@ -202,11 +168,9 @@ class FacilityAdminController extends Controller
             'instagram' => 'nullable|url|max:255',
             'location_map' => 'nullable|string|max:1000',
             'hero_video_id' => 'nullable|string|max:50',
-            // 'webcontents' => 'array',
             'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
             'sections' => 'array',
             'variances' => 'array', // <-- Added validation for variances
-            // Shutdown fields
             'is_shutdown' => 'nullable|boolean',
             'shutdown_message' => 'nullable|string|max:255',
             'shutdown_eta' => 'nullable|date',
@@ -244,7 +208,6 @@ class FacilityAdminController extends Controller
             'instagram' => $validated['instagram'],
             'location_map' => $this->formatLocationMap($validated['location_map'] ?? null),
             'hero_video_id' => $validated['hero_video_id'] ?? null,
-            // Shutdown fields
             'is_shutdown' => $request->has('is_shutdown'),
             'shutdown_message' => $validated['shutdown_message'] ?? null,
             'shutdown_eta' => $validated['shutdown_eta'] ?? null,
@@ -254,11 +217,6 @@ class FacilityAdminController extends Controller
         $sections = $validated['sections'] ?? [];
         $variances = $validated['variances'] ?? [];
 
-        Log::info('Processing layout update', [
-            'layout_template' => $layoutTemplate,
-            'sections' => $sections,
-            'variances' => $variances
-        ]);
 
         // Inactivate all templates for this facility except the selected one
         DB::table('web_contents')
@@ -282,7 +240,6 @@ class FacilityAdminController extends Controller
                 ]
             );
 
-        Log::info('WebContent update result', ['result' => $result]);
 
     // Sync services if present
     $serviceIds = $request->input('services', []);
@@ -290,27 +247,6 @@ class FacilityAdminController extends Controller
     return redirect()->route('admin.facilities.edit', $facility->id)
         ->with('success', 'Facility updated successfully!');
     }
-
-    // public function preview(Facility $facility)
-    // {
-    //     // Get the active webcontent for this facility
-    //     $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-
-    //     // Use the active template and sections, fallback if not found
-    //     $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
-    //     $sections = [];
-
-    //     if ($activeWebContent && $activeWebContent->sections) {
-    //         if (is_string($activeWebContent->sections)) {
-    //             $sections = json_decode($activeWebContent->sections, true) ?? [];
-    //         } elseif (is_array($activeWebContent->sections)) {
-    //             $sections = $activeWebContent->sections;
-    //         }
-    //     }
-
-
-    //     return view('facilities.preview', compact('facility', 'layoutTemplate', 'sections'));
-    // }
 
     private function formatLocationMap($locationMap)
     {
@@ -619,9 +555,9 @@ class FacilityAdminController extends Controller
 
     public function manageNewsEvents($facilityId)
     {
-        $facility = \App\Models\Facility::findOrFail($facilityId);
-        $news = \App\Models\News::where('facility_id', $facilityId)->orderByDesc('published_at')->get();
-        $events = \App\Models\Event::where('facility_id', $facilityId)->orderByDesc('event_date')->get();
+        $facility = Facility::findOrFail($facilityId);
+        $news = News::where('facility_id', $facilityId)->orderByDesc('published_at')->get();
+        $events = Event::where('facility_id', $facilityId)->orderByDesc('event_date')->get();
         return view('admin.facilities.webcontents.manage-news-events', compact('facility', 'news', 'events'));
     }
 

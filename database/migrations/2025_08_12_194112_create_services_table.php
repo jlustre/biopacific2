@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->text('icon')->nullable(); // inline SVG ok
             $table->unsignedSmallInteger('order')->nullable();
+            $table->boolean('is_global')->default(true)->index();
             $table->timestamps();
         });
     }

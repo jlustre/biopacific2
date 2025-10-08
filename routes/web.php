@@ -2,12 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FacilityAdminController;
+use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\ServiceController;
 use App\Livewire\FacilitiesIndex;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\Password;
@@ -21,104 +23,7 @@ Route::resource('admin/news', NewsController::class)->names('admin.news');
 Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
 
 // Public Facility Route (similar to admin preview but public access)
-Route::get('/facility/{facility:slug}', function (Facility $facility) {
-    // Shutdown check (global)
-    $global = DB::table('global_shutdowns')->orderByDesc('id')->first();
-    if ($global && $global->is_shutdown) {
-        return response()->view('shutdown', [
-            'message' => $global->shutdown_message,
-            'eta' => $global->shutdown_eta,
-            'isGlobal' => true,
-        ]);
-    }
-    // Shutdown check (facility)
-    if ($facility->is_shutdown) {
-        return response()->view('shutdown', [
-            'message' => $facility->shutdown_message,
-            'eta' => $facility->shutdown_eta,
-            'isGlobal' => false,
-            'facilityName' => (string) $facility,
-        ]);
-    }
-
-    // Public view logic (no admin preview redirect)
-    // Fetch color scheme from the database (color_schemes table)
-    $colorScheme = null;
-    if (!empty($facility->color_scheme_id)) {
-        $colorScheme = \App\Models\ColorScheme::find($facility->color_scheme_id);
-    }
-    $colors = [
-        'primary' => $colorScheme->primary_color ?? $facility->primary_color ?? '#059669',
-        'secondary' => $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B',
-        'accent' => $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15'
-    ];
-
-    $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-    $sections = [];
-    $sectionVariances = [];
-    $layoutTemplate = 'default-template';
-
-    if ($activeWebContent && $activeWebContent->sections) {
-        if (is_string($activeWebContent->sections)) {
-            $sections = json_decode($activeWebContent->sections, true) ?? [];
-        } elseif (is_array($activeWebContent->sections)) {
-            $sections = $activeWebContent->sections;
-        }
-    }
-
-    if ($activeWebContent && isset($activeWebContent->variances)) {
-        if (is_string($activeWebContent->variances)) {
-            $sectionVariances = json_decode($activeWebContent->variances, true) ?? [];
-        } elseif (is_array($activeWebContent->variances)) {
-            $sectionVariances = $activeWebContent->variances;
-        }
-    }
-
-    $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
-
-    // Fetch FAQ data for dynamic FAQ section
-    $faqs = \App\Models\Faq::availableForFacility($facility->id)
-        ->where('is_active', true)
-        ->orderBy('is_featured', 'desc')
-        ->orderBy('sort_order')
-        ->orderBy('created_at', 'desc')
-        ->get();
-    
-    // Get categories from the retrieved FAQs
-    $categories = $faqs->pluck('category')->filter()->unique()->values();
-
-    // Fetch testimonials for the facility
-    $testimonials = \App\Models\Testimonial::where('facility_id', $facility->id)
-        ->where('is_active', true)
-        ->orderBy('is_featured', 'desc')
-        ->orderBy('created_at', 'desc')
-        ->get();
-    $services = \App\Models\Service::orderBy('title')->get();
-  
-    return view('welcome', [
-        'facility' => $facility->toArray(),
-        'primary' => $colors['primary'],
-        'secondary' => $colors['secondary'],
-        'accent' => $colors['accent'],
-        'sections' => $sections,
-        'sectionVariances' => $sectionVariances,
-        'services' => $services,
-        'layoutTemplate' => $layoutTemplate,
-        'faqs' => $faqs,
-        'categories' => $categories,
-        'testimonials' => $testimonials,
-        'newsItems' => $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
-            return [
-                'title' => $item->title,
-                'desc' => $item->content,
-                'date' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('M d') : '',
-                'year' => $item->published_at ? \Carbon\Carbon::parse($item->published_at)->format('Y') : '',
-                'type' => $item->scope,
-                'color' => 'bg-blue-500',
-            ];
-        })->toArray()
-    ]);
-})->name('facility.public');
+Route::get('/facility/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
 
 // Webmaster Contact
 Route::get('/{facility:slug}/webmaster/contact', function(App\Models\Facility $facility) {
@@ -347,22 +252,18 @@ Route::get('/{facility:slug}/accessibility', function (Facility $facility) {
 
 // Admin Routes (auth + admin role)
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(function () {
-    // Facility CRUD (use Admin\FacilityController)
-    // Route::resource('facilities', App\Http\Controllers\Admin\FacilityController::class); // <-- Remove or comment this line
-
-    Route::get('/facilities', [\App\Http\Controllers\FacilityAdminController::class, 'index'])->name('facilities.index');
-    Route::get('/facilities/create', [\App\Http\Controllers\FacilityAdminController::class, 'create'])->name('facilities.create');
-    Route::post('/facilities', [\App\Http\Controllers\FacilityAdminController::class, 'store'])->name('facilities.store');
-    Route::get('/facilities/{facility:slug}', [\App\Http\Controllers\FacilityAdminController::class, 'show'])->name('facilities.show');
-    Route::get('/facilities/{facility}/edit', [\App\Http\Controllers\FacilityAdminController::class, 'edit'])->name('facilities.edit');
-    Route::put('/facilities/{facility}', [\App\Http\Controllers\FacilityAdminController::class, 'update'])->name('facilities.update');
-    Route::post('/facilities/{facility}/services', [\App\Http\Controllers\FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
-    // ...existing code...
-    Route::delete('/facilities/{facility}', [\App\Http\Controllers\FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
+    Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
+    Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
+    Route::post('/facilities', [FacilityAdminController::class, 'store'])->name('facilities.store');
+    Route::get('/facilities/{facility:slug}', [FacilityAdminController::class, 'show'])->name('facilities.show');
+    Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
+    Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
+    Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
+    Route::delete('/facilities/{facility}', [FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
 
     // Web Contents Routes
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
-        Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
+    Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'showTestimonial'])->name('facilities.webcontents.testimonials.show');
     Route::post('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'storeTestimonial'])->name('facilities.webcontents.testimonials.store');
     Route::put('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'updateTestimonial'])->name('facilities.webcontents.testimonials.update');
@@ -375,7 +276,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::delete('/facilities/web-contents/faqs/{faq}', [FacilityAdminController::class, 'destroyFaq'])->name('facilities.webcontents.faqs.destroy');
     Route::get('/facilities/web-contents/faqs/defaults/list', [FacilityAdminController::class, 'getDefaultFaqs'])->name('facilities.webcontents.faqs.defaults');
     Route::get('/facilities/web-contents/galleries', [FacilityAdminController::class, 'galleries'])->name('facilities.webcontents.galleries');
-    // Route::get('/facilities/web-contents/news-events', [FacilityAdminController::class, 'newsEvents'])->name('facilities.webcontents.news-events');
     Route::get('/admin/facilities/web-contents/news-events', [FacilityAdminController::class, 'newsEvents'])->name('facilities.webcontents.news-events');
     Route::get('/facilities/{facility}/news-events', [FacilityAdminController::class, 'manageNewsEvents'])->name('facilities.news-events.manage');
     Route::get('/facilities/web-contents/blogs', [FacilityAdminController::class, 'blogs'])->name('facilities.webcontents.blogs');
@@ -391,11 +291,11 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('admin.facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
 
     // Service CRUD routes
-    Route::get('/services/create', [\App\Http\Controllers\Admin\ServiceController::class, 'create'])->name('services.create');
-    Route::get('/services/{service}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('services.edit');
-    Route::put('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
-    Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
-    Route::delete('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('services.destroy');
+    Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
+    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
+    Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
 });
 

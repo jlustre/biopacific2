@@ -6,6 +6,11 @@ use App\Models\Content;
 
 class Facility extends Model
 {
+  // FAQs relationship (many-to-many)
+  public function faqs()
+  {
+    return $this->belongsToMany(\App\Models\Faq::class, 'facility_faq', 'facility_id', 'faq_id');
+  }
   public function colorScheme()
   {
     return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
