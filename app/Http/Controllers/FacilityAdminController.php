@@ -142,7 +142,6 @@ class FacilityAdminController extends Controller
 
     public function update(Request $request, Facility $facility)
     {
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:500',
@@ -170,7 +169,7 @@ class FacilityAdminController extends Controller
             'hero_video_id' => 'nullable|string|max:50',
             'layout_template' => 'required|string|in:default-template,layout2,layout3,layout4',
             'sections' => 'array',
-            'variances' => 'array', // <-- Added validation for variances
+            'variances' => 'array', 
             'is_shutdown' => 'nullable|boolean',
             'shutdown_message' => 'nullable|string|max:255',
             'shutdown_eta' => 'nullable|date',
@@ -575,4 +574,5 @@ class FacilityAdminController extends Controller
         $facility->services()->sync($serviceIds);
         return redirect()->route('admin.facilities.edit', $facility->slug)->with('success', 'Services updated successfully.');
     }
+
 }

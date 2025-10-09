@@ -8,28 +8,38 @@
 
     <!-- Gallery Grid -->
     @php
-    $galleryImages = [
-    asset('images/gallery/nursinghome_image1.png'),
-    asset('images/gallery/nursinghome_image2.png'),
-    asset('images/gallery/nursinghome_image3.png'),
-    asset('images/gallery/nursinghome_image4.png'),
-    asset('images/gallery/nursinghome_image5.png'),
-    asset('images/gallery/nursinghome_image6.png'),
-    asset('images/gallery/nursinghome_image7.png'),
-    asset('images/gallery/nursinghome_image8.png'),
-    asset('images/gallery/nursinghome_image9.png'),
-    ];
+    if (!isset($galleryImages)) {
+    $galleryImages = isset($facility) ? \App\Helpers\FacilityDataHelper::getGalleryImages($facility->id) : collect();
+    }
+    // Paginate images by 10 per page
+    $paginatedImages = $galleryImages->sortBy('order')->values()->forPage(request('page', 1), 10);
+    $totalPages = ceil($galleryImages->count() / 10);
+    $currentPage = request('page', 1);
     @endphp
+    @if($galleryImages->isEmpty())
+    <div class="text-center text-gray-500 py-8">No gallery images found for this facility.</div>
+    @else
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-      @foreach($galleryImages as $index => $img)
+      @foreach($paginatedImages as $index => $img)
+      @php
+      // Assign card size based on index for a dynamic layout
+      $cardClass = '';
+      if ($index % 7 === 0) {
+      $cardClass = 'col-span-2 row-span-2 h-80';
+      } elseif ($index % 5 === 0) {
+      $cardClass = 'col-span-2 h-64';
+      } elseif ($index % 3 === 0) {
+      $cardClass = 'h-72';
+      } else {
+      $cardClass = 'h-48';
+      }
+      @endphp
       <div
-        class="gallery-item group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 {{ $index === 0 ? 'sm:col-span-2 sm:row-span-2' : '' }}">
-        <!-- Image -->
-        <div class="relative overflow-hidden {{ $index === 0 ? 'h-64 sm:h-full' : 'h-48 sm:h-56 lg:h-64' }}">
-          <img src="{{ $img }}?q=80&w={{ $index === 0 ? '1200' : '600' }}&auto=format&fit=crop"
-            alt="Gallery image {{ $index + 1 }}"
-            class="w-full h-auto max-w-full object-cover block transition-transform duration-700 group-hover:scale-110"
-            loading="lazy">
+        class="gallery-item group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 {{ $cardClass }}">
+        <div class="relative overflow-hidden w-full h-full">
+          <img src="{{ asset('storage/' . $img->image_url) }}" alt="{{ $img->title }}"
+            class="w-full h-full object-cover block transition-transform duration-700 group-hover:scale-110"
+            style="object-fit:cover;" loading="lazy">
 
           <!-- Overlay -->
           <div
@@ -52,22 +62,24 @@
         </div>
 
         <!-- Click Link -->
-        <a href="{{ $img }}?q=80&w=1600&auto=format&fit=crop" target="_blank" class="absolute inset-0 z-10"
+        <a href="{{ asset('storage/' . $img->image_url) }}" target="_blank" class="absolute inset-0 z-10"
           aria-label="View gallery image {{ $index + 1 }} in full size"></a>
       </div>
       @endforeach
     </div>
+    @endif
+  </div>
 
-    <!-- View More Button -->
-    <div class="text-center mt-12">
-      <button
-        class="inline-flex items-center px-8 py-3 bg-primary text-white font-semibold rounded-full hover:bg-primary-dark transition-colors duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-        <span>View More Photos</span>
-        <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-        </svg>
-      </button>
-    </div>
+  <!-- Pagination Controls -->
+  @if($totalPages > 1)
+  <div class="flex justify-center mt-8 space-x-2">
+    @for($page = 1; $page <= $totalPages; $page++) <a href="?page={{ $page }}"
+      class="px-4 py-2 rounded-full font-semibold transition-colors duration-200 {{ $page == $currentPage ? 'bg-primary text-white shadow-lg' : 'bg-white text-primary hover:bg-primary hover:text-white' }}">
+      {{ $page }}
+      </a>
+      @endfor
+  </div>
+  @endif
   </div>
 </section>
 

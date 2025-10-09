@@ -76,12 +76,6 @@ class FacilityController extends Controller
             // ...other validations...
         ]);
 
-        // Log the incoming request value for hero_video_id
-        \Log::info('Facility update request', [
-            'all' => $request->all(),
-            'hero_video_id_in_request' => $request->input('hero_video_id'),
-        ]);
-
         // Assign all fillable fields from top-level request (not all_data)
         foreach ($facility->getFillable() as $key) {
             $value = $request->input($key);

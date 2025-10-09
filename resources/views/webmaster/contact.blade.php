@@ -35,14 +35,15 @@
             @endif
             <div class="prose max-w-none mb-8">
                 <p class="text-slate-700 mb-2">
-                    Use this form to report website errors, request changes, or notify us of issues that need attention.
-                    For general inquiries, please use our <a
+                    Use this form strictly for <span class="font-semibold">website-related matters</span> such as
+                    reporting errors, requesting modifications, or alerting us to technical concerns. All other general
+                    inquiries should be submitted through our <a
                         href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
                         class="underline text-blue-700 hover:text-blue-900">Contact Us</a> page.
                 </p>
             </div>
             <form method="POST" action="{{ route('webmaster.contact.submit') }}" class="space-y-5"
-                enctype="multipart/form-data">
+                enctype="multipart/form-data" id="webmaster-contact-form" novalidate>
                 @if(isset($facility) && isset($facility['id']))
                 <input type="hidden" name="facility_id" value="{{ $facility['id'] }}">
                 @endif
@@ -64,6 +65,7 @@
                 </div>
                 <div>
                     <label for="message" class="block text-slate-700 text-sm font-medium mb-1">Message</label>
+
                     <textarea id="message" name="message" rows="5" required
                         class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90"
                         placeholder="Describe the error, issue, or change needed in detail..."></textarea>
@@ -82,15 +84,45 @@
                     <input type="checkbox" id="urgent" name="urgent" value="1" class="accent-red-600">
                     <label for="urgent" class="text-xs text-red-700">Mark as urgent</label>
                 </div>
+                <div id="form-error-message"
+                    class="mb-4 p-3 rounded bg-red-100 text-red-800 border border-red-300 hidden"></div>
                 <button type="submit"
                     class="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition text-base">Send
                     to Webmaster</button>
             </form>
             <div class="mt-6 text-xs text-slate-500 text-center">This form is for website technical issues only. For
-                privacy
-                or general questions, use the <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
+                privacy or general questions, use the <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
                     class="underline">Contact Us</a> page.</div>
         </div>
+        <script>
+            document.getElementById('webmaster-contact-form').addEventListener('submit', function(e) {
+            var name = document.getElementById('name').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var subject = document.getElementById('subject').value.trim();
+            var message = document.getElementById('message').value.trim();
+            var errorDiv = document.getElementById('form-error-message');
+            var errors = [];
+            if (!name) errors.push('Name is required.');
+            if (!email) {
+                errors.push('Email is required.');
+            } else {
+                // Simple email format validation
+                var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailPattern.test(email)) {
+                    errors.push('Please enter a valid email address.');
+                }
+            }
+            if (!subject) errors.push('Subject is required.');
+            if (!message) errors.push('Message is required.');
+            if (errors.length > 0) {
+                e.preventDefault();
+                errorDiv.innerHTML = '<ul class="list-disc pl-5">' + errors.map(function(err) { return '<li>' + err + '</li>'; }).join('') + '</ul>';
+                errorDiv.classList.remove('hidden');
+            } else {
+                errorDiv.classList.add('hidden');
+            }
+        });
+        </script>
     </div>
 </div>
 @endsection

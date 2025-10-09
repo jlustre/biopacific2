@@ -14,6 +14,16 @@ use Carbon\Carbon;
 class FacilityDataHelper
 {
     /**
+     * Get gallery images for a facility, ordered by 'order'
+     */
+    public static function getGalleryImages($facilityId)
+    {
+        return \App\Models\GalleryImage::where('facility_id', $facilityId)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get();
+    }
+    /**
      * Extract sections, section variances, and layout template from active web content
      */
     public static function getLayoutData($activeWebContent)

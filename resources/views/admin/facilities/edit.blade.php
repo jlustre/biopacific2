@@ -1,6 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
+
 @php
 $activeSections = $activeWebContent ? $activeWebContent->sections : [];
 $availableSections = [
@@ -35,6 +36,7 @@ $sectionVariances[$key][] = $name;
 }
 }
 @endphp
+
 <style>
     :root {
         --color-primary: {
@@ -60,6 +62,10 @@ $sectionVariances[$key][] = $name;
         }
 
         ;
+    }
+
+    .tab-pane {
+        min-height: 400px;
     }
 </style>
 <div class="min-h-screen bg-gray-50">
@@ -138,12 +144,15 @@ $sectionVariances[$key][] = $name;
                     @include('admin.facilities.edit-tabs.social', ['facility' => $facility])
 
                     <!-- News Tab -->
-                    @include('admin.facilities.edit-tabs.news', ['facility' => $facility])
+                    {{-- @include('admin.facilities.edit-tabs.news', ['facility' => $facility]) --}}
 
                     <!-- Layout & Sections Tab -->
                     @include('admin.facilities.edit-tabs.sections', ['facility' => $facility, 'activeSections' =>
                     $activeSections, 'availableSections' => $availableSections, 'sectionVariances' =>
                     $sectionVariances])
+
+                    <!-- Gallery Tab -->
+                    {{-- @include('admin.facilities.edit-tabs.gallery', ['facility' => $facility]) --}}
                 </div>
             </div>
 
@@ -156,28 +165,27 @@ $sectionVariances[$key][] = $name;
                 </button>
             </div>
         </form>
-
-        <!-- Service Delete Forms: Place OUTSIDE the main facility form -->
-        {{-- @if(isset($allServices) && $allServices->count())
-        <div class="mt-8">
-            <h4 class="text-lg font-semibold mb-4">Delete Service</h4>
-            @foreach($allServices->unique('title') as $service)
-            <div class="flex items-center gap-2 mb-2">
-                <span class="font-medium">{{ $service->title }}</span>
-                <form method="POST" action="{{ route('admin.services.destroy', $service->id) }}" class="inline-block"
-                    id="delete-service-{{ $service->id }}"
-                    onsubmit="return confirmDeleteService({{ $service->facilities()->count() }});">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                        class="ml-2 text-red-600 hover:underline text-sm bg-transparent border-none p-0">Delete</button>
-                </form>
-            </div>
-            @endforeach
-        </div>
-        @endif --}}
     </div>
 </div>
+
+<!-- Gallery Image Delete Forms: Place OUTSIDE the main facility form -->
+@if(isset($facility) && $facility->galleryImages->count())
+<div class="mt-8">
+    <h4 class="text-lg font-semibold mb-4">Delete Gallery Image</h4>
+    @foreach($facility->galleryImages as $image)
+    <div class="flex items-center gap-2 mb-2">
+        <span class="font-medium">{{ $image->title }}</span>
+        <form action="{{ route('gallery.delete', $image) }}" method="POST" class="inline-block"
+            onsubmit="return confirm('Delete this image?')">
+            @csrf
+            @method('DELETE')
+            <button type="submit"
+                class="ml-2 text-red-600 hover:underline text-sm bg-transparent border-none p-0">Delete</button>
+        </form>
+    </div>
+    @endforeach
+</div>
+@endif
 
 <script>
     document.querySelectorAll('.section-toggle').forEach(function(checkbox) {
@@ -195,7 +203,6 @@ $sectionVariances[$key][] = $name;
                                 const templateDefaults = {
                                     'default-template': { hero: 'default', about: 'default', services: 'grid' },
                                     'layout2': { hero: 'video', about: 'stats', services: 'cards' },
-                                    // ...other templates
                                 };
 
                                 document.getElementById('layout_template').addEventListener('change', function() {
@@ -233,21 +240,20 @@ $sectionVariances[$key][] = $name;
             document.querySelectorAll('.tab-pane').forEach(function(pane) {
                 pane.classList.add('hidden');
             });
-            
             // Remove active classes from all tabs
             document.querySelectorAll('.tab-button').forEach(function(button) {
                 button.classList.remove('border-primary', 'text-primary');
                 button.classList.add('border-transparent', 'text-gray-500');
             });
-            
             // Show the selected tab pane
             document.getElementById(tabName + '-content').classList.remove('hidden');
-            
             // Add active classes to the selected tab
             const activeTab = document.getElementById(tabName + '-tab');
             activeTab.classList.remove('border-transparent', 'text-gray-500');
             activeTab.classList.add('border-primary', 'text-primary');
             activeTab.setAttribute('aria-current', 'page');
+            // Persist tab selection
+            localStorage.setItem('facilityEditActiveTab', tabName);
         }
     
         // Color picker sync
@@ -260,39 +266,16 @@ $sectionVariances[$key][] = $name;
     
         // Debug form submission - wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Tab persistence logic
+            var lastTab = localStorage.getItem('facilityEditActiveTab') || 'basic';
+            showTab(lastTab);
             // Target the main facility edit form specifically, not the logout form
             const form = document.querySelector('form[action*="admin/facilities"]');
-            console.log('Facility form found:', form);
-            console.log('Form action URL:', form ? form.action : 'No facility form found');
-            
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    // Remove the alert since it's working now
-                    console.log('Facility form submitting to:', this.action);
-                    console.log('Form method:', this.method);
-                    
-                    // Log sections data
-                    const sections = {};
-                    document.querySelectorAll('input[name^="sections["]').forEach(input => {
-                        if (input.checked) {
-                            sections[input.name] = input.value;
-                        }
-                    });
-                    console.log('Sections:', sections);
-                    
-                    // Log variances data
-                    const variances = {};
-                    document.querySelectorAll('select[name^="variances["]').forEach(select => {
-                        if (!select.disabled) {
-                            variances[select.name] = select.value;
-                        }
-                    });
-                    console.log('Variances:', variances);
-                    
+                    // ...existing code...
                     return true;
                 });
-            } else {
-                console.error('Facility form not found!');
             }
         });
 </script>

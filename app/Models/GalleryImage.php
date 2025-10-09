@@ -13,7 +13,7 @@ class GalleryImage extends Model
         'facility_id',
         'title',
         'description',
-        'image_url',
+        'image_url', 
         'category',
         'order',
         'is_featured',

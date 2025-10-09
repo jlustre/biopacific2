@@ -259,7 +259,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
-    Route::delete('/facilities/{facility}', [FacilityAdminController::class, 'destroy'])->name('facilities.destroy');
 
     // Web Contents Routes
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
@@ -297,6 +296,13 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
+    // Gallery image management
+    Route::post('/facilities/{facility}/gallery/upload', [\App\Http\Controllers\Admin\GalleryController::class, 'upload'])->name('gallery.upload');
+    Route::delete('/gallery/{image}', [\App\Http\Controllers\Admin\GalleryController::class, 'delete'])->name('gallery.delete');
+    // Move gallery image up/down
+    Route::post('/gallery/{image}/move/{direction}', [\App\Http\Controllers\Admin\GalleryController::class, 'move'])->name('gallery.move');
+    // Clear all gallery images for a facility
+    Route::post('/facilities/{facility}/gallery/clear', [\App\Http\Controllers\Admin\GalleryController::class, 'clearFacility'])->name('gallery.clear');
 });
 
 // AJAX endpoint for HIPAA flag updates

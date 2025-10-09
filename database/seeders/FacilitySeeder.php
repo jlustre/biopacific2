@@ -13,32 +13,6 @@ class FacilitySeeder extends Seeder
 {
   public function run(): void
   {
-    $heroImages = [
-      'https://images.unsplash.com/photo-1601924928350-3a3a5de9c6e1?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1588776814546-84ef50a2f7b8?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1584556812952-d3f61d44a6f0?auto=format&fit=crop&w=1400&q=80',
-    ];
-    $aboutImages = [
-      'https://images.unsplash.com/photo-1603394727310-9f53e77a1f8d?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1601979031896-4c6642a3c45c?auto=format&fit=crop&w=1400&q=80',
-    ];
-    $galleryImages = [
-      'https://images.unsplash.com/photo-1587517452058-6c7fef7f45b1?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1593032465174-7abf6b5a1b0c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1576765607924-5e5b5a2f5d8b?auto=format&fit=crop&w=800&q=80',
-    ];
-
-    // Fetch all color schemes for mapping
-  $colorSchemes = DB::table('color_schemes')->get();
-
-
-    $services = [
-      ['title'=>'24/7 Nursing Care','description'=>'Round-the-clock skilled nursing by licensed staff.','icon'=>'<svg class="w-6 h-6" viewBox="0 0 24 24"></svg>'],
-      ['title'=>'Rehabilitation','description'=>'Physical, occupational, and speech therapy.','icon'=>'<svg class="w-6 h-6" viewBox="0 0 24 24"></svg>'],
-      ['title'=>'Memory Care','description'=>'Specialized care for dementia and Alzheimer\'s.','icon'=>'<svg class="w-6 h-6" viewBox="0 0 24 24"></svg>'],
-      ['title'=>'Hospice Care','description'=>'Comfort-focused end-of-life support.','icon'=>'<svg class="w-6 h-6" viewBox="0 0 24 24"></svg>'],
-    ];
-
 
     $items = [
   [
@@ -296,13 +270,7 @@ $bplogo = 'images/bplogo.png';
       foreach (['Compassion','Integrity','Respect','Excellence'] as $v) {
         FacilityValue::create(['facility_id'=>$facility->id,'value'=>$v]);
       }
-      // foreach ($services as $svc) {
-      //   $service = Service::firstOrCreate(['title' => $svc['title']], $svc);
-      //   $facility->services()->syncWithoutDetaching([$service->id]);
-      // }
-      foreach ($galleryImages as $img) {
-        GalleryImage::create(['facility_id'=>$facility->id,'thumbnail_url'=>$img]);
-      }
+
     }
   }
 }

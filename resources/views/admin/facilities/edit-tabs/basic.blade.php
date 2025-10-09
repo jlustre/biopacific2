@@ -17,7 +17,7 @@
                 <label for="is_shutdown" class="ml-2 text-sm font-medium text-yellow-900">Temporarily disable this
                     facility website</label>
             </div>
-            <div class="mb-2" id="shutdown-message-group">
+            <div class="mb-2" id="shutdown-message-group" style="display: none;">
                 <label for="shutdown_message" class="block text-sm font-medium text-yellow-900 mb-1">Shutdown
                     Message</label>
                 <input type="text" id="shutdown_message" name="shutdown_message"
@@ -40,7 +40,7 @@
                 <small class="text-yellow-700">This message will be shown to users during
                     shutdown.</small>
             </div>
-            <div id="shutdown-eta-group">
+            <div id="shutdown-eta-group" style="display: none;">
                 <label for="shutdown_eta" class="block text-sm font-medium text-yellow-900 mb-1">Estimated Re-Enable
                     Time</label>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2 w-full">

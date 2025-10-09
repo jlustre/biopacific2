@@ -1,19 +1,3 @@
-@php
-$primary = $facility['primary_color'] ?? '#0EA5E9';
-$accent = $facility['accent_color'] ?? '#F59E0B';
-$galleryImages = [
-asset('images/gallery/nursinghome_image1.png'),
-asset('images/gallery/nursinghome_image2.png'),
-asset('images/gallery/nursinghome_image3.png'),
-asset('images/gallery/nursinghome_image4.png'),
-asset('images/gallery/nursinghome_image5.png'),
-asset('images/gallery/nursinghome_image6.png'),
-asset('images/gallery/nursinghome_image7.png'),
-asset('images/gallery/nursinghome_image8.png'),
-asset('images/gallery/nursinghome_image9.png'),
-];
-@endphp
-
 <section id="gallery" class="relative isolate overflow-hidden py-16 sm:py-24">
     {{-- Subtle brand backdrop --}}
     <div class="pointer-events-none absolute inset-0 -z-10">
