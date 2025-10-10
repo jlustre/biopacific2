@@ -11,7 +11,7 @@ $availableSections = [
 'services' => 'Services Section',
 'rooms' => 'Rooms Section',
 'gallery' => 'Gallery Section',
-'news' => 'News & Events Section',
+'news' => 'News Section',
 'testimonials' => 'Testimonials',
 'careers' => 'Careers Section',
 'book' => 'Book a Tour Section',
@@ -144,7 +144,9 @@ $sectionVariances[$key][] = $name;
                     @include('admin.facilities.edit-tabs.social', ['facility' => $facility])
 
                     <!-- News Tab -->
-                    {{-- @include('admin.facilities.edit-tabs.news', ['facility' => $facility]) --}}
+                    {{-- @if (!request()->routeIs('admin.news.create'))
+                    @include('admin.facilities.edit-tabs.news', ['facility' => $facility])
+                    @endif --}}
 
                     <!-- Layout & Sections Tab -->
                     @include('admin.facilities.edit-tabs.sections', ['facility' => $facility, 'activeSections' =>
@@ -168,26 +170,27 @@ $sectionVariances[$key][] = $name;
     </div>
 </div>
 
-<!-- Gallery Image Delete Forms: Place OUTSIDE the main facility form -->
-@if(isset($facility) && $facility->galleryImages->count())
-<div class="mt-8">
-    <h4 class="text-lg font-semibold mb-4">Delete Gallery Image</h4>
-    @foreach($facility->galleryImages as $image)
-    <div class="flex items-center gap-2 mb-2">
-        <span class="font-medium">{{ $image->title }}</span>
-        <form action="{{ route('gallery.delete', $image) }}" method="POST" class="inline-block"
-            onsubmit="return confirm('Delete this image?')">
-            @csrf
-            @method('DELETE')
-            <button type="submit"
-                class="ml-2 text-red-600 hover:underline text-sm bg-transparent border-none p-0">Delete</button>
-        </form>
-    </div>
+<!-- News Delete Forms: Place OUTSIDE the main facility form -->
+@if(isset($facility) && $facility->news->count())
+<div id="news-delete-forms" style="display:none;">
+    @foreach($facility->news as $item)
+    <form id="delete-news-form-{{ $item->id }}" action="{{ route('admin.news.destroy', $item) }}" method="POST">
+        @csrf
+        @method('DELETE')
+    </form>
     @endforeach
 </div>
 @endif
 
 <script>
+    function deleteNewsItem(newsId) {
+        if (confirm('Delete this news item?')) {
+            var form = document.getElementById('delete-news-form-' + newsId);
+            if (form) {
+                form.submit();
+            }
+        }
+    }
     document.querySelectorAll('.section-toggle').forEach(function(checkbox) {
                                     checkbox.addEventListener('change', function() {
                                         var section = this.getAttribute('data-section');

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.dashboard')
 
 @section('content')
 <div class="container mx-auto p-4">
@@ -13,7 +13,6 @@
                 <tr>
                     <th class="px-4 py-2">Title</th>
                     <th class="px-4 py-2">Scope</th>
-                    <th class="px-4 py-2">Facility</th>
                     <th class="px-4 py-2">Published At</th>
                     <th class="px-4 py-2">Status</th>
                     <th class="px-4 py-2">Actions</th>
@@ -23,9 +22,9 @@
                 @foreach($news as $item)
                 <tr>
                     <td class="border px-4 py-2">{{ $item->title }}</td>
-                    <td class="border px-4 py-2">{{ ucfirst($item->scope) }}</td>
-                    <td class="border px-4 py-2">{{ $item->facility ? $item->facility->name : '-' }}</td>
-                    <td class="border px-4 py-2">{{ $item->published_at ? $item->published_at->format('Y-m-d') : '-' }}
+                    <td class="border px-4 py-2">{{ $item->is_global ? 'Global' : 'Local' }}</td>
+                    <td class="border px-4 py-2 text-sm">{{ $item->published_at ? $item->published_at->diffForHumans() :
+                        '-' }}
                     </td>
                     <td class="border px-4 py-2">
                         <span

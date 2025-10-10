@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('news', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->string('summary', 500)->nullable();
+            $table->string('image')->nullable();
             $table->text('content');
             $table->timestamp('published_at')->nullable();
             $table->boolean('status')->default(true); // true=published, false=draft

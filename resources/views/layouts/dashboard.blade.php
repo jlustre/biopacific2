@@ -22,13 +22,17 @@
         style="display: none;">
         <i class="fas fa-arrow-up"></i>
     </button>
-
     <!-- Top Navigation (Fixed) -->
     @include('layouts.topnav')
-
     <!-- Responsive Sidebar Layout -->
     @include('layouts.sidebar')
 
+    <main class="py-8">
+        <div class="max-w-7xl mx-auto">
+            {{-- @yield('content') --}}
+            <p>Joey lustre</p>
+        </div>
+    </main>
     @stack('scripts')
     @livewireScripts
     <link rel="stylesheet" href="/css/color-scheme-dropdown.css">

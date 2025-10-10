@@ -19,7 +19,7 @@ use App\Models\Facility;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Admin\EventController;
 
-Route::resource('admin/news', NewsController::class)->names('admin.news');
+// News resource route moved to admin group below
 Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
 
 // Public Facility Route (similar to admin preview but public access)
@@ -260,6 +260,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
 
+    // News management using FacilityAdminController
+    Route::resource('news', \App\Http\Controllers\Admin\NewsController::class)->names('news');
+    Route::delete('news/{news}/delete-image', [\App\Http\Controllers\Admin\NewsController::class, 'deleteImage'])->name('admin.news.deleteImage');
     // Web Contents Routes
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
     Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
@@ -290,11 +293,11 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('admin.facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
 
     // Service CRUD routes
-    Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
-    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-    Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
-    Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
-    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+    Route::get('/services/create', [\App\Http\Controllers\Admin\ServiceController::class, 'create'])->name('services.create');
+    Route::get('/services/{service}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('services.update');
+    Route::post('/services', [\App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('services.store');
+    Route::delete('/services/{service}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('services.destroy');
 
     // Gallery image management
     Route::post('/facilities/{facility}/gallery/upload', [\App\Http\Controllers\Admin\GalleryController::class, 'upload'])->name('gallery.upload');
@@ -329,10 +332,6 @@ Route::middleware(['auth', 'permission:view facilities'])->group(function () {
     Route::get('/facilities', FacilitiesIndex::class)->name('facilities.index');
 });
 
-// Facilities (create permission)
-// Route::middleware(['auth', 'permission:create facilities'])->group(function () {
-//     Route::resource('facilities', \App\Http\Controllers\FacilityController::class);
-// });
 
 // User Settings & Facility Show (authenticated)
 Route::middleware(['auth'])->group(function () {
