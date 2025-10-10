@@ -1,6 +1,6 @@
 # Developed Features and Components (From Scratch)
 
-This document itemizes all features, modules, and components developed from scratch for the Biopacific project. It is intended to provide a clear overview of custom development work, excluding third-party packages and boilerplate code.
+This document itemizes all features, modules, and components developed from scratch for the Bio-Pacific project. It is intended to provide a clear overview of custom development work, excluding third-party packages and boilerplate code.
 
 ## Application Structure
 

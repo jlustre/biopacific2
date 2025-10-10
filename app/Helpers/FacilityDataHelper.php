@@ -13,6 +13,7 @@ use Carbon\Carbon;
 
 class FacilityDataHelper
 {
+
     /**
      * Get gallery images for a facility, ordered by 'order'
      */
@@ -134,5 +135,24 @@ class FacilityDataHelper
             ->orderBy('is_featured', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+    /**
+     * Get active sections for a facility from its active web_contents record
+     */
+    public static function getActiveSections(Facility $facility)
+    {
+        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+        if ($activeWebContent && $activeWebContent->sections) {
+            if (is_string($activeWebContent->sections)) {
+                return json_decode($activeWebContent->sections, true) ?: [];
+            } elseif (is_array($activeWebContent->sections)) {
+                return $activeWebContent->sections;
+            } elseif ($activeWebContent->sections instanceof \Illuminate\Support\Collection) {
+                return $activeWebContent->sections->toArray();
+            } else {
+                return (array) $activeWebContent->sections;
+            }
+        }
+        return [];
     }
 }

@@ -91,9 +91,21 @@ $hasVideo = !empty($facility['hero_video_id']);
 
         {{-- Action tray --}}
         <div class="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          @php
+          $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+          if (is_string($activeSections)) {
+          $activeSections = json_decode($activeSections, true) ?: [];
+          } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+          $activeSections = $activeSections->toArray();
+          } elseif (!is_array($activeSections)) {
+          $activeSections = (array) $activeSections;
+          }
+          @endphp
+          @if(!empty($activeSections) && in_array('book', $activeSections))
           <a href="#book"
             class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold text-white shadow-lg hover:shadow-xl transition"
             style="background: {{ $primary }}">Book a Tour</a>
+          @endif
 
           <a href="#contact"
             class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 hover:bg-slate-50 transition"

@@ -70,9 +70,21 @@ $poster = asset('images/hero1.jpg');
 
                 {{-- CTAs --}}
                 <div class="mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
+                    @php
+                    $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+                    if (is_string($activeSections)) {
+                    $activeSections = json_decode($activeSections, true) ?: [];
+                    } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+                    $activeSections = $activeSections->toArray();
+                    } elseif (!is_array($activeSections)) {
+                    $activeSections = (array) $activeSections;
+                    }
+                    @endphp
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
                     <a href="#book"
                         class="inline-flex justify-center items-center rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:brightness-110"
                         style="background: {{ $primary }}">Book a Tour</a>
+                    @endif
 
                     <a href="#contact"
                         class="inline-flex justify-center items-center rounded-xl px-4 py-2 text-sm font-semibold bg-transparent ring-1 transition-all duration-200 hover:bg-white/10 hover:backdrop-blur"
@@ -138,9 +150,11 @@ $poster = asset('images/hero1.jpg');
                                 </div>
                             </div>
                             <div class="mt-4 grid grid-cols-2 gap-2">
+                                @if(!empty($activeSections) && in_array('book', $activeSections))
                                 <a href="#book"
                                     class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-white shadow hover:shadow-md"
                                     style="background: {{ $primary }}">Book a Tour</a>
+                                @endif
                                 <a href="#contact"
                                     class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold ring-1 hover:bg-slate-50"
                                     style="border-color: {{ $secondary }}; color: {{ $secondary }};">Contact</a>

@@ -168,41 +168,61 @@
               Quick Links
             </div>
             <ul class="space-y-3">
+              @php
+              $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+              if (is_string($activeSections)) {
+              $activeSections = json_decode($activeSections, true) ?: [];
+              } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+              $activeSections = $activeSections->toArray();
+              } elseif (!is_array($activeSections)) {
+              $activeSections = (array) $activeSections;
+              }
+              @endphp
+              @if(!empty($activeSections) && in_array('services', $activeSections))
               <li>
-                <a href="{{ url('facility/'.$facility['slug'] . '#services') }}"
+                <a href="{{ url('/'.$facility['slug'] . '#services') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Services & Amenities
                 </a>
               </li>
+              @endif
+              @if(!empty($activeSections) && in_array('rooms', $activeSections))
               <li>
-                <a href="{{ url('facility/' . $facility['slug'] . '#rooms') }}"
+                <a href="{{ url('/' . $facility['slug'] . '#rooms') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Rooms & Rates
                 </a>
               </li>
+              @endif
+              @if(!empty($activeSections) && in_array('book', $activeSections))
               <li>
-                <a href="{{ url('facility/' . $facility['slug'] . '#book') }}"
+                <a href="{{ url('/' . $facility['slug'] . '#book') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Book A Tour
                 </a>
               </li>
+              @endif
+              @if(!empty($activeSections) && in_array('careers', $activeSections))
               <li>
-                <a href="{{ url('facility/' . $facility['slug'] . '#careers') }}"
+                <a href="{{ url('/' . $facility['slug'] . '#careers') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Career Opportunities
                 </a>
               </li>
+              @endif
+              @if(!empty($activeSections) && in_array('contact', $activeSections))
               <li>
-                <a href="{{ url('facility/' . $facility['slug'] . '#contact') }}"
+                <a href="{{ url('/' . $facility['slug'] . '#contact') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Contact & Location
                 </a>
               </li>
+              @endif
               <li>
                 <a href="{{ url($facility['slug'] . '/webmaster/contact') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">

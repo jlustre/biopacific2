@@ -31,11 +31,29 @@ class DashboardController extends Controller
     public function facility($id)
     {
         $facility = Facility::findOrFail($id);
-        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-        $layoutData = FacilityDataHelper::getLayoutData($activeWebContent);
-        $sections = $layoutData['sections'];
-        $sectionVariances = $layoutData['sectionVariances'];
-        $layoutTemplate = $layoutData['layoutTemplate'];
+        $activeWebContent = $facility->webContents()->where('is_active', true)->first();
+        // Debug: log raw sections from web_contents
+        if ($activeWebContent) {
+            \Log::info('RAW web_contents.sections', ['sections' => $activeWebContent->sections]);
+        }
+        $sections = [];
+        $sectionVariances = [];
+        $layoutTemplate = '';
+        if ($activeWebContent) {
+            // Get sections directly from web_contents table
+            $rawSections = $activeWebContent->sections;
+            if (is_string($rawSections)) {
+                $sections = json_decode($rawSections, true) ?: [];
+            } elseif (is_array($rawSections)) {
+                $sections = $rawSections;
+            } elseif ($rawSections instanceof \Illuminate\Support\Collection) {
+                $sections = $rawSections->toArray();
+            } else {
+                $sections = (array) $rawSections;
+            }
+            $sectionVariances = is_array($activeWebContent->variances) ? $activeWebContent->variances : json_decode($activeWebContent->variances, true);
+            $layoutTemplate = $activeWebContent->layout_template;
+        }
 
         // Ensure all sections have a variance (default if missing)
         foreach ($sections as $section) {
@@ -46,6 +64,7 @@ class DashboardController extends Controller
 
         $facility->layout_template = $layoutTemplate;
         $facility->layout_sections = $sections ? json_encode($sections) : json_encode([]);
+        $facility->active_sections = is_array($sections) ? $sections : [];
 
         $faqs = FacilityDataHelper::getFaqs($facility);
         $categories = $faqs->pluck('category')->filter()->unique()->values();
@@ -54,10 +73,10 @@ class DashboardController extends Controller
         $newsItems = FacilityDataHelper::getFormattedNews($facility);
 
         $colors = FacilityDataHelper::getColors($facility);
-         
 
         return view('welcome', [
             'facility' => $facility,
+            'active_sections' => is_array($sections) ? $sections : [],
             'layoutTemplate' => $facility->layout_template ?? 'default-template',
             'sections' => $sections,
             'sectionVariances' => $sectionVariances,

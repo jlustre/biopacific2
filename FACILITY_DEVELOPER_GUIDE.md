@@ -1,27 +1,45 @@
 # Developer Guide: Managing Facilities in Bio-Pacific
 
+This guide provides detailed instructions for developers on how to manage and extend facility features, including contents, colors, sections, templates, events, news, and troubleshooting.
+
 This guide provides detailed instructions for developers on how to manage and extend facility features, including contents, colors, sections, templates, and troubleshooting.
 
 ## 1. Facility Model & Database
 
-- **Model:** `app/Models/Facility.php`
-- **Migration:** `database/migrations/*_create_facilities_table.php`
-- **Fields:**
-  - `name`, `domain`, `tagline`, `phone`, `email`, `address`, `years`, `hours`, `maps`, `layout_template`, `layout_config`, color fields, etc.
-- **Relationships:**
-  - Facilities may relate to users, templates, sections, etc.
+**Models:**
+
+- `app/Models/Facility.php` (core facility data)
+- `app/Models/Event.php` (facility/company events)
+- `app/Models/News.php` (facility/company news)
+
+**Migrations:**
+
+- `database/migrations/*_create_facilities_table.php`
+- `database/migrations/2025_09_28_192406_create_events_table.php` (events)
+
+**Fields:**
+
+- Facility: `name`, `domain`, `tagline`, `phone`, `email`, `address`, `years`, `hours`, `maps`, `layout_template`, `layout_config`, color fields, etc.
+- Event: `title`, `description`, `event_date`, `location`, `status`, `facility_id`, `scope`
+- News: `title`, `content`, `published_at`, `status`, `facility_id`, `is_global`
+
+**Relationships:**
+
+- Facilities relate to users, templates, sections, events, news, etc.
 
 ## 2. Updating Facility Data
 
-- Use Eloquent ORM for CRUD operations:
+Use Eloquent ORM for CRUD operations:
 
 ```php
 $facility = Facility::find($id);
 $facility->update([...]);
+$event = Event::create([...]);
+$news = News::create([...]);
 ```
 
-- Use form requests for validation in controllers.
-- Update via Tinker for quick changes:
+Use form requests for validation in controllers.
+Update via Tinker for quick changes:
 
 ```php
 php artisan tinker
@@ -48,15 +66,24 @@ return view('layouts.default-template', compact('facility', 'colors'));
 
 ## 4. Sections & Templates
 
-- **Sections:**
-  - Blade files in `resources/views/partials/`
-  - Configurable via `LayoutSection` model and admin UI.
-  - Use variants and config arrays for flexibility.
-- **Templates:**
-  - Defined in `LayoutTemplate` model and `layout_templates` table.
-  - `sections` field (array/JSON) lists included section slugs.
-  - Blade layouts in `resources/views/layouts/`
-  - Assign templates to facilities via `layout_template` field.
+**Sections:**
+
+- Blade files in `resources/views/partials/`
+- Configurable via `LayoutSection` model and admin UI.
+- Use variants and config arrays for flexibility.
+
+**Templates:**
+
+- Defined in `LayoutTemplate` model and `layout_templates` table.
+- `sections` field (array/JSON) lists included section slugs.
+- Blade layouts in `resources/views/layouts/`
+- Assign templates to facilities via `layout_template` field.
+
+**Events & News:**
+
+- Events and news are managed via their respective models and admin UI tabs.
+- See `resources/views/admin/facilities/edit-tabs/news.blade.php` for news management.
+- See `database/seeders/NewsSeeder.php` and `database/seeders/FacilitySeeder.php` for sample data.
 
 ## 5. Passing Data to Views
 
@@ -71,27 +98,24 @@ return view('layouts.default-template', compact('facility', 'colors'));
 
 ## 6. Error Handling & Debugging
 
-- Use try/catch in controllers for robust error handling.
-- Log errors with `Log::error()` for backend issues.
-- Use Laravel's built-in error pages for debugging.
-- Check browser dev tools for frontend AJAX errors.
-
 ## 7. Extending Functionality
 
-- Add new fields to the facility model and migration as needed.
-- Create new sections by adding Blade files and updating the admin UI.
-- Add new templates by creating Blade layouts and updating the `LayoutTemplate` model.
-- Use Livewire or Vue for dynamic admin features if needed.
+**To add events/news modules:**
+
+- Create migrations and models for new entities (see `Event`, `News`).
+- Add admin UI tabs for managing new content types.
+- Update seeders for initial data population.
 
 ## 8. Testing
-
-- Write unit and feature tests in `tests/Feature` and `tests/Unit`.
-- Use factories for test data (`database/factories/UserFactory.php`, etc.).
-- Run tests with:
 
 ```shell
 php artisan test
 ```
+
+**Testing tips:**
+
+- Test multi-tenant isolation for facilities, events, and news.
+- Use Pest and PHPUnit for feature/unit tests.
 
 ## 9. Deployment & Maintenance
 

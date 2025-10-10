@@ -27,6 +27,19 @@
       <!-- Desktop Navigation -->
       <div class="hidden md:flex gap-2 items-center pl-4 py-2 ml-auto mr-0 lg:mr-0 xl:mr-0">
         <!-- About & Services Dropdown -->
+        @php
+        $activeSections = $active_sections ?? [];
+        if (is_string($activeSections)) {
+        $activeSections = json_decode($activeSections, true) ?: [];
+        } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+        $activeSections = $activeSections->toArray();
+        } elseif (!is_array($activeSections)) {
+        $activeSections = (array) $activeSections;
+        }
+        $aboutMenuItems = collect(['about', 'services', 'testimonials', 'careers'])
+        ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+        @endphp
+        @if($aboutMenuItems->count())
         <div x-data="{ open: false }" class="relative">
           <button @click="open = !open"
             class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
@@ -37,13 +50,18 @@
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            <a href="#about" class="block px-4 py-2 hover:bg-teal-100">About</a>
-            <a href="#services" class="block px-4 py-2 hover:bg-teal-100">Services</a>
-            <a href="#testimonials" class="block px-4 py-2 hover:bg-teal-100">Testimonials</a>
-            <a href="#careers" class="block px-4 py-2 hover:bg-teal-100">Careers</a>
+            @foreach($aboutMenuItems as $section)
+            <a href="#{{ $section }}" class="block px-4 py-2 hover:bg-teal-100">{{ ucfirst($section) }}</a>
+            @endforeach
           </div>
         </div>
+        @endif
         <!-- Rooms & Gallery Dropdown -->
+        @php
+        $roomsMenuItems = collect(['rooms', 'gallery', 'news'])
+        ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+        @endphp
+        @if($roomsMenuItems->count())
         <div x-data="{ open: false }" class="relative">
           <button @click="open = !open"
             class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
@@ -54,12 +72,19 @@
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            <a href="#rooms" class="block px-4 py-2 hover:bg-teal-100">Rooms & Rates</a>
-            <a href="#gallery" class="block px-4 py-2 hover:bg-teal-100">Gallery</a>
-            <a href="#news" class="block px-4 py-2 hover:bg-teal-100">News</a>
+            @foreach($roomsMenuItems as $section)
+            <a href="#{{ $section }}" class="block px-4 py-2 hover:bg-teal-100">{{ $section == 'rooms' ? 'Rooms & Rates'
+              : ucfirst($section) }}</a>
+            @endforeach
           </div>
         </div>
+        @endif
         <!-- Contact & More Dropdown -->
+        @php
+        $contactMenuItems = collect(['contact', 'faqs', 'resources'])
+        ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+        @endphp
+        @if($contactMenuItems->count())
         <div x-data="{ open: false }" class="relative">
           <button @click="open = !open"
             class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
@@ -70,16 +95,19 @@
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition
             class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            <a href="#contact" class="block px-4 py-2 hover:bg-teal-100">Contact</a>
-            <a href="#faqs" class="block px-4 py-2 hover:bg-teal-100">FAQs</a>
-            <a href="#resources" class="block px-4 py-2 hover:bg-teal-100">Resources</a>
+            @foreach($contactMenuItems as $section)
+            <a href="#{{ $section }}" class="block px-4 py-2 hover:bg-teal-100">{{ ucfirst($section) }}</a>
+            @endforeach
           </div>
         </div>
+        @endif
         <!-- Book a Tour Button -->
+        @if(!empty($activeSections) && in_array('book', $activeSections))
         <a href="#book"
           class="bg-teal-600 ml-4 px-3 mr-0 py-2 rounded text-white font-semibold hover:bg-teal-500 transition text-center">Book
           a
           Tour</a>
+        @endif
       </div>
       <!-- Book a Tour Icon (Mobile Only) & Hamburger Icon -->
       <div class="flex items-center gap-2 md:hidden flex-shrink-0">
@@ -105,32 +133,46 @@
           </svg>
         </button>
       </div>
+      @php
+      $activeSections = $active_sections ?? [];
+      if (is_string($activeSections)) {
+      $activeSections = json_decode($activeSections, true) ?: [];
+      } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+      $activeSections = $activeSections->toArray();
+      } elseif (!is_array($activeSections)) {
+      $activeSections = (array) $activeSections;
+      }
+      $aboutMenuItems = collect(['about', 'services', 'testimonials', 'careers'])
+      ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+      $roomsMenuItems = collect(['rooms', 'gallery', 'news'])
+      ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+      $contactMenuItems = collect(['contact', 'faqs', 'resources'])
+      ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+      @endphp
       <nav class="flex flex-col gap-2 mt-2">
+        @if(!empty($activeSections) && in_array('book', $activeSections))
         <a href="#book" @click="mobileOpen = false"
           class="py-3 px-4 rounded text-lg text-white font-semibold transition"
           style="background: {{$primary}}; filter: brightness(1);" onmouseover="this.style.filter='brightness(0.85)'"
           onmouseout="this.style.filter='brightness(1)'">Book a Tour</a>
-        <a href="#about" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">About</a>
-        <a href="#services" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Services</a>
-        <a href="#rooms" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Rooms
-          & Rates</a>
-        <a href="#gallery" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Gallery</a>
-        <a href="#news" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">News</a>
-        <a href="#testimonials" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Testimonials</a>
-        <a href="#careers" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Careers</a>
-        <a href="#contact" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Contact</a>
-        <a href="#faqs" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">FAQs</a>
-        <a href="#resources" @click="mobileOpen = false"
-          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">Resources</a>
+        @endif
+        @foreach($aboutMenuItems as $section)
+        <a href="#{{ $section }}" @click="mobileOpen = false"
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">{{
+          ucfirst($section) }}</a>
+        @endforeach
+        @if($roomsMenuItems->count())
+        @foreach($roomsMenuItems as $section)
+        <a href="#{{ $section }}" @click="mobileOpen = false"
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">{{
+          $section == 'rooms' ? 'Rooms & Rates' : ucfirst($section) }}</a>
+        @endforeach
+        @endif
+        @foreach($contactMenuItems as $section)
+        <a href="#{{ $section }}" @click="mobileOpen = false"
+          class="py-3 px-4 rounded text-lg text-primary bg-slate-100 hover:bg-primary/80 hover:text-white transition">{{
+          ucfirst($section) }}</a>
+        @endforeach
       </nav>
     </div>
   </div>

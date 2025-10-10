@@ -112,9 +112,21 @@ $hasVideo = !empty($facility['hero_video_id']);
 
                     {{-- CTAs --}}
                     <div class="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        @php
+                        $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+                        if (is_string($activeSections)) {
+                        $activeSections = json_decode($activeSections, true) ?: [];
+                        } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+                        $activeSections = $activeSections->toArray();
+                        } elseif (!is_array($activeSections)) {
+                        $activeSections = (array) $activeSections;
+                        }
+                        @endphp
+                        @if(!empty($activeSections) && in_array('book', $activeSections))
                         <a href="#book"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
                             style="background: {{ $primary }}">Book a Tour</a>
+                        @endif
 
                         <a href="#contact"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold ring-2 hover:bg-slate-50 transition"

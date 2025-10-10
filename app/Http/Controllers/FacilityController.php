@@ -33,6 +33,7 @@ class FacilityController extends Controller
                 'isGlobal' => true,
             ]);
         }
+        
         if ($facility->is_shutdown) {
             return response()->view('shutdown', [
                 'message' => $facility->shutdown_message,
@@ -43,13 +44,27 @@ class FacilityController extends Controller
         }
 
         $colors = FacilityDataHelper::getColors($facility);
-
+       
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-
-        $layoutData = FacilityDataHelper::getLayoutData($activeWebContent);
-        $sections = $layoutData['sections'];
-        $sectionVariances = $layoutData['sectionVariances'];
-        $layoutTemplate = $layoutData['layoutTemplate'];
+        $sections = [];
+        $sectionVariances = [];
+        $layoutTemplate = '';
+        if ($activeWebContent) {
+            // Restore robust section decoding for main page rendering
+            $rawSections = $activeWebContent->sections;
+            if (is_string($rawSections)) {
+                $sections = json_decode($rawSections, true) ?: [];
+            } elseif (is_array($rawSections)) {
+                $sections = $rawSections;
+            } elseif ($rawSections instanceof \Illuminate\Support\Collection) {
+                $sections = $rawSections->toArray();
+            } else {
+                $sections = (array) $rawSections;
+            }
+            $sectionVariances = is_array($activeWebContent->variances) ? $activeWebContent->variances : json_decode($activeWebContent->variances, true);
+            $layoutTemplate = $activeWebContent->layout_template;
+        }
+        $activeSections = FacilityDataHelper::getActiveSections($facility);
 
         $faqs = FacilityDataHelper::getFaqs($facility);
         $categories = $faqs->pluck('category')->filter()->unique()->values();
@@ -59,6 +74,7 @@ class FacilityController extends Controller
 
         return view('welcome', [
             'facility' => $facility,
+            'active_sections' => $activeSections,
             'primary' => $colors['primary'],
             'secondary' => $colors['secondary'],
             'accent' => $colors['accent'],

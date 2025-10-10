@@ -47,21 +47,31 @@ asset('images/hero1.jpg'));
                         {{ $facility['hero_config']['button_text'] }}
                     </a>
                     @endif
-                    <a href="#book"
-                        class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold ring-1 transition"
-                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
-                        Book a Tour
-                    </a>
-                    @if(!empty($facility['hero_video_id']))
-                    <button id="playVideoBtn"
-                        class="inline-flex justify-center items-center rounded-xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
-                        style="background-color: {{ $accent }}">
-                        <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M8 5v10l8-5-8-5z" />
-                        </svg>
-                        Watch Intro
-                    </button>
-                    @endif
+                    <a href="#book" @php $activeSections=$active_sections ?? ($facility['active_sections'] ?? []); if
+                        (is_string($activeSections)) { $activeSections=json_decode($activeSections, true) ?: []; }
+                        elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+                        $activeSections=$activeSections->toArray();
+                        } elseif (!is_array($activeSections)) {
+                        $activeSections = (array) $activeSections;
+                        }
+                        @endphp
+                        @if(!empty($activeSections) && in_array('book', $activeSections))
+                        <a href="#book"
+                            class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold ring-1 transition"
+                            style="border-color: {{ $secondary }}; color: {{ $secondary }};">
+                            Book a Tour
+                        </a>
+                        @endif
+                        @if(!empty($facility['hero_video_id']))
+                        <button id="playVideoBtn"
+                            class="inline-flex justify-center items-center rounded-xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
+                            style="background-color: {{ $accent }}">
+                            <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M8 5v10l8-5-8-5z" />
+                            </svg>
+                            Watch Intro
+                        </button>
+                        @endif
                 </div>
 
                 {{-- Info bar --}}

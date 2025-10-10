@@ -78,9 +78,21 @@ $poster = asset('images/hero1.jpg');
 
                 <!-- Primary CTAs (stack on mobile) -->
                 <div class="mt-7 mb-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+                    @php
+                    $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+                    if (is_string($activeSections)) {
+                    $activeSections = json_decode($activeSections, true) ?: [];
+                    } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+                    $activeSections = $activeSections->toArray();
+                    } elseif (!is_array($activeSections)) {
+                    $activeSections = (array) $activeSections;
+                    }
+                    @endphp
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
                     <a href="#book"
                         class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:brightness-110 hover:scale-[1.02]"
                         style="background: {{ $primary }}">Book a Tour</a>
+                    @endif
 
                     <a href="#contact"
                         class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold bg-white/60 backdrop-blur text-slate-900 ring-2 ring-white/80 hover:bg-white/80 hover:ring-white transition-all duration-200"

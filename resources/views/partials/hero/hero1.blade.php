@@ -48,10 +48,22 @@
                         style="background-color: {{ $primary }};">
                         Quick Contact
                     </a>
+                    @php
+                    $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+                    if (is_string($activeSections)) {
+                    $activeSections = json_decode($activeSections, true) ?: [];
+                    } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+                    $activeSections = $activeSections->toArray();
+                    } elseif (!is_array($activeSections)) {
+                    $activeSections = (array) $activeSections;
+                    }
+                    @endphp
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
                     <a href="#book" class="inline-flex items-center rounded-xl border px-5 py-3 font-medium"
                         style="border-color: {{ $secondary }}; color: {{ $secondary }};">
                         Book a Tour
                     </a>
+                    @endif
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"

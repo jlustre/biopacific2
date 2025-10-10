@@ -23,7 +23,8 @@ use App\Http\Controllers\Admin\EventController;
 Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
 
 // Public Facility Route (similar to admin preview but public access)
-Route::get('/facility/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+// Route::get('/facility/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
 
 // Webmaster Contact
 Route::get('/{facility:slug}/webmaster/contact', function(App\Models\Facility $facility) {
@@ -48,7 +49,7 @@ Route::get('/', function() {
 Route::get('/index', fn() => view('index'))->name('index');
 
 // Redirect old privacy-policy route to new one
-Route::get('/facility/{facility:slug}/privacy-policy', function (Facility $facility) {
+Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
     return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
 });
 
@@ -338,7 +339,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/profile', Profile::class)->name('settings.profile');
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
-    Route::get('/facility/{facility:slug}/admin', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show.admin');
+    Route::get('/{facility:slug}/admin', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show.admin');
 });
 
 

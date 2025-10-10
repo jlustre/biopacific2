@@ -65,6 +65,17 @@ $hasVideo = !empty($facility['hero_video_id']);
           style="background-color: {{ $primary }};">
           Quick Contact
         </a>
+        @php
+        $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+        if (is_string($activeSections)) {
+        $activeSections = json_decode($activeSections, true) ?: [];
+        } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+        $activeSections = $activeSections->toArray();
+        } elseif (!is_array($activeSections)) {
+        $activeSections = (array) $activeSections;
+        }
+        @endphp
+        @if(!empty($activeSections) && in_array('book', $activeSections))
         <a href="#book"
           class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold border-2 shadow-lg transition-all duration-200"
           style="
@@ -77,6 +88,7 @@ $hasVideo = !empty($facility['hero_video_id']);
           onmouseout="this.style.background='linear-gradient(135deg, white 0%, #fff8 100%)'; this.style.color='{{ $secondary }}'; this.style.borderColor='{{ $secondary }}'; this.style.boxShadow='0 2px 8px 0 {{ $secondary }}22';">
           Book a Tour
         </a>
+        @endif
         @if(!empty($facility['hero_video_id']))
         <button id="playVideoBtn"
           class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white transition hover:brightness-120"
