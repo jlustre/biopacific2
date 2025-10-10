@@ -91,7 +91,7 @@
                         class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-question-circle mr-2"></i> FAQs Management
                     </a>
-                    <a href="{{ route('admin.facilities.webcontents.galleries') }}"
+                    <a href="{{ route('admin.galleries.index') }}"
                         class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-images mr-2"></i> Galleries Management
                     </a>

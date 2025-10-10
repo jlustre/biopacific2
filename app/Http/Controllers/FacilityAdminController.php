@@ -534,11 +534,6 @@ class FacilityAdminController extends Controller
         ]);
     }
 
-    public function galleries()
-    {
-        $facilities = Facility::orderBy('name')->get();
-        return view('admin.facilities.webcontents.galleries', compact('facilities'));
-    }
 
     public function newsEvents()
     {
