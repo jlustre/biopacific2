@@ -3,6 +3,7 @@
 
 <head>
     @include('partials.head')
+    @livewireStyles
 </head>
 
 <body class="min-h-screen antialiased"
@@ -28,7 +29,7 @@
             </div>
         </div>
     </div>
-    @fluxScripts
+    @livewireScripts
 </body>
 
 </html>

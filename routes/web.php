@@ -23,7 +23,7 @@ Route::resource('admin/events', App\Http\Controllers\Admin\EventController::clas
 
 // Public Facility Route (similar to admin preview but public access)
 // Route::get('/facility/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
-Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+// Moved catch-all route to bottom of file to avoid overriding /login and /register
 
 // Webmaster Contact
 Route::get('/{facility:slug}/webmaster/contact', function(App\Models\Facility $facility) {
@@ -336,9 +336,9 @@ Route::post('/facilities/{facility}/hipaa/toggle', function(Facility $facility) 
 })->name('hipaa.toggle');
 
 // Facilities (view permission)
-Route::middleware(['auth', 'permission:view facilities'])->group(function () {
-    Route::get('/facilities', FacilitiesIndex::class)->name('facilities.index');
-});
+// Route::middleware(['auth', 'permission:view facilities'])->group(function () {
+//     Route::get('/facilities', FacilitiesIndex::class)->name('facilities.index');
+// });
 
 
 // User Settings & Facility Show (authenticated)
@@ -363,10 +363,14 @@ Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 // FAQ Section
 Route::get('/faqs', [FaqController::class, 'index'])->name('faqs.index');
 
+
 // Register admin webmaster contacts routes
 require __DIR__.'/admin_webmaster_contacts.php';
 
 // Auth routes
 require __DIR__.'/auth.php';
+
+// Public Facility Route (catch-all, must be last)
+Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
 
 
