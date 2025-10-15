@@ -231,4 +231,23 @@ $accent = '#F59E0B';
       </form>
     </div>
   </div>
+
+  <!-- Toast Messages Script -->
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('careersSection', () => ({
+        openApply: false,
+        applyRole: '',
+        toastOpen: @js($success || $error),
+        toastMsg: @js($success ? $success : ($error ? 'There was an error submitting your application.' : '')),
+        closeToast() {
+          this.toastOpen = false;
+        },
+        openApplyModal(role) {
+          this.applyRole = role;
+          this.openApply = true;
+        }
+      }));
+    });
+  </script>
 </section>
