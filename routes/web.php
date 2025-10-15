@@ -18,9 +18,8 @@ use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\Admin\EventController;
 
-// News resource route moved to admin group below
-Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
 
 // Public Facility Route (similar to admin preview but public access)
 
@@ -37,11 +36,14 @@ Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::cla
 
 // Home & Landing
 use Illuminate\Support\Facades\Auth;
-use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', function() {
     if (Auth::check()) {
-        return redirect('/dashboard');
+        $user = Auth::user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard.index');
+        }
+        return redirect()->route('dashboard.index');
     }
     return redirect()->route('login');
 })->name('home');
@@ -252,7 +254,7 @@ Route::get('/{facility:slug}/accessibility', function (Facility $facility) {
 })->name('accessibility');
 
 // Admin Routes (auth + admin role)
-Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
     Route::get('/dashboard', [FacilityAdminController::class, 'dashboard'])->name('dashboard.index');
     Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
     Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
@@ -292,10 +294,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/{facility:slug}/admin', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show.admin');
     Route::get('/facility/{id}/preview', [DashboardController::class, 'facility'])->name('dashboard.facility');
     
-    Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('admin.facilities.hipaa', compact('facility')))->name('facilities.hipaa');
+    Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('facilities.hipaa', compact('facility')))->name('facilities.hipaa');
     
     // Interactive HIPAA checklist for testing
-    Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('admin.facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
+    Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
     
     // Service CRUD routes
     Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
@@ -306,8 +308,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     
     // News management using FacilityAdminController
     Route::resource('news', NewsController::class)->names('news');
-    Route::delete('news/{news}/delete-image', [NewsController::class, 'deleteImage'])->name('admin.news.deleteImage');
-    
+    Route::delete('news/{news}/delete-image', [NewsController::class, 'deleteImage'])->name('news.deleteImage');
+    Route::resource('admin/events', EventController::class)->names('events');
+
     // Gallery image management
     Route::resource('galleries', GalleryController::class)->except(['show']);
     // Gallery index for a specific facility

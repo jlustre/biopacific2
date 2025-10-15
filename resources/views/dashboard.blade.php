@@ -1,4 +1,5 @@
-@extends('layouts.dashboard', ['title' => 'Dashboard'])
+@extends('layouts.user_dashboard', ['title' => 'Dashboard'])
+
 
 @section('content')
 <div class="flex flex-col gap-8 md:gap-12">

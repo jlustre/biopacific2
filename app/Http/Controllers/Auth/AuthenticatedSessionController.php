@@ -24,21 +24,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
-        $request->session()->regenerate();
+    $request->authenticate();
+    session()->regenerate();
 
         $user = Auth::user();
         $isAdmin = $user && method_exists($user, 'hasRole') ? $user->hasRole('admin') : ($user && $user->roles && $user->roles->pluck('name')->contains('admin'));
-        // If user has 'admin' role, but is NOT authenticated via 'manager' guard, redirect to /dashboard
-        if ($isAdmin && Auth::getDefaultDriver() !== 'manager') {
-            return redirect()->intended(route('dashboard.index', absolute: false));
-        }
-        // If authenticated via 'manager' guard and has 'admin' role, redirect to /admin/dashboard
-        if (Auth::getDefaultDriver() === 'manager' && $isAdmin) {
-            return redirect()->intended(route('admin.dashboard.index', absolute: false));
+
+        if ($isAdmin) {
+            return redirect()->intended(route('admin.dashboard.index'));
         }
         // All other users go to /dashboard
-        return redirect()->intended(route('dashboard.index', absolute: false));
+        return redirect()->intended(route('dashboard.index'));
     }
 
     /**

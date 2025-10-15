@@ -109,7 +109,7 @@ class FacilityController extends Controller
 
     public function create()
     {
-        return view('facilities.create');
+        return view('admin.facilities.create');
     }
 
     public function show(Facility $facility)

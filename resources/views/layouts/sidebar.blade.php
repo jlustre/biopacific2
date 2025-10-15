@@ -8,7 +8,7 @@
         <nav class="flex flex-col space-y-2">
             <!-- Dashboard -->
             <a href="{{ route('admin.dashboard.index') }}"
-                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
+                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
                 <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
             </a>
             <!-- Facilities Menu -->

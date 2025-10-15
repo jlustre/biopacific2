@@ -168,90 +168,16 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     {{-- Sidebar --}}
-    <div class="sidebar" id="sidebar">
-        {{-- Sidebar Brand --}}
-        <div class="sidebar-brand p-3 text-center text-white">
-            <i class="fas fa-heartbeat fa-2x mb-2"></i>
-            <h5 class="mb-0">Bio Pacific</h5>
-            <small class="text-white-50">Healthcare Management</small>
-        </div>
-
-        {{-- Navigation Menu --}}
-        <nav class="navbar-nav px-3 py-2 flex-grow-1">
-            {{-- Dashboard --}}
-            <li class="nav-item mb-1">
-                <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active' : '' }}"
-                    href="{{ url('/') }}">
-                    <i class="fas fa-tachometer-alt me-3"></i>
-                    Dashboard
-                </a>
-            </li>
-
-            {{-- Facilities Dropdown --}}
-            <li class="nav-item dropdown mb-1">
-                <a class="nav-link dropdown-toggle {{ request()->is('facilities*') ? 'active' : '' }}" href="#"
-                    id="facilitiesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-building me-3"></i>
-                    Facilities
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="facilitiesDropdown">
-                    <li>
-                        <a class="dropdown-item" href="{{ url('/facilities') }}">
-                            <i class="fas fa-list me-2"></i> All
-                        </a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    @php
-                    $facilityList = isset($facilities) ? $facilities->sortBy('name') : [];
-                    @endphp
-                    @foreach($facilityList as $facility)
-                    <li class="dropdown-submenu position-relative">
-                        <a class="dropdown-item dropdown-toggle" href="#" id="facilityDropdown{{ $facility->id }}"
-                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-hospital me-2"></i> {{ $facility->name }}
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="facilityDropdown{{ $facility->id }}">
-                            <li><a class="dropdown-item" href="{{ route('facilities.show', $facility->slug) }}"><i
-                                        class="fas fa-eye me-2"></i> Preview</a></li>
-                            <li><a class="dropdown-item" href="{{ route('admin.facilities.edit', $facility->slug) }}"><i
-                                        class="fas fa-edit me-2"></i> Edit</a></li>
-                            @if($facility->domain)
-                            <li><a class="dropdown-item" href="https://{{ $facility->domain }}" target="_blank"><i
-                                        class="fas fa-external-link-alt me-2"></i> Visit Live</a></li>
-                            @endif
-                        </ul>
-                    </li>
-                    @endforeach
-                </ul>
-            </li>
-
-            {{-- Settings --}}
-            <li class="nav-item mb-1">
-                <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" href="{{ url('/settings') }}">
-                    <i class="fas fa-cog me-3"></i>
-                    Settings
-                </a>
-            </li>
-
-            {{-- Audit Logs --}}
-            <li class="nav-item mb-1">
-                <a class="nav-link {{ request()->is('audit*') ? 'active' : '' }}" href="{{ url('/audit') }}">
-                    <i class="fas fa-clipboard-list me-3"></i>
-                    Audit Logs
-                </a>
-            </li>
-        </nav>
-
-        {{-- Sidebar Footer --}}
-        <div class="sidebar-footer p-3 text-center text-white">
-            <small class="text-white-50">
-                <i class="fas fa-heart text-danger me-1"></i>
-                Compassionate Care
-            </small>
-        </div>
-    </div>
+    @auth
+    @if(auth()->user()->hasRole('admin'))
+    @include('layouts.sidebar')
+    @else
+    @include('layouts.sidebar_user')
+    @endif
+    @endauth
+    @guest
+    {{-- Optionally, show nothing or a guest sidebar --}}
+    @endguest
 
     {{-- Main Content Wrapper --}}
     <div class="content-wrapper" id="contentWrapper">
