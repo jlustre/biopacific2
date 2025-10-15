@@ -1,4 +1,4 @@
-@extends('layouts.dashboard')
+@extends('layouts.dashboard', ['title' => 'Facility Management'])
 
 @section('content')
 <div x-data="{ showModal: false, enlargeImage: '' }">

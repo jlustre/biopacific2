@@ -18,6 +18,10 @@
                 <div class="flex gap-4">
                     <a href="{{ route('admin.news.index') }}" class="hover:underline">News</a>
                     <a href="{{ route('admin.events.index') }}" class="hover:underline">Events</a>
+                    @if(auth()->user() && auth()->user()->hasRole('admin'))
+                    <a href="{{ route('admin.users.index') }}" class="hover:underline">User Management</a>
+                    <a href="{{ url('admin/facilities') }}" class="hover:underline">Manage Facility</a>
+                    @endif
                     <a href="/" class="hover:underline">Home</a>
                 </div>
             </div>

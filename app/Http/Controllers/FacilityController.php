@@ -13,6 +13,24 @@ use Illuminate\Support\Facades\DB;
 
 class FacilityController extends Controller
 {
+    /**
+     * Toggle a HIPAA flag for a facility (AJAX endpoint)
+     */
+    public function toggleHipaaFlag(Request $request, Facility $facility)
+    {
+        $key = $request->input('key');
+        $flags = $facility->hipaa_flags ?? [];
+        // Toggle the current value (true becomes false, false/null becomes true)
+        $flags[$key] = !($flags[$key] ?? false);
+        $facility->update(['hipaa_flags' => $flags]);
+        return response()->json([
+            'success' => true,
+            'flags' => $flags,
+            'toggled_key' => $key,
+            'new_value' => $flags[$key],
+            'message' => $flags[$key] ? 'HIPAA item marked as completed!' : 'HIPAA item marked as incomplete!'
+        ]);
+    }
     public function index()
     {
         $facilities = Facility::all();
@@ -94,70 +112,8 @@ class FacilityController extends Controller
         return view('facilities.create');
     }
 
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'slug' => 'required|string|max:255|unique:facilities',
-    //         'city' => 'required|string|max:255',
-    //         'state' => 'required|string|max:255',
-    //         'beds' => 'nullable|integer|min:0',
-    //         'hero_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    //         'description' => 'nullable|string',
-    //     ]);
-
-    //     $data = $request->all();
-
-    //     // Handle hero image upload
-    //     if ($request->hasFile('hero_image')) {
-    //         $imagePath = $request->file('hero_image')->store('facilities', 'public');
-    //         $data['hero_image_url'] = '/storage/' . $imagePath;
-    //     }
-
-    //     Facility::create($data);
-
-    //     return redirect()->route('facilities.index')->with('success', 'Facility created successfully!');
-    // }
-
     public function show(Facility $facility)
     {
         return view('facilities.show', compact('facility'));
     }
-
-    // public function edit(Facility $facility)
-    // {
-    //     return view('facilities.edit', compact('facility'));
-    // }
-
-    // public function update(Request $request, Facility $facility)
-    // {
-    //     $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'slug' => 'required|string|max:255|unique:facilities,slug,' . $facility->id,
-    //         'city' => 'required|string|max:255',
-    //         'state' => 'required|string|max:255',
-    //         'beds' => 'nullable|integer|min:0',
-    //         'hero_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    //         'description' => 'nullable|string',
-    //     ]);
-
-    //     $data = $request->all();
-
-    //     // Handle hero image upload
-    //     if ($request->hasFile('hero_image')) {
-    //         $imagePath = $request->file('hero_image')->store('facilities', 'public');
-    //         $data['hero_image_url'] = '/storage/' . $imagePath;
-    //     }
-
-    //     $facility->update($data);
-
-    //     return redirect()->route('facilities.index')->with('success', 'Facility updated successfully!');
-    // }
-
-    // public function destroy(Facility $facility)
-    // {
-    //     $facility->delete();
-
-    //     return redirect()->route('facilities.index')->with('success', 'Facility deleted successfully!');
-    // }
 }

@@ -11,16 +11,19 @@ use Livewire\Component;
 class Profile extends Component
 {
     public string $name = '';
-
     public string $email = '';
-
+    public string $role = '';
+    public $roles = [];
     /**
      * Mount the component.
      */
     public function mount(): void
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+    $user = Auth::user();
+    $this->name = $user->name;
+    $this->email = $user->email;
+    $this->role = $user->roles->pluck('name')->first();
+    $this->roles = \Spatie\Permission\Models\Role::all()->pluck('name')->toArray();
     }
 
     /**
@@ -32,7 +35,6 @@ class Profile extends Component
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-
             'email' => [
                 'required',
                 'string',
@@ -41,6 +43,7 @@ class Profile extends Component
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id),
             ],
+            'role' => ['required', Rule::in($this->roles)],
         ]);
 
         $user->fill($validated);
@@ -50,6 +53,7 @@ class Profile extends Component
         }
 
         $user->save();
+        $user->syncRoles([$this->role]);
 
         $this->dispatch('profile-updated', name: $user->name);
     }

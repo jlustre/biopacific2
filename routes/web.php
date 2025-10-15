@@ -17,13 +17,12 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\AdminUserController;
 
 // News resource route moved to admin group below
 Route::resource('admin/events', App\Http\Controllers\Admin\EventController::class)->names('admin.events');
 
 // Public Facility Route (similar to admin preview but public access)
-// Route::get('/facility/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
-// Moved catch-all route to bottom of file to avoid overriding /login and /register
 
 // Webmaster Contact
 Route::get('/{facility:slug}/webmaster/contact', function(App\Models\Facility $facility) {
@@ -38,9 +37,11 @@ Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::cla
 
 // Home & Landing
 use Illuminate\Support\Facades\Auth;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
+
 Route::get('/', function() {
     if (Auth::check()) {
-        return redirect('/admin/dashboard');
+        return redirect('/dashboard');
     }
     return redirect()->route('login');
 })->name('home');
@@ -252,6 +253,7 @@ Route::get('/{facility:slug}/accessibility', function (Facility $facility) {
 
 // Admin Routes (auth + admin role)
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(function () {
+    Route::get('/dashboard', [FacilityAdminController::class, 'dashboard'])->name('dashboard.index');
     Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
     Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
     Route::post('/facilities', [FacilityAdminController::class, 'store'])->name('facilities.store');
@@ -259,8 +261,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
-    
-    // Web Contents Routes
+    // User Management CRUD
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
+    Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    // List testimonials (new route for index)
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
     Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [FacilityAdminController::class, 'showTestimonial'])->name('facilities.webcontents.testimonials.show');
@@ -281,8 +289,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::get('/facilities/web-contents/blogs', [FacilityAdminController::class, 'blogs'])->name('facilities.webcontents.blogs');
     Route::get('/facilities/web-contents/careers', [FacilityAdminController::class, 'careers'])->name('facilities.webcontents.careers');
     
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('/{facility:slug}/admin', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show.admin');
     Route::get('/facility/{id}/preview', [DashboardController::class, 'facility'])->name('dashboard.facility');
     
     Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('admin.facilities.hipaa', compact('facility')))->name('facilities.hipaa');
@@ -314,41 +321,19 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->as('admin.')->group(
     Route::post('/gallery/{image}/move/{direction}', [GalleryController::class, 'move'])->name('gallery.move');
     // Clear all gallery images for a facility
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
-});
-
-// AJAX endpoint for HIPAA flag updates
-Route::post('/facilities/{facility}/hipaa/toggle', function(Facility $facility) {
-    $key = request('key');
-    
-    $flags = $facility->hipaa_flags ?? [];
-    // Toggle the current value (true becomes false, false/null becomes true)
-    $flags[$key] = !($flags[$key] ?? false);
-    
-    $facility->update(['hipaa_flags' => $flags]);
-    
-    return response()->json([
-        'success' => true,
-        'flags' => $flags,
-        'toggled_key' => $key,
-        'new_value' => $flags[$key],
-        'message' => $flags[$key] ? 'HIPAA item marked as completed!' : 'HIPAA item marked as incomplete!'
-    ]);
-})->name('hipaa.toggle');
-
-// Facilities (view permission)
-// Route::middleware(['auth', 'permission:view facilities'])->group(function () {
-//     Route::get('/facilities', FacilitiesIndex::class)->name('facilities.index');
-// });
+    Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('hipaa.toggle');
+    });
 
 
-// User Settings & Facility Show (authenticated)
+// General dashboard and user settings for all authenticated users
 Route::middleware(['auth'])->group(function () {
-    Route::get('settings/profile', Profile::class)->name('settings.profile');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('settings/profile', function() {
+        return view('profile.edit');
+    })->name('settings.profile');
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
-    Route::get('/{facility:slug}/admin', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show.admin');
 });
-
 
 // Audit Routes
 Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');

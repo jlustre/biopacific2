@@ -23,13 +23,13 @@ class RolePermissionSeeder extends Seeder
 
         // Create roles
         $admin = Role::create(['name' => 'admin']);
-        $administrator = Role::create(['name' => 'administrator']);
+        $manager = Role::create(['name' => 'manager']);
         $editor = Role::create(['name' => 'editor']);
         $viewer = Role::create(['name' => 'viewer']);
 
         // Assign permissions to roles
         $admin->givePermissionTo(Permission::all());
-        $administrator->givePermissionTo(['view facilities', 'create facilities', 'edit facilities']);
+        $manager->givePermissionTo(['view facilities', 'create facilities', 'edit facilities']);
         $editor->givePermissionTo(['view facilities', 'create facilities', 'edit facilities']);
         $viewer->givePermissionTo(['view facilities']);
     }

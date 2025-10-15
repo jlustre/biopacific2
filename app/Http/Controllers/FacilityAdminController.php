@@ -21,6 +21,27 @@ use App\Models\Event;
 class FacilityAdminController extends Controller
 {
     /**
+     * Show the admin dashboard page.
+     */
+    public function dashboard()
+    {
+        // You can pass any data needed for the dashboard here
+        $facilities = Facility::all();
+        $activeFacilities = Facility::where('is_active', true)->count();
+        $inactiveFacilities = Facility::where('is_active', false)->count();
+        $testimonialsCount = Testimonial::count();
+        $faqsCount = Faq::count();
+        $facilitiesByState = Facility::all()->groupBy('state');
+        return view('admin.dashboard.index', compact(
+            'facilities',
+            'activeFacilities',
+            'inactiveFacilities',
+            'testimonialsCount',
+            'faqsCount',
+            'facilitiesByState'
+        ));
+    }
+    /**
      * Show the form for creating a new facility.
      */
     public function create()

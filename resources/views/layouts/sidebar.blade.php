@@ -6,14 +6,16 @@
         class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30 transform"
         :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
         <nav class="flex flex-col space-y-2">
+            <!-- Dashboard -->
             <a href="{{ route('admin.dashboard.index') }}"
                 class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
                 <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
             </a>
+            <!-- Facilities Menu -->
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
                     class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-100 font-bold' : '' }}">
-                    <i class="fas fa-building mr-2"></i> Facilities
+                    <i class="fas fa-building mr-2"></i> Facilities Mgmnt
                     <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
@@ -109,6 +111,12 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Users Management -->
+            <a href="{{ route('admin.users.index') }}"
+                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.users.*') ? 'bg-gray-100 font-bold' : '' }}">
+                <i class="fas fa-users mr-2"></i> Users Mgmnt
+            </a>
 
         </nav>
     </aside>
