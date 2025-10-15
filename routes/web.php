@@ -19,6 +19,9 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Admin\EventController;
+use App\Http\Controllers\Admin\CareersController;
+use App\Http\Controllers\JobApplicationController;
+use App\Http\Controllers\CareersApplicationsController;
 
 
 // Public Facility Route (similar to admin preview but public access)
@@ -289,7 +292,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/admin/facilities/web-contents/news-events', [FacilityAdminController::class, 'newsEvents'])->name('facilities.webcontents.news-events');
     Route::get('/facilities/{facility}/news-events', [FacilityAdminController::class, 'manageNewsEvents'])->name('facilities.news-events.manage');
     Route::get('/facilities/web-contents/blogs', [FacilityAdminController::class, 'blogs'])->name('facilities.webcontents.blogs');
-    Route::get('/facilities/web-contents/careers', [FacilityAdminController::class, 'careers'])->name('facilities.webcontents.careers');
     
     Route::get('/{facility:slug}/admin', fn(Facility $facility) => view('facility.show', compact('facility')))->name('facility.show.admin');
     Route::get('/facility/{id}/preview', [DashboardController::class, 'facility'])->name('dashboard.facility');
@@ -325,7 +327,20 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     // Clear all gallery images for a facility
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
     Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('hipaa.toggle');
-    });
+});
+
+
+// Careers CRUD and applications routes
+Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('careers', [CareersController::class, 'index'])->name('admin.facilities.webcontents.careers');
+    Route::post('careers', [CareersController::class, 'store'])->name('admin.facilities.webcontents.careers.store');
+    Route::put('careers/{jobOpening}', [CareersController::class, 'update'])->name('admin.facilities.webcontents.careers.update');
+    Route::delete('careers/{jobOpening}', [CareersController::class, 'destroy'])->name('admin.facilities.webcontents.careers.destroy');
+    Route::get('careers/{jobOpening}/applications', [CareersController::class, 'applications'])->name('admin.facilities.webcontents.careers.applications');
+    Route::put('careers/{jobOpening}/applications/{jobApplication}', [CareersController::class, 'updateApplication'])->name('admin.facilities.webcontents.careers.applications.update');
+    Route::delete('careers/{jobOpening}/applications/{jobApplication}', [CareersController::class, 'destroyApplication'])->name('admin.facilities.webcontents.careers.applications.destroy');
+    Route::get('careers/applications/{jobApplication}/details', [CareersController::class, 'applicationDetails'])->name('admin.facilities.webcontents.careers.applications.details');
+});
 
 
 // General dashboard and user settings for all authenticated users
@@ -358,7 +373,18 @@ require __DIR__.'/admin_webmaster_contacts.php';
 // Auth routes
 require __DIR__.'/auth.php';
 
+// Public-facing job application route
+use App\Http\Controllers\CareersPublicController;
+
+Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('careers.apply');
+
 // Public Facility Route (catch-all, must be last)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+
+// Job applications viewing route
+Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->name('applications.show');
+
+// List job applications for a facility
+Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
 
 

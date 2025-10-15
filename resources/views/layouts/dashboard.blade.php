@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-scheme-dropdown.css">
+    <script src="https://cdn.tiny.cloud/1/hggcx7g2kfrgugocare6vapc39m9hxb4unvnk9nui4od2ftg/tinymce/8/tinymce.min.js"
+        referrerpolicy="origin" crossorigin="anonymous"></script>
     @livewireStyles
 </head>
 
@@ -39,7 +41,7 @@
         </div>
     </main>
 
-    @stack('scripts')
+    @yield('scripts')
     @livewireScripts
 
     <script src="/js/color-scheme-dropdown.js"></script>
