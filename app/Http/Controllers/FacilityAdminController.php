@@ -565,7 +565,8 @@ class FacilityAdminController extends Controller
     public function blogs()
     {
         $facilities = Facility::orderBy('name')->get();
-        return view('admin.facilities.webcontents.blogs', compact('facilities'));
+        $blogs = \App\Models\Blog::with('facilities')->latest()->get();
+        return view('admin.facilities.webcontents.blogs', compact('facilities', 'blogs'));
     }
 
     public function manageNewsEvents($facilityId)

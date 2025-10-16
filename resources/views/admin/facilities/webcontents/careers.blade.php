@@ -196,12 +196,14 @@
 @section('scripts')
 <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
-    // Store jobs in JS for quick lookup
     const jobs = @json($jobOpenings);
     let editorInstance = null;
 
     function editJob(id) {
+        console.log('editJob called with id:', id);
+        console.log('jobs array:', jobs);
         const job = jobs.find(j => j.id === id);
+        console.log('matched job:', job);
         if (!job) return;
         document.getElementById('jobFormTitle').innerText = 'Edit Job Opening';
         document.getElementById('jobForm').action = `/admin/facilities/webcontents/careers/${id}`;
@@ -253,18 +255,22 @@
         if (methodInput) methodInput.remove();
     }
 
-    // CKEditor initialization
+    // CKEditor 5 initialization
     document.addEventListener('DOMContentLoaded', function() {
-        ClassicEditor.create(document.querySelector('textarea.rtf-editor'), {
-            toolbar: [
-                'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo'
-            ],
-            table: {
-                contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-            }
-        }).then(editor => {
-            editorInstance = editor;
-        }).catch(error => { console.error(error); });
+        if (window.ClassicEditor) {
+            ClassicEditor.create(document.querySelector('#job_description'), {
+                toolbar: [
+                    'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo'
+                ],
+                table: {
+                    contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+                }
+            }).then(editor => {
+                editorInstance = editor;
+            }).catch(error => { console.error(error); });
+        } else {
+            console.error('ClassicEditor is not defined. CKEditor 5 CDN may not be loaded.');
+        }
     });
 </script>
 @endsection

@@ -25,62 +25,77 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Facility Selection -->
-        <div class="mb-8 bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Select a Facility</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                @foreach($facilities as $facility)
-                <div
-                    class="bg-white border border-gray-300 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer group">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-building text-primary text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-sm font-semibold text-gray-900 truncate">{{ $facility->name }}</h3>
-                            <p class="text-sm text-gray-500 truncate">{{ $facility->city ?? 'N/A' }}, {{
-                                $facility->state ?? 'N/A' }}</p>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <i
-                                class="fas fa-chevron-right text-gray-400 group-hover:text-primary transition-colors"></i>
-                        </div>
-                    </div>
-                </div>
+        @include('admin.facilities.webcontents.partials.facility_dropdown', ['facilities' => $facilities])
+
+        @if (session('success'))
+        <div class="bg-green-100 text-green-800 p-2 mb-4 rounded">{{ session('success') }}</div>
+        @endif
+        @if ($errors->any())
+        <div class="bg-red-100 text-red-800 p-2 mb-4 rounded">
+            <ul class="list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
                 @endforeach
-            </div>
+            </ul>
         </div>
+        @endif
 
         <!-- Placeholder Content -->
         <div class="bg-white rounded-lg shadow p-8">
-            <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-4">
-                    <i class="fas fa-blog text-primary text-xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Blogs Management</h3>
-                <p class="text-gray-500 mb-6">Select a facility above to manage its blog content. This page will allow
-                    you to:</p>
-                <ul class="text-sm text-gray-600 space-y-2 max-w-md mx-auto text-left">
-                    <li class="flex items-center">
-                        <i class="fas fa-check text-green-500 mr-2"></i>
-                        Create and edit blog posts
-                    </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check text-green-500 mr-2"></i>
-                        Schedule posts for publication
-                    </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check text-green-500 mr-2"></i>
-                        Categorize and tag content
-                    </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check text-green-500 mr-2"></i>
-                        Manage blog SEO settings
-                    </li>
-                </ul>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Blog Management</h2>
+                <a href="{{ route('admin.blogs.create') }}"
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Blog</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border rounded shadow">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2">Title</th>
+                            <th class="px-4 py-2">Scope</th>
+                            <th class="px-4 py-2">Published At</th>
+                            <th class="px-4 py-2">Status</th>
+                            <th class="px-4 py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($blogs as $blog)
+                        <tr>
+                            <td class="border px-4 py-2">{{ $blog->title }}</td>
+                            <td class="border px-4 py-2">{{ $blog->is_global ? 'Global' : 'Local' }}</td>
+                            <td class="border px-4 py-2 text-sm">{{ $blog->published_at ?
+                                $blog->published_at->diffForHumans() : '-' }}</td>
+                            <td class="border px-4 py-2">
+                                <span
+                                    class="px-2 py-1 rounded {{ $blog->status == 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                    {{ $blog->status == 'published' ? 'Published' : 'Draft' }}
+                                </span>
+                            </td>
+                            <td class="border px-4 py-2 flex gap-2">
+                                <a href="{{ route('admin.blogs.edit', $blog->id) }}"
+                                    class="text-blue-600 hover:underline">Edit</a>
+                                <form action="{{ route('admin.blogs.destroy', $blog->id) }}" method="POST"
+                                    onsubmit="return confirm('Delete this blog?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500 py-6">No blogs found. Create your first
+                                blog post!</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 @endsection

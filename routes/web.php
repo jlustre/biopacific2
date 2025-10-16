@@ -256,8 +256,14 @@ Route::get('/{facility:slug}/accessibility', function (Facility $facility) {
     ]);
 })->name('accessibility');
 
+use App\Http\Controllers\BlogController;
 // Admin Routes (auth + admin role)
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+    // Blog management (admin only, under web contents)
+    Route::resource('blogs', BlogController::class)->names('blogs');
+    Route::get('blogs', [BlogController::class, 'index'])->name('blogs.index');
+    Route::get('blogs/{id}/edit', [BlogController::class, 'edit'])->name('blogs.edit');
+    Route::put('blogs/{id}', [BlogController::class, 'update'])->name('blogs.update');
     Route::get('/dashboard', [FacilityAdminController::class, 'dashboard'])->name('dashboard.index');
     Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
     Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
