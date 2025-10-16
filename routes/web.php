@@ -327,6 +327,16 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     // Clear all gallery images for a facility
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
     Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('hipaa.toggle');
+
+    // Admin Facility Testimonials Management
+    Route::prefix('facilities')->group(function () {
+        Route::get('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'index'])->name('admin.facilities.testimonials.index');
+        Route::get('/{facility}/testimonials/create', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'create'])->name('admin.facilities.testimonials.create');
+        Route::post('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'store'])->name('admin.facilities.testimonials.store');
+        Route::get('/{facility}/testimonials/{testimonial}/edit', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'edit'])->name('admin.facilities.testimonials.edit');
+        Route::put('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'update'])->name('admin.facilities.testimonials.update');
+        Route::delete('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'destroy'])->name('admin.facilities.testimonials.destroy');
+    });
 });
 
 
@@ -386,5 +396,8 @@ Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->nam
 
 // List job applications for a facility
 Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
+
+// API endpoint for fetching a single testimonial (for edit modal)
+Route::get('/admin/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
 
 

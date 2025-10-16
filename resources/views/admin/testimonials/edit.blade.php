@@ -13,25 +13,23 @@
                 value="{{ old('name', $testimonial->name) }}">
         </div>
         <div class="mb-4">
-            <label class="block mb-1 font-semibold">Role</label>
-            <input type="text" name="role" class="w-full border rounded px-3 py-2"
-                value="{{ old('role', $testimonial->role) }}">
+            <label class="block mb-1 font-semibold">Relationship</label>
+            <input type="text" name="relationship" class="w-full border rounded px-3 py-2"
+                value="{{ old('relationship', $testimonial->relationship) }}">
         </div>
         <div class="mb-4 flex items-center gap-4">
             <div>
                 <label class="block mb-1 font-semibold">Photo</label>
                 <input type="file" name="photo" accept="image/*" class="block">
+                <input type="hidden" name="photo_url" value="{{ $testimonial->photo_url }}">
             </div>
             <div class="flex flex-col items-center">
                 <span class="block mb-1 font-semibold">Preview</span>
                 @php
-                $avatar = old('avatar', $testimonial->avatar ?? null);
-                $photoUrl = $testimonial->photo_url ?? null;
+                $photoUrl = old('photo_url', $testimonial->photo_url ?? null);
                 @endphp
                 @if ($photoUrl)
                 <img src="{{ $photoUrl }}" alt="Photo" class="w-16 h-16 rounded-full object-cover border">
-                @elseif ($avatar)
-                <img src="{{ $avatar }}" alt="Avatar" class="w-16 h-16 rounded-full object-cover border">
                 @else
                 <svg class="w-16 h-16 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                     <path
@@ -47,13 +45,13 @@
         </div>
         <div class="mb-4">
             <label class="block mb-1 font-semibold">Title</label>
-            <input type="text" name="title" class="w-full border rounded px-3 py-2" required
+            <input type="text" name="title" class="w-full border rounded px-3 py-2"
                 value="{{ old('title', $testimonial->title) }}">
         </div>
         <div class="mb-4">
-            <label class="block mb-1 font-semibold">Text</label>
-            <textarea name="text" class="w-full border rounded px-3 py-2" rows="4"
-                required>{{ old('text', $testimonial->text) }}</textarea>
+            <label class="block mb-1 font-semibold">Quote</label>
+            <textarea name="quote" class="w-full border rounded px-3 py-2"
+                rows="4">{{ old('quote', $testimonial->quote) }}</textarea>
         </div>
         <button type="submit" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary/80">Update</button>
         <a href="{{ route('admin.facilities.testimonials.index', $facility->id) }}"

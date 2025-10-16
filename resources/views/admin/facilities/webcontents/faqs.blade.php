@@ -25,39 +25,7 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Facility Selection -->
-        <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
-            <!-- Facility Dropdown -->
-            <div class="mb-6">
-                <label for="facilitySelect" class="block text-sm font-semibold text-gray-700 mb-3">Select
-                    Facility:</label>
-                <div class="relative w-full max-w-md">
-                    <select id="facilitySelect" name="facility_id"
-                        class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl bg-white text-gray-700 font-medium focus:ring-3 focus:ring-teal-200 focus:border-teal-500 hover:border-gray-300 transition-all duration-200 appearance-none cursor-pointer shadow-sm text-sm sm:text-base">
-                        <option value="">Choose a facility...</option>
-                        @foreach($facilities as $facility)
-                        <option value="{{ $facility->id }}" data-name="{{ $facility->name }}"
-                            data-city="{{ $facility->city }}" data-state="{{ $facility->state }}"
-                            data-phone="{{ $facility->phone }}">
-                            {{ $facility->name }} - {{ $facility->city ?? 'N/A' }}, {{ $facility->state ?? 'N/A' }}
-                        </option>
-                        @endforeach
-                    </select>
-                    <!-- Right Arrow Icon -->
-                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-400 transition-colors duration-200" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                        </svg>
-                    </div>
-                    <!-- Left Building Icon -->
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                        <i class="fas fa-building text-gray-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="mt-2 text-xs text-gray-500 max-w-md">Select a facility to view and manage its FAQs</p>
-            </div>
-        </div>
+        @include('admin.facilities.webcontents.partials.facility_dropdown', ['facilities' => $facilities])
 
         <!-- FAQs Content Area -->
         <div id="faqsContent" class="hidden">
