@@ -137,8 +137,8 @@ class FacilityAdminController extends Controller
         $selectedSections = $layoutData['sections'];
 
         $colorSchemes = ColorScheme::orderBy('name')->get();
-        $allServices = Service::orderBy('title')->get();
-        $services = Service::orderBy('title')->get();
+    $allServices = Service::orderBy('name')->get();
+    $services = Service::orderBy('name')->get();
         
         $faqs = FacilityDataHelper::getFaqs($facility);
         $categories = $faqs->pluck('category')->filter()->unique()->values();

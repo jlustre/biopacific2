@@ -12,7 +12,6 @@ use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Appearance;
 use App\Models\Facility;
-
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -22,18 +21,12 @@ use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\CareersController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
+use App\Http\Controllers\ServicesController;
 
-
-// Public Facility Route (similar to admin preview but public access)
-
-// Webmaster Contact
-Route::get('/{facility:slug}/webmaster/contact', function(App\Models\Facility $facility) {
-    return view('webmaster.contact', [
-        'facility' => $facility,
-        'sections' => ['topbar'],
-        'sectionVariances' => ['topbar' => 'legal'],
-    ]);
-})->name('webmaster.contact');
+// Services Management CRUD (Web Contents)
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('services', ServicesController::class);
+});
 Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.submit');
 
 
@@ -261,9 +254,6 @@ use App\Http\Controllers\BlogController;
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
     // Blog management (admin only, under web contents)
     Route::resource('blogs', BlogController::class)->names('blogs');
-    Route::get('blogs', [BlogController::class, 'index'])->name('blogs.index');
-    Route::get('blogs/{id}/edit', [BlogController::class, 'edit'])->name('blogs.edit');
-    Route::put('blogs/{id}', [BlogController::class, 'update'])->name('blogs.update');
     Route::get('/dashboard', [FacilityAdminController::class, 'dashboard'])->name('dashboard.index');
     Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
     Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
@@ -308,11 +298,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
     
     // Service CRUD routes
-    Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
-    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-    Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
-    Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
-    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
     
     // News management using FacilityAdminController
     Route::resource('news', NewsController::class)->names('news');

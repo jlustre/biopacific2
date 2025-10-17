@@ -97,10 +97,10 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             @foreach($services ?? [] as $service)
                             <div class="flex items-center">
-                                <input type="checkbox" id="service-{{ Str::slug($service->title) }}" name="services[]"
-                                    value="{{ $service->title }}" class="accent-blue-600 mr-2">
-                                <label for="service-{{ Str::slug($service->title) }}" class="text-slate-700">{{
-                                    $service->title }}</label>
+                                <input type="checkbox" id="service-{{ Str::slug($service->name) }}" name="services[]"
+                                    value="{{ $service->name }}" class="accent-blue-600 mr-2">
+                                <label for="service-{{ Str::slug($service->name) }}" class="text-slate-700">{{
+                                    $service->name }}</label>
                             </div>
                             @endforeach
                         </div>

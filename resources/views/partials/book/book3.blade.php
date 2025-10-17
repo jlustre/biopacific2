@@ -93,9 +93,9 @@
                                 @foreach($services as $service)
                                 <label
                                     class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-slate-50 px-3 py-2 text-sm">
-                                    <input type="checkbox" name="interests[]" value="{{ $service->title }}"
+                                    <input type="checkbox" name="interests[]" value="{{ $service->name }}"
                                         class="rounded border-blue-400 text-blue-600 focus:ring-blue-500">
-                                    <span>{{ $service->title }}</span>
+                                    <span>{{ $service->name }}</span>
                                 </label>
                                 @endforeach
                             </div>

@@ -87,12 +87,12 @@ class FacilityDataHelper
     
     public static function getServices(Facility $facility)
     {
-        $globalServices = Service::where('is_global', true)->orderBy('title')->get();
+    $globalServices = Service::where('is_global', true)->orderBy('order')->get();
         $facilityServiceIds = DB::table('facility_service')
             ->where('facility_id', $facility->id)
             ->pluck('service_id')
             ->toArray();
-        $facilityServices = Service::whereIn('id', $facilityServiceIds)->orderBy('title')->get();
+    $facilityServices = Service::whereIn('id', $facilityServiceIds)->orderBy('order')->get();
         return $globalServices->concat($facilityServices)->unique('id')->values();
     }
 

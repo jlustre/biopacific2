@@ -77,6 +77,7 @@ class HomeController extends Controller
             ->get();
     }
     $services = \App\Models\Service::orderBy('title')->get();
+    $services = \App\Models\Service::orderBy('name')->get();
     
     return view('welcome', [
         'facility' => $facility,

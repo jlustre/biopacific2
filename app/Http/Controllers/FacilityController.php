@@ -34,7 +34,7 @@ class FacilityController extends Controller
     public function index()
     {
         $facilities = Facility::all();
-        $services = \App\Models\Service::orderBy('title')->get();
+    $services = \App\Models\Service::orderBy('order')->get();
         return view('facilities.index', compact('facilities', 'services'));
     }
 

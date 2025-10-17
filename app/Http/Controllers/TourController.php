@@ -11,7 +11,7 @@ class TourController extends Controller
     public function showForm($view = 'book1')
     {
         // Fetch active services for dynamic interests
-        $services = Service::orderBy('title')->get();
+    $services = Service::orderBy('name')->get();
         return view('partials.book.' . $view, compact('services'));
     }
 

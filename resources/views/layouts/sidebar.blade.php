@@ -109,6 +109,10 @@
                         class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-briefcase mr-2"></i> Careers Management
                     </a>
+                    <a href="{{ route('admin.services.index') }}"
+                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-cogs mr-2"></i> Services Management
+                    </a>
                 </div>
             </div>
 

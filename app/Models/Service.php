@@ -10,18 +10,23 @@ class Service extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'title',
-        'description',
+        'name',
+        'short_description',
+        'is_global',
+        'detailed_description',
         'icon',
-        'image_url',
+        'image',
         'order',
         'is_featured',
-        'is_active'
+        'is_active',
+        'features', // new
     ];
 
     protected $casts = [
+        'is_global' => 'boolean',
         'is_featured' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'features' => 'array', // new
     ];
 
     public function facilities()

@@ -124,9 +124,9 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                             @foreach($services ?? [] as $service)
                             <label
                                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                                <input type="checkbox" name="interests[]" value="{{ $service->title }}"
+                                <input type="checkbox" name="interests[]" value="{{ $service->name }}"
                                     class="rounded text-sky-600 focus:ring-sky-500">
-                                <span>{{ $service->title }}</span>
+                                <span>{{ $service->name }}</span>
                             </label>
                             @endforeach
                         </div>
