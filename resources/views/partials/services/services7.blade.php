@@ -10,8 +10,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 <section id="services" class="py-16 bg-gradient-to-tr from-sky-50 via-gray-50 to-blue-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-12 text-center">
-            <h2 class="text-4xl font-extrabold text-blue-900 mb-3 tracking-tight drop-shadow">Slidable Service Gallery
-            </h2>
+            <h2 class="text-4xl font-extrabold text-blue-900 mb-3 tracking-tight drop-shadow">Our Services</h2>
             <p class="text-lg text-blue-700 max-w-2xl mx-auto">Swipe through our services—each card highlights a unique
                 offering for residents.</p>
         </div>
