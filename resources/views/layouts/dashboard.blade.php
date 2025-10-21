@@ -40,7 +40,7 @@
         </div>
     </main>
 
-    @yield('scripts')
+    @stack('scripts')
     @livewireScripts
 
     <script src="/js/color-scheme-dropdown.js"></script>

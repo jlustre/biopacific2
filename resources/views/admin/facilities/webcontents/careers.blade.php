@@ -271,6 +271,26 @@
         } else {
             console.error('ClassicEditor is not defined. CKEditor 5 CDN may not be loaded.');
         }
+
+        const facilitySelect = document.getElementById('facilitySelect');
+
+        // Restore the last selected facility from localStorage
+        const savedFacilityId = localStorage.getItem('selectedFacilityId');
+        if (savedFacilityId && facilitySelect) {
+            facilitySelect.value = savedFacilityId;
+        }
+
+        facilitySelect?.addEventListener('change', function() {
+            const facilityId = this.value;
+
+            if (facilityId) {
+                // Save the selected facility ID to localStorage
+                localStorage.setItem('selectedFacilityId', facilityId);
+            } else {
+                // Clear the saved facility ID if no facility is selected
+                localStorage.removeItem('selectedFacilityId');
+            }
+        });
     });
 </script>
 @endsection

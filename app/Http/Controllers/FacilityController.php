@@ -43,6 +43,9 @@ class FacilityController extends Controller
      */
     public function publicView(Facility $facility)
     {
+        // Temporary debug log to trace request flow
+        // \Log::info('Facility publicView accessed', ['facility' => $facility->toArray()]);
+
         $global = DB::table('global_shutdowns')->orderByDesc('id')->first();
         if ($global && $global->is_shutdown) {
             return response()->view('shutdown', [

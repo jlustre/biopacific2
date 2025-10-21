@@ -111,4 +111,40 @@
 </div>
 </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const facilitySelect = document.querySelector('[name="facility_id"]');
+        const galleryContent = document.querySelector('.gallery-content');
+        const defaultState = document.querySelector('.default-state');
+
+        // Restore the last selected facility from localStorage
+        const savedFacilityId = localStorage.getItem('selectedFacilityId');
+        if (savedFacilityId && facilitySelect) {
+            facilitySelect.value = savedFacilityId;
+            facilitySelect.dispatchEvent(new Event('change'));
+        }
+
+        facilitySelect?.addEventListener('change', function() {
+            const facilityId = this.value;
+
+            if (facilityId) {
+                // Save the selected facility ID to localStorage
+                localStorage.setItem('selectedFacilityId', facilityId);
+
+                // Update the UI to reflect the selected facility
+                galleryContent?.classList.remove('hidden');
+                defaultState?.classList.add('hidden');
+
+                // Optionally, load gallery images for the selected facility
+                // loadGalleryImages(facilityId);
+            } else {
+                // Clear the saved facility ID if no facility is selected
+                localStorage.removeItem('selectedFacilityId');
+
+                galleryContent?.classList.add('hidden');
+                defaultState?.classList.remove('hidden');
+            }
+        });
+    });
+</script>
 @endsection

@@ -19,7 +19,7 @@
     @include('layouts.sidebar_user')
     <main class="py-8">
         <div class="max-w-7xl mx-auto">
-            @yield('content')
+            @stack('content')
         </div>
     </main>
     @stack('scripts')

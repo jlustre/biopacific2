@@ -298,17 +298,29 @@ class FacilityAdminController extends Controller
 
     public function getTestimonials($facilityId)
     {
-        $facility = Facility::findOrFail($facilityId);
-        $testimonials = $facility->testimonials()
-            ->orderByDesc('is_featured')
-            ->orderByDesc('created_at')
-            ->get();
-        
-        return response()->json([
-            'success' => true,
-            'testimonials' => $testimonials,
-            'count' => $testimonials->count()
-        ]);
+        try {
+            $facility = Facility::findOrFail($facilityId);
+            $testimonials = $facility->testimonials()
+                ->orderByDesc('is_featured')
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'testimonials' => $testimonials,
+                'count' => $testimonials->count()
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Facility not found.'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching testimonials.'
+            ], 500);
+        }
     }
 
     public function storeTestimonial(Request $request)

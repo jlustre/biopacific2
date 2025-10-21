@@ -22,27 +22,16 @@ use App\Http\Controllers\Admin\CareersController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
 use App\Http\Controllers\ServicesController;
+use Illuminate\Support\Facades\Auth;
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('services', ServicesController::class);
 });
+
 Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.submit');
 
-
-// Home & Landing
-use Illuminate\Support\Facades\Auth;
-
-Route::get('/', function() {
-    if (Auth::check()) {
-        $user = Auth::user();
-        if ($user && method_exists($user, 'hasRole') && $user->hasRole('admin')) {
-            return redirect()->route('admin.dashboard.index');
-        }
-        return redirect()->route('dashboard.index');
-    }
-    return redirect()->route('login');
-})->name('home');
+Route::get('/', [App\Http\Controllers\HomeController::class, 'home'])->name('home');
 
 Route::get('/index', fn() => view('index'))->name('index');
 
@@ -51,53 +40,60 @@ Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
     return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
 });
 
-Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
-    $facilityData = $facility->toArray();
-    $colors = [
-        'primary' => $facility->primary_color ?? '#047857',
-        'secondary' => $facility->secondary_color ?? '#1f2937', 
-        'accent' => $facility->accent_color ?? '#06b6d4'
-    ];
-    
-    // Get the facility's web content to determine sections
-    $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-    $sections = ['topbar']; // Always include topbar for navigation
-    $sectionVariances = ['topbar' => 'legal'];
-    
-    if ($activeWebContent && $activeWebContent->sections) {
-        if (is_string($activeWebContent->sections)) {
-            $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
-        } elseif (is_array($activeWebContent->sections)) {
-            $additionalSections = $activeWebContent->sections;
+// Ensure middleware is applied to the following routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
+        return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
+    });
+
+    Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
+        $facilityData = $facility->toArray();
+        $colors = [
+            'primary' => $facility->primary_color ?? '#047857',
+            'secondary' => $facility->secondary_color ?? '#1f2937', 
+            'accent' => $facility->accent_color ?? '#06b6d4'
+        ];
+        
+        // Get the facility's web content to determine sections
+        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+        $sections = ['topbar']; // Always include topbar for navigation
+        $sectionVariances = ['topbar' => 'legal'];
+        
+        if ($activeWebContent && $activeWebContent->sections) {
+            if (is_string($activeWebContent->sections)) {
+                $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
+            } elseif (is_array($activeWebContent->sections)) {
+                $additionalSections = $activeWebContent->sections;
+            }
+            
+            if (!empty($additionalSections) && is_array($additionalSections)) {
+                $sections = array_merge($sections, $additionalSections);
+            }
         }
         
-        if (!empty($additionalSections) && is_array($additionalSections)) {
-            $sections = array_merge($sections, $additionalSections);
-        }
-    }
-    
-    if ($activeWebContent && isset($activeWebContent->variances)) {
-        if (is_string($activeWebContent->variances)) {
-            $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
-        } elseif (is_array($activeWebContent->variances)) {
-            $additionalVariances = $activeWebContent->variances;
+        if ($activeWebContent && isset($activeWebContent->variances)) {
+            if (is_string($activeWebContent->variances)) {
+                $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
+            } elseif (is_array($activeWebContent->variances)) {
+                $additionalVariances = $activeWebContent->variances;
+            }
+            
+            if (!empty($additionalVariances) && is_array($additionalVariances)) {
+                $sectionVariances = array_merge($sectionVariances, $additionalVariances);
+            }
         }
         
-        if (!empty($additionalVariances) && is_array($additionalVariances)) {
-            $sectionVariances = array_merge($sectionVariances, $additionalVariances);
-        }
-    }
-    
-    // Force legal topbar variant for legal pages (must be after merging)
-    $sectionVariances['topbar'] = 'legal';
-    
-    return view('privacy-policy', [
-        'facility' => $facilityData,
-        'colors' => $colors,
-        'sections' => $sections,
-        'sectionVariances' => $sectionVariances
-    ]);
-})->name('privacy.policy');
+        // Force legal topbar variant for legal pages (must be after merging)
+        $sectionVariances['topbar'] = 'legal';
+        
+        return view('privacy-policy', [
+            'facility' => $facilityData,
+            'colors' => $colors,
+            'sections' => $sections,
+            'sectionVariances' => $sectionVariances
+        ]);
+    })->name('privacy.policy');
+});
 
 // Notice of Privacy Practices
 Route::get('/{facility:slug}/notice-of-privacy-practices', function (Facility $facility) {
@@ -342,7 +338,6 @@ Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin']
     Route::delete('careers/{jobOpening}/applications/{jobApplication}', [CareersController::class, 'destroyApplication'])->name('admin.facilities.webcontents.careers.applications.destroy');
     Route::get('careers/applications/{jobApplication}/details', [CareersController::class, 'applicationDetails'])->name('admin.facilities.webcontents.careers.applications.details');
 });
-
 
 // General dashboard and user settings for all authenticated users
 Route::middleware(['auth'])->group(function () {

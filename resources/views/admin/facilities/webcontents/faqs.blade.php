@@ -326,44 +326,82 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     let currentFacilityId = null;
 
-    // Facility selection handling
-    document.getElementById('facilitySelect').addEventListener('change', function() {
-        const facilityId = this.value;
-        currentFacilityId = facilityId;
-        
-        if (facilityId) {
-            const selectedOption = this.options[this.selectedIndex];
-            const facilityName = selectedOption.getAttribute('data-name');
-            const facilityCity = selectedOption.getAttribute('data-city');
-            const facilityState = selectedOption.getAttribute('data-state');
+    document.addEventListener('DOMContentLoaded', function() {
+        const facilitySelect = document.getElementById('facilitySelect');
+        const faqsContent = document.getElementById('faqsContent');
+        const defaultState = document.getElementById('defaultState');
+        const selectedFacilityName = document.getElementById('selectedFacilityName');
+        const selectedFacilityLocation = document.getElementById('selectedFacilityLocation');
+        const selectedFacilityPhone = document.getElementById('selectedFacilityPhone');
+
+        // Restore the last selected facility from localStorage
+        const savedFacilityId = localStorage.getItem('selectedFacilityId');
+        if (savedFacilityId) {
+            facilitySelect.value = savedFacilityId;
+            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
+            currentFacilityId = savedFacilityId;
+
+            // Update the UI to reflect the restored facility
+            faqsContent.classList.remove('hidden');
+            defaultState.classList.add('hidden');
+            selectedFacilityName.textContent = selectedOption.getAttribute('data-name');
+            selectedFacilityLocation.textContent = `${selectedOption.getAttribute('data-city')}, ${selectedOption.getAttribute('data-state')}`;
+
+            // Format and display phone number (if applicable)
             const facilityPhone = selectedOption.getAttribute('data-phone');
-            
-            document.getElementById('selectedFacilityName').textContent = facilityName;
-            document.getElementById('selectedFacilityLocation').textContent = `${facilityCity}, ${facilityState}`;
-            
-            // Format and display phone number
-            const phoneElement = document.getElementById('selectedFacilityPhone');
             if (facilityPhone && facilityPhone.trim() !== '') {
-                // Format phone number
                 const digits = facilityPhone.replace(/\D/g, '');
                 let formattedPhone = facilityPhone;
                 if (digits.length === 10) {
                     formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
                 }
-                phoneElement.textContent = formattedPhone;
-                phoneElement.parentElement.style.display = 'flex';
+                selectedFacilityPhone.textContent = formattedPhone;
+                selectedFacilityPhone.parentElement.style.display = 'flex';
             } else {
-                phoneElement.parentElement.style.display = 'none';
+                selectedFacilityPhone.parentElement.style.display = 'none';
             }
-            
-            document.getElementById('defaultState').classList.add('hidden');
-            document.getElementById('faqsContent').classList.remove('hidden');
-            
-            loadFaqs(facilityId);
-        } else {
-            document.getElementById('defaultState').classList.remove('hidden');
-            document.getElementById('faqsContent').classList.add('hidden');
+
+            loadFaqs(savedFacilityId);
         }
+
+        facilitySelect.addEventListener('change', function() {
+            const facilityId = this.value;
+            currentFacilityId = facilityId;
+
+            if (facilityId) {
+                // Save the selected facility ID to localStorage
+                localStorage.setItem('selectedFacilityId', facilityId);
+
+                const selectedOption = this.options[this.selectedIndex];
+                faqsContent.classList.remove('hidden');
+                defaultState.classList.add('hidden');
+                selectedFacilityName.textContent = selectedOption.getAttribute('data-name');
+                selectedFacilityLocation.textContent = `${selectedOption.getAttribute('data-city')}, ${selectedOption.getAttribute('data-state')}`;
+
+                // Format and display phone number (if applicable)
+                const facilityPhone = selectedOption.getAttribute('data-phone');
+                if (facilityPhone && facilityPhone.trim() !== '') {
+                    const digits = facilityPhone.replace(/\D/g, '');
+                    let formattedPhone = facilityPhone;
+                    if (digits.length === 10) {
+                        formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
+                    }
+                    selectedFacilityPhone.textContent = formattedPhone;
+                    selectedFacilityPhone.parentElement.style.display = 'flex';
+                } else {
+                    selectedFacilityPhone.parentElement.style.display = 'none';
+                }
+
+                loadFaqs(facilityId);
+            } else {
+                // Clear the saved facility ID if no facility is selected
+                localStorage.removeItem('selectedFacilityId');
+
+                currentFacilityId = null;
+                faqsContent.classList.add('hidden');
+                defaultState.classList.remove('hidden');
+            }
+        });
     });
 
     // Modal event listeners

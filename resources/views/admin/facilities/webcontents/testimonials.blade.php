@@ -39,6 +39,7 @@
                         <div class="ml-3">
                             <h3 id="selectedFacilityName" class="text-lg font-semibold text-blue-900"></h3>
                             <p id="selectedFacilityLocation" class="text-sm text-blue-700"></p>
+                            <p id="selectedFacilityPhone" class="text-sm text-blue-700 hidden"></p>
                         </div>
                     </div>
                 </div>
@@ -244,113 +245,114 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <label for="testimonialText"
-                                        class="block text-sm font-semibold text-gray-700 mb-2">Testimonial Content <span
-                                            class="text-gray-400 text-sm">(Short Version)</span><span
-                                            class="text-red-500">*</span></label>
-                                    <textarea id="testimonialText" name="quote" rows="6" required
-                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
-                                        placeholder="Write the testimonial content here. Share the positive experience and what made our facility special..."></textarea>
-                                    <p class="text-xs text-gray-500 mt-2">Minimum 20 characters recommended for a
-                                        meaningful testimonial</p>
-                                </div>
-                                <div>
-                                    <label for="testimonialStory"
-                                        class="block text-sm font-semibold text-gray-700 mb-2">Testimonial Story <span
-                                            class="text-gray-400 text-sm">(Full story)</span></label>
-                                    <textarea id="testimonialStory" name="story" rows="4"
-                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
-                                        placeholder="Share a longer story or details about the experience..."></textarea>
-                                    <p class="text-xs text-gray-500 mt-2">Optional: Add more details about the
-                                        testimonial experience</p>
-                                </div>
+                            </div>
+                            <div>
+                                <label for="testimonialText"
+                                    class="block text-sm font-semibold text-gray-700 mb-2">Testimonial Content <span
+                                        class="text-gray-400 text-sm">(Short Version)</span><span
+                                        class="text-red-500">*</span></label>
+                                <textarea id="testimonialText" name="quote" rows="6" required
+                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
+                                    placeholder="Write the testimonial content here. Share the positive experience and what made our facility special..."></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Minimum 20 characters recommended for a
+                                    meaningful testimonial</p>
+                            </div>
+                            <div>
+                                <label for="testimonialStory"
+                                    class="block text-sm font-semibold text-gray-700 mb-2">Testimonial Story <span
+                                        class="text-gray-400 text-sm">(Full story)</span></label>
+                                <textarea id="testimonialStory" name="story" rows="4"
+                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
+                                    placeholder="Share a longer story or details about the experience..."></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Optional: Add more details about the
+                                    testimonial experience</p>
                             </div>
                         </div>
-                        <!-- Options Section -->
-                        <div class="mb-8">
-                            <div class="flex items-center mb-4">
-                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                                    <i class="fas fa-cog text-purple-600"></i>
-                                </div>
-                                <h4 class="text-lg font-semibold text-gray-800">Display Options</h4>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-5">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <label
-                                        class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-teal-300 cursor-pointer transition-all duration-200">
-                                        <input type="checkbox" id="isActive" name="is_active" checked
-                                            class="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500 focus:ring-2">
-                                        <div class="ml-3">
-                                            <div class="text-sm font-semibold text-gray-700">Active</div>
-                                            <div class="text-xs text-gray-500">Visible on website</div>
-                                        </div>
-                                    </label>
-                                    <label
-                                        class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-yellow-300 cursor-pointer transition-all duration-200">
-                                        <input type="checkbox" id="isFeatured" name="is_featured"
-                                            class="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 focus:ring-2">
-                                        <div class="ml-3">
-                                            <div class="text-sm font-semibold text-gray-700">Featured</div>
-                                            <div class="text-xs text-gray-500">Highlighted testimonial</div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                            <!-- Avatar Upload Section (moved below checkboxes) -->
-                            <div class="mt-6">
-                                <div class="flex items-center mb-4">
-                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                        <i class="fas fa-image text-blue-600"></i>
-                                    </div>
-                                    <h4 class="text-lg font-semibold text-gray-800">Avatar Photo</h4>
-                                </div>
-                                <div class="flex items-center space-x-6">
-                                    <div>
-                                        <div id="defaultAvatar"
-                                            class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border">
-                                            <i class="fas fa-user text-gray-400 text-3xl"></i>
-                                        </div>
-                                        <img id="photoPreview" src="" alt="Avatar Preview"
-                                            class="w-16 h-16 rounded-full object-cover border hidden">
-                                    </div>
-                                    <div>
-                                        <input type="file" id="photo" name="photo" accept="image/*"
-                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                        <input type="hidden" id="currentPhotoUrl" name="photo_url" value="">
-                                        <p class="text-xs text-gray-500 mt-2">Upload a square image for best results.
-                                            Max size: 2MB.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Modal Footer -->
-                        <div class="bg-gray-50 px-8 py-6 rounded-b-2xl border-t border-gray-200">
-                            <div class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
-                                <div class="text-sm text-gray-500">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    All fields marked with <span class="text-red-500">*</span> are required
-                                </div>
-                                <div class="flex space-x-3">
-                                    <button type="button" id="cancelModalBtn"
-                                        class="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold transition-all duration-200 flex items-center space-x-2">
-                                        <i class="fas fa-times"></i>
-                                        <span>Cancel</span>
-                                    </button>
-                                    <button type="submit" form="testimonialForm" id="submitButton"
-                                        class="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2">
-                                        <i class="fas fa-plus" id="submitIcon"></i>
-                                        <span id="submitText">Add Testimonial</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
                 </div>
+                <!-- Options Section -->
+                <div class="mb-8">
+                    <div class="flex items-center mb-4">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-cog text-purple-600"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800">Display Options</h4>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <label
+                                class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-teal-300 cursor-pointer transition-all duration-200">
+                                <input type="checkbox" id="isActive" name="is_active" checked
+                                    class="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500 focus:ring-2">
+                                <div class="ml-3">
+                                    <div class="text-sm font-semibold text-gray-700">Active</div>
+                                    <div class="text-xs text-gray-500">Visible on website</div>
+                                </div>
+                            </label>
+                            <label
+                                class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-yellow-300 cursor-pointer transition-all duration-200">
+                                <input type="checkbox" id="isFeatured" name="is_featured"
+                                    class="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 focus:ring-2">
+                                <div class="ml-3">
+                                    <div class="text-sm font-semibold text-gray-700">Featured</div>
+                                    <div class="text-xs text-gray-500">Highlighted testimonial</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Avatar Upload Section (moved below checkboxes) -->
+                    <div class="mt-6">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-image text-blue-600"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold text-gray-800">Avatar Photo</h4>
+                        </div>
+                        <div class="flex items-center space-x-6">
+                            <div>
+                                <div id="defaultAvatar"
+                                    class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border">
+                                    <i class="fas fa-user text-gray-400 text-3xl"></i>
+                                </div>
+                                <img id="photoPreview" src="" alt="Avatar Preview"
+                                    class="w-16 h-16 rounded-full object-cover border hidden">
+                            </div>
+                            <div>
+                                <input type="file" id="photo" name="photo" accept="image/*"
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                <input type="hidden" id="currentPhotoUrl" name="photo_url" value="">
+                                <p class="text-xs text-gray-500 mt-2">Upload a square image for best results.
+                                    Max size: 2MB.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Modal Footer -->
+                <div class="bg-gray-50 px-8 py-6 rounded-b-2xl border-t border-gray-200">
+                    <div class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            All fields marked with <span class="text-red-500">*</span> are required
+                        </div>
+                        <div class="flex space-x-3">
+                            <button type="button" id="cancelModalBtn"
+                                class="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold transition-all duration-200 flex items-center space-x-2">
+                                <i class="fas fa-times"></i>
+                                <span>Cancel</span>
+                            </button>
+                            <button type="submit" form="testimonialForm" id="submitButton"
+                                class="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2">
+                                <i class="fas fa-plus" id="submitIcon"></i>
+                                <span id="submitText">Add Testimonial</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection
 
@@ -444,20 +446,80 @@
     }
 
     // Facility selection event
-    facilitySelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        currentFacilityId = this.value;
-        if (this.value) {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if facilitySelect exists
+        if (!facilitySelect) {
+            return;
+        }
+
+        // Restore the last selected facility from localStorage
+        const savedFacilityId = localStorage.getItem('selectedFacilityId');
+        if (savedFacilityId) {
+            facilitySelect.value = savedFacilityId;
+            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
+            currentFacilityId = savedFacilityId;
+
+            // Update the UI to reflect the restored facility
             testimonialsContent.classList.remove('hidden');
             defaultState.classList.add('hidden');
             document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
             document.getElementById('selectedFacilityLocation').textContent = `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
-            loadTestimonials(this.value);
-        } else {
-            currentFacilityId = null;
-            testimonialsContent.classList.add('hidden');
-            defaultState.classList.remove('hidden');
+
+            // Format and display phone number (if applicable)
+            const phoneElement = document.getElementById('selectedFacilityPhone');
+            if (selectedOption.dataset.phone && selectedOption.dataset.phone.trim() !== '') {
+                const digits = selectedOption.dataset.phone.replace(/\D/g, '');
+                let formattedPhone = selectedOption.dataset.phone;
+                if (digits.length === 10) {
+                    formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
+                }
+                phoneElement.textContent = formattedPhone;
+                phoneElement.parentElement.style.display = 'flex';
+            } else {
+                phoneElement.parentElement.style.display = 'none';
+            }
+
+            // Load testimonials for the restored facility
+            loadTestimonials(savedFacilityId);
         }
+
+        facilitySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            currentFacilityId = this.value;
+
+            if (this.value) {
+                // Save the selected facility ID to localStorage
+                localStorage.setItem('selectedFacilityId', this.value);
+
+                testimonialsContent.classList.remove('hidden');
+                defaultState.classList.add('hidden');
+                document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
+                document.getElementById('selectedFacilityLocation').textContent = `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
+
+                // Format and display phone number (if applicable)
+                const phoneElement = document.getElementById('selectedFacilityPhone');
+                if (selectedOption.dataset.phone && selectedOption.dataset.phone.trim() !== '') {
+                    const digits = selectedOption.dataset.phone.replace(/\D/g, '');
+                    let formattedPhone = selectedOption.dataset.phone;
+                    if (digits.length === 10) {
+                        formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
+                    }
+                    phoneElement.textContent = formattedPhone;
+                    phoneElement.parentElement.style.display = 'flex';
+                } else {
+                    phoneElement.parentElement.style.display = 'none';
+                }
+
+                loadTestimonials(this.value);
+            } else {
+                // Clear the saved facility ID if no facility is selected
+                localStorage.removeItem('selectedFacilityId');
+
+                currentFacilityId = null;
+                testimonialsContent.classList.add('hidden');
+                defaultState.classList.remove('hidden');
+            }
+        });
     });
 </script>
 @endpush
