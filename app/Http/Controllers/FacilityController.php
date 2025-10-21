@@ -95,7 +95,7 @@ class FacilityController extends Controller
 
         return view('welcome', [
             'facility' => $facility,
-            'active_sections' => $activeSections,
+            'activeSections' => $activeSections,
             'primary' => $colors['primary'],
             'secondary' => $colors['secondary'],
             'accent' => $colors['accent'],

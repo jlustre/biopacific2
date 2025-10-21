@@ -23,6 +23,11 @@ use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
 use App\Http\Controllers\ServicesController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AccessibilityController;
+use App\Http\Controllers\TermsOfServiceController;
+use App\Http\Controllers\NoticeOfPrivacyPracticesController;
+use App\Http\Controllers\PrivacyPolicyController;
+use App\Http\Controllers\CareersPublicController;
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -42,208 +47,17 @@ Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
 
 // Ensure middleware is applied to the following routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
-        return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
-    });
-
-    Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
-        $facilityData = $facility->toArray();
-        $colors = [
-            'primary' => $facility->primary_color ?? '#047857',
-            'secondary' => $facility->secondary_color ?? '#1f2937', 
-            'accent' => $facility->accent_color ?? '#06b6d4'
-        ];
-        
-        // Get the facility's web content to determine sections
-        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-        $sections = ['topbar']; // Always include topbar for navigation
-        $sectionVariances = ['topbar' => 'legal'];
-        
-        if ($activeWebContent && $activeWebContent->sections) {
-            if (is_string($activeWebContent->sections)) {
-                $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
-            } elseif (is_array($activeWebContent->sections)) {
-                $additionalSections = $activeWebContent->sections;
-            }
-            
-            if (!empty($additionalSections) && is_array($additionalSections)) {
-                $sections = array_merge($sections, $additionalSections);
-            }
-        }
-        
-        if ($activeWebContent && isset($activeWebContent->variances)) {
-            if (is_string($activeWebContent->variances)) {
-                $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
-            } elseif (is_array($activeWebContent->variances)) {
-                $additionalVariances = $activeWebContent->variances;
-            }
-            
-            if (!empty($additionalVariances) && is_array($additionalVariances)) {
-                $sectionVariances = array_merge($sectionVariances, $additionalVariances);
-            }
-        }
-        
-        // Force legal topbar variant for legal pages (must be after merging)
-        $sectionVariances['topbar'] = 'legal';
-        
-        return view('privacy-policy', [
-            'facility' => $facilityData,
-            'colors' => $colors,
-            'sections' => $sections,
-            'sectionVariances' => $sectionVariances
-        ]);
-    })->name('privacy.policy');
+    Route::get('/{facility:slug}/privacy-policy', [PrivacyPolicyController::class, 'show'])->name('privacy.policy');
 });
 
 // Notice of Privacy Practices
-Route::get('/{facility:slug}/notice-of-privacy-practices', function (Facility $facility) {
-    // Format facility data like the welcome view does
-    $facilityData = $facility->toArray();
-    $colors = [
-        'primary' => $facility->primary_color ?? '#047857',
-        'secondary' => $facility->secondary_color ?? '#1f2937', 
-        'accent' => $facility->accent_color ?? '#06b6d4'
-    ];
-    
-    // Get the facility's web content to determine sections
-    $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-    $sections = ['topbar']; // Always include topbar for navigation
-    $sectionVariances = ['topbar' => 'legal'];
-    
-    if ($activeWebContent && $activeWebContent->sections) {
-        if (is_string($activeWebContent->sections)) {
-            $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
-        } elseif (is_array($activeWebContent->sections)) {
-            $additionalSections = $activeWebContent->sections;
-        }
-        
-        if (!empty($additionalSections) && is_array($additionalSections)) {
-            $sections = array_merge($sections, $additionalSections);
-        }
-    }
-    
-    if ($activeWebContent && isset($activeWebContent->variances)) {
-        if (is_string($activeWebContent->variances)) {
-            $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
-        } elseif (is_array($activeWebContent->variances)) {
-            $additionalVariances = $activeWebContent->variances;
-        }
-        
-        if (!empty($additionalVariances) && is_array($additionalVariances)) {
-            $sectionVariances = array_merge($sectionVariances, $additionalVariances);
-        }
-    }
-    
-    // Force legal topbar variant for legal pages (must be after merging)
-    $sectionVariances['topbar'] = 'legal';
-    
-    return view('notice-privacy-practices', [
-        'facility' => $facilityData,
-        'colors' => $colors,
-        'sections' => $sections,
-        'sectionVariances' => $sectionVariances
-    ]);
-})->name('notice.privacy.practices');
+Route::get('/{facility:slug}/notice-of-privacy-practices', [NoticeOfPrivacyPracticesController::class, 'show'])->name('notice.privacy.practices');
 
 // Terms of Service
-Route::get('/{facility:slug}/terms-of-service', function (Facility $facility) {
-    // Format facility data like the welcome view does
-    $facilityData = $facility->toArray();
-    $colors = [
-        'primary' => $facility->primary_color ?? '#047857',
-        'secondary' => $facility->secondary_color ?? '#1f2937', 
-        'accent' => $facility->accent_color ?? '#06b6d4'
-    ];
-    
-    // Get the facility's web content to determine sections
-    $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-    $sections = ['topbar']; // Always include topbar for navigation
-    $sectionVariances = ['topbar' => 'legal'];
-    
-    if ($activeWebContent && $activeWebContent->sections) {
-        if (is_string($activeWebContent->sections)) {
-            $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
-        } elseif (is_array($activeWebContent->sections)) {
-            $additionalSections = $activeWebContent->sections;
-        }
-        
-        if (!empty($additionalSections) && is_array($additionalSections)) {
-            $sections = array_merge($sections, $additionalSections);
-        }
-    }
-    
-    if ($activeWebContent && isset($activeWebContent->variances)) {
-        if (is_string($activeWebContent->variances)) {
-            $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
-        } elseif (is_array($activeWebContent->variances)) {
-            $additionalVariances = $activeWebContent->variances;
-        }
-        
-        if (!empty($additionalVariances) && is_array($additionalVariances)) {
-            $sectionVariances = array_merge($sectionVariances, $additionalVariances);
-        }
-    }
-    
-    // Force legal topbar variant for legal pages (must be after merging)
-    $sectionVariances['topbar'] = 'legal';
-    
-    return view('terms-of-service', [
-        'facility' => $facilityData,
-        'colors' => $colors,
-        'sections' => $sections,
-        'sectionVariances' => $sectionVariances
-    ]);
-})->name('terms.service');
+Route::get('/{facility:slug}/terms-of-service', [TermsOfServiceController::class, 'show'])->name('terms.service');
 
 // Accessibility
-Route::get('/{facility:slug}/accessibility', function (Facility $facility) {
-    // Format facility data like the welcome view does
-    $facilityData = $facility->toArray();
-    $colors = [
-        'primary' => $facility->primary_color ?? '#047857',
-        'secondary' => $facility->secondary_color ?? '#1f2937', 
-        'accent' => $facility->accent_color ?? '#06b6d4'
-    ];
-    
-    // Get the facility's web content to determine sections
-    $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
-    $sections = ['topbar']; // Always include topbar for navigation
-    $sectionVariances = ['topbar' => 'legal'];
-    
-    if ($activeWebContent && $activeWebContent->sections) {
-        if (is_string($activeWebContent->sections)) {
-            $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
-        } elseif (is_array($activeWebContent->sections)) {
-            $additionalSections = $activeWebContent->sections;
-        }
-        
-        if (!empty($additionalSections) && is_array($additionalSections)) {
-            $sections = array_merge($sections, $additionalSections);
-        }
-    }
-    
-    if ($activeWebContent && isset($activeWebContent->variances)) {
-        if (is_string($activeWebContent->variances)) {
-            $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
-        } elseif (is_array($activeWebContent->variances)) {
-            $additionalVariances = $activeWebContent->variances;
-        }
-        
-        if (!empty($additionalVariances) && is_array($additionalVariances)) {
-            $sectionVariances = array_merge($sectionVariances, $additionalVariances);
-        }
-    }
-    
-    // Force legal topbar variant for legal pages (must be after merging)
-    $sectionVariances['topbar'] = 'legal';
-    
-    return view('accessibility', [
-        'facility' => $facilityData,
-        'colors' => $colors,
-        'sections' => $sections,
-        'sectionVariances' => $sectionVariances
-    ]);
-})->name('accessibility');
+Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 'show'])->name('accessibility');
 
 use App\Http\Controllers\BlogController;
 // Admin Routes (auth + admin role)
@@ -291,9 +105,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('facilities.hipaa', compact('facility')))->name('facilities.hipaa');
     
     // Interactive HIPAA checklist for testing
-    Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('facilities.hipaa-interactive', compact('facility')))->name('facilities.hipaa.interactive');
-    
-    // Service CRUD routes
+    Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('livewire.hipaa-checklist-interactive', compact('facility')))->name('facilities.hipaa.interactive');
     
     // News management using FacilityAdminController
     Route::resource('news', NewsController::class)->names('news');
@@ -368,9 +180,6 @@ require __DIR__.'/admin_webmaster_contacts.php';
 
 // Auth routes
 require __DIR__.'/auth.php';
-
-// Public-facing job application route
-use App\Http\Controllers\CareersPublicController;
 
 Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('careers.apply');
 

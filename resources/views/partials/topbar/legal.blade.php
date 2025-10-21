@@ -11,8 +11,7 @@
                 @php
                 $isPreviewMode = strpos(request()->path(), 'admin/facility') !== false && strpos(request()->path(),
                 'preview') !== false;
-                $baseUrl = $isPreviewMode ? "/admin/facility/{$facility['id']}/preview" :
-                "/facility/{$facility['slug']}";
+                $baseUrl = $isPreviewMode ? "/admin/facility/{$facility['id']}/preview" : "/{$facility['slug']}";
                 @endphp
                 <a href="{{ $baseUrl }}" class="flex items-center gap-1">
                     <div class="flex flex-col">

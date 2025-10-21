@@ -1,5 +1,5 @@
 <div
-    class="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm hover:shadow-lg transition group overflow-hidden">
+    class="relative bg-teal-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl py-6 px-3 shadow-sm hover:shadow-lg transition group overflow-hidden">
     <!-- Facility ID badge (top left) -->
     <div class="absolute top-2 left-2 z-10">
         <span

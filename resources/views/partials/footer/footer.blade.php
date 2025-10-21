@@ -16,7 +16,7 @@
               <div class="relative">
                 <span
                   class="inline-flex h-12 w-12 rounded-2xl items-center justify-center bg-gradient-to-br from-primary to-primary/80 text-white font-bold text-lg shadow-lg">
-                  V
+                  {{ strtoupper(substr($facility['name'] ?? 'BP', 0, 2)) }}
                 </span>
                 <div class="absolute -top-1 -right-1 h-3 w-3 bg-green-400 rounded-full animate-pulse"></div>
               </div>
@@ -127,7 +127,8 @@
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Privacy Policy
-                </a></li>
+                </a>
+              </li>
               <li><a href="{{ route('terms.service', $facility['slug']) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
@@ -137,7 +138,8 @@
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Notice of Privacy Practices
-                </a></li>
+                </a>
+              </li>
               <li><a href="{{ route('accessibility', $facility['slug']) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>

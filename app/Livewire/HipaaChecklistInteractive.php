@@ -22,6 +22,15 @@ class HipaaChecklistInteractive extends Component
         $this->facility = $facility;
         $this->flags    = $facility->hipaa_flags ?? [];
         $this->computeRows();
+        $this->showCompletedMessage = $this->showCompletedMessage ?? false; // Ensure default value
+
+        // Debug initialization
+        dd([
+            'facility' => $this->facility,
+            'flags' => $this->flags,
+            'rows' => $this->rows,
+            'showCompletedMessage' => $this->showCompletedMessage,
+        ]);
     }
 
     public function updatedFlags()
@@ -74,9 +83,16 @@ class HipaaChecklistInteractive extends Component
         $completedCount = collect($this->rows)->where('passed', true)->count();
         $totalCount = count($this->rows);
         
+        dd([
+            'completedCount' => $completedCount,
+            'totalCount' => $totalCount,
+            'showCompletedMessage' => $this->showCompletedMessage,
+        ]);
+
         return view('livewire.hipaa-checklist-interactive', [
             'completedCount' => $completedCount,
             'totalCount' => $totalCount,
+            'showCompletedMessage' => $this->showCompletedMessage, // Added to pass the variable to the view
         ]);
     }
 }

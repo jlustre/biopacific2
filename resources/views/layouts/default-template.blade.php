@@ -108,15 +108,21 @@
         }
       }
     }
+
   </script>
-  <!-- DEBUG: Using layouts/default-template.blade.php -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DEBUG: Alpine.js layout script loaded (default-template.blade.php)');
-    });
+    // document.addEventListener("DOMContentLoaded", () => {
+    //     if (window.Alpine) {
+    //         Alpine.start();
+    //     }
+    // });
+
+    // document.addEventListener('alpine:init', () => {
+    //     Alpine.plugin(collapse);
+    // });
   </script>
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
   <script>
     document.addEventListener("livewire:navigated", () => {
     if (window.Alpine && Alpine.initTree) {
@@ -129,6 +135,7 @@
     }
   });
   </script>
+
 </body>
 
 </html>

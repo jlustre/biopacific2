@@ -46,5 +46,17 @@
       @endcan
       @endforeach
     </div>
+
+    @php
+    $faqs = [
+    ['content' => 'We accept Medicare, Medicaid, and many private insurance plans including Blue Cross Blue Shield,
+    Aetna, Humana, and others. Contact our billing department for specific plan verification and coverage details.'],
+    // Add more FAQ items here
+    ];
+    @endphp
+
+    @foreach ($faqs as $index => $faq)
+    <x-faq-item :index="$index" :content="$faq['content']" />
+    @endforeach
   </div>
 </div>

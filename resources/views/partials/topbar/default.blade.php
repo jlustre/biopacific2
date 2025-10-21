@@ -28,7 +28,7 @@
       <div class="hidden md:flex gap-2 items-center pl-4 py-2 ml-auto mr-0 lg:mr-0 xl:mr-0">
         <!-- About & Services Dropdown -->
         @php
-        $activeSections = $active_sections ?? [];
+        $activeSections = $activeSections ?? [];
         if (is_string($activeSections)) {
         $activeSections = json_decode($activeSections, true) ?: [];
         } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
@@ -134,7 +134,7 @@
         </button>
       </div>
       @php
-      $activeSections = $active_sections ?? [];
+      $activeSections = $activeSections ?? [];
       if (is_string($activeSections)) {
       $activeSections = json_decode($activeSections, true) ?: [];
       } elseif ($activeSections instanceof \Illuminate\Support\Collection) {

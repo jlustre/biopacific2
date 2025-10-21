@@ -155,4 +155,67 @@ class FacilityDataHelper
         }
         return [];
     }
+
+    public static function getColorsFromColorScheme($colorSchemeId)
+    {
+        $colorScheme = ColorScheme::find($colorSchemeId);
+        return [
+            'primary' => $colorScheme->primary_color ?? '#059669',
+            'secondary' => $colorScheme->secondary_color ?? '#064E3B',
+            'accent' => $colorScheme->accent_color ?? '#FACC15'
+        ];
+    }
+
+    public static function getLegalPageUpdatedDate($legalTitle)
+    {
+        // Try to get the file modification date for a matching blade view under resources/views
+
+        $specified = [
+            'privacy-policy.blade.php',
+            'terms-of-service.blade.php',
+            'accessibility.blade.php',
+            'notice-privacy-practices.blade.php'
+        ];
+
+        foreach ($specified as $fname) {
+            $file = base_path('resources/views/' . $fname);
+            if (file_exists($file)) {
+                return date('F j, Y', filemtime($file));
+            }
+        }
+        $base = base_path('resources/views');
+        $raw = trim($legalTitle);
+        $name = pathinfo($raw, PATHINFO_FILENAME) ?: $raw;
+        $nameLower = mb_strtolower($name);
+
+        $candidates = [];
+
+        // direct variants
+        $candidates[] = $base . DIRECTORY_SEPARATOR . $nameLower . '.blade.php';
+        $candidates[] = $base . DIRECTORY_SEPARATOR . preg_replace('/[\s_]+/', '-', $nameLower) . '.blade.php'; // kebab
+        $candidates[] = $base . DIRECTORY_SEPARATOR . preg_replace('/[\s-]+/', '_', $nameLower) . '.blade.php'; // snake
+
+        // treat dots/slashes as subfolders (e.g. "legal.privacy-policy" or "legal/privacy-policy")
+        $candidates[] = $base . DIRECTORY_SEPARATOR . str_replace('.', DIRECTORY_SEPARATOR, $nameLower) . '.blade.php';
+        $candidates[] = $base . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $nameLower) . '.blade.php';
+
+        // common legal filenames to check
+        $common = [
+            'privacy-policy', 'privacy', 'terms-of-service', 'terms', 'cookie-policy', 'cookies', 'legal'
+        ];
+        foreach ($common as $c) {
+            $candidates[] = $base . DIRECTORY_SEPARATOR . $c . '.blade.php';
+            $candidates[] = $base . DIRECTORY_SEPARATOR . 'legal' . DIRECTORY_SEPARATOR . $c . '.blade.php';
+        }
+
+        foreach ($candidates as $file) {
+            if (file_exists($file)) {
+            return date('F j, Y', filemtime($file));
+            }
+        }
+
+        // if no view file found, fall back to the WebContent record
+        $page = \App\Models\WebContent::where('title', $legalTitle)->first();
+        return $page ? $page->updated_at->format('F j, Y') : 'N/A';
+    }
 }

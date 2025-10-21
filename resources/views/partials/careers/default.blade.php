@@ -43,7 +43,7 @@ $error = $errors->any();
           <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
             style="background: linear-gradient(to bottom right, {{ $primary }}, {{ $accent }});">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12h20L12 2z" />
             </svg>
           </div>
 
@@ -122,7 +122,7 @@ $error = $errors->any();
       @empty
       <div class="col-span-1 sm:col-span-2 lg:col-span-4 text-center py-12 text-gray-500">
         <svg class="mx-auto mb-4 w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12h20L12 2z" />
         </svg>
         <h4 class="text-lg font-semibold mb-2">No job openings available at this time.</h4>
         <p>Please check back later or contact us for more information.</p>
@@ -223,7 +223,7 @@ $error = $errors->any();
             <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               @if($icon === 'shield-check')
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.0" />
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               @endif
               @if($icon === 'clock')
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

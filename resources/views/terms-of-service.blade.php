@@ -5,15 +5,7 @@
 @section('content')
 <div class="min-h-screen bg-slate-50">
     <!-- Header Section -->
-    <div class="bg-white border-b border-slate-200">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center">
-                <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Terms of Service</h1>
-                <p class="text-lg text-slate-600">{{ $facility['name'] ?? 'Bio-Pacific' }}</p>
-                <p class="text-sm text-slate-500 mt-2">Last updated: {{ date('F j, Y') }}</p>
-            </div>
-        </div>
-    </div>
+    @include('components.legal-header', ['legal_title' => 'Terms of Service', 'facility' => $facility])
 
     <!-- Content Section -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -164,7 +156,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to {{ $facility['name'] ?? 'Home' }}
+                Back to <span class="text-teal-600">{{ $facility['name'] ?? 'Home' }}</span>
             </a>
         </div>
     </div>

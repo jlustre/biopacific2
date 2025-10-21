@@ -230,3 +230,9 @@
     });
 </script>
 @endpush
+
+@if(isset($showCompletedMessage))
+<div>Debug: $showCompletedMessage is {{ $showCompletedMessage ? 'true' : 'false' }}</div>
+@else
+<div>Debug: $showCompletedMessage is not set</div>
+@endif
