@@ -31,7 +31,17 @@ class FacilityAdminController extends Controller
         $inactiveFacilities = Facility::where('is_active', false)->count();
         $testimonialsCount = Testimonial::count();
         $faqsCount = Faq::count();
-        $facilitiesByState = Facility::all()->groupBy('state');
+        $facilitiesByState = Facility::select([
+            'id', 'name', 'slug', 'tagline', 'logo_url', 'hero_image_url', 'headline', 'subheadline',
+            'about_image_url', 'about_text', 'address', 'city', 'state', 'zip', 'beds', 'years',
+            'phone', 'email', 'facebook', 'twitter', 'instagram', 'domain', 'subdomain', 'is_active',
+            'settings', 'layout_template', 'layout_config', 'location_map', 'facility_image', 'hours',
+            'hero_video_id', 'hipaa_flags', 'npp_url', 'color_scheme_id', 'facility_number',
+            'legal_name', 'administrator', 'don', 'dsd', 'staffer', 'region',
+            'meta_title', 'meta_description', 'is_shutdown', 'shutdown_message', 'shutdown_eta'
+        ])->get()->groupBy('state');
+
+
         return view('admin.dashboard.index', compact(
             'facilities',
             'activeFacilities',

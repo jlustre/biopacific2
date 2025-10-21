@@ -36,7 +36,9 @@ class Facility extends Model
       'about_image_url','about_text','address','city','state','zip','beds', 'years',
       'phone','email','facebook','twitter','instagram','domain', 'subdomain', 'is_active', 'settings', 'layout_template', 
       'layout_config','location_map', 'facility_image', 'hours', 'hero_video_id',
-      'hipaa_flags', 'npp_url', 'color_scheme_id',
+      'hipaa_flags', 'npp_url', 'color_scheme_id', 'facility_number', 
+      'legal_name', 'administrator', 'don', 'dsd', 'staffer', 'region',
+      'meta_title', 'meta_description',
       // Shutdown fields
       'is_shutdown', 'shutdown_message', 'shutdown_eta'
     ];
