@@ -33,7 +33,7 @@ class BookATourMail extends Mailable
         Log::info('Building BookATourMail', ['data' => $this->data]); // Debugging log
 
         return $this->subject('New Book a Tour Request')
-                    ->markdown('emails.book_a_tour')
+                    ->markdown('emails.book_a_tour_email')
                     ->with('data', $this->data);
     }
 }

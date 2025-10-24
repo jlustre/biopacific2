@@ -10,7 +10,7 @@
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">Testimonials Management</h2>
-                    <p class="text-sm text-gray-600">Select a facility to view and manage its testimonials</p>
+                    <p class="text-sm text-gray-600">Select2 a facility to view and manage its testimonials</p>
                 </div>
             </div>
 

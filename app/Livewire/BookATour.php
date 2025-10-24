@@ -5,6 +5,8 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Helpers\FacilityDataHelper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BookATourMail;
 
 class BookATour extends Component
 {
@@ -87,7 +89,20 @@ class BookATour extends Component
                 'updated_at' => now(),
             ]);
 
-            session()->flash('success', 'Your tour request has been submitted successfully!');
+            // Send email to the recipient
+            Mail::to($this->recipient)->send(new BookATourMail([
+                'facility' => $this->facility,
+                'full_name' => $this->full_name,
+                'relationship' => $this->relationship,
+                'phone' => $this->phone,
+                'email' => $this->email,
+                'preferred_date' => $this->preferred_date,
+                'preferred_time' => $this->preferred_time,
+                'interests' => $this->interests,
+                'message' => $this->message,
+            ]));
+
+            session()->flash('success', 'Your tour request has been submitted successfully! An email confirmation has been sent.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             foreach ($e->errors() as $field => $messages) {
                 $this->addError($field, $messages[0]);

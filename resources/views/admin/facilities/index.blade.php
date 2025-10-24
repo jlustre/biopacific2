@@ -14,27 +14,11 @@
     </div>
     <div class="min-h-screen bg-gray-50">
         <!-- Header -->
-        <div class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <a href="{{ route('admin.dashboard.index') }}" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                        </a>
-                        <div>
-                            <h1 class="text-3xl font-bold text-gray-900">Facility Management</h1>
-                            <p class="text-gray-600">Edit and configure your facilities</p>
-                        </div>
-                    </div>
-                    <div class="bg-primary/10 px-4 py-2 rounded-lg">
-                        <span class="text-primary font-semibold">{{ $facilities->count() }} Total Facilities</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @include('components.back-link-header', [
+        'title_hdr' => 'Facility Management',
+        'subtitle_hdr' => 'Edit and configure your facilities',
+        'preview' => false
+        ])
 
         <!-- Main Content -->
         <div class="w-full px-2 sm:px-4 lg:px-8 py-8">

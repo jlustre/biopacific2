@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\Facility;
 
 class EmailRecipientsTableSeeder extends Seeder
 {
@@ -14,28 +15,33 @@ class EmailRecipientsTableSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('email_recipients')->insert([
-            [
-                'facility_id' => 1,
+        $facilities = Facility::all();
+
+        $data = [];
+        foreach ($facilities as $facility) {
+            $data[] = [
+                'facility_id' => $facility->id,
                 'category' => 'book-a-tour',
-                'email' => 'joeycosep.lustre@marinerhealthcare.com',
+                'email' => 'admission@' . $facility->subdomain,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-            [
-                'facility_id' => 1,
-                'category' => 'contact',
-                'email' => 'contact@almadenhrc.com',
+            ];
+            $data[] = [
+                'facility_id' => $facility->id,
+                'category' => 'inquiry',
+                'email' => 'contact@' . $facility->subdomain,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-            [
-                'facility_id' => 1,
+            ];
+            $data[] = [
+                'facility_id' => $facility->id,
                 'category' => 'hiring',
-                'email' => 'hiring@almadenhrc.com',
+                'email' => 'hiring@' . $facility->subdomain,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-        ]);
+            ];
+        }
+
+        DB::table('email_recipients')->insert($data);
     }
 }

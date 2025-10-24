@@ -71,7 +71,7 @@
             <!-- Web Contents Menu -->
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.webcontents.*') ? 'bg-gray-100 font-bold' : '' }}">
+                    class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
                     <i class="fas fa-globe-americas mr-2"></i> Web Contents
                     <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -112,6 +112,34 @@
                     <a href="{{ route('admin.services.index') }}"
                         class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-cogs mr-2"></i> Services Management
+                    </a>
+                </div>
+            </div>
+
+            <!-- Communications Menu -->
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                    class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
+                    <i class="fas fa-comments mr-2"></i> Communications
+                    <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                    class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                    style="display: none;" x-transition:enter="transition ease-out duration-100"
+                    x-transition:enter-start="transform opacity-0 scale-95"
+                    x-transition:enter-end="transform opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-75"
+                    x-transition:leave-start="transform opacity-100 scale-100"
+                    x-transition:leave-end="transform opacity-0 scale-95">
+                    <a href="{{ route('admin.tour-requests.index') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-calendar-alt mr-2"></i> Tour Requests
+                    </a>
+                    <a href="{{ route('admin.email-recipients.index') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-envelope mr-2"></i> Email Recipients
                     </a>
                 </div>
             </div>

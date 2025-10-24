@@ -29,6 +29,8 @@ use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\CareersPublicController;
 use App\Http\Controllers\BookATourController;
+use App\Http\Controllers\Admin\TourRequestController;
+use App\Http\Controllers\Admin\EmailRecipientController;
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -137,6 +139,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::put('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'update'])->name('admin.facilities.testimonials.update');
         Route::delete('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'destroy'])->name('admin.facilities.testimonials.destroy');
     });
+    Route::resource('tour-requests', TourRequestController::class)->names('tour-requests');
+    Route::resource('email-recipients', EmailRecipientController::class)->names('email-recipients');
 });
 
 

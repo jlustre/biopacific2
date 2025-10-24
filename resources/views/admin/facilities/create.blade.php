@@ -2,7 +2,11 @@
 
 @section('content')
 <div class="max-w-2xl mx-auto py-10">
-    <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Add New Facility</h1>
+    @include('components.back-link-header', [
+    'title_hdr' => 'Add New Facility',
+    'subtitle_hdr' => 'Create a new Facility',
+    'preview' => false
+    ])
     <form method="POST" action="{{ route('admin.facilities.store') }}" enctype="multipart/form-data"
         class="space-y-6 bg-white dark:bg-gray-900 p-8 rounded-xl shadow">
         @csrf
