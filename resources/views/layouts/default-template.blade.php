@@ -5,9 +5,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ $facility['name'] }} — {{ $facility['tagline'] ?? 'Quality Care For Your Loved Ones' }}</title>
+  <title>{{ $facility['subdomain'] }} ?? 'Quality Care For Your Loved Ones' }}</title>
   <meta name="description" content="{{ $facility['meta_description'] }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
   @vite(['resources/css/app.css', 'resources/js/app.js'])
   <style>
     :root {
@@ -43,13 +44,13 @@
   </style>
 </head>
 
-<body class="bg-white px-5 lg:mr-0 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
+<body
+  class="bg-white px-2 md:px-5 lg:mr-0 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
   <!-- Header -->
   @include('partials.header')
 
   <!-- Accessibility / Language Toolbar -->
   {{-- @include('partials.accessibility') --}}
-
   <!-- Main Content -->
   <main id="top" class="px-4 lg:px-0">
     @yield('content')
@@ -63,6 +64,8 @@
 
   <!-- Go to Top Button -->
   @include('partials.gototop')
+
+  @include('partials.screen-size-indicator')
 
   <script>
     function siteUI(){
@@ -110,19 +113,7 @@
     }
 
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-  <script>
-    // document.addEventListener("DOMContentLoaded", () => {
-    //     if (window.Alpine) {
-    //         Alpine.start();
-    //     }
-    // });
 
-    // document.addEventListener('alpine:init', () => {
-    //     Alpine.plugin(collapse);
-    // });
-  </script>
   <script>
     document.addEventListener("livewire:navigated", () => {
     if (window.Alpine && Alpine.initTree) {
@@ -134,6 +125,13 @@
       Alpine.initTree(document.body);
     }
   });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.Alpine) {
+        console.error('Alpine.js is not loaded. Ensure the script is included correctly.');
+      }
+    });
   </script>
 
 </body>

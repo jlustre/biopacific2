@@ -83,10 +83,7 @@ class DashboardController extends Controller
     {
         $facility = Facility::findOrFail($id);
         $activeWebContent = $facility->webContents()->where('is_active', true)->first();
-        // Debug: log raw sections from web_contents
-        if ($activeWebContent) {
-            \Log::info('RAW web_contents.sections', ['sections' => $activeWebContent->sections]);
-        }
+
         $sections = [];
         $sectionVariances = [];
         $layoutTemplate = '';
@@ -121,6 +118,7 @@ class DashboardController extends Controller
         $categories = $faqs->pluck('category')->filter()->unique()->values();
         $testimonials = FacilityDataHelper::getTestimonials($facility);
         $services = FacilityDataHelper::getServices($facility);
+        
         $newsItems = FacilityDataHelper::getFormattedNews($facility);
 
         $colors = FacilityDataHelper::getColors($facility);

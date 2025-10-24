@@ -8,13 +8,13 @@
             style="background: {{ $accent }}"></div>
         <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-50/70"></div>
     </div>
-    <div class="w-full max-w-4xl mx-auto px-2 sm:px-6 z-10">
+    <div class="w-full max-w-6xl mx-auto px-2 sm:px-6 z-10">
         <div class="flex flex-col md:flex-row gap-8 items-stretch">
             <!-- Left: Illustration -->
             <div class="hidden md:flex md:w-1/2 flex-col items-center">
                 <img src="/images/tour-illustration.png" alt="Book a Tour"
                     class="w-full h-auto rounded-3xl shadow-2xl border-4 border-white/60 bg-white/30 backdrop-blur-lg object-cover">
-                <div class="mt-6 w-full max-w-xs bg-white/80 rounded-2xl shadow p-4 border border-blue-100">
+                <div class="mt-6 w-full bg-white/80 rounded-2xl shadow p-4 border border-blue-100">
                     <h3 class="text-base font-semibold text-blue-900 mb-2 text-center">What to Expect on Your Tour</h3>
                     <ol class="list-decimal list-inside text-sm text-slate-700 space-y-1">
                         <li>Warm welcome and introduction to our team</li>
@@ -28,7 +28,7 @@
                     </div>
                 </div>
                 <!-- Booking Only Statement -->
-                <div class="mb-3 mt-3">
+                <div class="mb-3 mt-8">
                     <div class="rounded-xl bg-blue-50 p-3 ring-1 ring-blue-200 text-xs text-blue-800 text-center">
                         <strong>Note:</strong> Please use the form in this section, only if you are booking a tour.<br>
                         For all other inquiries, <a href="#contact"
@@ -59,6 +59,52 @@
                         </a>
                     </div>
                 </div>
+
+                {{-- Mini “What you’ll see” --}}
+                <div class="rounded-lg ring-1 ring-slate-600 bg-yellow-50 py-2 px-4 shadow-sm -m-2 mt-8 w-full">
+                    <h4 class="text-lg font-semibold text-teal-700 text-center">What You’ll See</h4>
+                    <ul class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        @foreach(['Resident rooms','Common areas','Therapy gym','Dining spaces','Activities
+                        spaces','Outdoor areas'] as $it)
+                        <li class="flex items-center gap-2">
+                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-white"
+                                style="background: {{ $accent }}">
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                        d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                            <span class="text-sm text-slate-700">{{ $it }}</span>
+                        </li>
+                        @endforeach
+                    </ul>
+
+                    <div
+                        class="mt-2 flex flex-wrap justify-center items-center gap-3 text-sm text-slate-600 text-center">
+                        <span class="inline-flex items-center gap-2">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3" />
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                            Tours last 20–30 minutes
+                        </span>
+                        <span class="inline-flex items-center gap-2">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                            Private tours available
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Map (optional) --}}
+                @if(!empty($facility['location_map']))
+                <div class="rounded-md overflow-hidden ring-1 ring-slate-200 bg-white shadow-sm mt-8 w-full">
+                    <iframe src="{{ $facility['location_map'] }}" class="w-full h-48 md:h-80" loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                @endif
             </div>
             <!-- Right: Form Card -->
             <div class="w-full md:w-1/2 flex flex-col justify-center">
@@ -74,63 +120,7 @@
                             privately.
                         </div>
                     </div>
-                    <form method="POST" action="{{ route('tours.store') }}" class="space-y-4">
-                        @csrf
-                        <div>
-                            <label for="name" class="block text-blue-800 font-semibold mb-1 text-xs">Full
-                                Name</label>
-                            <input type="text" id="name" name="name" required
-                                class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
-                        </div>
-                        <div>
-                            <label for="email" class="block text-blue-800 font-semibold mb-1 text-xs">Email</label>
-                            <input type="email" id="email" name="email" required
-                                class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
-                        </div>
-                        <fieldset>
-                            <legend class="block text-blue-800 font-semibold mb-2 text-xs">Areas of Interest</legend>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                                @foreach($services as $service)
-                                <label
-                                    class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-slate-50 px-3 py-2 text-sm">
-                                    <input type="checkbox" name="interests[]" value="{{ $service->name }}"
-                                        class="rounded border-blue-400 text-blue-600 focus:ring-blue-500">
-                                    <span>{{ $service->name }}</span>
-                                </label>
-                                @endforeach
-                            </div>
-                        </fieldset>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label for="phone" class="block text-blue-800 font-semibold mb-1 text-xs">Phone</label>
-                                <input type="text" id="phone" name="phone"
-                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
-                            </div>
-                            <div>
-                                <label for="date" class="block text-blue-800 font-semibold mb-1 text-xs">Preferred
-                                    Date</label>
-                                <input type="date" id="date" name="date"
-                                    class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90">
-                            </div>
-                        </div>
-                        <div>
-                            <label for="message" class="block text-blue-800 font-semibold mb-1 text-xs">Message</label>
-                            <textarea id="message" name="message" rows="2"
-                                class="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/90"></textarea>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="phi_ack" name="phi_ack" required class="accent-blue-600">
-                            <label for="phi_ack" class="text-xs text-blue-800">I understand not to include Protected
-                                Health Information (PHI).</label>
-                        </div>
-                        <div class="text-xs text-blue-700 mb-2">
-                            By submitting, you agree to our <a href="/npp" target="_blank"
-                                class="underline hover:text-blue-900">Notice of Privacy Practices</a>.
-                        </div>
-                        <button type="submit"
-                            class="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition text-base">Book
-                            Tour</button>
-                    </form>
+                    @livewire('book-a-tour', ['facility' => $facility])
                 </div>
             </div>
 

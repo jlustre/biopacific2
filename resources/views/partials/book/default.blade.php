@@ -28,7 +28,7 @@
         </div>
 
         {{-- Content grid --}}
-        <div class="mt-10 grid gap-8 lg:grid-cols-[1.1fr,1fr]">
+        <div class="mt-10 grid gap-8 lg:grid-cols-2">
             {{-- Left: highlights / steps / info card --}}
             <div class="rounded-3xl ring-1 ring-slate-200 bg-white/80 backdrop-blur p-6 md:p-8 shadow-sm">
                 <img src="{{ asset('images/book-a-tour.png') }}" alt="Book a Tour"
@@ -109,180 +109,18 @@
                         Private tours available
                     </span>
                 </div>
+                {{-- optional map embed --}}
+                @if(!empty($facility['location_map']))
+                <div class="mt-10 rounded-3xl overflow-hidden ring-1 ring-slate-200 bg-white shadow-sm">
+                    <iframe src="{{ $facility['location_map'] }}" class="w-full h-64 md:h-80" loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                @endif
             </div>
 
             {{-- Right: form --}}
-            <div class="rounded-3xl ring-1 ring-slate-200 bg-white p-6 md:p-8 shadow-sm">
-                {{-- If you use Livewire: replace form tag with wire:submit.prevent="submit" --}}
-                <form method="POST" action="{{ route('tours.store') }}" novalidate>
-                    @csrf
-                    {{-- name + relationship --}}
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="full_name" class="text-sm font-medium text-slate-700">Your name *</label>
-                            <input id="full_name" name="full_name" type="text" required
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2"
-                                placeholder="Jane Doe" />
-                        </div>
-                        <div>
-                            <label for="relationship" class="text-sm font-medium text-slate-700">Relationship</label>
-                            <select id="relationship" name="relationship"
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2">
-                                <option value="">Select…</option>
-                                <option>Self</option>
-                                <option>Spouse</option>
-                                <option>Parent</option>
-                                <option>Adult child</option>
-                                <option>Relative</option>
-                                <option>Friend</option>
-                                <option>Care manager</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {{-- contact --}}
-                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="phone" class="text-sm font-medium text-slate-700">Phone *</label>
-                            <input id="phone" name="phone" type="tel" required
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2"
-                                placeholder="(555) 555-1234" />
-                        </div>
-                        <div>
-                            <label for="email" class="text-sm font-medium text-slate-700">Email *</label>
-                            <input id="email" name="email" type="email" required
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2"
-                                placeholder="you@example.com" />
-                        </div>
-                    </div>
-
-                    {{-- date/time/guests --}}
-                    <div class="mt-4 grid gap-4 sm:grid-cols-3">
-                        <div>
-                            <label for="preferred_date" class="text-sm font-medium text-slate-700">Preferred date
-                                *</label>
-                            <input id="preferred_date" name="preferred_date" type="date" required
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2" />
-                        </div>
-                        <div>
-                            <label for="preferred_time" class="text-sm font-medium text-slate-700">Preferred time
-                                *</label>
-                            <select id="preferred_time" name="preferred_time" required
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2">
-                                <option value="">Select…</option>
-                                <option>9:00 AM</option>
-                                <option>10:30 AM</option>
-                                <option>1:00 PM</option>
-                                <option>2:30 PM</option>
-                                <option>4:00 PM</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="guests" class="text-sm font-medium text-slate-700">Guests</label>
-                            <input id="guests" name="guests" type="number" min="1" max="6" value="1"
-                                class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2" />
-                        </div>
-                    </div>
-
-                    {{-- interests --}}
-                    <fieldset class="mt-4">
-                        <legend class="text-sm font-medium text-slate-700">Areas of interest</legend>
-                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            @foreach($services as $service)
-                            <label
-                                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                                <input type="checkbox" name="interests[]" value="{{ $service->name }}"
-                                    class="rounded-md border border-gray-400 text-sky-600 focus:ring-sky-500 px-2 py-1">
-                                <span>{{ $service->name }}</span>
-                            </label>
-                            @endforeach
-                        </div>
-                    </fieldset>
-
-                    {{-- accessibility needs --}}
-                    <div class="mt-4">
-                        <label for="access" class="text-sm font-medium text-slate-700">Accessibility needs
-                            (optional)</label>
-                        <input id="access" name="access" type="text"
-                            class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2"
-                            placeholder="e.g., wheelchair access, interpreter, quiet space" />
-                    </div>
-
-                    {{-- message --}}
-                    <div class="mt-4">
-                        <label for="message" class="text-sm font-medium text-slate-700">Anything else you’d like us to
-                            know?</label>
-                        <textarea id="message" name="message" rows="4"
-                            class="mt-1 block w-full rounded-md border border-gray-400 focus:border-slate-400 focus:ring-0 px-3 py-2"
-                            placeholder="Tell us about your needs, timeline, or questions."></textarea>
-                    </div>
-
-                    {{-- consent & privacy note --}}
-                    <div class="mt-5 space-y-2 text-xs text-slate-600">
-                        <div class="mb-2 p-3 rounded-lg bg-amber-100 text-amber-800 border border-amber-200">
-                            <strong>Warning:</strong> Do not include any Protected Health Information (PHI) in this
-                            request form.
-                        </div>
-                        <label class="inline-flex items-start gap-2">
-                            <input type="checkbox" name="consent" required
-                                class="mt-0.5 rounded-md border border-gray-400 text-sky-600 focus:ring-sky-500 px-2 py-1">
-                            <span>I agree to be contacted about this tour request. I understand this form should not
-                                include sensitive medical information.</span>
-                        </label>
-                        <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
-                                class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
-                                Privacy Practices</a>.</p>
-                    </div>
-
-                    {{-- honeypot --}}
-                    <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
-
-                    {{-- actions --}}
-                    <div class="mt-6 flex flex-col sm:flex-row gap-3">
-                        <button type="submit"
-                            class="inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
-                            style="background: {{ $primary }}">
-                            Request Tour
-                        </button>
-                        <a href="tel:{{ $facility['phone'] ?? '' }}"
-                            class="inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-6 py-3 font-semibold ring-2 transition bg-white text-slate-900 hover:bg-slate-50"
-                            style="--ring: {{ $primary }}; border-color: {{ $primary }};">
-                            Call Us Instead:
-                            @if($facility['phone'])
-                            <span class="text-primary">&nbsp;&nbsp;
-                                {{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $facility['phone']) }}
-                            </span>
-                            @endif
-                        </a>
-                    </div>
-
-                    {{-- micro reassurance --}}
-                    <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <span class="inline-flex items-center gap-2">
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4s-3 1.567-3 3.5S10.343 11 12 11z M19 20a7 7 0 10-14 0h14z" />
-                            </svg>
-                            Tours typically last 20–30 minutes
-                        </span>
-                        <span class="inline-flex items-center gap-2">
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3" />
-                            </svg>
-                            Flexible scheduling available
-                        </span>
-                    </div>
-                </form>
-            </div>
+            @livewire('book-a-tour', ['facility' => $facility])
         </div>
-
-        {{-- optional map embed --}}
-        @if(!empty($facility['location_map']))
-        <div class="mt-10 rounded-3xl overflow-hidden ring-1 ring-slate-200 bg-white shadow-sm">
-            <iframe src="{{ $facility['location_map'] }}" class="w-full h-64 md:h-80" loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-        @endif
     </div>
 </section>
 
@@ -296,3 +134,5 @@
     d.min = iso;
   });
 </script>
+
+{{-- Ensure modal form does not open when Request Tour button is clicked --}}

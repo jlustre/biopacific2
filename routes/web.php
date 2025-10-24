@@ -28,6 +28,7 @@ use App\Http\Controllers\TermsOfServiceController;
 use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\CareersPublicController;
+use App\Http\Controllers\BookATourController;
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -182,6 +183,7 @@ require __DIR__.'/admin_webmaster_contacts.php';
 require __DIR__.'/auth.php';
 
 Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('careers.apply');
+Route::post('/book-a-tour', [BookATourController::class, 'store'])->name('book-a-tour.store');
 
 // Public Facility Route (catch-all, must be last)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');

@@ -55,7 +55,8 @@
             </svg>
           </span>
         </button>
-        <div x-show="openFaq === {{ $faq->id }}" x-collapse class="mt-4 border-t border-blue-100 pt-4">
+        <div x-show="openFaq === {{ $faq->id }}" class="mt-4 border-t border-blue-100 pt-4"
+          x-bind:aria-expanded="openFaq === {{ $faq->id }}">
           @php
           // Replace placeholders in FAQ answer
           $answerText = $faq->answer;

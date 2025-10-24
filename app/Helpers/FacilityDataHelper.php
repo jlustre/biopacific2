@@ -9,6 +9,7 @@ use App\Models\Faq;
 use App\Models\Testimonial;
 use App\Models\ColorScheme;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class FacilityDataHelper
@@ -85,14 +86,16 @@ class FacilityDataHelper
         })->values()->toArray();
     }
     
+    // Add logging to debug the getServices method
     public static function getServices(Facility $facility)
     {
-    $globalServices = Service::where('is_global', true)->orderBy('order')->get();
+        $globalServices = Service::where('is_global', true)->orderBy('order')->get();
         $facilityServiceIds = DB::table('facility_service')
             ->where('facility_id', $facility->id)
             ->pluck('service_id')
             ->toArray();
-    $facilityServices = Service::whereIn('id', $facilityServiceIds)->orderBy('order')->get();
+        $facilityServices = Service::whereIn('id', $facilityServiceIds)->orderBy('order')->get();
+
         return $globalServices->concat($facilityServices)->unique('id')->values();
     }
 
@@ -142,6 +145,10 @@ class FacilityDataHelper
     public static function getActiveSections(Facility $facility)
     {
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+
+        if (!$activeWebContent) {
+            info('No active web content found for facility.', ['facility_id' => $facility->id]);
+        } 
         if ($activeWebContent && $activeWebContent->sections) {
             if (is_string($activeWebContent->sections)) {
                 return json_decode($activeWebContent->sections, true) ?: [];
@@ -218,4 +225,13 @@ class FacilityDataHelper
         $page = \App\Models\WebContent::where('title', $legalTitle)->first();
         return $page ? $page->updated_at->format('F j, Y') : 'N/A';
     }
+
+    public static function getEmailRecipient($facilityId, $category)
+    {
+        return DB::table('email_recipients')
+            ->where('facility_id', $facilityId)
+            ->where('category', $category)
+            ->value('email');
+    }
+    
 }

@@ -82,7 +82,7 @@
                     Tour</a>
             </div>
             <!-- Hamburger Icon -->
-            <button @click="mobileOpen = true"
+            <button @click="mobileOpen = true; console.log('mobileOpen state:', mobileOpen)"
                 class="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center">
                 <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />

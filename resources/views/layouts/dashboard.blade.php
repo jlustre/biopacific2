@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>@hasSection('title')@yield('title')@else Bio-Pacific Healthcare - Admin Dashboard @endif</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="/css/color-scheme-dropdown.css">
     <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
     @livewireStyles
+    <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
 </head>
 
 <body class="min-h-screen antialiased"
@@ -33,8 +35,9 @@
     @guest
     {{-- Optionally, show nothing or a guest sidebar --}}
     @endguest
-
+    @include('partials.screen-size-indicator')
     <main class="py-8">
+        <p>I am here</p>
         <div class="max-w-7xl mx-auto">
             @stack('content')
         </div>

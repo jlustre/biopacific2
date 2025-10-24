@@ -43,9 +43,6 @@ class FacilityController extends Controller
      */
     public function publicView(Facility $facility)
     {
-        // Temporary debug log to trace request flow
-        // \Log::info('Facility publicView accessed', ['facility' => $facility->toArray()]);
-
         $global = DB::table('global_shutdowns')->orderByDesc('id')->first();
         if ($global && $global->is_shutdown) {
             return response()->view('shutdown', [
@@ -87,9 +84,28 @@ class FacilityController extends Controller
         }
         $activeSections = FacilityDataHelper::getActiveSections($facility);
 
+        $activeSections = $activeSections ?? [];
+        if (is_string($activeSections)) {
+            $activeSections = json_decode($activeSections, true) ?: [];
+        } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+            $activeSections = $activeSections->toArray();
+        } elseif (!is_array($activeSections)) {
+            $activeSections = (array) $activeSections;
+        }
+
+        $aboutMenuItems = collect(['about', 'services', 'testimonials', 'careers'])
+            ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+        $roomsMenuItems = collect(['rooms', 'gallery', 'news'])
+            ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+        $contactMenuItems = collect(['contact', 'faqs', 'resources'])
+            ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+
         $faqs = FacilityDataHelper::getFaqs($facility);
         $categories = $faqs->pluck('category')->filter()->unique()->values();
         $testimonials = FacilityDataHelper::getTestimonials($facility);
+        // $services = FacilityDataHelper::getServices($facility)->filter(function ($service) use ($facility) {
+        //     return $service->facility_id === $facility->id;
+        // });
         $services = FacilityDataHelper::getServices($facility);
         $newsItems = FacilityDataHelper::getFormattedNews($facility);
 
@@ -106,7 +122,10 @@ class FacilityController extends Controller
             'faqs' => $faqs,
             'categories' => $categories,
             'testimonials' => $testimonials,
-            'newsItems' => $newsItems
+            'newsItems' => $newsItems,
+            'aboutMenuItems' => $aboutMenuItems,
+            'roomsMenuItems' => $roomsMenuItems,
+            'contactMenuItems' => $contactMenuItems,
         ]);
     }
 

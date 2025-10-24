@@ -22,11 +22,6 @@
     </div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-2xl mb-8">
-            <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800">
-                ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics privately.
-            </div>
-        </div>
         @include('partials.section_header', [
         'section_header' => 'Get in Touch',
         'section_sub_header' => "Have questions? We're here to help you every step of the

@@ -44,7 +44,7 @@ $hasVideo = !empty($facility['hero_video_id']);
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 md:py-28">
     <div class="max-w-2xl">
       <span
-        class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/30">
+        class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/30 justify-center md:justify-start">
         <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
         Family-centered • Evidence-based • Compassion
       </span>

@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             FacilityServiceSeeder::class,
             NewsSeeder::class,
             FacilityNewsSeeder::class,
+            EmailRecipientsTableSeeder::class
         ]);
 
     }

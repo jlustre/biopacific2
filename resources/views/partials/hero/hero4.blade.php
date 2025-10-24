@@ -17,8 +17,8 @@ asset('images/hero1.jpg'));
     <div class="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl opacity-15"
         style="background: {{ $accent }}"></div>
 
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="grid lg:grid-cols-[1.2fr_1fr] gap-y-10 gap-x-12 items-center justify-center py-14 md:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 bg-yellow-50">
+        <div class="grid lg:grid-cols-[1.2fr_1fr] gap-y-10 gap-x-12 items-center justify-center py-4 pt-0 md:py-20">
             {{-- LEFT: Copy + CTAs --}}
             <div class="order-2 lg:order-1">
                 <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
@@ -47,31 +47,24 @@ asset('images/hero1.jpg'));
                         {{ $facility['hero_config']['button_text'] }}
                     </a>
                     @endif
-                    <a href="#book" @php $activeSections=$active_sections ?? ($facility['active_sections'] ?? []); if
-                        (is_string($activeSections)) { $activeSections=json_decode($activeSections, true) ?: []; }
-                        elseif ($activeSections instanceof \Illuminate\Support\Collection) {
-                        $activeSections=$activeSections->toArray();
-                        } elseif (!is_array($activeSections)) {
-                        $activeSections = (array) $activeSections;
-                        }
-                        @endphp
-                        @if(!empty($activeSections) && in_array('book', $activeSections))
-                        <a href="#book"
-                            class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold ring-1 transition"
-                            style="border-color: {{ $secondary }}; color: {{ $secondary }};">
-                            Book a Tour
-                        </a>
-                        @endif
-                        @if(!empty($facility['hero_video_id']))
-                        <button id="playVideoBtn"
-                            class="inline-flex justify-center items-center rounded-xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
-                            style="background-color: {{ $accent }}">
-                            <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path d="M8 5v10l8-5-8-5z" />
-                            </svg>
-                            Watch Intro
-                        </button>
-                        @endif
+
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
+                    <a href="#book"
+                        class="inline-flex justify-center items-center rounded-xl px-6 py-3 font-semibold ring-1 transition"
+                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
+                        Book a Tour
+                    </a>
+                    @endif
+                    @if(!empty($facility['hero_video_id']))
+                    <button id="playVideoBtn"
+                        class="inline-flex justify-center items-center rounded-xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
+                        style="background-color: {{ $accent }}">
+                        <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M8 5v10l8-5-8-5z" />
+                        </svg>
+                        Watch Intro
+                    </button>
+                    @endif
                 </div>
 
                 {{-- Info bar --}}

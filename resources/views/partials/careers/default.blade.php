@@ -14,7 +14,7 @@ $success = session('success');
 $error = $errors->any();
 @endphp
 <section id="careers" x-data="{ 
-    openApply: {{ $success || $error ? 'true' : 'false' }}, 
+    openApply: false, 
     applyRole: '', 
     toastOpen: false, 
     toastMsg: '' 
@@ -81,42 +81,46 @@ $error = $errors->any();
           </div>
 
           <!-- Info Modal -->
-          <template x-if="infoModalOpen && infoModalJobId === {{ $job->id }}">
-            <div x-cloak x-show="infoModalOpen" x-transition:enter="transition ease-out duration-300"
-              x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-              x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
-              x-transition:leave-end="opacity-0" style="display: none;"
-              class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div @click.away="infoModalOpen=false" x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 transform scale-95"
-                x-transition:enter-end="opacity-100 transform scale-100"
-                x-transition:leave="transition ease-in duration-200"
-                x-transition:leave-start="opacity-100 transform scale-100"
-                x-transition:leave-end="opacity-0 transform scale-95"
-                class="bg-white rounded-2xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between mb-6">
-                  <h3 class="text-2xl font-bold text-secondary">Job Details</h3>
-                  <button @click="infoModalOpen=false" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <h4 class="text-xl font-semibold mb-2">{{ $job->title }}</h4>
-                <div class="text-sm text-slate-500 mb-2">{{ $job->employment_type }} • {{ $facility['location'] ?? '' }}
-                </div>
-                <div class="mb-4 text-slate-700">{!! $job->description !!}</div>
-                <div class="mb-2"><strong>Department:</strong> {{ $job->department }}</div>
-                <div class="mb-2"><strong>Posted:</strong> {{ $job->posted_at }}</div>
-                <div class="mb-2"><strong>Expires:</strong> {{ $job->expires_at }}</div>
-                <div class="mb-2"><strong>Status:</strong> {{ $job->active ? 'Active' : 'Inactive' }}</div>
-                <div class="flex justify-end mt-6">
-                  <button @click="infoModalOpen=false"
-                    class="px-6 py-2 rounded-lg border text-primary border-primary bg-slate-50 hover:bg-primary hover:text-white transition">Close</button>
+          <div x-data="{ infoModalOpen: false, infoModalJobId: null }">
+            <template x-if="infoModalOpen && infoModalJobId === {{ $job->id }}">
+              <div x-cloak x-show="infoModalOpen" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" style="display: none;"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div @click.away="infoModalOpen=false" x-transition:enter="transition ease-out duration-300"
+                  x-transition:enter-start="opacity-0 transform scale-95"
+                  x-transition:enter-end="opacity-100 transform scale-100"
+                  x-transition:leave="transition ease-in duration-200"
+                  x-transition:leave-start="opacity-100 transform scale-100"
+                  x-transition:leave-end="opacity-0 transform scale-95"
+                  class="bg-white rounded-2xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+                  <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-secondary">Job Details</h3>
+                    <button @click="infoModalOpen=false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <h4 class="text-xl font-semibold mb-2">{{ $job->title }}</h4>
+                  <div class="text-sm text-slate-500 mb-2">{{ $job->employment_type }} • {{ $facility['location'] ?? ''
+                    }}
+                  </div>
+                  <div class="mb-4 text-slate-700">{!! $job->description !!}</div>
+                  <div class="mb-2"><strong>Department:</strong> {{ $job->department }}</div>
+                  <div class="mb-2"><strong>Posted:</strong> {{ $job->posted_at }}</div>
+                  <div class="mb-2"><strong>Expires:</strong> {{ $job->expires_at }}</div>
+                  <div class="mb-2"><strong>Status:</strong> {{ $job->active ? 'Active' : 'Inactive' }}</div>
+                  <div class="flex justify-end mt-6">
+                    <button @click="infoModalOpen=false"
+                      class="px-6 py-2 rounded-lg border text-primary border-primary bg-slate-50 hover:bg-primary hover:text-white transition">Close</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </template>
+            </template>
+          </div>
         </div>
       </div>
       @empty

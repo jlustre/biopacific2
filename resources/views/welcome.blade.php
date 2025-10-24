@@ -79,7 +79,8 @@ $newsItems = $newsItems ?? [];
 'primary' => $primary,
 'secondary' => $secondary,
 'accent' => $accent,
-'services' => $services
+'services' => $services,
+'facility' => $facility
 ])
 @endif
 
