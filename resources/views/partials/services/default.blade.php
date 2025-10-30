@@ -45,15 +45,16 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
           <h3 class="text-lg font-semibold text-slate-900">
             {{ $service->name }}
           </h3>
-          <p class="mt-2 text-sm leading-relaxed text-slate-600 line-clamp-3">
+          <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $accent }}">
             {{ $service->short_description }}
           </p>
 
           {{-- Actions --}}
           <div class="mt-4 flex items-center justify-center">
             <button onclick="openServiceModal('modal-{{ $index }}')"
-              class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style="background: {{ $accent }};" aria-controls="modal-{{ $index }}" aria-expanded="false">
+              class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+              aria-controls="modal-{{ $index }}" aria-expanded="false">
               Details
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -175,8 +176,9 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 
         <div class="mt-6 flex flex-col sm:flex-row gap-3">
           <a href="#contact"
-            class="flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition shadow"
-            style="background: {{ $primary }};" onclick="closeServiceModal('modal-{{ $index }}')">
+            class="cursor-pointer flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition shadow"
+            style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+            onclick="closeServiceModal('modal-{{ $index }}')">
             Contact Us About This Service
           </a>
           <button

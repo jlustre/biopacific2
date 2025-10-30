@@ -614,4 +614,21 @@ class FacilityAdminController extends Controller
         return redirect()->route('admin.facilities.edit', $facility->slug)->with('success', 'Services updated successfully.');
     }
 
+    public function preview($id)
+    {
+        $facility = Facility::findOrFail($id);
+        $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
+
+        $activeSections = $activeWebContent ? $activeWebContent->sections : [];
+        if (is_string($activeSections)) {
+            $activeSections = json_decode($activeSections, true) ?: [];
+        } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
+            $activeSections = $activeSections->toArray();
+        } elseif (!is_array($activeSections)) {
+            $activeSections = (array) $activeSections;
+        }
+
+        return view('admin.facilities.preview', compact('facility', 'activeSections'));
+    }
+
 }

@@ -97,7 +97,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Recreation & Activities program offers a variety of daily group activities, arts and crafts, music, and entertainment. We encourage socialization and engagement to enhance the quality of life for all residents.',
                 'is_global' => true,
                 'order' => 7,
-                'image' => 'images/recreation_and_activities_care.png',
+                'image' => 'images/recreation_and_activities_care2.png',
                 'features' => [
                     'Daily group activities',
                     'Arts and crafts',
@@ -110,7 +110,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Transportation services ensure residents have access to scheduled outings, medical appointments, and community events. We provide safe, reliable, and wheelchair-accessible vehicles for all transportation needs.',
                 'is_global' => true,
                 'order' => 8,
-                'image' => 'images/transportation_care.png',
+                'image' => 'images/transportation_care2.png',
                 'features' => [
                     'Scheduled outings',
                     'Medical appointment transport',

@@ -32,7 +32,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <div class="relative overflow-hidden rounded-t-3xl">
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1000&q=80' }}"
                         alt="{{ $service->name }} at {{ $facility['name'] ?? 'our facility' }}"
-                        class="h-44 w-full object-cover object-top sm:object-center md:object-[50%_20%] transition-transform duration-700 group-hover:scale-105"
+                        class="h-auto w-full max-w-full object-cover object-top sm:object-center md:object-[50%_20%] transition-transform duration-700 group-hover:scale-105"
                         loading="lazy" decoding="async">
                     {{-- Brand accent bar --}}
                     <div class="absolute bottom-0 left-0 right-0 h-1.5" style="background: {{ $primary }}"></div>
@@ -40,16 +40,17 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 
                 {{-- Body --}}
                 <div class="p-5">
-                    <h3 class="text-lg font-semibold text-slate-900">
+                    <h3 class="text-lg font-semibold" style="color: {{ $secondary }}">
                         {{ $service->name }}
                     </h3>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-600 line-clamp-3">
+                    <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $accent }}">
                         {{ $service->short_description }}
                     </p>
                     <div class="mt-4 flex items-center justify-center">
                         <button onclick="openServiceModal('modal-{{ $index }}')"
-                            class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                            style="background: {{ $accent }};" aria-controls="modal-{{ $index }}" aria-expanded="false">
+                            class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                            style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+                            aria-controls="modal-{{ $index }}" aria-expanded="false">
                             Details
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 aria-hidden="true">
@@ -118,17 +119,17 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <div class="flex items-center gap-3">
                     <div class="w-11 h-11 rounded-xl bg-slate-100 ring-1 ring-slate-200 overflow-hidden">
                         <img src="{{ $service->image ? asset($service->image) : '' }}" alt=""
-                            class="w-full h-full object-cover">
+                            class="h-auto w-full max-w-full object-cover">
                     </div>
-                    <h3 id="modal-title-{{ $index }}" class="text-xl font-bold text-slate-900">
+                    <h3 id="modal-title-{{ $index }}" class="text-xl font-bold" style="color: {{ $secondary }}">
                         {{ $service->name }}
                     </h3>
                 </div>
                 <button
                     class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     aria-label="Close" onclick="closeServiceModal('modal-{{ $index }}')">
-                    <svg class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        aria-hidden="true">
+                    <svg class="h-5 w-5" style="color: {{ $secondary }}" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -170,7 +171,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <div class="mt-6 flex flex-col sm:flex-row gap-3">
                     <a href="#contact"
                         class="flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition shadow"
-                        style="background: {{ $primary }};" onclick="closeServiceModal('modal-{{ $index }}')">
+                        style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+                        onclick="closeServiceModal('modal-{{ $index }}')">
                         Contact Us About This Service
                     </a>
                     <button

@@ -18,19 +18,18 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
         </div>
         <div class="flex flex-wrap gap-8 justify-center">
             @foreach($services as $service)
-            <div
-                class="w-full sm:w-2/3 md:w-1/2 lg:w-1/3 xl:w-1/4 bg-white rounded-xl shadow-lg hover:shadow-green-300 transition group overflow-hidden flex flex-col h-full border-2 border-green-100 relative">
+            <div class="w-full sm:w-2/3 md:w-1/2 lg:w-1/3 xl:w-1/4 bg-white rounded-xl shadow-lg hover:shadow-green-300 transition group overflow-hidden flex flex-col h-full border-2 border-green-100 relative"
+                style="height: 100%;">
                 <div
                     class="relative h-48 overflow-hidden flex items-center justify-center bg-gradient-to-tr from-green-100 to-blue-100">
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
                         alt="{{ $service->name }}"
-                        class="w-36 h-36 object-cover object-center rounded-lg shadow-lg group-hover:scale-105 transition duration-700">
+                        class="h-[120%] w-full max-w-full object-cover object-top rounded-lg shadow-lg group-hover:scale-105 transition duration-700">
                     <span
-                        class="absolute top-3 left-3 bg-green-700 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wide">{{
+                        class="absolute bottom-3 right-3 bg-green-700 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wide">{{
                         $service->name }}</span>
                 </div>
                 <div class="flex-1 flex flex-col p-6">
-                    <h3 class="text-xl font-bold text-green-900 mb-2">{{ $service->name }}</h3>
                     <p class="text-green-700 mb-4 text-base line-clamp-3">{{ $service->short_description }}</p>
                     <ul class="mb-4 space-y-1 text-green-900 text-sm">
                         @foreach($service->features as $feature)

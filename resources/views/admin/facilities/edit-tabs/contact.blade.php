@@ -53,7 +53,7 @@
             </div>
 
             <div>
-                <label for="hours" class="block text-sm font-bold text-gray-700 mb-2">Operating
+                <label for="hours" class="block text-sm font-bold text-gray-700 mb-2">Recommended Visiting
                     Hours</label>
                 <input type="text" id="hours" name="hours" value="{{ old('hours', $facility->hours) }}"
                     placeholder="24/7 or specific hours"

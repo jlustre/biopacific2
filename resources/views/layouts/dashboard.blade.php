@@ -38,7 +38,6 @@
     @endguest
     @include('partials.screen-size-indicator')
     <main class="py-8">
-        <p>I am here</p>
         <div class="max-w-7xl mx-auto">
             @stack('content')
         </div>

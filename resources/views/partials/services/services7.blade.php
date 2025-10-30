@@ -20,8 +20,10 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-12 text-center">
-            <h2 class="text-4xl font-extrabold text-blue-900 mb-3 tracking-tight drop-shadow">Our Services</h2>
-            <p class="text-lg text-blue-700 max-w-2xl mx-auto">Swipe through our services—each card highlights a unique
+            <h2 class="text-4xl font-extrabold mb-3 tracking-tight drop-shadow" style="color: {{ $primary }}">Our
+                Services</h2>
+            <p class="text-lg max-w-2xl mx-auto" style="color: {{ $secondary }}">Swipe through our services—each card
+                highlights a unique
                 offering for residents.</p>
         </div>
         <div class="relative">
@@ -47,14 +49,16 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                         class="relative h-64 overflow-hidden flex items-center justify-center bg-gradient-to-tr from-blue-100 to-sky-100">
                         <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
                             alt="{{ $service->name }}"
-                            class="w-56 h-56 object-cover object-center rounded-2xl shadow-lg group-hover:scale-105 transition duration-700">
+                            class="h-auto w-full max-w-full object-cover object-center rounded-2xl shadow-lg group-hover:scale-105 transition duration-700">
                         <span
-                            class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-blue-700 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wide text-center w-fit">{{
+                            class="absolute bottom-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wide text-center w-fit"
+                            style="background: {{ $primary }}">{{
                             $service->name }}</span>
                     </div>
                     <div class="flex-1 flex flex-col p-6">
-                        <h3 class="text-xl font-bold text-blue-900 mb-2">{{ $service->name }}</h3>
-                        <p class="text-blue-700 mb-4 text-base line-clamp-3">{{ $service->short_description }}</p>
+                        <h3 class="text-xl font-bold mb-2" style="color: {{ $accent }}">{{ $service->name }}</h3>
+                        <p class="mb-4 text-base line-clamp-3" style="color: {{ $secondary }}">{{
+                            $service->short_description }}</p>
                         <ul class="mb-4 space-y-1 text-blue-900 text-sm">
                             @foreach($service->features as $feature)
                             <li class="flex items-center gap-2"><svg class="w-4 h-4 text-sky-400" fill="none"
@@ -65,7 +69,10 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                         </ul>
                         <div class="mt-auto pt-4">
                             <button onclick="openServiceModal7('modal-{{ $service->id }}')"
-                                class="cursor-pointer w-full inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-full shadow hover:from-blue-600 hover:to-sky-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition">Learn
+                                class="cursor-pointer w-full inline-flex items-center justify-center px-6 py-2.5 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                                style="background: {{ $primary }}; transition: background-color 0.3s ease;"
+                                onmouseover="this.style.backgroundColor = '#004080'"
+                                onmouseout="this.style.backgroundColor = '{{ $primary }}'">Learn
                                 More</button>
                         </div>
                     </div>
@@ -79,27 +86,37 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
     <div id="modal-{{ $service->id }}"
         class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="dialog"
         aria-modal="true" aria-labelledby="modal-title-{{ $service->id }}">
-        <div class="relative max-w-xl w-full bg-white rounded-3xl shadow-2xl ring-1 ring-blue-900/10 p-8 mx-auto flex flex-col items-center"
+        <div class="relative max-w-xl w-full bg-white rounded-3xl shadow-2xl ring-1 ring-blue-900/10 p-8 mx-auto flex flex-col"
             style="max-height:90vh; overflow-y:auto;">
             <button
                 class="absolute top-4 right-4 text-blue-700 hover:text-blue-900 focus:outline-none text-2xl font-bold"
                 aria-label="Close" onclick="closeServiceModal7('modal-{{ $service->id }}')">&times;</button>
-            <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
-                alt="{{ $service->name }}" class="w-40 h-40 object-cover rounded-2xl mb-4 shadow">
-            <h3 id="modal-title-{{ $service->id }}" class="text-2xl font-bold text-blue-900 mb-2">{{ $service->name }}
-            </h3>
-            <div class="text-blue-700 mb-4 text-left text-base w-full">{!! $service->detailed_description !!}</div>
-            <div class="w-full mb-4">
-                <h4 class="text-base font-semibold text-blue-900 mb-2">Key Features</h4>
-                <ul class="list-disc list-inside space-y-1 text-blue-900">
-                    @foreach($service->features as $feature)
-                    <li>{{ $feature }}</li>
-                    @endforeach
-                </ul>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+                <div class="flex flex-col items-center">
+                    <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
+                        alt="{{ $service->name }}" class="w-40 h-40 object-cover rounded-2xl mb-4 shadow">
+                    <h3 id="modal-title-{{ $service->id }}" class="text-2xl font-bold text-blue-900 mb-2">{{
+                        $service->name }}</h3>
+                </div>
+                <div>
+                    <h4 class="text-base font-semibold text-blue-900 mb-2">Key Features</h4>
+                    <ul class="list-disc list-inside space-y-1 text-blue-900">
+                        @foreach($service->features as $feature)
+                        <li>{{ $feature }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
-            <a href="#contact"
-                class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-500 to-sky-500 text-white font-semibold rounded-full shadow hover:from-blue-600 hover:to-sky-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition mt-2"
-                onclick="closeServiceModal7('modal-{{ $service->id }}')">Contact Us About This Service</a>
+            <div class="mt-6 text-left text-base w-full" style="color: {{ $secondary }}">{!!
+                $service->detailed_description !!}</div>
+            <div class="mt-6 flex justify-end">
+                <a href="#contact"
+                    class="inline-flex items-center px-8 py-3 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    style="background: {{ $primary }}; transition: background-color 0.3s ease;"
+                    onmouseover="this.style.backgroundColor = '#004080'"
+                    onmouseout="this.style.backgroundColor = '{{ $primary }}'"
+                    onclick="closeServiceModal7('modal-{{ $service->id }}')">Contact Us About This Service</a>
+            </div>
         </div>
     </div>
     @endforeach

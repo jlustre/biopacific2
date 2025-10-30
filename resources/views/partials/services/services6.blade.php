@@ -22,7 +22,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <div
                     class="w-24 h-24 mb-4 rounded-full overflow-hidden border-4 border-purple-200 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=200&q=80' }}"
-                        alt="{{ $service->name }}" class="w-full h-full object-cover object-center">
+                        alt="{{ $service->name }}" class="h-auto w-full max-w-full object-cover object-center">
                 </div>
                 <h3 class="text-lg font-bold text-purple-900 mb-2 text-center">{{ $service->name }}</h3>
                 <p class="text-purple-700 mb-4 text-sm text-center line-clamp-3">{{ $service->short_description }}</p>

@@ -95,7 +95,7 @@
                 @endphp
                 <div class="rounded-xl bg-gradient-to-tr from-indigo-50 to-white p-1 shadow-lg">
                     <img src="{{ $heroSrc }}" alt="Residents and staff interacting"
-                        class="w-full h-64 object-cover rounded-lg sm:h-80 lg:h-96" />
+                        class="w-full h-64 object-top rounded-lg sm:h-80 lg:h-96" />
                 </div>
                 <blockquote class="absolute -bottom-6 left-6 bg-white shadow-lg rounded-lg p-4 border border-gray-100">
                     <p class="text-sm text-gray-600">"{{ $facility['testimonial']['text'] ?? 'The compassionate staff
