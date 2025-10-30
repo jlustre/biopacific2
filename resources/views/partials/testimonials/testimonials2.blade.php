@@ -15,7 +15,7 @@ $accent = '#F59E0B';
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Section Header -->
         <div class="text-center mb-16">
-            <h2 class="text-4xl font-extrabold mb-4 text-secondary">What Families Are Saying</h2>
+            <h2 class="text-4xl font-extrabold mb-4" style="color: {{ $primary }}">What Families Are Saying</h2>
             <p class="text-lg text-slate-600 max-w-2xl mx-auto">
                 Genuine voices from residents and families who trust our compassionate care every day.
             </p>

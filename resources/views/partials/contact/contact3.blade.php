@@ -129,70 +129,7 @@ $social = $facility['social'] ?? [];
     </div>
     </div>
     <!-- Right: Floating Form -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center bg-white/80 relative p-6 lg:p-16 min-h-[60vh]">
-        <div
-            class="w-full max-w-xl mx-auto rounded-3xl shadow-2xl border border-slate-100 bg-white/90 p-6 sm:p-10 backdrop-blur-lg">
-            <form class="space-y-6">
-                <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800 mb-2">
-                    ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics
-                    privately.
-                </div>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="contact_name" class="block text-sm font-medium text-slate-700 mb-1">Full Name
-                            *</label>
-                        <input id="contact_name" type="text" required autocomplete="name"
-                            class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-                            placeholder="Enter your full name">
-                    </div>
-                    <div>
-                        <label for="contact_phone" class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                        <input id="contact_phone" type="tel" inputmode="tel" autocomplete="tel"
-                            class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-                            placeholder="(555) 123-4567">
-                    </div>
-                    <div>
-                        <label for="contact_email" class="block text-sm font-medium text-slate-700 mb-1">Email Address
-                            *</label>
-                        <input id="contact_email" type="email" required autocomplete="email"
-                            class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-                            placeholder="your@email.com">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="contact_message" class="block text-sm font-medium text-slate-700 mb-1">Message
-                            *</label>
-                        <textarea id="contact_message" rows="5" required
-                            class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-                            placeholder="How can we help you today?"></textarea>
-                    </div>
-                </div>
-                <div class="flex flex-wrap items-center gap-4 mt-2">
-                    <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-                        <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary/30">
-                        I consent to be contacted about my inquiry.
-                    </label>
-                    <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off"> <!-- honeypot -->
-                </div>
-                <div class="flex flex-col gap-2 mt-2">
-                    <div class="flex items-center">
-                        <input id="no-phi" name="no_phi" type="checkbox" required
-                            class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-                        <label for="no-phi" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">I confirm that I
-                            will not include any Protected Health Information (PHI) in this form.</label>
-                    </div>
-                    <p class="text-xs">See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
-                            class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of Privacy
-                            Practices</a>.</p>
-                </div>
-                <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
-                    <button type="reset"
-                        class="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">Clear
-                        Form</button>
-                    <button type="submit"
-                        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-white transition shadow-sm hover:shadow"
-                        style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">Send Message</button>
-                </div>
-            </form>
-        </div>
+    <div class="w-full lg:w-1/2 flex items-center justify-start bg-yellow-100/80 relative p-4 lg:p-8 min-h-[60vh]">
+        @livewire('contact-form', ['facility'=> $facility])
     </div>
 </section>

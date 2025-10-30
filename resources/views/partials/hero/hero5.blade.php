@@ -32,7 +32,8 @@ $poster = asset('images/hero1.jpg');
                     {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                 </span>
 
-                <h1 class="mt-4 text-3xl md:text-4xl xl:text-5xl font-black text-slate-900 leading-[1.05]">
+                <h1 class="mt-4 text-3xl md:text-4xl xl:text-5xl font-black leading-[1.05]"
+                    style="color: {{ $primary }}">
                     {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
                 </h1>
 

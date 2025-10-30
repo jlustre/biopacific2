@@ -21,9 +21,11 @@ $hero = asset('images/' . ltrim($aboutUrl, '/'));
 }
 @endphp
 
-<section id="about" aria-labelledby="about-variant-5" class="bg-gray-50 text-gray-800">
+<section id="about" aria-labelledby="about-variant-5" class="bg-gray-50 text-gray-800 pt-6">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <h2 id="about-variant-5" class="text-2xl font-extrabold sm:text-3xl">About {{ $name }}</h2>
+        <h2 id="about-variant-5" class="text-2xl font-extrabold sm:text-3xl md:text-4xl" style="color: {{ $primary }}">
+            About {{
+            $name }}</h2>
         @if($cityState)
         <p class="mt-2 text-sm text-gray-600">Serving the {{ $cityState }} community</p>
         @endif

@@ -8,6 +8,16 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 @endphp
 
 <section id="services" class="py-16 bg-gradient-to-tr from-sky-50 via-gray-50 to-blue-100">
+    {{-- Subtle texture / brand glow --}}
+    <div
+        class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.7),transparent_60%)]">
+    </div>
+    {{-- Color variables ($primary, $secondary, $accent) are now passed from the controller. --}}
+    <div class="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-20"
+        style="background: {{ $primary }}"></div>
+    <div class="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl opacity-15"
+        style="background: {{ $accent }}"></div>
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-12 text-center">
             <h2 class="text-4xl font-extrabold text-blue-900 mb-3 tracking-tight drop-shadow">Our Services</h2>

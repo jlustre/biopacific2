@@ -94,7 +94,7 @@ $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
             stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-          <span class="text-teal-300 font-medium text-secondary hover:text-white">Previous</span>
+          <span class="font-medium text-teal-300 hover:text-white">Previous</span>
         </button>
 
         <!-- Dots Indicator -->
@@ -109,7 +109,7 @@ $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
         <!-- Next Button -->
         <button @click="currentIndex = (currentIndex + 1) % testimonials.length"
           class="bg-teal-600 hover:bg-teal-500 flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
-          <span class="text-teal-300 font-medium text-secondary hover:text-white">Next</span>
+          <span class="text-teal-300 font-medium hover:text-white">Next</span>
           <svg class="text-teal-300 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -119,7 +119,7 @@ $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
 
       <!-- Trust Indicators -->
       <div class="mt-16 text-center">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-8">
           <div class="flex flex-col items-center">
             <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
               <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

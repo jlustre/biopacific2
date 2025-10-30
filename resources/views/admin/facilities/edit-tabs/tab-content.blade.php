@@ -23,13 +23,13 @@
                     <label for="shutdown_message" class="block text-sm font-medium text-yellow-900 mb-1">Shutdown
                         Message</label>
                     <input type="text" id="shutdown_message" name="shutdown_message"
-                        value="{{ old('shutdown_message', ($facility->shutdown_message ?? '') !== '' ? $facility->shutdown_message : 'This facility is temporarily unavailable due to maintenance.') }}"
+                        value="{{ old('shutdown_message', ($facility->shutdown_message ?? '') !== '' ? $facility->shutdown_message : 'This website is temporarily unavailable due to maintenance.') }}"
                         class="w-full rounded border border-yellow-300 bg-yellow-50 px-4 shadow-sm focus:border-yellow-600 focus:ring-yellow-600">
                     <script>
                         document.addEventListener('DOMContentLoaded', function() {
                             var shutdownCheckbox = document.getElementById('is_shutdown');
                             var messageInput = document.getElementById('shutdown_message');
-                            var defaultMsg = 'This facility is temporarily unavailable due to maintenance.';
+                            var defaultMsg = 'This website is temporarily unavailable due to maintenance.';
                             if (shutdownCheckbox && messageInput) {
                                 shutdownCheckbox.addEventListener('change', function() {
                                     if (this.checked && !messageInput.value) {

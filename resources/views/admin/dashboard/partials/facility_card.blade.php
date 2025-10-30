@@ -21,18 +21,37 @@
         </span>
         @endif
     </div>
-    <div class="flex items-center gap-4 my-2">
-        <div class="flex-shrink-0 bg-primary/10 rounded-xl p-1">
-            <flux:icon name="building-office-2" class="w-8 h-8 text-primary text-teal-500" />
-        </div>
+    <div class="flex items-center gap-2 my-2">
         <div class="flex-1 min-w-0">
-            <h4 class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ $facility->name }}</h4>
+            <h4 class="text-md font-bold text-gray-900 dark:text-white truncate">{{ $facility->name }}</h4>
             @if($facility->tagline)
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">{{ Str::limit($facility->tagline, 60) }}
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">{{
+                Str::limit($facility->tagline, 50) }}
             </p>
             @endif
         </div>
+
     </div>
+    @if($facility->headline)
+    <div class="flex items-center gap-2 my-2">
+        <div class="flex-1 min-w-0">
+            <h4 class="text-center text-xs font-semibold text-slate-600 dark:text-white truncate">Headline</h4>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">{{
+                Str::limit($facility->headline, 50) }}
+            </p>
+        </div>
+    </div>
+    @endif
+    @if($facility->subheadline)
+    <div class="flex items-center gap-2 my-2">
+        <div class="flex-1 min-w-0">
+            <h4 class="text-center text-xs font-semibold text-slate-600 dark:text-white truncate">Sub-Headline</h4>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">{{
+                Str::limit($facility->subheadline, 50) }}
+            </p>
+        </div>
+    </div>
+    @endif
     <div class="flex flex-wrap gap-2 mb-2 text-center">
         @if($facility->beds)
         <span

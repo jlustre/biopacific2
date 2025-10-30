@@ -64,10 +64,7 @@
                         </div>
                         <div class="flex flex-col gap-2">
                             <h3 class="text-xl font-bold text-gray-900 text-center mb-1">{{ $facility->name }}</h3>
-                            <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline ?? 'Quality
-                                healthcare
-                                services' }}
-                            </p>
+                            <p class="text-sm text-gray-600 text-center mb-1">{{ $facility->tagline }}</p>
                             @if($facility->address)
                             <div class="flex flex-col items-center text-center mb-2">
                                 <span class="text-sm text-gray-500">{{ $facility->address }}</span>
@@ -99,7 +96,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                                     </svg>
-                                    <span class="text-gray-600">{{ ucfirst($facility->layout_template) }}</span>
+                                    <span class="text-gray-600 text-sm">{{ ucfirst($facility->layout_template) }}</span>
                                 </div>
                                 @endif
                                 @if($facility->beds)
@@ -161,12 +158,12 @@
                             </div>
                             <div class="flex gap-3 justify-center mt-2">
                                 <a href="{{ route('admin.dashboard.facility', $facility->id) }}"
-                                    class="bg-gray-300 hover:bg-gray-400 text-primary border-2 border-gray-600 shadow-sm text-center py-2 px-5 rounded-xl font-semibold hover:bg-primary hover:text-white hover:shadow-lg transition-all duration-150 text-base">
+                                    class="bg-gray-300 hover:bg-gray-400 text-primary border-2 border-gray-600 shadow-sm text-center py-1 px-2 rounded-sm font-semibold hover:bg-primary hover:text-white hover:shadow-lg transition-all duration-150 text-sm">
                                     Preview Site
                                 </a>
                                 @if($facility->domain)
                                 <a href="http://{{ $facility->domain }}" target="_blank"
-                                    class="bg-green-50 text-green-700 border-2 border-green-600 shadow-sm text-center py-2 px-5 rounded-xl font-semibold hover:bg-green-600 hover:text-white hover:shadow-lg transition-all duration-150 text-base">
+                                    class="bg-green-50 text-green-700 border-2 border-green-600 shadow-sm text-center py-1 px-2 rounded-sm font-semibold hover:bg-green-600 hover:text-white hover:shadow-lg transition-all duration-150 text-sm">
                                     Visit Live
                                 </a>
                                 @endif

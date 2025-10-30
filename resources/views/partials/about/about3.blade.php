@@ -1,4 +1,4 @@
-<section class="relative overflow-hidden">
+<section class="relative overflow-hidden" id="about">
     {{-- Subtle background --}}
     <div class="pointer-events-none absolute inset-0 -z-10">
         <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50"></div>
@@ -13,8 +13,9 @@
         <div class="rounded-3xl ring-1 ring-slate-200 bg-white/90 backdrop-blur p-6 md:p-10 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="max-w-3xl">
-                    <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-                        About <span class="text-primary">{{ $facility['name'] ?? 'Our Facility' }}</span>
+                    <h2 class="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight">
+                        About <span style="color: {{ $primary }}">{{ $facility['name'] ?? 'Our
+                            Facility' }}</span>
                     </h2>
                     <p class="mt-3 text-slate-700 md:text-lg">
                         {{ $facility['subheadline'] ?? 'Dedicated to compassionate, evidence-based care in a warm,

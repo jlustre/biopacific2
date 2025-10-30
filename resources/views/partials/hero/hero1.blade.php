@@ -39,7 +39,7 @@
                     }
                 </style>
                 {{-- Color variables ($primary, $secondary, $accent) are now passed from the controller. --}}
-                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow text-primary">
+                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow" style="color: {{ $primary }};">
                     {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
                 </h1>
                 <p class="mt-4 mx-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>

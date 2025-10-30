@@ -79,7 +79,7 @@ $hasVideo = !empty($facility['hero_video_id']);
         </span>
 
         {{-- Headline --}}
-        <h1 class="mt-4 text-3xl md:text-5xl font-black leading-tight text-slate-900">
+        <h1 class="mt-4 text-3xl md:text-5xl font-black leading-tight" style="color: {{ $primary }};">
           {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
         </h1>
 

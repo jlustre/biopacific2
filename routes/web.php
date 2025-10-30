@@ -141,8 +141,11 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     });
     Route::resource('tour-requests', TourRequestController::class)->names('tour-requests');
     Route::resource('email-recipients', EmailRecipientController::class)->names('email-recipients');
-});
 
+    // API endpoint for fetching a single testimonial (for edit modal)
+    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
+
+});
 
 // Careers CRUD and applications routes
 Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin'])->group(function () {
@@ -155,6 +158,9 @@ Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin']
     Route::delete('careers/{jobOpening}/applications/{jobApplication}', [CareersController::class, 'destroyApplication'])->name('admin.facilities.webcontents.careers.applications.destroy');
     Route::get('careers/applications/{jobApplication}/details', [CareersController::class, 'applicationDetails'])->name('admin.facilities.webcontents.careers.applications.details');
 });
+
+
+
 
 // General dashboard and user settings for all authenticated users
 Route::middleware(['auth'])->group(function () {
@@ -197,8 +203,5 @@ Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->nam
 
 // List job applications for a facility
 Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
-
-// API endpoint for fetching a single testimonial (for edit modal)
-Route::get('/admin/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
 
 

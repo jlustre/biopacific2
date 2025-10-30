@@ -233,5 +233,5 @@ class FacilityDataHelper
             ->where('category', $category)
             ->value('email');
     }
-    
+
 }

@@ -74,7 +74,7 @@ $hasVideo = !empty($facility['hero_video_id']);
                         {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                     </span>
 
-                    <h1 class="mt-4 text-4xl md:text-6xl font-black leading-[1.06] text-slate-900">
+                    <h1 class="mt-4 text-4xl md:text-6xl font-black leading-[1.06]" style="color: {{ $primary }}">
                         {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
                     </h1>
 

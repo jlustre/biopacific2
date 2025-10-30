@@ -7,27 +7,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facility Maintenance</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
 </head>
 
 <body class="bg-gray-100">
-    <div class="flex flex-col items-center justify-center min-h-screen">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
-            @if(!($isGlobal ?? false) && isset($facilityName))
+    <div class="flex flex-col items-center justify-start md:justify-center min-h-screen">
+        <div class="bg-white rounded-lg shadow-lg p-2 sm:p-4 lg:p-8 max-w-lg w-full text-center">
+            @if(isset($facilityName))
             <div class="mb-4">
                 <h2 class="text-xl font-bold text-gray-800">{{ $facilityName }}</h2>
             </div>
             @endif
-            <img src="{{ asset('images/website_maintenance.png') }}" alt="Maintenance" class="mx-auto mb-6 w-32 h-32">
-            <h1 class="text-2xl font-bold mb-4">
-                {{ $isGlobal ? 'All Facilities Under Maintenance' : 'Facility Under Maintenance' }}
-            </h1>
-            <p class="mb-4 text-gray-700">
-                {{ $message ?? 'This facility website is temporarily unavailable due to scheduled maintenance.' }}
+            <img src="{{ asset('images/website_maintenance.png') }}" alt="Maintenance"
+                class="mx-auto mb-6 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72">
+            <p class="mb-4 text-gray-700 text-center">
+                {{ $message ?? 'This site is temporarily unavailable while we complete scheduled improvements.
+                Please come back shortly.' }}
             </p>
             @if($eta)
             <!-- DEBUG: Raw ETA value: {{ $eta }} -->
-            <p class="mb-2 text-gray-600">Estimated time back online:</p>
-            <p id="countdown" class="font-semibold text-lg text-blue-600"></p>
+            <p class="mb-2 text-gray-900 font-semibold">Estimated time back online:</p>
+            <p id="countdown" class="font-semibold text-xl text-green-700"></p>
             <script>
                 function startCountdown(etaString) {
                     const countdownEl = document.getElementById('countdown');

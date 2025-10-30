@@ -5,7 +5,7 @@
             <p class="mt-1 text-sm text-slate-600">Internal checklist for {{ $facility->name }}.</p>
         </div>
         <div class="flex items-center gap-3">
-            @if($showCompletedMessage)
+            @if(isset($showCompletedMessage) && $showCompletedMessage)
             <div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm animate-pulse">
                 ✓ Saved!
             </div>
@@ -14,7 +14,7 @@
                 <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full ring-1 ring-slate-200 bg-slate-50">
                     <span
                         class="inline-block h-2 w-2 rounded-full @if($completedCount == $totalCount) bg-emerald-500 @else bg-amber-500 @endif"></span>
-                    <span>{{ $completedCount }} / {{ $totalCount }} Passed</span>
+                    <span>{{ $completedCount ?? 0 }} / {{ $totalCount }} Passed</span>
                 </span>
             </div>
         </div>

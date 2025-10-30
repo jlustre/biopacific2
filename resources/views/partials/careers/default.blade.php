@@ -160,7 +160,7 @@ $error = $errors->any();
         </div>
         @endif
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-2xl font-bold text-secondary">Apply for Position</h3>
+          <h3 class="text-2xl font-bold" style="color: {{ $secondary }}">Apply for Position</h3>
           <button @click="openApply=false" class="text-slate-400 hover:text-slate-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -213,7 +213,7 @@ $error = $errors->any();
 
     <!-- Benefits Section -->
     <div class="bg-white rounded-2xl shadow-lg p-8 mb-12">
-      <h3 class="text-2xl font-bold text-center mb-8 text-secondary">Why Work With Us?</h3>
+      <h3 class="text-2xl font-bold text-center mb-8" style="color: {{ $secondary }}">Why Work With Us?</h3>
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         @foreach([
         ['Medical Benefits', 'Comprehensive health, dental, and vision coverage', 'shield-check'],
@@ -243,7 +243,7 @@ $error = $errors->any();
               @endif
             </svg>
           </div>
-          <h4 class="text-lg font-semibold mb-2">{{ $title }}</h4>
+          <h4 class="text-lg font-semibold mb-2" style="color: {{ $accent }}">{{ $title }}</h4>
           <p class="text-slate-600 text-sm mb-4">{{ $desc }}</p>
         </div>
         @endforeach

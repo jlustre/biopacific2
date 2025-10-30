@@ -36,7 +36,7 @@
         } elseif (!is_array($activeSections)) {
         $activeSections = (array) $activeSections;
         }
-        $aboutMenuItems = collect(['about', 'services', 'testimonials', 'careers'])
+        $aboutMenuItems = collect(['about', 'services', 'faqs', 'testimonials'])
         ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
         @endphp
         @if($aboutMenuItems->count())
@@ -58,14 +58,14 @@
         @endif
         <!-- Rooms & Gallery Dropdown -->
         @php
-        $roomsMenuItems = collect(['rooms', 'gallery', 'news'])
+        $roomsMenuItems = collect(['news', 'gallery'])
         ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
         @endphp
         @if($roomsMenuItems->count())
         <div x-data="{ open: false }" class="relative">
           <button @click="open = !open"
             class="hover:cursor-pointer hover:text-primary transition flex items-center gap-1 text-center">
-            Rooms & Gallery
+            News & Gallery
             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -81,7 +81,7 @@
         @endif
         <!-- Contact & More Dropdown -->
         @php
-        $contactMenuItems = collect(['contact', 'faqs', 'resources'])
+        $contactMenuItems = collect(['contact', 'resources', 'careers'])
         ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
         @endphp
         @if($contactMenuItems->count())

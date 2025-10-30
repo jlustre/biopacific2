@@ -23,11 +23,11 @@ $aboutPeople = asset('images/about-people.png');
       <div>
         <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
           class="text-primary border-primary">
-          <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+          <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $primary }}"></span>
           About {{ $facility['name'] ?? 'Our Community' }}
         </span>
 
-        <h2 class="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight text-primary">
+        <h2 class="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight" style="color: {{ $primary }}">
           {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
         </h2>
         <p class="mt-3 text-slate-600 md:text-lg">
@@ -64,7 +64,7 @@ $aboutPeople = asset('images/about-people.png');
 
     {{-- Value pillars --}}
     <div class="mt-14">
-      <h3 class="text-2xl font-bold text-secondary">What sets us apart</h3>
+      <h3 class="text-2xl font-bold" style="color:{{ $secondary }}">What sets us apart</h3>
       <p class="mt-2 text-slate-600">Care that blends clinical excellence with genuine warmth.</p>
 
       <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -106,7 +106,7 @@ $aboutPeople = asset('images/about-people.png');
     {{-- Care model --}}
     <div class="mt-14 grid lg:grid-cols-2 gap-8 items-start">
       <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8">
-        <h3 class="text-2xl font-bold text-secondary">Our Care Model</h3>
+        <h3 class="text-2xl font-bold" style="color:{{ $secondary }}">Our Care Model</h3>
         <p class="mt-2 text-slate-600">Integrated teams deliver consistent, coordinated care.</p>
 
         <ol class="mt-4 space-y-4">
@@ -151,7 +151,7 @@ $aboutPeople = asset('images/about-people.png');
       <div class="space-y-4">
         {{-- Accreditations / assurances --}}
         <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 sm:p-8">
-          <h3 class="text-2xl font-bold text-secondary">Assurances</h3>
+          <h3 class="text-2xl font-bold" style="color:{{ $secondary }}">Assurances</h3>
           <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-slate-600">
             <div class="rounded-xl ring-1 ring-slate-200 p-3 text-center">
               <div class="h-6"></div>

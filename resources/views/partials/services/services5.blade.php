@@ -10,7 +10,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 <section id="services" class="py-16 bg-gradient-to-bl from-green-50 via-yellow-50 to-blue-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-12 text-center">
-            <h2 class="text-4xl font-extrabold text-green-900 mb-3 tracking-tight drop-shadow">Our Innovative Services
+            <h2 class="text-4xl font-extrabold mb-3 tracking-tight drop-shadow" style="color: {{ $primary }}">Our
+                Innovative Services
             </h2>
             <p class="text-lg text-green-700 max-w-2xl mx-auto">A fresh approach to care, amenities, and
                 wellness—tailored for every resident.</p>

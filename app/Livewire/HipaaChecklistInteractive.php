@@ -5,13 +5,14 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Facility;
 use App\Support\HipaaWebsiteChecklist;
+use Illuminate\Support\Facades\Log;
 
 class HipaaChecklistInteractive extends Component
 {
     public Facility $facility;
     public array $flags = [];      // editable flags bound to toggles
     public array $rows  = [];      // computed rows (label/help/passed)
-    public $showCompletedMessage = false;
+    public $showCompletedMessage = false; // Default value
 
     protected $rules = [
         'flags.*' => 'boolean',
@@ -22,13 +23,10 @@ class HipaaChecklistInteractive extends Component
         $this->facility = $facility;
         $this->flags    = $facility->hipaa_flags ?? [];
         $this->computeRows();
-        $this->showCompletedMessage = $this->showCompletedMessage ?? false; // Ensure default value
+        $this->showCompletedMessage = false; // Explicit initialization
 
-        // Debug initialization
-        dd([
-            'facility' => $this->facility,
-            'flags' => $this->flags,
-            'rows' => $this->rows,
+        // Debugging logs
+        Log::debug('Mounting HipaaChecklistInteractive', [
             'showCompletedMessage' => $this->showCompletedMessage,
         ]);
     }
@@ -82,8 +80,9 @@ class HipaaChecklistInteractive extends Component
     {
         $completedCount = collect($this->rows)->where('passed', true)->count();
         $totalCount = count($this->rows);
+        $completedCount = $completedCount ?? 0; // Ensure default value
         
-        dd([
+        Log::debug('Rendering HipaaChecklistInteractive', [
             'completedCount' => $completedCount,
             'totalCount' => $totalCount,
             'showCompletedMessage' => $this->showCompletedMessage,
@@ -92,7 +91,7 @@ class HipaaChecklistInteractive extends Component
         return view('livewire.hipaa-checklist-interactive', [
             'completedCount' => $completedCount,
             'totalCount' => $totalCount,
-            'showCompletedMessage' => $this->showCompletedMessage, // Added to pass the variable to the view
+            'showCompletedMessage' => $this->showCompletedMessage,
         ]);
     }
 }

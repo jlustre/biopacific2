@@ -13,6 +13,7 @@
 @endif
 
 @if(is_array($sections) && in_array('about', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.about.' . ($sectionVariances['about'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -20,7 +21,10 @@
 ])
 @endif
 
+@include('partials.whychoose')
+
 @if(is_array($sections) && in_array('services', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.services.' . ($sectionVariances['services'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -30,6 +34,7 @@
 @endif
 
 @if(is_array($sections) && in_array('rooms', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.rooms.' . ($sectionVariances['rooms'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -38,6 +43,7 @@
 @endif
 
 @if(is_array($sections) && in_array('gallery', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.gallery.' . ($sectionVariances['gallery'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -49,6 +55,7 @@
 $newsItems = $newsItems ?? [];
 @endphp
 @if(is_array($sections) && in_array('news', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.news.' . ($sectionVariances['news'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -58,6 +65,7 @@ $newsItems = $newsItems ?? [];
 @endif
 
 @if(is_array($sections) && in_array('testimonials', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.testimonials.' . ($sectionVariances['testimonials'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -67,6 +75,7 @@ $newsItems = $newsItems ?? [];
 @endif
 
 @if(is_array($sections) && in_array('careers', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.careers.' . ($sectionVariances['careers'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -75,6 +84,7 @@ $newsItems = $newsItems ?? [];
 @endif
 
 @if(is_array($sections) && in_array('book', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.book.' . ($sectionVariances['book'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -85,6 +95,7 @@ $newsItems = $newsItems ?? [];
 @endif
 
 @if(is_array($sections) && in_array('contact', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.contact.' . ($sectionVariances['contact'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -93,6 +104,7 @@ $newsItems = $newsItems ?? [];
 @endif
 
 @if(is_array($sections) && in_array('faqs', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.faqs.' . ($sectionVariances['faqs'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
@@ -101,10 +113,12 @@ $newsItems = $newsItems ?? [];
 @endif
 
 @if(is_array($sections) && in_array('resources', $sections))
+{{-- @include('partials.divider') --}}
 @include('partials.resources.' . ($sectionVariances['resources'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
 'accent' => $accent
 ])
 @endif
+
 @endsection

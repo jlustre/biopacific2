@@ -93,11 +93,11 @@ class FacilityController extends Controller
             $activeSections = (array) $activeSections;
         }
 
-        $aboutMenuItems = collect(['about', 'services', 'testimonials', 'careers'])
+        $aboutMenuItems = collect(['about', 'services', 'testimonials'])
             ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
-        $roomsMenuItems = collect(['rooms', 'gallery', 'news'])
+        $roomsMenuItems = collect(['news', 'gallery'])
             ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
-        $contactMenuItems = collect(['contact', 'faqs', 'resources'])
+        $contactMenuItems = collect(['contact', 'faqs', 'resources', 'careers'])
             ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
 
         $faqs = FacilityDataHelper::getFaqs($facility);

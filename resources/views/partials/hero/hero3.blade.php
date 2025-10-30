@@ -16,8 +16,8 @@ $poster = asset('images/hero1.jpg');
             class="md:hidden absolute inset-0 w-full h-full object-cover object-top">
 
         <!-- Framing gradients for contrast (top+bottom, not full overlay) -->
-        <div class="absolute inset-x-0 top-0 h-40 md:h-64 bg-gradient-to-b from-black/50 to-transparent"></div>
-        <div class="absolute inset-x-0 bottom-0 h-48 md:h-64 bg-gradient-to-t from-black/60 to-transparent"></div>
+        <div class="absolute inset-x-0 top-0 h-40 md:h-64 bg-gradient-to-b from-black/20 to-transparent"></div>
+        <div class="absolute inset-x-0 bottom-0 h-48 md:h-64 bg-gradient-to-t from-black/40 to-transparent"></div>
 
         <!-- Soft brand glows (very faint) -->
         <div class="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-15"

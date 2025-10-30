@@ -29,8 +29,11 @@ $testimonials = $facility['testimonials'] ?? ($facility['testimonial'] ? [$facil
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-                <h2 class="text-3xl font-extrabold">About {{ $name }}</h2>
-                <p class="mt-4 text-lg text-gray-600">{{ $facility['short_description'] ?? 'Compassionate,
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-extrabold">About <span style="color: {{ $primary }}">{{
+                        $name }}</span></h2>
+                }}</h2>
+                <p class="mt-4 text-lg" style="color: {{ $secondary }}">{{ $facility['short_description'] ??
+                    'Compassionate,
                     resident-focused care.' }}</p>
 
                 <div class="mt-6 grid grid-cols-3 gap-4">

@@ -14,6 +14,7 @@
     <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
     @livewireStyles
     <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
+
 </head>
 
 <body class="min-h-screen antialiased"

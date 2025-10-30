@@ -3,7 +3,8 @@
         <!-- Hero -->
         <div class="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-                <h2 id="about-variant-6" class="text-3xl font-extrabold tracking-tight sm:text-4xl">Compassionate care,
+                <h2 id="about-variant-6" class="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl"
+                    style="color: {{ $primary }}">Compassionate care,
                     close to home</h2>
                 <p class="mt-4 text-lg text-gray-600">At {{ $facility['name'] ?? 'Our Care Center' }}, we provide
                     respectful,

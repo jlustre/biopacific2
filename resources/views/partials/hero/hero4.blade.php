@@ -27,7 +27,7 @@ asset('images/hero1.jpg'));
                     {{ $facility['hero_config']['badge'] ?? 'Family-centered • Evidence-based • Compassion' }}
                 </span>
 
-                <h1 class="mt-4 text-slate-900 font-extrabold leading-tight text-4xl md:text-6xl">
+                <h1 class="mt-4 font-extrabold leading-tight text-4xl md:text-6xl" style="color: {{ $primary }}">
                     {!! $facility['headline'] ?? $facility['hero_config']['title'] ?? 'Where Comfort Meets Compassion'
                     !!}
                 </h1>

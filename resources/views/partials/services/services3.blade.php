@@ -10,7 +10,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 <section id="services" class="py-16 bg-gradient-to-tr from-pink-100 via-blue-50 to-indigo-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-12 text-center">
-            <h2 class="text-4xl font-extrabold text-indigo-900 mb-3 tracking-tight drop-shadow">Our Distinctive Services
+            <h2 class="text-4xl font-extrabold mb-3 tracking-tight drop-shadow" style="color: {{ $primary }}">Our
+                Distinctive Services
             </h2>
             <p class="text-lg text-indigo-700 max-w-2xl mx-auto">Experience a new level of care and amenities, designed
                 for comfort, wellness, and vibrant living.</p>
@@ -19,26 +20,26 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
             @foreach($services as $service)
             <div
                 class="relative bg-white rounded-2xl shadow-lg hover:shadow-indigo-300 transition group overflow-hidden flex flex-col h-full border border-indigo-100">
-                <div
-                    class="relative h-40 overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-100 to-pink-100">
+                <div class="relative h-40 overflow-hidden flex items-center justify-center gradient-primary-accent">
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
                         alt="{{ $service->name }}"
                         class="w-32 h-32 object-cover object-center rounded-xl shadow-lg group-hover:scale-105 transition duration-700">
                 </div>
                 <div class="flex-1 flex flex-col p-6">
-                    <h3 class="text-xl font-bold text-indigo-900 mb-2">{{ $service->name }}</h3>
+                    <h3 class="text-xl font-bold mb-2" style="color: {{ $secondary }}">{{ $service->name }}</h3>
                     <p class="text-indigo-700 mb-4 text-base line-clamp-3">{{ $service->short_description }}</p>
                     <ul class="mb-4 space-y-1 text-indigo-900 text-sm">
                         @foreach($service->features as $feature)
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-pink-400" fill="none"
-                                stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                stroke-width="2" viewBox="0 0 24 24" style="color: {{ $accent }}">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>{{ $feature }}</li>
                         @endforeach
                     </ul>
                     <div class="mt-auto pt-4">
                         <button onclick="openServiceModal3('modal-{{ $service->id }}')"
-                            class="w-full inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-pink-500 to-indigo-500 text-white font-semibold rounded-full shadow hover:from-pink-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer">View
+                            class="w-full inline-flex items-center justify-center px-6 py-2.5 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer"
+                            style="background: {{ $primary }}">View
                             Details</button>
                     </div>
                 </div>

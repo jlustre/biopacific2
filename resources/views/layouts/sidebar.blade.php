@@ -57,7 +57,7 @@
                                 $abbr = str_replace('Healthcare Center', 'HCC', $abbr);
                                 }
                                 @endphp
-                                <a href="{{ route('admin.dashboard.facility', $facility->id) }}" target="_blank"
+                                <a href="{{ route('facility.public', $facility) }}" target="_blank"
                                     class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-hospital mr-2"></i> {{ $abbr }}
                                 </a>

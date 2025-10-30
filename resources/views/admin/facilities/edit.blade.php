@@ -89,11 +89,22 @@ $sectionVariances[$key][] = $name;
             @csrf
             @method('PUT')
 
+            <!-- Facility Dropdown -->
+            <div class="mb-6 lg:w-1/2">
+                <label for="facility-select" class="block text-sm font-medium text-gray-700 mb-2">Select
+                    Facility</label>
+                <select id="facility-select"
+                    class="block w-full rounded-md border border-teal-400 px-2 py-1 bg-amber-100 shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                    @foreach($facilities as $facilityOption)
+                    <option value="{{ $facilityOption->id }}" {{ $facilityOption->id == $facility->id ? 'selected' : ''
+                        }}>
+                        {{ $facilityOption->name }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
             <!-- Color Scheme Select (always visible for form submission) -->
             <div class="mb-6">
-                <label for="color_scheme_id" class="block text-sm font-medium text-gray-700 mb-2">Color
-                    Scheme</label>
-                <!-- Removed duplicate color_scheme_id select. Only keep the one in the Colors tab. -->
 
                 <!-- Tab Navigation -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -259,6 +270,11 @@ $sectionVariances[$key][] = $name;
                     return true;
                 });
             }
+        });
+
+        document.getElementById('facility-select').addEventListener('change', function() {
+            const facilityId = this.value;
+            window.location.href = `/admin/facilities/${facilityId}/edit`;
         });
 </script>
 
