@@ -49,31 +49,41 @@
                     <span class="block w-10 h-10 rounded-full border" id="preview-accent"></span>
                     <span class="text-xs mt-2">Accent</span>
                 </div>
+                <div class="flex flex-col items-center">
+                    <span class="block w-10 h-10 rounded-full border" id="preview-neutral-dark"></span>
+                    <span class="text-xs mt-2">Neutral Dark</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="block w-10 h-10 rounded-full border" id="preview-neutral-light"></span>
+                    <span class="text-xs mt-2">Neutral Light</span>
+                </div>
             </div>
             <script>
                 function updateColorPreview() {
-                                            var select = document.getElementById('color_scheme_id');
-                                            if (!select) return;
-                                            var selected = select.options[select.selectedIndex];
-                                            document.getElementById('preview-primary').style.backgroundColor = selected.getAttribute('data-primary') || '#007bff';
-                                            document.getElementById('preview-secondary').style.backgroundColor = selected.getAttribute('data-secondary') || '#6c757d';
-                                            document.getElementById('preview-accent').style.backgroundColor = selected.getAttribute('data-accent') || '#28a745';
-                                        }
-                                        document.addEventListener('DOMContentLoaded', function() {
-                                            if (typeof initColorSchemeDropdown === 'function') {
-                                                initColorSchemeDropdown();
-                                            }
-                                            setTimeout(updateColorPreview, 50);
-                                            // Tab persistence
-                                            var lastTab = localStorage.getItem('facilityEditActiveTab') || 'basic';
-                                            showTab(lastTab);
-                                            document.querySelectorAll('.tab-button').forEach(function(btn) {
-                                                btn.addEventListener('click', function() {
-                                                    localStorage.setItem('facilityEditActiveTab', this.id.replace('-tab',''));
-                                                });
-                                            });
-                                            document.getElementById('color_scheme_id').addEventListener('change', updateColorPreview);
-                                        });
+                    var select = document.getElementById('color_scheme_id');
+                    if (!select) return;
+                    var selected = select.options[select.selectedIndex];
+                    document.getElementById('preview-primary').style.backgroundColor = selected.getAttribute('data-primary') || '#007bff';
+                    document.getElementById('preview-secondary').style.backgroundColor = selected.getAttribute('data-secondary') || '#6c757d';
+                    document.getElementById('preview-accent').style.backgroundColor = selected.getAttribute('data-accent') || '#28a745';
+                    document.getElementById('preview-neutral-dark').style.backgroundColor = selected.getAttribute('data-neutral-dark') || '#343a40';
+                    document.getElementById('preview-neutral-light').style.backgroundColor = selected.getAttribute('data-neutral-light') || '#f8f9fa';
+                }
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof initColorSchemeDropdown === 'function') {
+                        initColorSchemeDropdown();
+                    }
+                    setTimeout(updateColorPreview, 50);
+                    // Tab persistence
+                    var lastTab = localStorage.getItem('facilityEditActiveTab') || 'basic';
+                    showTab(lastTab);
+                    document.querySelectorAll('.tab-button').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            localStorage.setItem('facilityEditActiveTab', this.id.replace('-tab',''));
+                        });
+                    });
+                    document.getElementById('color_scheme_id').addEventListener('change', updateColorPreview);
+                });
             </script>
         </div>
     </div>

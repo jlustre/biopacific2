@@ -13,6 +13,8 @@ return new class extends Migration {
             $table->string('primary_color');
             $table->string('secondary_color');
             $table->string('accent_color');
+            $table->string('neutral_dark');
+            $table->string('neutral_light');
             $table->timestamps();
         });
     }

@@ -18,7 +18,9 @@ class HomeController extends Controller
         $colors = [
             'primary' => '#059669',
             'secondary' => '#064E3B',
-            'accent' => '#FACC15'
+            'accent' => '#FACC15',
+            'neutral_light' => '#F3F4F6',
+            'neutral_dark' => '#1F2937',
         ];
 
         $activeWebContent = null;
@@ -34,7 +36,9 @@ class HomeController extends Controller
             $colors = [
                 'primary' => $colorScheme->primary_color ?? $facility->primary_color ?? '#059669',
                 'secondary' => $colorScheme->secondary_color ?? $facility->secondary_color ?? '#064E3B',
-                'accent' => $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15'
+                'accent' => $colorScheme->accent_color ?? $facility->accent_color ?? '#FACC15',
+                'neutral_light' => $colorScheme->neutral_light ?? $facility->neutral_light ?? '#F3F4F6',
+                'neutral_dark' => $colorScheme->neutral_dark ?? $facility->neutral_dark ?? '#1F2937',
             ];
 
             // Now you can call relationships
@@ -91,6 +95,8 @@ class HomeController extends Controller
         'primary' => $colors['primary'],
         'secondary' => $colors['secondary'],
         'accent' => $colors['accent'],
+        'neutral_light' => $colors['neutral_light'],
+        'neutral_dark' => $colors['neutral_dark'],
         'newsItems' => $facility && method_exists($facility, 'news') ? $facility->news()->where('status', true)->orderBy('published_at', 'desc')->get()->map(function($item) {
             return [
                 'title' => $item->title,

@@ -27,23 +27,10 @@ class DashboardController extends Controller
             $inactiveFacilities = $totalFacilities - $activeFacilities;
             $recentFacilities = Facility::orderBy('created_at', 'desc')->take(5)->get();
 
-            // Debugging log for super admin role
-            Log::debug('Super admin accessing dashboard', [
-                'totalFacilities' => $totalFacilities,
-                'activeFacilities' => $activeFacilities,
-                'inactiveFacilities' => $inactiveFacilities,
-                'recentFacilities' => $recentFacilities->pluck('id')->toArray(),
-            ]);
         }
         else if ($user->hasRole('manager')) {
             // Facility admin dashboard
             $facility = $user->facility;
-
-            // Debugging log for facility retrieval
-            Log::debug('Facility retrieved for manager role', [
-                'facility_id' => $facility ? $facility->id : null,
-                'facility_slug' => $facility ? $facility->slug : null,
-            ]);
 
             if ($facility) {
                 $activeWebContent = $facility->webContents()->where('is_active', true)->first();
@@ -80,9 +67,11 @@ class DashboardController extends Controller
                     'faqs' => $faqs,
                     'categories' => $categories,
                     'testimonials' => $testimonials,
-                    'primary' => $colors['primary'],
-                    'secondary' => $colors['secondary'],
-                    'accent' => $colors['accent'],
+                    'primary' => $colors['primary'] ?? '#000000',
+                    'secondary' => $colors['secondary'] ?? '#000000',
+                    'accent' => $colors['accent'] ?? '#000000',
+                    'neutral_light' => $colors['neutral_light'] ?? '#FFFFFF',
+                    'neutral_dark' => $colors['neutral_dark'] ?? '#000000',
                     'services' => $services,
                     'newsItems' => $newsItems
                 ]);
@@ -152,6 +141,8 @@ class DashboardController extends Controller
                     'primary' => $colors['primary'],
                     'secondary' => $colors['secondary'],
                     'accent' => $colors['accent'],
+                    'neutral_light' => $colors['neutral_light'],
+                    'neutral_dark' => $colors['neutral_dark'],
                     'newsItems' => $newsItems,
                     'aboutMenuItems' => $aboutMenuItems,
                     'roomsMenuItems' => $roomsMenuItems,

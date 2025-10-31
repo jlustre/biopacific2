@@ -10,6 +10,7 @@ use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FacilityController extends Controller
 {
@@ -62,6 +63,15 @@ class FacilityController extends Controller
         }
 
         $colors = FacilityDataHelper::getColors($facility);
+
+        // Debugging log for color variables
+        // Log::debug('Colors retrieved for facility', [
+        //     'primary' => $colors['primary'] ?? null,
+        //     'secondary' => $colors['secondary'] ?? null,
+        //     'accent' => $colors['accent'] ?? null,
+        //     'neutral_light' => $colors['neutral_light'] ?? null,
+        //     'neutral_dark' => $colors['neutral_dark'] ?? null,
+        // ]);
        
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
         $sections = [];
@@ -115,6 +125,8 @@ class FacilityController extends Controller
             'primary' => $colors['primary'],
             'secondary' => $colors['secondary'],
             'accent' => $colors['accent'],
+            'neutral_light' => $colors['neutral_light'],
+            'neutral_dark' => $colors['neutral_dark'],
             'sections' => $sections,
             'sectionVariances' => $sectionVariances,
             'services' => $services,

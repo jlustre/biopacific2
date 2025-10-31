@@ -51,8 +51,9 @@ $hasVideo = !empty($facility['hero_video_id']);
         <div class="absolute top-6 right-6 z-10">
             @if(!empty($facility['phone']))
             <a href="tel:{{ $facility['phone'] }}"
-                class="inline-flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur px-4 py-3 text-slate-800 hover:bg-white shadow-lg hover:shadow-xl transition text-lg font-semibold">
-                <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                class="inline-flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur px-4 py-3 hover:bg-white shadow-lg hover:shadow-xl transition text-lg font-semibold"
+                style="color: {{ $neutral_dark }}">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" style="color: {{ $neutral_dark }}">
                     <path
                         d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-2.26 1.13a11.05 11.05 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2H18C9.72 21 3 14.28 3 6V5z" />
                 </svg>
@@ -70,7 +71,8 @@ $hasVideo = !empty($facility['hero_video_id']);
                     <span
                         class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white"
                         class="text-primary border-primary">
-                        <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+                        <span class="inline-block h-2.5 w-2.5 rounded-full"
+                            style="background: {{ $neutral_dark }}"></span>
                         {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                     </span>
 
@@ -86,14 +88,16 @@ $hasVideo = !empty($facility['hero_video_id']);
                     {{-- Micro trust chips --}}
                     <div class="mt-5 flex flex-wrap gap-2">
                         <span
-                            class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium ring-1 ring-slate-200 text-slate-700">
+                            class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-slate-200"
+                            style="background: transparent; border: 1px solid {{ $neutral_dark }}; color: {{ $neutral_dark }}">
                             <svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M9 16.2l-3.5-3.5 1.41-1.4L9 13.8l7.09-7.09 1.41 1.41z" />
                             </svg>
                             Evidence-based
                         </span>
                         <span
-                            class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium ring-1 ring-slate-200 text-slate-700">
+                            class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-slate-200"
+                            style="background: transparent; border: 1px solid {{ $neutral_dark }}; color: {{ $neutral_dark }}">
                             <svg class="h-4 w-4 text-sky-600" viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5c0-3.08 2.43-5.5 5.5-5.5 1.74 0 3.41.81 4.5 2.09A6 6 0 0119 3c3.07 0 5.5 2.42 5.5 5.5 0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -101,7 +105,8 @@ $hasVideo = !empty($facility['hero_video_id']);
                             Compassion-first
                         </span>
                         <span
-                            class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium ring-1 ring-slate-200 text-slate-700">
+                            class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-slate-200"
+                            style="background: transparent; border: 1px solid {{ $neutral_dark }}; color: {{ $neutral_dark }}">
                             <svg class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M12 17.27L18.18 21l-1.64-7.03L22 9.25l-7.19-.61L12 2 9.19 8.64 2 9.25l5.46 4.72L5.82 21z" />
@@ -122,19 +127,17 @@ $hasVideo = !empty($facility['hero_video_id']);
                         $activeSections = (array) $activeSections;
                         }
                         @endphp
-                        @if(!empty($activeSections) && in_array('book', $activeSections))
                         <a href="#book"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
                             style="background: {{ $primary }}">Book a Tour</a>
-                        @endif
 
                         <a href="#contact"
-                            class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold ring-2 hover:bg-slate-50 transition"
+                            class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold ring-1 hover:bg-slate-50 transition"
                             style="border-color: {{ $secondary }}; color: {{ $secondary }};">Quick Contact</a>
                         @if(!empty($facility['hero_video_id']))
                         <button id="playVideoBtn"
-                            class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-semibold text-white hover:brightness-110 transition"
-                            style="background: {{ $accent }}">
+                            class="cursor-pointer inline-flex items-center justify-center rounded-2xl px-5 py-3 font-semibold hover:brightness-110 transition"
+                            style="background: {{ $neutral_light }}; color: {{ $neutral_dark }}; border: 1px solid {{ $primary }};">
                             <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M8 5v10l8-5-8-5z" />
                             </svg>

@@ -28,9 +28,47 @@ $error = $errors->any();
     passionate professionals to make a difference."
     ])
 
-
+    <!-- Benefits Section -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 mb-12">
+      <h3 class="text-2xl font-bold text-center mb-8" style="color: {{ $primary }}">Why Work With Us?</h3>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        @foreach([
+        ['Medical Benefits', 'Comprehensive health, dental, and vision coverage', 'shield-check'],
+        ['Flexible Schedule', 'Work-life balance with flexible scheduling options', 'clock'],
+        ['Career Growth', 'Professional development and advancement opportunities', 'academic-cap'],
+        ['Competitive Pay', 'Above-market compensation and performance bonuses', 'currency-dollar']
+        ] as [$title, $desc, $icon])
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style="background: {{ $secondary }};">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              @if($icon === 'shield-check')
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              @endif
+              @if($icon === 'clock')
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              @endif
+              @if($icon === 'academic-cap')
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0 0c-3.866 0-7-1.343-7-3" />
+              @endif
+              @if($icon === 'currency-dollar')
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8c-4.418 0-8 1.79-8 4s3.582 4 8 4 8-1.79 8-4-3.582-4-8-4zm0 0V4m0 16v-4" />
+              @endif
+            </svg>
+          </div>
+          <h4 class="text-lg font-semibold mb-2" style="color: {{ $secondary }}">{{ $title }}</h4>
+          <p class="text-slate-600 text-sm mb-4">{{ $desc }}</p>
+        </div>
+        @endforeach
+      </div>
+    </div>
     <!-- Job Cards Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+
       @forelse($jobOpenings as $job)
       <div
         class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
@@ -210,45 +248,5 @@ $error = $errors->any();
         </form>
       </div>
     </div>
-
-    <!-- Benefits Section -->
-    <div class="bg-white rounded-2xl shadow-lg p-8 mb-12">
-      <h3 class="text-2xl font-bold text-center mb-8" style="color: {{ $secondary }}">Why Work With Us?</h3>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        @foreach([
-        ['Medical Benefits', 'Comprehensive health, dental, and vision coverage', 'shield-check'],
-        ['Flexible Schedule', 'Work-life balance with flexible scheduling options', 'clock'],
-        ['Career Growth', 'Professional development and advancement opportunities', 'academic-cap'],
-        ['Competitive Pay', 'Above-market compensation and performance bonuses', 'currency-dollar']
-        ] as [$title, $desc, $icon])
-        <div class="text-center">
-          <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style="background: linear-gradient(to bottom right, {{ $primary }}1A, {{ $accent }}1A);">
-            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              @if($icon === 'shield-check')
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              @endif
-              @if($icon === 'clock')
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              @endif
-              @if($icon === 'academic-cap')
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0 0c-3.866 0-7-1.343-7-3" />
-              @endif
-              @if($icon === 'currency-dollar')
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8c-4.418 0-8 1.79-8 4s3.582 4 8 4 8-1.79 8-4-3.582-4-8-4zm0 0V4m0 16v-4" />
-              @endif
-            </svg>
-          </div>
-          <h4 class="text-lg font-semibold mb-2" style="color: {{ $accent }}">{{ $title }}</h4>
-          <p class="text-slate-600 text-sm mb-4">{{ $desc }}</p>
-        </div>
-        @endforeach
-      </div>
-    </div>
-
   </div>
 </section>

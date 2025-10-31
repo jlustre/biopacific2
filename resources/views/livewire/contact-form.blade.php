@@ -88,7 +88,7 @@
                 Form</button>
             <button type="submit"
                 class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-md text-white transition shadow-sm hover:shadow"
-                style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">Send Message</button>
+                style="background: {{ $primary }}; color: {{ $accent }}">Send Message</button>
         </div>
     </form>
 </div>

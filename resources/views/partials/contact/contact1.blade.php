@@ -212,13 +212,13 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row justify-end gap-3">
-                        <button type="reset"
-                            class="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
+                        <button type="reset" class="px-6 py-2.5 rounded-lg  text-slate-700 hover:bg-slate-50 transition"
+                            style="border: 1px solid {{ $secondary }}; color: {{ $neutral_dark }};">
                             Clear Form
                         </button>
                         <button type="submit"
                             class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-white transition shadow-sm hover:shadow"
-                            style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
+                            style="background: {{ $primary }}; color: {{ $accent }}">
                             Send Message
                         </button>
                     </div>

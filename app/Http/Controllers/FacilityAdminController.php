@@ -109,9 +109,21 @@ class FacilityAdminController extends Controller
         $services = FacilityDataHelper::getServices($facility);
         $newsItems = FacilityDataHelper::getFormattedNews($facility);
         $colors = FacilityDataHelper::getColors($facility);
+
+        // Debugging log for color variables
+        Log::debug('Colors retrieved for facility', [
+            'primary' => $colors['primary'] ?? null,
+            'secondary' => $colors['secondary'] ?? null,
+            'accent' => $colors['accent'] ?? null,
+            'neutral_light' => $colors['neutral_light'] ?? null,
+            'neutral_dark' => $colors['neutral_dark'] ?? null,
+        ]);
+        
         $primary = $colors['primary'];
         $secondary = $colors['secondary'];
         $accent = $colors['accent'];
+        $neutral_light = $colors['neutral_light'];
+        $neutral_dark = $colors['neutral_dark'];
 
         return view('welcome', compact(
             'facility',
@@ -124,6 +136,8 @@ class FacilityAdminController extends Controller
             'primary', 
             'secondary', 
             'accent', 
+            'neutral_light',
+            'neutral_dark',
             'services', 
             'newsItems'
         ));
@@ -628,7 +642,16 @@ class FacilityAdminController extends Controller
             $activeSections = (array) $activeSections;
         }
 
-        return view('admin.facilities.preview', compact('facility', 'activeSections'));
+        $colors = FacilityDataHelper::getColors($facility);
+
+        // Retrieve color scheme details
+        $primary = $colors['primary'] ?? '';
+        $secondary = $colors['secondary'] ?? '';
+        $accent = $colors['accent'] ?? '';
+        $neutral_light = $colors['neutral_light'] ?? '';
+        $neutral_dark = $colors['neutral_dark'] ?? '';
+
+        return view('admin.facilities.preview', compact('facility', 'activeSections', 'primary', 'secondary', 'accent', 'neutral_light', 'neutral_dark'));
     }
 
 }

@@ -22,13 +22,15 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
         <div class="text-center text-white">
             <span
                 class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-white/30 bg-white/10">
-                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+                <span class="inline-block h-2.5 w-2.5 rounded-full"
+                    style="background: {{ $accent }}; color: {{ $neutral_dark }};"></span>
                 Come See Us
             </span>
-            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold">
-                Book a Tour at <span style="color: {{ $accent }};">{{ $facility['name'] ?? 'Our Community' }}</span>
+            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold" style="color: {{ $primary }};">
+                Book a Tour at <span style="color: {{ $primary }};">{{ $facility['name'] ?? 'Our Community' }}</span>
             </h2>
-            <p class="mt-2 text-white/90 md:text-lg">See our rooms, meet our care team, and learn how we support
+            <p class="mt-2 text-white/90 md:text-lg" style="color: {{ $neutral_dark }}">See our rooms, meet our care
+                team, and learn how we support
                 families.</p>
         </div>
     </div>

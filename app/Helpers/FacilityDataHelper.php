@@ -65,11 +65,14 @@ class FacilityDataHelper
         if (!empty($facility->color_scheme_id)) {
             $colorScheme = ColorScheme::find($facility->color_scheme_id);
         }
+        
         return [
             'primary' => $colorScheme->primary_color ?? '#059669',
             'secondary' => $colorScheme->secondary_color ?? '#064E3B',
-            'accent' => $colorScheme->accent_color ?? '#FACC15'
-        ];    
+            'accent' => $colorScheme->accent_color ?? '#FACC15',
+            'neutral_dark' => $colorScheme->neutral_dark ?? '#000000',
+            'neutral_light' => $colorScheme->neutral_light ?? '#FFFFFF',
+        ];
     }
 
     public static function getFormattedNews(Facility $facility)
@@ -169,7 +172,9 @@ class FacilityDataHelper
         return [
             'primary' => $colorScheme->primary_color ?? '#059669',
             'secondary' => $colorScheme->secondary_color ?? '#064E3B',
-            'accent' => $colorScheme->accent_color ?? '#FACC15'
+            'accent' => $colorScheme->accent_color ?? '#FACC15',
+            'neutral_dark' => $colorScheme->neutral_dark ?? '#000000',
+            'neutral_light' => $colorScheme->neutral_light ?? '#FFFFFF',
         ];
     }
 

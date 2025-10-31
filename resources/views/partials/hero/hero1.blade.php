@@ -1,148 +1,103 @@
-<section class="relative overflow-hidden min-h-screen">
-    <!-- Multiple background images that rotate -->
-    <div class="absolute inset-0">
-        <div class="hero-slideshow relative h-full w-full">
-            <div class="slide active">
-                <img src="{{ asset('images/garden-outdoor-activities.png') }}"
-                    alt="Beautiful garden area for outdoor activities" class="h-full w-full object-cover opacity-70">
-            </div>
-            <div class="slide">
-                <img src="{{ asset('images/recreation_activities-room.png') }}"
-                    alt="Elegant dining room with residents enjoying meals"
-                    class="h-full w-full object-cover opacity-70">
-            </div>
-            <div class="slide">
-                <img src="{{ asset('images/physical-therapy-session.png') }}"
-                    alt="Physical therapy session in modern facility" class="h-full w-full object-cover opacity-70">
+<section class="relative overflow-hidden min-h-screen bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500">
+    <!-- Hero Content -->
+    <div class="absolute inset-0 flex items-center justify-center">
+        <div class="text-center text-white px-6">
+            <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-4">
+                {{ $facility['headline'] ?? 'Welcome to Our Facility' }}
+            </h1>
+            <p class="text-lg sm:text-xl mb-6">
+                {{ $facility['subheadline'] ?? 'Experience unparalleled care and comfort.' }}
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#contact"
+                    class="px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow hover:bg-gray-100">
+                    Contact Us
+                </a>
+                @if(!empty($activeSections) && in_array('book', $activeSections))
+                <a href="#book"
+                    class="px-6 py-3 bg-transparent border border-white text-white font-semibold rounded-lg shadow hover:bg-white hover:text-blue-600">
+                    Book a Tour
+                </a>
+                @endif
+                @if(!empty($facility['hero_video_id']))
+                <button id="playVideoBtn"
+                    class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow hover:bg-purple-700">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8 5v10l8-5-8-5z" />
+                    </svg>
+                    Watch Intro
+                </button>
+                @endif
             </div>
         </div>
     </div>
 
-    <!-- Positioned content at left bottom -->
-    <div class="absolute left-0 bottom-24 z-0 w-full">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">
-            <div class="max-w-xl bg-white/60 backdrop-blur rounded-2xl p-8 shadow-xl">
-                <!-- Add a dark text stroke for better contrast -->
-                <style>
-                    .hero-headline-shadow {
-                        /* Existing styles... */
-                        -webkit-text-stroke: .5px rgba(40, 40, 40, 0.7);
-                        text-stroke: .5px rgba(40, 40, 40, 0.7);
-                        /* For future compatibility */
-                        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0px 1px rgba(0, 0, 0, 0.12);
-                        border: 2px solid rgba(73, 64, 64, 0.4);
-                        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10);
-                        border-radius: 0.75rem;
-                        padding: 0.5rem 1rem;
-                        display: inline-block;
-                        background: rgba(255, 255, 255, 0.18);
-                    }
-                </style>
-                {{-- Color variables ($primary, $secondary, $accent) are now passed from the controller. --}}
-                <h1 class="text-2xl sm:text-4xl font-extrabold hero-headline-shadow" style="color: {{ $primary }};">
-                    {{ $facility['headline'] ?? 'Where Comfort Meets Compassion' }}
-                </h1>
-                <p class="mt-4 mx-4 text-slate-700">{{ $facility['subheadline'] ?? 'Default Subheading' }}</p>
-                <div class="mt-6 mx-4 pb-4 flex flex-wrap gap-3 flex flex-row justify-between">
-                    <a href="#contact" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-                        style="background-color: {{ $primary }};">
-                        Quick Contact
-                    </a>
-                    @php
-                    $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
-                    if (is_string($activeSections)) {
-                    $activeSections = json_decode($activeSections, true) ?: [];
-                    } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
-                    $activeSections = $activeSections->toArray();
-                    } elseif (!is_array($activeSections)) {
-                    $activeSections = (array) $activeSections;
-                    }
-                    @endphp
-                    @if(!empty($activeSections) && in_array('book', $activeSections))
-                    <a href="#book" class="inline-flex items-center rounded-xl border px-5 py-3 font-medium"
-                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
-                        Book a Tour
-                    </a>
-                    @endif
-                    @if(!empty($facility['hero_video_id']))
-                    <button id="playVideoBtn"
-                        class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-                        style="background-color: {{ $accent }};">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M8 5v10l8-5-8-5z" />
-                        </svg>
-                        Watch Intro
-                    </button>
-                    @endif
-                </div>
-            </div>
+    <!-- Background Animation -->
+    <div class="absolute inset-0">
+        <div class="hero-animation w-full h-full">
+            <div class="circle bg-white opacity-10"></div>
+            <div class="circle bg-white opacity-20"></div>
+            <div class="circle bg-white opacity-30"></div>
         </div>
     </div>
-    @if(!empty($facility['hero_video_id']))
-    <x-video-modal :videoId="$facility['hero_video_id']" :accentColor="$facility['accent_color'] ?? '#e3342f'"
-        background="rgba(0,0,0,0.75)" />
-    @endif
 </section>
 
-
 <style>
-    .hero-slideshow {
+    .hero-animation {
         position: relative;
-        min-height: 100vh;
+        overflow: hidden;
     }
 
-    .slide {
+    .circle {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        min-height: 100vh;
-        opacity: 0;
-        transition: opacity 1s ease-in-out;
+        border-radius: 50%;
+        animation: float 6s infinite ease-in-out;
     }
 
-    .slide.active {
-        opacity: 1;
+    .circle:nth-child(1) {
+        width: 200px;
+        height: 200px;
+        top: 10%;
+        left: 20%;
+        animation-delay: 0s;
     }
 
-    .slide img {
-        width: 100%;
-        height: 100%;
-        min-height: 100vh;
-        object-fit: cover;
+    .circle:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        top: 50%;
+        left: 40%;
+        animation-delay: 2s;
     }
 
+    .circle:nth-child(3) {
+        width: 150px;
+        height: 150px;
+        bottom: 20%;
+        right: 30%;
+        animation-delay: 4s;
+    }
 
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
+    @keyframes float {
 
-        .slide,
-        .slide img,
-        .hero-slideshow {
-            min-height: 80vh;
+        0%,
+        100% {
+            transform: translateY(0);
         }
 
-        section.relative {
-            min-height: 80vh;
+        50% {
+            transform: translateY(-20px);
         }
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    // Slideshow functionality
-    const slides = document.querySelectorAll('.slide');
-    let currentSlide = 0;
-
-    function nextSlide() {
-        slides[currentSlide].classList.remove('active');
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add('active');
-    }
-
-    // Change slide every 5 seconds
-    setInterval(nextSlide, 5000);
-
-});
+        const playVideoBtn = document.getElementById('playVideoBtn');
+        if (playVideoBtn) {
+            playVideoBtn.addEventListener('click', function() {
+                alert('Play video functionality goes here.');
+            });
+        }
+    });
 </script>
