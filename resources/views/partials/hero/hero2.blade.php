@@ -113,7 +113,7 @@ $hasVideo = !empty($facility['hero_video_id']);
 
           @if(!empty($facility['hero_video_id']))
           <button id="playVideoBtn" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
-            style="background-color: {{ $accent }};">
+            style="background-color: {{ $neutral_dark }}; color: {{ $neutral_light }}">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path d="M8 5v10l8-5-8-5z" />
             </svg>

@@ -44,7 +44,7 @@ $error = $errors->any();
             <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               @if($icon === 'shield-check')
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                d="M12 2c1.104 0 2 .896 2 2v2h2c1.104 0 2 .896 2 2v2c0 1.104-.896 2-2 2h-2v2h2c1.104 0 2 .896 2 2v2c0 1.104-.896 2-2 2h-2v2c0 1.104-.896 2-2 2s-2-.896-2-2v-2H8c-1.104 0-2-.896-2-2v-2c0-1.104.896-2 2-2h2v-2H8c-1.104 0-2-.896-2-2V8c0-1.104.896-2 2-2h2V4c0-1.104.896-2 2-2zm0 4v2h2V6h-2zm0 8v2h2v-2h-2z" />
               @endif
               @if($icon === 'clock')
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

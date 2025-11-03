@@ -58,7 +58,7 @@ asset('images/hero1.jpg'));
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex justify-center items-center rounded-xl px-5 py-3 font-semibold text-slate-900 transition hover:brightness-110"
-                        style="background-color: {{ $accent }}">
+                        style="background: {{ $neutral_dark }}; color: {{ $neutral_light }}">
                         <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>

@@ -40,7 +40,7 @@
               alt="Physical therapy session" class="h-full w-full object-cover max-w-full h-auto block">
             <div class="absolute bottom-4 right-4 z-10">
               <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
-                <div class="text-2xl md:text-3xl font-black" style="color: {{ $accent }}">
+                <div class="text-2xl md:text-3xl font-black" style="color: {{ $primary }}">
                   {{ $facility['years'] ?? '20' }}+
                 </div>
                 <div class="text-xs md:text-sm text-slate-600">Years of Service</div>
@@ -81,7 +81,7 @@
               Vision
             </button>
             <button @click="tab='values'" class="rounded-full px-4 py-2 text-sm font-semibold ring-1 transition"
-              :class="tab==='values' ? 'text-white' : 'text-slate-700'"
+              :class="tab==='values' ? 'text-neutral-dark' : 'text-slate-700'"
               :style="tab==='values' ? 'background:{{ $accent }}' : 'background:white; box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)'">
               Values
             </button>
@@ -159,9 +159,9 @@
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
               <div class="h-10 w-10 rounded-lg flex items-center justify-center text-white"
-                style="background: {{ $facility['secondary_color'] ?? '#155E75' }}">✓</div>
+                style="background: {{ $secondary ?? '#155E75' }}">✓</div>
               <div>
-                <div class="font-semibold text-slate-900">Accreditations & Certifications</div>
+                <div class="font-semibold" style="color: {{ $neutral_dark }}">Accreditations & Certifications</div>
                 <p class="text-xs text-slate-600">Medicare/Medicaid certified • State licensed • Regular quality audits
                 </p>
               </div>

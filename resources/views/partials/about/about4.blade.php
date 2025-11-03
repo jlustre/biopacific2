@@ -22,7 +22,7 @@ $poster = !empty($facility['about_image_url'])
             <div class="relative overflow-hidden rounded-3xl ring-1 ring-slate-200">
 
                 <img src="{{ $poster }}" alt="Life at {{ $facility['name'] ?? 'our facility' }}"
-                    class="w-full h-64 md:h-[22rem] object-cover object-[center_20%]">
+                    class="w-full h-64 md:h-[30rem] object-cover object-[center_20%]">
                 {{-- Soft top/bottom gradients for legibility --}}
                 <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent"></div>
                 <div class="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/35 to-transparent"></div>
@@ -32,7 +32,7 @@ $poster = !empty($facility['about_image_url'])
                     <div
                         class="inline-flex items-center gap-3 rounded-2xl bg-white/95 backdrop-blur px-4 py-2 shadow ring-1 ring-slate-200">
                         <span class="h-10 w-10 rounded-xl text-white font-black flex items-center justify-center"
-                            style="background: {{ $accent }}">{{ $years }}+</span>
+                            style="background: {{ $primary }}; color: {{ $neutral_light }}">{{ $years }}+</span>
                         <div class="text-xs">
                             <div class="font-semibold text-slate-900">Years of Service</div>
                             <div class="text-slate-600">Care you can count on</div>
@@ -43,8 +43,9 @@ $poster = !empty($facility['about_image_url'])
         </div>
     </div>
     <div class="text-center pt-4">
-        <h2 class="text-2xl md:text-4xl font-black drop-shadow-[0_2px_10px_rgba(0,0,0,.35)]">
-            About <span class="text-primary">{{ $facility['name'] ?? 'Our Facility' }}</span>
+        <h2 class="text-3xl md:text-4xl font-bold drop-shadow-[0_2px_10px_rgba(0,0,0,.35)]">
+            About <span style="color: {{ $primary }}">{{ $facility['name'] ?? 'Our Facility'
+                }}</span>
         </h2>
     </div>
 
@@ -130,12 +131,6 @@ $poster = !empty($facility['about_image_url'])
                             class="py-3 px-1 border-transparent font-medium text-sm transition"
                             :style="activeTab === 'values' ? 'border-color: {{ $primary }}; color: {{ $primary }}' : ''">
                             Values
-                        </button>
-                        <button @click="activeTab = 'journey'"
-                            :class="activeTab === 'journey' ? 'border-b-2 text-slate-900' : 'text-slate-500 hover:text-slate-700'"
-                            class="py-3 px-1 border-transparent font-medium text-sm transition"
-                            :style="activeTab === 'journey' ? 'border-color: {{ $primary }}; color: {{ $primary }}' : ''">
-                            Our Journey
                         </button>
                     </nav>
                 </div>
@@ -236,42 +231,6 @@ $poster = !empty($facility['about_image_url'])
                             <img src="{{ asset('images/nursinghome_image1.png') }}"
                                 alt="Our nursing home facility demonstrating our core values"
                                 class="w-full h-full object-cover">
-                        </div>
-                    </div>
-
-                    {{-- Journey Tab --}}
-                    <div x-show="activeTab === 'journey'" class="grid md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 class="text-2xl font-bold mb-4 text-secondary">Our Journey</h3>
-                            <ul class="space-y-4">
-                                @php
-                                $start = now()->year - $years;
-                                @endphp
-                                @foreach([
-                                [$start, 'Founded', 'Opened our doors with a promise of dignity & respect.'],
-                                [$start+5, 'Expanded Services', 'Added rehabilitation and memory care programs.'],
-                                [$start+10, 'Quality Milestones', 'Recognized for care excellence & satisfaction.'],
-                                [now()->year, 'Today', 'Serving families across California with heart.']
-                                ] as [$yr,$title,$desc])
-                                <li class="relative pl-6">
-                                    <span class="absolute left-0 top-1.5 h-3 w-3 rounded-full ring-2 ring-white"
-                                        style="background: {{ $primary }}"></span>
-                                    <div class="text-xs text-slate-500">{{ $yr }}</div>
-                                    <div class="font-semibold text-slate-900">{{ $title }}</div>
-                                    <p class="text-sm text-slate-600">{{ $desc }}</p>
-                                </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        <div
-                            class="aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center">
-                            <div class="text-center text-slate-400">
-                                <svg class="mx-auto h-12 w-12 mb-2" fill="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zM12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-                                </svg>
-                                <p class="text-sm">Journey Image Placeholder</p>
-                            </div>
                         </div>
                     </div>
                 </div>

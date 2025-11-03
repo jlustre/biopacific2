@@ -75,7 +75,6 @@ $hasVideo = !empty($facility['hero_video_id']);
         $activeSections = (array) $activeSections;
         }
         @endphp
-        @if(!empty($activeSections) && in_array('book', $activeSections))
         <a href="#book"
           class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold border-2 shadow-lg transition-all duration-200"
           style="
@@ -88,11 +87,11 @@ $hasVideo = !empty($facility['hero_video_id']);
           onmouseout="this.style.background='linear-gradient(135deg, white 0%, #fff8 100%)'; this.style.color='{{ $secondary }}'; this.style.borderColor='{{ $secondary }}'; this.style.boxShadow='0 2px 8px 0 {{ $secondary }}22';">
           Book a Tour
         </a>
-        @endif
+
         @if(!empty($facility['hero_video_id']))
         <button id="playVideoBtn"
           class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white transition hover:brightness-120"
-          style="background-color: {{ $accent }}">
+          style="background: {{ $neutral_dark }}; color: {{ $neutral_light }}; transition: background-color 0.3s, color 0.3s;">
           <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M8 5v10l8-5-8-5z" />
           </svg>

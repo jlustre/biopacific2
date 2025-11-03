@@ -87,7 +87,8 @@ $poster = asset('images/hero1.jpg');
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/20 transition-all duration-200 hover:brightness-110"
-                        style="background: {{ $accent }}" aria-label="Watch intro video">
+                        style="background: {{ $neutral_dark }}; color: {{ $neutral_light }}"
+                        aria-label="Watch intro video">
                         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>

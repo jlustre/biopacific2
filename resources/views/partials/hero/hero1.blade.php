@@ -1,4 +1,14 @@
-<section class="relative overflow-hidden min-h-screen bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500">
+@php
+$posterFilename = $facility['hero_image_url'] ?? null;
+if (!empty($posterFilename)) {
+$poster = url('images/' . $posterFilename);
+} else {
+$poster = null;
+}
+@endphp
+
+<section class="relative overflow-hidden min-h-screen bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500"
+    style="@if($poster) background-image: url('{{ $poster }}'); background-size: cover; background-position: top; @endif">
     <!-- Hero Content -->
     <div class="absolute inset-0 flex items-center justify-center">
         <div class="text-center text-white px-6">
@@ -9,8 +19,8 @@
                 {{ $facility['subheadline'] ?? 'Experience unparalleled care and comfort.' }}
             </p>
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="#contact"
-                    class="px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow hover:bg-gray-100">
+                <a href="#contact" class="px-6 py-3 font-semibold rounded-lg shadow hover:bg-gray-100"
+                    style="color: {{ $primary }}; background-color: {{ $neutral_light }};">
                     Contact Us
                 </a>
                 @if(!empty($activeSections) && in_array('book', $activeSections))
@@ -20,8 +30,8 @@
                 </a>
                 @endif
                 @if(!empty($facility['hero_video_id']))
-                <button id="playVideoBtn"
-                    class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow hover:bg-purple-700">
+                <button id="playVideoBtn" class="px-6 py-3  font-semibold rounded-lg shadow"
+                    style="background-color: {{ $neutral_dark }}; color: {{ $neutral_light }}">
                     <svg class="w-5 h-5 inline-block mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M8 5v10l8-5-8-5z" />
                     </svg>

@@ -43,13 +43,13 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                     <h3 class="text-lg font-semibold" style="color: {{ $secondary }}">
                         {{ $service->name }}
                     </h3>
-                    <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $accent }}">
+                    <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $neutral_dark }}">
                         {{ $service->short_description }}
                     </p>
                     <div class="mt-4 flex items-center justify-center">
                         <button onclick="openServiceModal('modal-{{ $index }}')"
                             class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                            style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+                            style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
                             aria-controls="modal-{{ $index }}" aria-expanded="false">
                             Details
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"

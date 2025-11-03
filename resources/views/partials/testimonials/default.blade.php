@@ -89,7 +89,10 @@ $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
       <div class="flex items-center justify-between mt-8">
         <!-- Previous Button -->
         <button @click="currentIndex = (currentIndex - 1 + testimonials.length) % testimonials.length"
-          class="bg-teal-600 hover:bg-teal-500 flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
+          class="bg-primary hover:bg-accent flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:text-white group"
+          style="background: {{ $primary }}; color: white; transition: all 0.3s;"
+          onmouseover="this.style.background='{{ $accent }}'; this.style.color='white';"
+          onmouseout="this.style.background='{{ $primary }}'; this.style.color='white';">
           <svg class="text-teal-300 w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -108,7 +111,10 @@ $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
 
         <!-- Next Button -->
         <button @click="currentIndex = (currentIndex + 1) % testimonials.length"
-          class="bg-teal-600 hover:bg-teal-500 flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:bg-primary hover:text-white group">
+          class="bg-primary hover:bg-accent flex items-center gap-2 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:text-white group"
+          style="background: {{ $primary }}; color: white; transition: all 0.3s;"
+          onmouseover="this.style.background='{{ $accent }}'; this.style.color='white';"
+          onmouseout="this.style.background='{{ $primary }}'; this.style.color='white';">
           <span class="text-teal-300 font-medium hover:text-white">Next</span>
           <svg class="text-teal-300 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">

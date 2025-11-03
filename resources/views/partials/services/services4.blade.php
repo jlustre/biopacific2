@@ -21,12 +21,13 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <div class="relative h-44 overflow-hidden">
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
                         alt="{{ $service->name }}"
-                        class="h-auto w-full max-w-full object-cover object-top group-hover:scale-105 transition duration-700">
+                        class="h-auto w-full max-w-full object-cover object-top group-hover:scale-105 transition duration-700"
+                        style="border: 2px solid {{ $primary }}; box-shadow: 0 4px 6px -1px {{ $accent }}, 0 2px 4px -2px {{ $accent }}; filter: brightness(0.8) contrast(1.2);">
                 </div>
                 <div class="flex-1 flex flex-col p-3">
                     <span
                         class="text-center mb-2 text-white text-md font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-wide"
-                        style="background: {{ $accent }}">{{
+                        style="background: {{ $neutral_light }}; color: {{ $neutral_dark }}; border: 2px solid {{ $accent }};">{{
                         $service->name }}</span>
                     <p class="mb-4 text-base line-clamp-3 font-semibold" style="color: {{ $secondary }}">{{
                         $service->short_description }}</p>
@@ -62,7 +63,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
                         alt="{{ $service->name }}" class="w-56 h-56 object-cover rounded-xl mb-4 shadow">
                     <h3 id="modal-title-{{ $service->id }}" class="text-3xl font-bold mb-2"
-                        style="color: {{ $accent }}">{{ $service->name }}</h3>
+                        style="color: {{ $neutral_dark }}">{{ $service->name }}</h3>
                 </div>
                 <div>
                     <h4 class="text-base font-semibold text-teal-900 mb-2">Key Features</h4>

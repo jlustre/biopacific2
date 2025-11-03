@@ -95,15 +95,17 @@ $poster = asset('images/hero1.jpg');
                     @endif
 
                     <a href="#contact"
-                        class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold bg-white/60 backdrop-blur text-slate-900 ring-2 ring-white/80 hover:bg-white/80 hover:ring-white transition-all duration-200"
-                        style="border-color: {{ $secondary }}; color: {{ $secondary }};">
+                        class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold backdrop-blur text-slate-900 ring-2 ring-white/80 hover:bg-white/80 hover:ring-white transition-all duration-200"
+                        style="background: {{ $neutral_light }}; border-color: {{ $neutral_dark }}; color: {{ $neutral_dark }};">
                         Quick Contact
                     </a>
 
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
                         class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white backdrop-blur ring-1 ring-white/30 hover:brightness-110 hover:scale-[1.02] transition-all duration-200"
-                        style="background: {{ $accent }};">
+                        style="background: {{ $neutral_dark }}; color: {{ $neutral_light }}; transition: background-color 0.3s, color 0.3s;"
+                        onmouseover="this.style.background='{{ $neutral_light }}'; this.style.color='{{ $neutral_dark }}';"
+                        onmouseout="this.style.background='{{ $neutral_dark }}'; this.style.color='{{ $neutral_light }}';">
                         <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>

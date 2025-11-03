@@ -20,7 +20,7 @@
                     </div>
                     <div
                         class="absolute -bottom-4 -right-4 bg-white p-4 lg:p-6 rounded-2xl shadow-xl border-l-4 border-accent">
-                        <div class="text-2xl lg:text-3xl font-bold text-accent">{{ $facility['years']
+                        <div class="text-2xl lg:text-3xl font-bold" style="color: {{ $primary }}">{{ $facility['years']
                             ?? '20' }}+</div>
                         <div class="text-xs lg:text-sm text-slate-600">Years of Service</div>
                     </div>
@@ -37,13 +37,13 @@
                     <div x-data="{ tab: 'mission' }" class="space-y-4">
                         <div class="flex space-x-2 mb-4">
                             <button @click="tab = 'mission'"
-                                :style="tab === 'mission' ? 'background-color: {{ $primary }}; color: #fff;' : 'background-color: #fff; color: {{ $primary }};'"
+                                :style="tab === 'mission' ? 'background-color: {{ $neutral_dark }}; color: {{ $neutral_light }};' : 'background-color: {{ $accent }}; color: {{ $secondary }};'"
                                 class="px-4 py-2 rounded-t-lg font-semibold border">Our Mission</button>
                             <button @click="tab = 'vision'"
-                                :style="tab === 'vision' ? 'background-color:  {{ $secondary }}; color: #fff;' : 'background-color: #fff; color: {{ $secondary }};'"
+                                :style="tab === 'vision' ? 'background-color:  {{ $neutral_dark }}; color: {{ $neutral_light }};' : 'background-color: {{ $accent }}; color: {{ $secondary }};'"
                                 class="px-4 py-2 rounded-t-lg font-semibold border">Our Vision</button>
                             <button @click="tab = 'values'"
-                                :style="tab === 'values' ? 'background-color:  {{ $accent }}; color: #fff;' : 'background-color: #fff; color: {{ $accent }};'"
+                                :style="tab === 'values' ? 'background-color:  {{ $neutral_dark }}; color: {{ $neutral_light }};' : 'background-color: {{ $accent }}; color: {{ $secondary }};'"
                                 class="px-4 py-2 rounded-t-lg font-semibold border">Our Values</button>
                         </div>
                         <div x-show="tab === 'mission'" class="p-4 bg-white rounded-b-lg shadow">
