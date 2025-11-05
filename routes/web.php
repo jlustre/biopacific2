@@ -152,7 +152,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::delete('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'destroy'])->name('admin.facilities.testimonials.destroy');
     });
     Route::resource('tour-requests', TourRequestController::class)->names('tour-requests');
-    Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'destroy'])->names('inquiries');
+    Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'destroy']);
     Route::resource('job-applications', AdminJobApplicationController::class)->only(['index', 'show', 'destroy'])->names('job-applications');
     Route::patch('/job-applications/{jobApplication}/status', [AdminJobApplicationController::class, 'updateStatus'])->name('job-applications.update-status');
     Route::get('/job-applications/{jobApplication}/download-resume', [AdminJobApplicationController::class, 'downloadResume'])->name('job-applications.download-resume');
