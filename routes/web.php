@@ -45,8 +45,6 @@ Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::cla
 
 Route::get('/', [App\Http\Controllers\HomeController::class, 'home'])->name('home');
 
-Route::get('/test', function() { return 'Test route works!'; })->name('test');
-
 Route::get('/index', fn() => view('index'))->name('index');
 
 // Redirect old privacy-policy route to new one
@@ -207,8 +205,8 @@ Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('
 Route::post('/book-a-tour', [BookATourController::class, 'store'])->name('book-a-tour.store');
 Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
 
-// Public Facility Route (catch-all, must be last)
-Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+// Auth routes (must be before catch-all routes)
+require __DIR__.'/auth.php';
 
 // Job applications viewing route
 Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->name('applications.show');
@@ -219,5 +217,5 @@ Route::get('/facilities/{facility}/applications', [CareersApplicationsController
 // Register admin webmaster contacts routes
 require __DIR__.'/admin_webmaster_contacts.php';
 
-// Auth routes
-require __DIR__.'/auth.php';
+// Public Facility Route (catch-all, must be last)
+Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
