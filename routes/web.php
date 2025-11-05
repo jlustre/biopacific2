@@ -45,6 +45,8 @@ Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::cla
 
 Route::get('/', [App\Http\Controllers\HomeController::class, 'home'])->name('home');
 
+Route::get('/test', function() { return 'Test route works!'; })->name('test');
+
 Route::get('/index', fn() => view('index'))->name('index');
 
 // Redirect old privacy-policy route to new one

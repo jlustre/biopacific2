@@ -183,88 +183,14 @@ $facility['social'] = [
       </aside>
 
       {{-- Contact Form (stacked, full width) --}}
-      <div class="rounded-3xl border bg-white p-6 sm:p-8 shadow-xl h-full">
-        <form class="space-y-6">
-          <div class="flex items-center">
-            <div class="mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full"
-              style="background: {{ ($facility['primary_color'] ?? '#0EA5E9') }}1A; color: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8-1.5 0-3-.3-4.3-.9L3 20l1.4-3.7A8.9 8.9 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z" />
-              </svg>
-            </div>
-            <div>
-              <h3 class="text-xl font-semibold text-slate-900">Send us a Message</h3>
-              <p class="text-sm text-slate-500">We’ll get back to you promptly.</p>
-            </div>
-          </div>
-
-          <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800">
-            ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics privately.
-          </div>
-
-          <div>
-            <label for="contact_name" class="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
-            <input id="contact_name" type="text" required autocomplete="name"
-              class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-              placeholder="Enter your full name">
-          </div>
-
-          <div>
-            <label for="contact_phone" class="block text-sm font-medium text-slate-700 mb-2">Phone</label>
-            <input id="contact_phone" type="tel" inputmode="tel" autocomplete="tel"
-              class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-              placeholder="(555) 123-4567">
-          </div>
-
-          <div>
-            <label for="contact_email" class="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
-            <input id="contact_email" type="email" required autocomplete="email"
-              class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-              placeholder="your@email.com">
-          </div>
-
-          <div>
-            <label for="contact_message" class="block text-sm font-medium text-slate-700 mb-2">Message *</label>
-            <textarea id="contact_message" rows="5" required
-              class="w-full rounded-lg border border-slate-200 px-3 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-              placeholder="How can we help you today?"></textarea>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-              <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary/30">
-              I consent to be contacted about my inquiry.
-            </label>
-            <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off"> {{-- honeypot --}}
-          </div>
-
-          <div class="flex flex-col gap-2 mt-4">
-            <div class="flex items-center">
-              <input id="no-phi" name="no_phi" type="checkbox" required
-                class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-              <label for="no-phi" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                I confirm that I will not include any Protected Health Information (PHI) in this form.
-              </label>
-            </div>
-            <p class="text-xs">See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
-                class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
-                Privacy Practices</a>.</p>
-          </div>
-
-          <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
-            <button type="reset"
-              class="px-6 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
-              Clear Form
-            </button>
-            <button type="submit"
-              class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-white transition shadow-sm hover:shadow"
-              style="background: {{ $facility['primary_color'] ?? '#0EA5E9' }}">
-              Send Message
-            </button>
-          </div>
-        </form>
-      </div>
+      {{-- Contact Form (reusable component) --}}
+      @include('partials.contact.contact-form', [
+      'facility' => $facility,
+      'primary' => $primary,
+      'secondary' => $secondary,
+      'accent' => $accent,
+      'neutral_dark' => $neutral_dark ?? '#1e293b'
+      ])
 
       {{-- Map --}}
       <div class="rounded-3xl border bg-white shadow-xl overflow-hidden h-full">

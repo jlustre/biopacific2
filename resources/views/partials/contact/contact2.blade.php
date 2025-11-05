@@ -149,7 +149,8 @@ $social = $facility['social'] ?? [];
                     'primary' => $primary,
                     'secondary' => $secondary,
                     'accent' => $accent,
-                    'neutral_dark' => '#1e293b'
+                    'neutral_dark' => $neutral_dark,
+                    'neutral_light' => $neutral_light
                     ])
                 </div>
                 <!-- Map Card (collapsible on mobile) -->
