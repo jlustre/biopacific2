@@ -18,6 +18,8 @@ class EmailRecipient extends Model
         'facility_id',
         'category',
         'email',
+        'email_alt_1',
+        'email_alt_2',
     ];
 
     /**

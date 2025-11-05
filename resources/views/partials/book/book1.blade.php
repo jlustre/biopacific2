@@ -104,7 +104,7 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                             spaces','Outdoor areas'] as $it)
                             <li class="flex items-center gap-2">
                                 <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-white"
-                                    style="background: {{ $accent }}">
+                                    style="background: {{ $primary }}; color: {{ $neutral_light }};">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                             d="M5 13l4 4L19 7" />

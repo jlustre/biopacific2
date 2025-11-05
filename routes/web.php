@@ -7,30 +7,34 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\FaqController;
-use App\Livewire\FacilitiesIndex;
-use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Appearance;
 use App\Models\Facility;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Admin\NewsController;
-use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\GalleryController;
-use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\CareersController;
+use App\Http\Controllers\Admin\TourRequestController;
+use App\Http\Controllers\Admin\EmailRecipientController;
+use App\Http\Controllers\Admin\InquiryController;
+use App\Http\Controllers\Admin\JobApplicationController as AdminJobApplicationController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
 use App\Http\Controllers\ServicesController;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AccessibilityController;
 use App\Http\Controllers\TermsOfServiceController;
 use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\PrivacyPolicyController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CareersPublicController;
 use App\Http\Controllers\BookATourController;
-use App\Http\Controllers\Admin\TourRequestController;
-use App\Http\Controllers\Admin\EmailRecipientController;
+use App\Http\Controllers\BlogController;
+use App\Livewire\FacilitiesIndex;
+use App\Livewire\Settings\Profile;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Admin\ServiceController;
+use Illuminate\Support\Facades\Auth;
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -62,7 +66,6 @@ Route::get('/{facility:slug}/terms-of-service', [TermsOfServiceController::class
 // Accessibility
 Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 'show'])->name('accessibility');
 
-use App\Http\Controllers\BlogController;
 // Admin Routes (auth + admin role)
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
     // Blog management (admin only, under web contents)
@@ -115,6 +118,13 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::delete('news/{news}/delete-image', [NewsController::class, 'deleteImage'])->name('news.deleteImage');
     Route::resource('admin/events', EventController::class)->names('events');
 
+    // Employee Email Mappings Management
+    Route::get('/communications/employee-email-mappings', function () {
+        return view('admin.employee-email-mappings');
+    })->name('communications.employee-email-mappings');
+
+
+    
     // Gallery image management
     Route::resource('galleries', GalleryController::class)->except(['show']);
     // Gallery index for a specific facility
@@ -140,7 +150,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::delete('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'destroy'])->name('admin.facilities.testimonials.destroy');
     });
     Route::resource('tour-requests', TourRequestController::class)->names('tour-requests');
-    Route::resource('email-recipients', EmailRecipientController::class)->names('email-recipients');
+    Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'destroy'])->names('inquiries');
+    Route::resource('job-applications', AdminJobApplicationController::class)->only(['index', 'show', 'destroy'])->names('job-applications');
+    Route::patch('/job-applications/{jobApplication}/status', [AdminJobApplicationController::class, 'updateStatus'])->name('job-applications.update-status');
+    Route::get('/job-applications/{jobApplication}/download-resume', [AdminJobApplicationController::class, 'downloadResume'])->name('job-applications.download-resume');
+    Route::get('/job-applications/{jobApplication}/preview-resume', [AdminJobApplicationController::class, 'previewResume'])->name('job-applications.preview-resume');
+    Route::get('/email-recipients', function () {
+        return view('admin.email-recipients');
+    })->name('email-recipients.index');
 
     // API endpoint for fetching a single testimonial (for edit modal)
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
@@ -157,10 +174,9 @@ Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin']
     Route::put('careers/{jobOpening}/applications/{jobApplication}', [CareersController::class, 'updateApplication'])->name('admin.facilities.webcontents.careers.applications.update');
     Route::delete('careers/{jobOpening}/applications/{jobApplication}', [CareersController::class, 'destroyApplication'])->name('admin.facilities.webcontents.careers.applications.destroy');
     Route::get('careers/applications/{jobApplication}/details', [CareersController::class, 'applicationDetails'])->name('admin.facilities.webcontents.careers.applications.details');
+    Route::get('careers/{jobOpening}/applications/{jobApplication}/download-resume', [CareersController::class, 'downloadResume'])->name('admin.facilities.webcontents.careers.applications.download-resume');
+    Route::get('careers/{jobOpening}/applications/{jobApplication}/preview-resume', [CareersController::class, 'previewResume'])->name('admin.facilities.webcontents.careers.applications.preview-resume');
 });
-
-
-
 
 // General dashboard and user settings for all authenticated users
 Route::middleware(['auth'])->group(function () {
@@ -185,15 +201,9 @@ Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 // FAQ Section
 Route::get('/faqs', [FaqController::class, 'index'])->name('faqs.index');
 
-
-// Register admin webmaster contacts routes
-require __DIR__.'/admin_webmaster_contacts.php';
-
-// Auth routes
-require __DIR__.'/auth.php';
-
 Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('careers.apply');
 Route::post('/book-a-tour', [BookATourController::class, 'store'])->name('book-a-tour.store');
+Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
 
 // Public Facility Route (catch-all, must be last)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
@@ -204,4 +214,8 @@ Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->nam
 // List job applications for a facility
 Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
 
+// Register admin webmaster contacts routes
+require __DIR__.'/admin_webmaster_contacts.php';
 
+// Auth routes
+require __DIR__.'/auth.php';

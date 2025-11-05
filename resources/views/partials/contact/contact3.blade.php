@@ -128,8 +128,14 @@ $social = $facility['social'] ?? [];
         </div>
     </div>
     </div>
-    <!-- Right: Floating Form -->
+    <!-- Right: Floating Form (reusable component) -->
     <div class="w-full lg:w-1/2 flex items-center justify-start bg-yellow-100/80 relative p-4 lg:p-8 min-h-[60vh]">
-        @livewire('contact-form', ['facility'=> $facility])
+        @include('partials.contact.contact-form', [
+        'facility' => $facility,
+        'primary' => $primary,
+        'secondary' => $secondary,
+        'accent' => $accent,
+        'neutral_dark' => '#1e293b'
+        ])
     </div>
 </section>

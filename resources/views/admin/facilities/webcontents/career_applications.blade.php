@@ -10,8 +10,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
@@ -21,8 +20,13 @@
                 <tbody>
                     @forelse($applications as $app)
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $app->applicant_name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $app->email }}</td>
+                        <td class="px-6 py-4">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ $app->first_name }} {{ $app->last_name
+                                    }}</div>
+                                <div class="text-sm text-gray-500">{{ $app->email }}</div>
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $app->phone }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ ucfirst($app->status) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $app->created_at->format('Y-m-d') }}</td>
@@ -30,10 +34,15 @@
                             <!-- View Details Modal Trigger -->
                             <button type="button" class="text-blue-600 hover:underline"
                                 onclick="showAppModal({{ $app->id }})">View</button>
-                            <!-- Download Resume -->
+                            <!-- Resume Actions -->
                             @if($app->resume_path)
-                            <a href="{{ asset('storage/' . $app->resume_path) }}" target="_blank"
-                                class="text-indigo-600 hover:underline">Resume</a>
+                            <div class="flex gap-1">
+                                <a href="{{ route('admin.facilities.webcontents.careers.applications.preview-resume', [$jobOpening, $app]) }}"
+                                    target="_blank" class="text-green-600 hover:underline text-xs">Preview</a>
+                                <span class="text-gray-400">|</span>
+                                <a href="{{ route('admin.facilities.webcontents.careers.applications.download-resume', [$jobOpening, $app]) }}"
+                                    class="text-indigo-600 hover:underline text-xs">Download</a>
+                            </div>
                             @endif
                             <!-- Update Status Form -->
                             <form method="POST"
@@ -65,7 +74,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">No applications found.</td>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">No applications found.</td>
                     </tr>
                     @endforelse
                     <!-- Application Details Modal (hidden by default, shown via JS) -->

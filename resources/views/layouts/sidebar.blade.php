@@ -137,9 +137,21 @@
                         class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-calendar-alt mr-2"></i> Tour Requests
                     </a>
+                    <a href="{{ route('admin.inquiries.index') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-question-circle mr-2"></i> General Inquiries
+                    </a>
+                    <a href="{{ route('admin.job-applications.index') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-briefcase mr-2"></i> Job Applications
+                    </a>
                     <a href="{{ route('admin.email-recipients.index') }}"
                         class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-envelope mr-2"></i> Email Recipients
+                    </a>
+                    <a href="{{ route('admin.communications.employee-email-mappings') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-user-tie mr-2"></i> Employee Email Mappings
                     </a>
                 </div>
             </div>

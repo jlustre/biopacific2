@@ -20,6 +20,9 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 - Webmaster contact management
 - Service management
 - Web content management
+- **Video modal integration (NEW)** - YouTube video embedding in hero sections
+- **Enhanced hero layouts (UPDATED)** - Multiple hero templates with video support
+- **Book a tour functionality (NEW)** - Tour booking system with email notifications
 
 ## 2. Test Types
 
@@ -32,20 +35,23 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 
 ## 3. Test Coverage Matrix
 
-| Module              | Unit | Feature | Integration | UI/UX | Security | Compliance |
-| ------------------- | ---- | ------- | ----------- | ----- | -------- | ---------- |
-| Facility Management | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| User Auth           | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Admin Dashboard     | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Audit Logging       | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| News/Events         | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Gallery Management  | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| FAQ/Testimonial     | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Layout Builder      | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| HIPAA Checklist     | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Webmaster Contact   | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Service Management  | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
-| Web Content         | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Module                | Unit | Feature | Integration | UI/UX | Security | Compliance |
+| --------------------- | ---- | ------- | ----------- | ----- | -------- | ---------- |
+| Facility Management   | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| User Auth             | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Admin Dashboard       | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Audit Logging         | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| News/Events           | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Gallery Management    | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| FAQ/Testimonial       | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Layout Builder        | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| HIPAA Checklist       | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Webmaster Contact     | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Service Management    | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| Web Content           | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| **Video Integration** | ✓    | ✓       | ✓           | ✓     | ✓        | N/A        |
+| **Book a Tour**       | ✓    | ✓       | ✓           | ✓     | ✓        | ✓          |
+| **Hero Layouts**      | ✓    | ✓       | ✓           | ✓     | ✓        | N/A        |
 
 ## 4. Test Scenarios
 
@@ -116,6 +122,27 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 
 - Edit and publish web content per facility
 - Versioning and rollback
+
+### Video Integration & Modal System (NEW)
+
+- YouTube video embedding in hero sections
+- Video modal functionality with overlay
+- Video playback controls and accessibility
+- Responsive video display across devices
+
+### Book a Tour System (NEW)
+
+- Tour booking form submission and validation
+- Email notification system for tour requests
+- Tour request management and tracking
+- Integration with facility-specific contact forms
+
+### Enhanced Hero Layouts (UPDATED)
+
+- Multiple hero template variations (hero1-hero6)
+- Video background support with image fallbacks
+- Dynamic content and color scheme integration
+- Responsive design across all hero variants
 
 ## 5. Data & Database Testing
 
@@ -254,12 +281,52 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 - Test display of web content on public site
 - Test validation for web content fields
 
+### Video Integration & Modal System (NEW)
+
+- Test YouTube video embedding with valid/invalid video IDs
+- Test video modal opening and closing functionality
+- Test video autoplay and user controls
+- Test modal accessibility (keyboard navigation, screen readers)
+- Test responsive video display on mobile/tablet/desktop
+- Test video modal integration with different hero layouts
+- Test video playback with reduced motion preferences
+- Test multiple video modals on the same page
+- Test video modal closing with Escape key and click-outside
+
+### Book a Tour System (NEW)
+
+- Test tour booking form validation (required fields, email format)
+- Test successful tour booking submission
+- Test email notification delivery to facility contacts
+- Test tour request storage and persistence
+- Test facility-specific tour booking configurations
+- Test integration with existing contact forms
+- Test spam protection and rate limiting
+- Test mobile responsiveness of booking forms
+- Test admin interface for managing tour requests
+
+### Enhanced Hero Layouts (UPDATED)
+
+- Test all hero layout variants (hero1-hero6) rendering correctly
+- Test video background functionality with YouTube integration
+- Test image fallback when video is unavailable
+- Test responsive behavior across all screen sizes
+- Test color scheme integration with hero elements
+- Test hero content management (headlines, subheadlines, CTAs)
+- Test accessibility of hero sections (alt text, focus management)
+- Test performance optimization of video loading
+- Test reduced motion accessibility preferences
+- Test hero layout switching and preview functionality
+
 ### Data & Database
 
 - Test running migrations and seeders
 - Test factory-based test data generation
 - Test data integrity and relationship constraints
 - Test backup and restore operations
+- **Test hero_video_id field storage and validation (NEW)**
+- **Test book a tour data persistence and relationships (NEW)**
+- **Test facility-specific video and tour configurations (NEW)**
 
 ### Frontend & UI
 
@@ -268,6 +335,11 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 - Test responsive design on multiple devices
 - Test accessibility (ARIA, keyboard navigation)
 - Test error and edge case handling in UI
+- **Test video modal component rendering and functionality (NEW)**
+- **Test hero layout variations and responsive behavior (UPDATED)**
+- **Test book a tour form interactivity and validation (NEW)**
+- **Test JavaScript functionality across all hero templates (UPDATED)**
+- **Test video component accessibility features (NEW)**
 
 ### Security & Compliance
 
@@ -277,6 +349,72 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 - Test HIPAA compliance validation
 - Test data privacy and isolation
 
+## 12. Recent Feature Enhancements (Updated Nov 2025)
+
+### Video Integration System
+
+#### Video Modal Component
+
+- **Reusable Component**: `resources/views/components/video-modal.blade.php`
+- **Features**: YouTube embed, autoplay, responsive design, accessibility
+- **Testing Focus**: Modal functionality, video playback, cross-browser compatibility
+
+#### Hero Layout Updates
+
+- **Enhanced Templates**: All hero layouts now support video integration
+- **Video Background**: Full-width video backgrounds with image fallbacks
+- **Accessibility**: Reduced motion support, keyboard navigation
+- **Testing Focus**: Layout rendering, video loading, responsive behavior
+
+#### Database Changes
+
+- **New Field**: `hero_video_id` in facilities table
+- **Purpose**: Store YouTube video IDs for hero sections
+- **Testing Focus**: Data validation, storage, retrieval
+
+### Book a Tour System
+
+#### Tour Booking Features
+
+- **Form Handling**: Livewire component for tour requests
+- **Email Notifications**: Automated email sending to facility contacts
+- **Data Persistence**: Tour request storage and management
+- **Testing Focus**: Form validation, email delivery, data integrity
+
+#### Integration Points
+
+- **Facility Integration**: Tour forms tied to specific facilities
+- **Contact System**: Integration with existing webmaster contact system
+- **Admin Interface**: Management tools for tour requests
+- **Testing Focus**: Multi-tenant isolation, admin functionality
+
+### Testing Priorities
+
+1. **Critical Path Testing**
+
+   - Video modal functionality across all browsers
+   - Tour booking form submission and email delivery
+   - Hero layout rendering with video integration
+
+2. **Cross-Browser Testing**
+
+   - Video playback on Chrome, Firefox, Safari, Edge
+   - Modal functionality on mobile devices
+   - JavaScript compatibility across platforms
+
+3. **Performance Testing**
+
+   - Video loading and streaming performance
+   - Modal rendering speed
+   - Hero section loading times
+
+4. **Accessibility Testing**
+   - Screen reader compatibility for video controls
+   - Keyboard navigation for modals
+   - Reduced motion preferences handling
+
 ---
 
 _This test plan should be updated as new features are developed or requirements change._
+
+**Last Updated**: November 2025 - Added video integration, book a tour system, and enhanced hero layouts

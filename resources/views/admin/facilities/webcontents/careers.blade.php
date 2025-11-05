@@ -55,6 +55,8 @@
                     </div>
                     <p class="mt-2 text-xs text-gray-500 max-w-md">Select a facility to view and manage its career
                         opportunities</p>
+
+
                 </div>
             </form>
         </div>
@@ -193,47 +195,68 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
-    const jobs = @json($jobOpenings);
+    console.log('Script starting...');
+    
+    // Load job data safely
+    const jobs = @json($formattedJobOpenings ?? []);
+    console.log('Jobs loaded:', jobs);
+    
     let editorInstance = null;
-
-    function editJob(id) {
-        console.log('editJob called with id:', id);
-        console.log('jobs array:', jobs);
-        const job = jobs.find(j => j.id === id);
-        console.log('matched job:', job);
-        if (!job) return;
+    
+    // editJob function
+    window.editJob = function(id) {
+        console.log('editJob called with id:', id, 'type:', typeof id);
+        
+        // Try to find the job with flexible matching
+        let job = jobs.find(j => j.id === id) || 
+                  jobs.find(j => j.id == id) || 
+                  jobs.find(j => String(j.id) === String(id));
+        
+        console.log('Found job:', job);
+        
+        if (!job) {
+            alert('Job not found with ID: ' + id);
+            return;
+        }
+        
+        // Populate the form
         document.getElementById('jobFormTitle').innerText = 'Edit Job Opening';
         document.getElementById('jobForm').action = `/admin/facilities/webcontents/careers/${id}`;
         document.getElementById('jobFormSubmit').innerText = 'Update Job';
         document.getElementById('jobFormCancel').classList.remove('hidden');
         document.getElementById('job_id').value = job.id;
-        document.getElementById('job_title').value = job.title;
-        document.getElementById('job_department').value = job.department;
-        document.getElementById('job_employment_type').value = job.employment_type;
-        document.getElementById('job_posted_at').value = job.posted_at ?? '';
-        document.getElementById('job_expires_at').value = job.expires_at ?? '';
+        document.getElementById('job_title').value = job.title || '';
+        document.getElementById('job_department').value = job.department || '';
+        document.getElementById('job_employment_type').value = job.employment_type || '';
+        document.getElementById('job_posted_at').value = job.posted_at || '';
+        document.getElementById('job_expires_at').value = job.expires_at || '';
         document.getElementById('job_active').checked = job.active ? true : false;
+        
+        // Handle description with CKEditor
         if (editorInstance) {
-            editorInstance.setData(job.description ?? '');
+            editorInstance.setData(job.description || '');
         } else {
-            document.getElementById('job_description').value = job.description ?? '';
+            document.getElementById('job_description').value = job.description || '';
         }
-        // Change method to PUT
-        if (!document.getElementById('jobForm').querySelector('input[name="_method"]')) {
-            const methodInput = document.createElement('input');
+        
+        // Add PUT method
+        let methodInput = document.getElementById('jobForm').querySelector('input[name="_method"]');
+        if (!methodInput) {
+            methodInput = document.createElement('input');
             methodInput.type = 'hidden';
             methodInput.name = '_method';
-            methodInput.value = 'PUT';
             document.getElementById('jobForm').appendChild(methodInput);
-        } else {
-            document.getElementById('jobForm').querySelector('input[name="_method"]').value = 'PUT';
         }
-    }
-
-    function resetJobForm() {
+        methodInput.value = 'PUT';
+        
+        console.log('Form populated successfully');
+    };
+    
+    // resetJobForm function
+    window.resetJobForm = function() {
         document.getElementById('jobFormTitle').innerText = 'Add Job Opening';
         document.getElementById('jobForm').action = `{{ route('admin.facilities.webcontents.careers.store') }}`;
         document.getElementById('jobFormSubmit').innerText = 'Add Job';
@@ -245,17 +268,24 @@
         document.getElementById('job_posted_at').value = '';
         document.getElementById('job_expires_at').value = '';
         document.getElementById('job_active').checked = true;
+        
         if (editorInstance) {
             editorInstance.setData('');
         } else {
             document.getElementById('job_description').value = '';
         }
+        
         // Remove PUT method
         const methodInput = document.getElementById('jobForm').querySelector('input[name="_method"]');
         if (methodInput) methodInput.remove();
-    }
-
-    // CKEditor 5 initialization
+    };
+    
+    // Test function (remove this later)
+    window.testClick = function() {
+        alert('Test click works! Jobs loaded: ' + jobs.length);
+    };
+    
+    // CKEditor initialization
     document.addEventListener('DOMContentLoaded', function() {
         if (window.ClassicEditor) {
             ClassicEditor.create(document.querySelector('#job_description'), {
@@ -267,30 +297,33 @@
                 }
             }).then(editor => {
                 editorInstance = editor;
-            }).catch(error => { console.error(error); });
-        } else {
-            console.error('ClassicEditor is not defined. CKEditor 5 CDN may not be loaded.');
+                console.log('CKEditor initialized');
+            }).catch(error => { 
+                console.error('CKEditor error:', error); 
+            });
         }
-
+        
+        // Facility selection handling
         const facilitySelect = document.getElementById('facilitySelect');
-
-        // Restore the last selected facility from localStorage
-        const savedFacilityId = localStorage.getItem('selectedFacilityId');
-        if (savedFacilityId && facilitySelect) {
-            facilitySelect.value = savedFacilityId;
-        }
-
-        facilitySelect?.addEventListener('change', function() {
-            const facilityId = this.value;
-
-            if (facilityId) {
-                // Save the selected facility ID to localStorage
-                localStorage.setItem('selectedFacilityId', facilityId);
-            } else {
-                // Clear the saved facility ID if no facility is selected
-                localStorage.removeItem('selectedFacilityId');
+        if (facilitySelect) {
+            // Restore saved facility
+            const savedFacilityId = localStorage.getItem('selectedFacilityId');
+            if (savedFacilityId) {
+                facilitySelect.value = savedFacilityId;
             }
-        });
+            
+            // Save facility selection
+            facilitySelect.addEventListener('change', function() {
+                const facilityId = this.value;
+                if (facilityId) {
+                    localStorage.setItem('selectedFacilityId', facilityId);
+                } else {
+                    localStorage.removeItem('selectedFacilityId');
+                }
+            });
+        }
     });
+    
+    console.log('All functions defined successfully');
 </script>
-@endsection
+@endpush

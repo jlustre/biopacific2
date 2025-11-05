@@ -27,6 +27,8 @@ class BookATour extends Component
     public $message;
     public $consent;
     public $recipient;
+    public $recipients = [];
+    public $allRecipients = [];
 
     protected $rules = [
         'full_name' => 'required|max:255',
@@ -49,6 +51,10 @@ class BookATour extends Component
         $this->secondary = $colors['secondary'];
         $this->services = FacilityDataHelper::getServices($facility);
         $this->recipient = FacilityDataHelper::getEmailRecipient($facility->id, 'book-a-tour');
+        $this->recipients = FacilityDataHelper::getEmailRecipients($facility->id, 'book-a-tour');
+        
+        // Get all recipients (public + employees)
+        $this->allRecipients = FacilityDataHelper::getAllRecipientsForCategory($facility->id, 'book-a-tour');
 
         // Initialize preferred_time to avoid null issues
         $this->preferred_time = '';
@@ -89,8 +95,8 @@ class BookATour extends Component
                 'updated_at' => now(),
             ]);
 
-            // Send email to the recipient
-            Mail::to($this->recipient)->send(new BookATourMail([
+            // Send emails to actual employees (not public emails)
+            $emailData = [
                 'facility' => $this->facility,
                 'full_name' => $this->full_name,
                 'relationship' => $this->relationship,
@@ -100,9 +106,26 @@ class BookATour extends Component
                 'preferred_time' => $this->preferred_time,
                 'interests' => $this->interests,
                 'message' => $this->message,
-            ]));
+            ];
+
+            // Send to employee emails (actual recipients)
+            $employeeEmails = $this->allRecipients['employee_emails'] ?? [];
+            
+            if (!empty($employeeEmails)) {
+                foreach ($employeeEmails as $employeeEmail) {
+                    Mail::to($employeeEmail)->send(new BookATourMail($emailData));
+                }
+            } else {
+                // Fallback to public emails if no employee emails are configured
+                if (!empty($this->recipient)) {
+                    Mail::to($this->recipient)->send(new BookATourMail($emailData));
+                }
+            }
 
             session()->flash('success', 'Your tour request has been submitted successfully! An email confirmation has been sent.');
+            
+            // Clear the form after successful submission
+            $this->clearForm();
         } catch (\Illuminate\Validation\ValidationException $e) {
             foreach ($e->errors() as $field => $messages) {
                 $this->addError($field, $messages[0]);
@@ -110,6 +133,28 @@ class BookATour extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'There was an error submitting your request. Please try again later.');
         }
+    }
+
+    public function clearForm()
+    {
+        $this->reset([
+            'full_name',
+            'relationship', 
+            'phone',
+            'email',
+            'preferred_date',
+            'preferred_time',
+            'specific_time',
+            'interests',
+            'message',
+            'consent'
+        ]);
+        
+        // Clear any validation errors
+        $this->resetErrorBag();
+        
+        // Reset preferred_time to empty to ensure dropdown shows default state
+        $this->preferred_time = '';
     }
 
     public function updatedSpecificTime($value)

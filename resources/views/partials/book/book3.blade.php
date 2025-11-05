@@ -62,7 +62,8 @@
 
                 {{-- Mini “What you’ll see” --}}
                 <div class="rounded-lg ring-1 ring-slate-600 bg-yellow-50 py-2 px-4 shadow-sm -m-2 mt-8 w-full">
-                    <h4 class="text-lg font-semibold text-teal-700 text-center">What You’ll See</h4>
+                    <h4 class="text-lg font-semibold text-center"
+                        style="background: {{ $primary }}; color: {{ $neutral_light }};">What You’ll See</h4>
                     <ul class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         @foreach(['Resident rooms','Common areas','Therapy gym','Dining spaces','Activities
                         spaces','Outdoor areas'] as $it)

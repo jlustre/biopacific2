@@ -8,6 +8,7 @@ use App\Models\News;
 use App\Models\Faq;
 use App\Models\Testimonial;
 use App\Models\ColorScheme;
+use App\Models\EmployeeEmailMapping;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -237,6 +238,90 @@ class FacilityDataHelper
             ->where('facility_id', $facilityId)
             ->where('category', $category)
             ->value('email');
+    }
+
+    public static function getEmailRecipients($facilityId, $category)
+    {
+        $recipient = DB::table('email_recipients')
+            ->where('facility_id', $facilityId)
+            ->where('category', $category)
+            ->first();
+
+        if (!$recipient) {
+            return [];
+        }
+
+        $emails = [];
+        if (!empty($recipient->email)) {
+            $emails[] = $recipient->email;
+        }
+        if (!empty($recipient->email_alt_1)) {
+            $emails[] = $recipient->email_alt_1;
+        }
+        if (!empty($recipient->email_alt_2)) {
+            $emails[] = $recipient->email_alt_2;
+        }
+
+        return $emails;
+    }
+
+    public static function getEmployeeEmails($facilityId, $category)
+    {
+        return EmployeeEmailMapping::where('facility_id', $facilityId)
+            ->where('category', $category)
+            ->active()
+            ->pluck('employee_email')
+            ->toArray();
+    }
+
+    public static function getPrimaryEmployeeEmail($facilityId, $category)
+    {
+        $effectivePrimary = EmployeeEmailMapping::getEffectivePrimary($facilityId, $category);
+        return $effectivePrimary ? $effectivePrimary->employee_email : null;
+    }
+
+    public static function getPrimaryContactInfo($facilityId, $category)
+    {
+        $status = EmployeeEmailMapping::getPrimaryStatus($facilityId, $category);
+        $effectivePrimary = EmployeeEmailMapping::getEffectivePrimary($facilityId, $category);
+
+        return [
+            'status' => $status,
+            'effective_primary' => $effectivePrimary,
+            'has_fallback' => $effectivePrimary && $status['status'] !== 'active_primary'
+        ];
+    }
+
+    public static function getAllRecipientsForCategory($facilityId, $category)
+    {
+        // Get public-facing emails
+        $publicEmails = self::getEmailRecipients($facilityId, $category);
+        
+        // Get actual employee emails (active only)
+        $employeeEmails = self::getEmployeeEmails($facilityId, $category);
+        
+        // Get primary contact status
+        $primaryInfo = self::getPrimaryContactInfo($facilityId, $category);
+        
+        // Check for potential issues
+        $warnings = [];
+        if ($primaryInfo['status']['status'] === 'primary_inactive') {
+            $warnings[] = 'Primary contact is inactive - using fallback';
+        }
+        if ($primaryInfo['status']['status'] === 'no_primary') {
+            $warnings[] = 'No primary contact assigned';
+        }
+        if (empty($employeeEmails)) {
+            $warnings[] = 'No active employees for this category';
+        }
+
+        return [
+            'public_emails' => $publicEmails,
+            'employee_emails' => $employeeEmails,
+            'all_emails' => array_merge($publicEmails, $employeeEmails),
+            'primary_info' => $primaryInfo,
+            'warnings' => $warnings
+        ];
     }
 
 }

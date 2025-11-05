@@ -23,8 +23,8 @@ You have received a new Book a Tour request. Below are the details:
 @endcomponent
 @endif
 
-@component('mail::button', ['url' => url('/')])
-View Request
+@component('mail::button', ['url' => url('/admin/tour-requests')])
+View Request in Admin Panel
 @endcomponent
 
 Thank you,<br>

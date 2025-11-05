@@ -108,7 +108,11 @@ $error = $errors->any();
 
           <!-- Action Buttons -->
           <div class="flex gap-2 mt-4">
-            <button @click="openApply=true; applyRole='{{ $job->id }}'; applyRoleTitle='{{ addslashes($job->title) }}'"
+            <button @click="
+                openApply=true; 
+                applyRole='{{ $job->id }}'; 
+                applyRoleTitle='{{ addslashes($job->title) }}'
+              "
               class="flex-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-300 to-teal-600 text-xs font-semibold text-white shadow-sm hover:from-teal-600 hover:to-teal-700 cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
               style="min-width: 0;">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,70 +186,29 @@ $error = $errors->any();
         x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform scale-100"
         x-transition:leave-end="opacity-0 transform scale-95"
-        class="bg-white rounded-2xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-        @if(session('success'))
-        <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-800 border border-green-300">
-          {{ session('success') }}
-        </div>
-        @endif
-        @if($errors->any())
-        <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 border border-red-300">
-          <ul class="list-disc pl-5">
-            @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-            @endforeach
-          </ul>
-        </div>
-        @endif
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-2xl font-bold" style="color: {{ $secondary }}">Apply for Position</h3>
+        class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900">Job Application</h3>
           <button @click="openApply=false" class="text-slate-400 hover:text-slate-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <form method="POST" action="{{ route('careers.apply') }}" enctype="multipart/form-data" class="space-y-4">
-          @csrf
-          <input type="hidden" name="job_opening_id" x-model="applyRole" required>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-            <input type="text" name="first_name" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <div x-data="{ currentJobId: null }" 
+               x-init="$watch('$parent.applyRole', (value) => { 
+                 currentJobId = value; 
+                 if (value) {
+                   $wire.call('setJobOpening', value);
+                 }
+               })">
+            @livewire('job-application', [], key('job-application-modal'))
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
-            <input type="text" name="last_name" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input type="email" name="email" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-            <input type="text" name="phone" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Resume (PDF, DOCX)</label>
-            <input type="file" name="resume" accept=".pdf,.doc,.docx" required
-              class="w-full rounded-lg border border-slate-300 px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Cover Letter</label>
-            <textarea name="cover_letter" rows="4"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2"></textarea>
-          </div>
-          <div class="flex items-center">
-            <input type="checkbox" name="consent" value="1" required class="mr-2">
-            <span class="text-sm text-slate-600">I consent to the processing of my personal data for recruitment
-              purposes.</span>
-          </div>
-          <div class="flex justify-end mt-6">
-            <button type="submit"
-              class="px-6 py-2 rounded-lg bg-teal-500 text-white font-semibold hover:bg-teal-600 transition">
-              Submit Application
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>

@@ -17,6 +17,8 @@ return new class extends Migration {
             $table->unsignedBigInteger('facility_id');
             $table->string('category')->nullable();; // e.g., 'Book a Tour', 'Contact', 'Hiring'
             $table->string('email')->nullable();
+            $table->string('email_alt_1')->nullable();
+            $table->string('email_alt_2')->nullable();
             $table->timestamps();
 
             $table->foreign('facility_id')->references('id')->on('facilities')->onDelete('cascade');

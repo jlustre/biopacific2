@@ -23,6 +23,8 @@ class EmailRecipientsTableSeeder extends Seeder
                 'facility_id' => $facility->id,
                 'category' => 'book-a-tour',
                 'email' => 'admission@' . $facility->subdomain,
+                'email_alt_1' => 'tours@' . $facility->subdomain,
+                'email_alt_2' => 'info@' . $facility->subdomain,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -30,6 +32,8 @@ class EmailRecipientsTableSeeder extends Seeder
                 'facility_id' => $facility->id,
                 'category' => 'inquiry',
                 'email' => 'contact@' . $facility->subdomain,
+                'email_alt_1' => 'support@' . $facility->subdomain,
+                'email_alt_2' => 'help@' . $facility->subdomain,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -37,6 +41,8 @@ class EmailRecipientsTableSeeder extends Seeder
                 'facility_id' => $facility->id,
                 'category' => 'hiring',
                 'email' => 'hiring@' . $facility->subdomain,
+                'email_alt_1' => 'jobs@' . $facility->subdomain,
+                'email_alt_2' => 'careers@' . $facility->subdomain,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

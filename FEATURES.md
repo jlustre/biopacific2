@@ -24,7 +24,9 @@ Bio-Pacific Healthcare is a comprehensive multi-tenant Laravel application desig
 ### Key Features
 
 - **Multi-Tenant Architecture** - Single application serving multiple domains
-- **Dynamic Layout System** - 4-6 customizable layout templates
+- **Dynamic Layout System** - 6 customizable layout templates with enhanced variants
+- **Video Integration** - YouTube video embedding with modal overlays (NEW)
+- **Book a Tour System** - Automated tour booking with email notifications (NEW)
 - **Content Management** - Facility-specific content and media
 - **Role-Based Access Control** - Secure user management with permissions
 - **Audit Logging** - Comprehensive activity tracking
@@ -108,45 +110,70 @@ The application currently supports these nursing homes:
 
 ### Layout Templates
 
-The system provides 4 main layout templates, each offering different design philosophies:
+The system provides 6 main layout templates, each offering different design philosophies:
 
-#### 1. Layout 1 - Classic Layout
+#### 1. Layout 1 - Classic Modern Layout
 
-- **Description**: Traditional layout with all sections
-- **Sections**: Hero → About → Services → Contact
-- **Best For**: Established facilities wanting a professional, traditional look
+- **Description**: Modern animated layout with floating elements
+- **Sections**: Hero (Animated) → About → Services → Contact
+- **Features**: Background animations, video modal support
+- **Best For**: Facilities wanting contemporary appeal with motion
 
 #### 2. Layout 2 - Modern Layout
 
-- **Description**: Modern layout with video hero and card services
+- **Description**: Professional modern layout with video hero and card services
 - **Sections**: Hero (Video) → About (Stats) → Services (Cards) → Contact (Map)
+- **Features**: Video backgrounds, statistical displays
 - **Best For**: Contemporary facilities emphasizing modern amenities
 
 #### 3. Layout 3 - Minimal Layout
 
-- **Description**: Minimal layout focused on essential content
+- **Description**: Clean minimal layout focused on essential content
 - **Sections**: Hero (Split) → About (Timeline) → Contact (Info)
+- **Features**: Split-screen design, timeline elements
 - **Best For**: Boutique facilities preferring clean, focused design
 
 #### 4. Layout 4 - Service-Focused Layout
 
 - **Description**: Layout that emphasizes services and amenities
 - **Sections**: Hero → Services (Tabs) → About → Contact
+- **Features**: Tabbed service display, enhanced service cards
 - **Best For**: Facilities with extensive service offerings
+
+#### 5. Layout 5 - Premium Healthcare Layout
+
+- **Description**: Premium design with advanced interactions
+- **Sections**: Hero (Premium) → About (Enhanced) → Services → Contact
+- **Features**: Advanced animations, premium styling, video integration
+- **Best For**: High-end facilities seeking luxury presentation
+
+#### 6. Layout 6 - Full-Feature Layout
+
+- **Description**: Comprehensive layout with all available features
+- **Sections**: Hero (Video) → About (Complete) → Services (Advanced) → Contact (Full)
+- **Features**: Video backgrounds, complete feature set, advanced interactions
+- **Best For**: Large facilities wanting to showcase all capabilities
 
 ### Section Types & Variants
 
 #### Hero Section
 
-- **Default**: Traditional hero with background image and centered text
-- **Video**: Hero with video background
-- **Split**: Hero with text on one side and image on the other
+- **Default**: Full-width video background with image fallback and overlay controls
+- **Hero1**: Animated background with floating elements and video modal
+- **Hero2**: Professional layout with gradient backgrounds
+- **Hero3**: Split-screen design with image and text separation
+- **Hero4**: Minimalist approach with clean typography
+- **Hero5**: Premium styling with advanced interactions
+- **Hero6**: Comprehensive hero with all features enabled
 
 **Configuration Options:**
 
-- Background type (image, video, gradient)
+- Background type (image, video, gradient, animated)
 - Text alignment (left, center, right)
-- Call-to-action visibility
+- Call-to-action visibility and styling
+- **Video integration** - YouTube video ID support with modal overlay
+- **Accessibility features** - Reduced motion support, keyboard navigation
+- **Responsive behavior** - Mobile-optimized layouts
 
 #### About Section
 
@@ -200,6 +227,7 @@ Central model representing each nursing home facility.
 - address, city, state, phone, email
 - headline, subheadline, about_text
 - logo_url, hero_image_url, about_image_url
+- hero_video_id (NEW) - YouTube video ID for hero sections
 - primary_color, secondary_color, accent_color
 - layout_template, layout_config, settings
 - beds, ranking_position, ownership_role
@@ -213,6 +241,7 @@ Central model representing each nursing home facility.
 - `hasMany(GalleryImage::class)` - Photo gallery
 - `hasMany(FacilityValue::class)` - Core values
 - `hasMany(AuditLog::class)` - Activity logs
+- `hasMany(BookATour::class)` - Tour booking requests (NEW)
 
 ### Service Model
 
@@ -285,6 +314,26 @@ User management with role-based permissions.
 - **Content Manager**: Content editing permissions
 - **Viewer**: Read-only access
 
+### BookATour Model (NEW)
+
+Tour booking request management for facilities.
+
+**Key Attributes:**
+
+```php
+- facility_id, name, email, phone
+- preferred_date, preferred_time
+- message, status
+- created_at, updated_at
+```
+
+**Features:**
+
+- Email notification system
+- Status tracking (pending, confirmed, completed)
+- Facility-specific tour management
+- Integration with contact forms
+
 ### AuditLog Model
 
 Comprehensive activity logging for compliance and security.
@@ -296,6 +345,7 @@ Comprehensive activity logging for compliance and security.
 - Settings changes
 - Data exports
 - Administrative actions
+- Tour booking submissions (NEW)
 
 ---
 
@@ -379,6 +429,7 @@ Provides comprehensive audit logging functionality.
 - **TestimonialManager**: Handle patient testimonials
 - **GalleryManager**: Photo gallery administration
 - **ContentEditor**: Rich text content editing
+- **BookATour**: Tour booking form with validation and email notifications (NEW)
 
 ### Settings & Configuration
 
@@ -405,6 +456,7 @@ Provides comprehensive audit logging functionality.
 ```sql
 - id, name, slug, domain, subdomain
 - logo_url, hero_image_url, about_image_url
+- hero_video_id (NEW) - YouTube video ID storage
 - headline, subheadline, about_text
 - address, city, state, phone, email
 - primary_color, secondary_color, accent_color
@@ -459,6 +511,14 @@ Provides comprehensive audit logging functionality.
 - created_at, updated_at
 ```
 
+#### book_a_tours (NEW)
+
+```sql
+- id, facility_id, name, email, phone
+- preferred_date, preferred_time, message
+- status, created_at, updated_at
+```
+
 #### audit_logs
 
 ```sql
@@ -509,6 +569,109 @@ Provides comprehensive audit logging functionality.
 
 ---
 
+## 🎥 Video Integration System (NEW)
+
+### Video Modal Component
+
+A reusable Blade component for YouTube video integration with modal overlays.
+
+**Component Location:** `resources/views/components/video-modal.blade.php`
+
+**Features:**
+
+- **YouTube Integration**: Seamless YouTube video embedding
+- **Modal Overlay**: Full-screen video experience with backdrop
+- **Accessibility**: Keyboard navigation, screen reader support
+- **Responsive Design**: Mobile-optimized video playback
+- **Auto-close**: Click-outside and Escape key functionality
+- **Customizable**: Configurable colors and styling
+
+**Usage:**
+
+```blade
+<x-video-modal
+    :videoId="$facility['hero_video_id']"
+    :accentColor="$facility['accent_color']"
+    modalId="uniqueModalId"
+    playBtnId="uniquePlayBtn"
+/>
+```
+
+**Props:**
+
+```php
+- videoId: YouTube video ID (required)
+- accentColor: Theme accent color (default: #F59E0B)
+- zIndex: Modal z-index (default: 2001)
+- background: Modal background color (default: rgba(0,0,0,0.75))
+- modalId: Unique modal identifier (default: videoModal)
+- playBtnId: Play button identifier (default: playVideoBtn)
+- closeBtnId: Close button identifier (default: closeVideoBtn)
+- iframeId: Iframe identifier (default: youtubeIframe)
+```
+
+### Hero Video Integration
+
+All hero layout templates now support video integration:
+
+- **Video Background**: Full-width background videos with image fallbacks
+- **Modal Triggers**: "Watch Intro" buttons that open video modals
+- **Accessibility**: Reduced motion support for users with motion sensitivity
+- **Performance**: Lazy loading and optimized video delivery
+
+### Database Support
+
+The `facilities` table now includes `hero_video_id` field for storing YouTube video identifiers, enabling easy video management through the admin interface.
+
+---
+
+## 📋 Book a Tour System (NEW)
+
+### Tour Booking Features
+
+A comprehensive tour booking system integrated into facility websites.
+
+**Component Location:** `app/Livewire/BookATour.php`
+
+**Features:**
+
+- **Form Validation**: Client and server-side validation
+- **Email Notifications**: Automatic notifications to facility staff
+- **Data Persistence**: Tour requests stored in database
+- **Status Tracking**: Booking status management (pending, confirmed, completed)
+- **Multi-Tenant**: Facility-specific tour bookings
+- **Spam Protection**: Built-in validation and rate limiting
+
+**Form Fields:**
+
+```php
+- name (required)
+- email (required, validated)
+- phone (required)
+- preferred_date (required)
+- preferred_time (required)
+- message (optional)
+```
+
+**Email Integration:**
+
+- **Automatic Notifications**: Sent to facility email contacts
+- **Template Support**: Customizable email templates
+- **Facility Branding**: Emails styled with facility colors and branding
+- **Delivery Tracking**: Email delivery status monitoring
+
+### Admin Management
+
+Tour bookings can be managed through the admin interface with features for:
+
+- Viewing all tour requests
+- Updating booking status
+- Filtering by date/status
+- Exporting booking data
+- Email communication tracking
+
+---
+
 ## 🔌 API & Integrations
 
 ### RESTful API Endpoints
@@ -540,6 +703,23 @@ DELETE /api/services/{id}                # Delete service
 GET    /api/facilities/{id}/testimonials # List testimonials
 GET    /api/facilities/{id}/gallery      # List gallery images
 POST   /api/content/upload               # Upload media files
+```
+
+#### Tour Booking Management (NEW)
+
+```
+GET    /api/facilities/{id}/tours        # List tour bookings
+POST   /api/facilities/{id}/tours        # Submit tour booking
+PUT    /api/tours/{id}/status            # Update booking status
+GET    /api/tours/{id}                   # Get booking details
+```
+
+#### Video Management (NEW)
+
+```
+GET    /api/facilities/{id}/video        # Get facility video settings
+PUT    /api/facilities/{id}/video        # Update video configuration
+POST   /api/video/validate               # Validate YouTube video ID
 ```
 
 ### External Integrations
@@ -800,6 +980,30 @@ This documentation is maintained alongside the application codebase. For updates
 
 ---
 
-_Last Updated: August 15, 2025_
-_Version: 1.0.0_
+## 🆕 Recent Updates (November 2025)
+
+### Video Integration System
+
+- **YouTube Video Modals**: Reusable video modal component for hero sections
+- **Enhanced Hero Layouts**: All 6 hero templates now support video integration
+- **Accessibility Features**: Reduced motion support, keyboard navigation
+- **Database Integration**: `hero_video_id` field added to facilities table
+
+### Book a Tour System
+
+- **Tour Booking Forms**: Integrated booking system with validation
+- **Email Notifications**: Automated email delivery to facility contacts
+- **Admin Management**: Tour request tracking and status management
+- **Multi-Tenant Support**: Facility-specific tour configurations
+
+### Performance & UI Enhancements
+
+- **Responsive Improvements**: Enhanced mobile experience across all layouts
+- **Component Reusability**: Standardized video modal for consistent UX
+- **Code Organization**: Improved component structure and maintainability
+
+---
+
+_Last Updated: November 4, 2025_
+_Version: 1.1.0_
 _Bio-Pacific Healthcare Multi-Tenant Application_
