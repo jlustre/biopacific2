@@ -82,6 +82,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
+    
+    // HIPAA Interactive route
+    Route::get('/facilities/{facility}/hipaa-interactive', function (Facility $facility) {
+        return view('admin.facilities.hipaa-interactive', compact('facility'));
+    })->name('facilities.hipaa.interactive');
+    
+    // HIPAA Toggle route (admin version) - handle both ID and slug
+    Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('facilities.hipaa.toggle');
     // User Management CRUD
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
@@ -114,9 +122,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     
     Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('facilities.hipaa', compact('facility')))->name('facilities.hipaa');
     
-    // Interactive HIPAA checklist for testing
-    Route::get('/facilities/{facility}/hipaa-interactive', fn(Facility $facility) => view('livewire.hipaa-checklist-interactive', compact('facility')))->name('facilities.hipaa.interactive');
-    
     // News management using FacilityAdminController
     Route::resource('news', NewsController::class)->names('news');
     Route::delete('news/{news}/delete-image', [NewsController::class, 'deleteImage'])->name('news.deleteImage');
@@ -142,7 +147,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::post('/gallery/{image}/move/{direction}', [GalleryController::class, 'move'])->name('gallery.move');
     // Clear all gallery images for a facility
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
-    Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('hipaa.toggle');
 
     // Admin Facility Testimonials Management
     Route::prefix('facilities')->group(function () {

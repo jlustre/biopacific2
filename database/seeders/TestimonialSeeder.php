@@ -34,24 +34,34 @@ class TestimonialSeeder extends Seeder
             'Outstanding Team' => 'The team provides exceptional care and is committed to every resident.',
         ];
         $titleHeaders = array_keys($titleStories);
+        
+        $names = [
+            'John Smith', 'Mary Johnson', 'Robert Brown', 'Patricia Davis', 'Michael Wilson',
+            'Linda Miller', 'David Moore', 'Barbara Taylor', 'William Anderson', 'Elizabeth Thomas',
+            'Richard Jackson', 'Susan White', 'Joseph Harris', 'Jessica Martin', 'Thomas Thompson'
+        ];
+        
+        $titles = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', ''];
+        $relationships = [
+            'Current Patient', 'Former Patient', 'Patient Family Member', 'Visitor',
+            'Current Staff', 'Former Staff', 'Healthcare Professional', 'Volunteer',
+            'Community Member', 'other'
+        ];
+        
         foreach ($facilityIds as $facilityId) {
             for ($t = 0; $t < 3; $t++) {
-                $title_header = fake()->randomElement($titleHeaders);
+                $title_header = $titleHeaders[array_rand($titleHeaders)];
                 Testimonial::create([
                     'facility_id' => $facilityId,
-                    'name' => fake()->name(),
-                    'title' => fake()->randomElement(['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', '']),
+                    'name' => $names[array_rand($names)],
+                    'title' => $titles[array_rand($titles)],
                     'title_header' => $title_header,
                     'quote' => $titleQuotes[$title_header],
                     'story' => $titleStories[$title_header],
-                    'relationship' => fake()->randomElement([
-                        'Current Patient', 'Former Patient', 'Patient Family Member', 'Visitor',
-                        'Current Staff', 'Former Staff', 'Healthcare Professional', 'Volunteer',
-                        'Community Member', 'other'
-                    ]),
-                    'rating' => fake()->numberBetween(4, 5),
+                    'relationship' => $relationships[array_rand($relationships)],
+                    'rating' => rand(4, 5),
                     'is_active' => true,
-                    'is_featured' => fake()->boolean(20),
+                    'is_featured' => rand(0, 100) < 20, // 20% chance of being featured
                     'photo_url' => 'https://randomuser.me/api/portraits/' . (rand(0, 1) ? 'women' : 'men') . '/' . rand(10, 90) . '.jpg',
                 ]);
             }

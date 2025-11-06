@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->foreignId('facility_id')->constrained('facilities')->onDelete('cascade');
             $table->string('title');
             $table->text('description')->nullable();
+            $table->text('detailed_description')->nullable();
             $table->string('department')->nullable();
             $table->string('employment_type')->nullable();
             $table->date('posted_at')->nullable();

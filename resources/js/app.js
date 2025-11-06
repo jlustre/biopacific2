@@ -1,8 +1,3 @@
 import "../css/app.css";
-import Alpine from 'alpinejs';
-
-// Make Alpine available globally
-window.Alpine = Alpine;
-
-// Start Alpine
-Alpine.start();
+// Don't import Alpine.js here - let Livewire handle it completely
+// For legal pages and other non-Livewire pages, Alpine.js will be loaded via CDN fallback

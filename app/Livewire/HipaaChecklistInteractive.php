@@ -22,11 +22,16 @@ class HipaaChecklistInteractive extends Component
     {
         $this->facility = $facility;
         $this->flags    = $facility->hipaa_flags ?? [];
+        $this->showCompletedMessage = false;
+        
+        // Ensure rows are computed during mount
         $this->computeRows();
-        $this->showCompletedMessage = false; // Explicit initialization
 
         // Debugging logs
         Log::debug('Mounting HipaaChecklistInteractive', [
+            'facility_id' => $facility->id,
+            'flags_count' => count($this->flags),
+            'rows_count' => count($this->rows),
             'showCompletedMessage' => $this->showCompletedMessage,
         ]);
     }
@@ -45,6 +50,8 @@ class HipaaChecklistInteractive extends Component
     // Alternative method to toggle individual flags
     public function toggleFlag($key)
     {
+        Log::debug('toggleFlag called', ['key' => $key, 'current_value' => $this->flags[$key] ?? false]);
+        
         $this->flags[$key] = !($this->flags[$key] ?? false);
         
         $this->validate();
@@ -54,11 +61,23 @@ class HipaaChecklistInteractive extends Component
         // Show a brief success message
         $this->showCompletedMessage = true;
         $this->dispatch('notify', ['msg' => 'HIPAA checklist updated!']);
+        
+        Log::debug('toggleFlag completed', ['key' => $key, 'new_value' => $this->flags[$key]]);
     }
 
     public function computeRows(): void
     {
         $this->rows = HipaaWebsiteChecklist::forFacility($this->facility->toArray(), $this->flags);
+    }
+
+    public function getCompletedCountProperty()
+    {
+        return collect($this->rows)->where('passed', true)->count();
+    }
+
+    public function getTotalCountProperty()
+    {
+        return count($this->rows);
     }
 
     public function saveNpp($nppUrl)
@@ -78,20 +97,24 @@ class HipaaChecklistInteractive extends Component
 
     public function render()
     {
+        // Ensure rows are computed before counting
+        if (empty($this->rows)) {
+            $this->computeRows();
+        }
+        
         $completedCount = collect($this->rows)->where('passed', true)->count();
         $totalCount = count($this->rows);
-        $completedCount = $completedCount ?? 0; // Ensure default value
         
         Log::debug('Rendering HipaaChecklistInteractive', [
             'completedCount' => $completedCount,
             'totalCount' => $totalCount,
-            'showCompletedMessage' => $this->showCompletedMessage,
+            'rows_count' => count($this->rows),
+            'facility_id' => $this->facility->id ?? 'N/A',
         ]);
 
         return view('livewire.hipaa-checklist-interactive', [
             'completedCount' => $completedCount,
             'totalCount' => $totalCount,
-            'showCompletedMessage' => $this->showCompletedMessage,
         ]);
     }
 }

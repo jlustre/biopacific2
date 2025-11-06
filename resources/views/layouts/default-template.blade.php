@@ -10,6 +10,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
   @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+  <!-- Load Alpine.js for non-Livewire pages -->
+  @if(!str_contains(request()->route()->getName() ?? '', 'livewire') && !request()->routeIs('*.hipaa.*'))
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  @endif
   <style>
     :root {
       --color-primary: {
@@ -125,13 +130,6 @@
       Alpine.initTree(document.body);
     }
   });
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (!window.Alpine) {
-        console.error('Alpine.js is not loaded. Ensure the script is included correctly.');
-      }
-    });
   </script>
 
 </body>

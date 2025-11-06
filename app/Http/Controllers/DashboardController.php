@@ -98,6 +98,9 @@ class DashboardController extends Controller
             if ($facility) {
                 $activeWebContent = $facility->webContents()->where('is_active', true)->first();
                 $sections = [];
+                $sectionVariances = [];
+                $layoutTemplate = 'default-template';
+                
                 if ($activeWebContent) {
                     $rawSections = $activeWebContent->sections;
                     if (is_string($rawSections)) {
@@ -109,16 +112,16 @@ class DashboardController extends Controller
                     } else {
                         $sections = (array) $rawSections;
                     }
-                     $sectionVariances = is_array($activeWebContent->variances) ? $activeWebContent->variances : json_decode($activeWebContent->variances, true);
+                     $sectionVariances = is_array($activeWebContent->variances) ? $activeWebContent->variances : (json_decode($activeWebContent->variances, true) ?: []);
                      $layoutTemplate = $activeWebContent->layout_template;
                 }
 
                 $aboutMenuItems = collect(['about', 'services', 'testimonials'])
-                    ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+                    ->filter(fn($section) => !empty($sections) && in_array($section, $sections));
                 $roomsMenuItems = collect(['news', 'gallery'])
-                    ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+                    ->filter(fn($section) => !empty($sections) && in_array($section, $sections));
                 $contactMenuItems = collect(['contact', 'faqs', 'resources', 'careers'])
-                    ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
+                    ->filter(fn($section) => !empty($sections) && in_array($section, $sections));
 
                 $faqs = FacilityDataHelper::getFaqs($facility);
                 $categories = $faqs->pluck('category')->filter()->unique()->values();
@@ -126,11 +129,10 @@ class DashboardController extends Controller
                 $services = FacilityDataHelper::getServices($facility);
                 $newsItems = FacilityDataHelper::getFormattedNews($facility);
                 $colors = FacilityDataHelper::getColors($facility);
-                $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
         
                 return view('welcome', [
                     'facility' => $facility,
-                    'active_sections' => is_array($sections) ? $sections : [],
+                    'activeSections' => is_array($sections) ? $sections : [],
                     'layoutTemplate' => $layoutTemplate,
                     'sections' => $sections,
                     'sectionVariances' => $sectionVariances,

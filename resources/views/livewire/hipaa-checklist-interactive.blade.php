@@ -14,7 +14,7 @@
                 <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full ring-1 ring-slate-200 bg-slate-50">
                     <span
                         class="inline-block h-2 w-2 rounded-full @if($completedCount == $totalCount) bg-emerald-500 @else bg-amber-500 @endif"></span>
-                    <span>{{ $completedCount ?? 0 }} / {{ $totalCount }} Passed</span>
+                    <span>{{ $completedCount ?? 0 }} / {{ $totalCount ?? 0 }} Passed</span>
                 </span>
             </div>
         </div>
@@ -57,6 +57,8 @@
                 <span class="text-xs text-slate-600" id="button-{{ $key }}">
                     {{ ($flags[$key] ?? false) ? 'Undo' : 'Mark as done' }}
                 </span>
+
+                {{-- Original toggle switch --}}
                 <button type="button" wire:click="toggleFlag('{{ $key }}')" id="toggle-{{ $key }}"
                     class="relative inline-flex h-6 w-10 items-center rounded-full cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     style="background-color: {{ ($flags[$key] ?? false) ? ($facility->primary_color ?? '#10B981') : '#e5e7eb' }}">
@@ -108,6 +110,7 @@
     </div>
 </div>
 
+
 @push('scripts')
 <script>
     // Listen for browser events from Livewire
@@ -115,7 +118,8 @@
         // Show success notification
         const toast = document.createElement('div');
         toast.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white';
-        toast.textContent = event.detail.msg;
+        // In Livewire 3, dispatched data is available directly on event.detail
+        toast.textContent = event.detail.msg || event.detail[0]?.msg || 'HIPAA checklist updated!';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
     });
@@ -146,7 +150,7 @@
                 if (match) {
                     const key = match[1];
                     
-                    fetch(`/facilities/{{ $facility->slug }}/hipaa/toggle`, {
+                    fetch(`/admin/facilities/{{ $facility->id }}/hipaa/toggle`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -230,9 +234,3 @@
     });
 </script>
 @endpush
-
-@if(isset($showCompletedMessage))
-<div>Debug: $showCompletedMessage is {{ $showCompletedMessage ? 'true' : 'false' }}</div>
-@else
-<div>Debug: $showCompletedMessage is not set</div>
-@endif
