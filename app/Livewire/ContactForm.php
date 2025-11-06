@@ -28,6 +28,7 @@ class ContactForm extends Component
     public $accent;
     public $secondary;
     public $neutral_dark;
+    public $neutral_light;
     
     // Success/error messages
     public $successMessage = '';
@@ -54,7 +55,7 @@ class ContactForm extends Component
         'message.required' => 'Message is required.',
     ];
 
-    public function mount($facility, $primary = null, $secondary = null, $accent = null, $neutral_dark = null)
+    public function mount($facility, $primary = null, $secondary = null, $accent = null, $neutral_dark = null, $neutral_light = null)
     {
         $this->facility = $facility;
         
@@ -64,12 +65,14 @@ class ContactForm extends Component
             $this->secondary = $secondary ?? '#1E293B';
             $this->accent = $accent ?? '#F59E0B';
             $this->neutral_dark = $neutral_dark ?? '#1e293b';
+            $this->neutral_light = $neutral_light ?? '#F3F4F6';
         } else {
             $colors = FacilityDataHelper::getColors($facility);
             $this->primary = $colors['primary'];
             $this->accent = $colors['accent'];
             $this->secondary = $colors['secondary'];
-            $this->neutral_dark = '#1e293b';
+            $this->neutral_dark = $colors['neutral_dark'];
+            $this->neutral_light = $colors['neutral_light'];
         }
         
         $this->facility_id = $facility['id'];
@@ -87,11 +90,19 @@ class ContactForm extends Component
         $this->isSubmitting = true;
 
         try {
+            // Debug: Log that submit was called
+            Log::info('ContactForm submit called', [
+                'full_name' => $this->full_name,
+                'email' => $this->email,
+                'facility_id' => $this->facility_id
+            ]);
+            
             $validatedData = $this->validate();
 
             // Check honeypot field
             if (!empty($validatedData['website'])) {
                 $this->errorMessage = 'Form submission failed.';
+                $this->dispatch('scrollToTop');
                 $this->isSubmitting = false;
                 return;
             }
@@ -151,13 +162,19 @@ class ContactForm extends Component
 
             $this->successMessage = 'Thank you for your message! We\'ll get back to you promptly.';
             
+            // Scroll to top to show success message
+            $this->dispatch('scrollToTop');
+            
             // Reset form fields
             $this->reset(['full_name', 'phone', 'email', 'message', 'consent', 'no_phi', 'website']);
             
         } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->errorMessage = 'Please fix the validation errors below.';
             foreach ($e->errors() as $field => $messages) {
                 $this->addError($field, $messages[0]);
             }
+            // Scroll to top to show validation errors
+            $this->dispatch('scrollToTop');
         } catch (\Exception $e) {
             Log::error('Contact form submission failed via Livewire', [
                 'error' => $e->getMessage(),
@@ -165,6 +182,8 @@ class ContactForm extends Component
             ]);
             
             $this->errorMessage = 'There was an issue submitting your message. Please try again or contact us directly.';
+            // Scroll to top to show error message
+            $this->dispatch('scrollToTop');
         }
         
         $this->isSubmitting = false;
@@ -172,6 +191,11 @@ class ContactForm extends Component
 
     public function updated($propertyName)
     {
+        // Clear error message when user starts typing
+        if ($this->errorMessage) {
+            $this->errorMessage = '';
+        }
+        
         $this->resetErrorBag($propertyName);
         
         // Real-time validation for critical fields
@@ -196,6 +220,11 @@ class ContactForm extends Component
     {
         return view('livewire.contact-form', [
             'facility' => $this->facility,
+            'primary' => $this->primary,
+            'secondary' => $this->secondary,
+            'accent' => $this->accent,
+            'neutral_dark' => $this->neutral_dark,
+            'neutral_light' => $this->neutral_light,
         ]);
     }
 }

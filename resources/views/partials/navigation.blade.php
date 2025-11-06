@@ -60,11 +60,10 @@ $primary = '#047857';
             style="hover:color: {{ $facility['primary_color'] ?? '#047857' }};">
             Contact
           </a>
-          <a href="#contact"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white transition-colors"
-            style="background-color: {{ $facility['primary_color'] ?? '#047857' }}; hover:opacity: 0.9;">
+
+          <x-primary-button href="#contact" size="sm" :primary="$facility['primary_color'] ?? '#047857'" class="ml-2">
             Schedule Tour
-          </a>
+          </x-primary-button>
         </div>
       </div>
 
@@ -102,10 +101,12 @@ $primary = '#047857';
         style="hover:color: {{ $facility['primary_color'] ?? '#047857' }};">
         Contact
       </a>
-      <a href="#contact" class="block px-3 py-2 text-base font-medium text-white rounded-md mt-2"
-        style="background-color: {{ $facility['primary_color'] ?? '#047857' }};">
-        Schedule Tour
-      </a>
+
+      <div class="mt-2">
+        <x-primary-button href="#contact" size="sm" :primary="$facility['primary_color'] ?? '#047857'" class="w-full">
+          Schedule Tour
+        </x-primary-button>
+      </div>
     </div>
   </div>
 </nav>

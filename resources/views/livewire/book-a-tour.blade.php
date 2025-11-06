@@ -1,14 +1,21 @@
-<div>
+<div id="book-a-tour-form" x-data="{ 
+        scrollToTop() {
+            document.getElementById('book-a-tour-form').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    }" @scroll-to-top.window="scrollToTop()">
     @if (session()->has('success'))
-    <div class="p-4 mb-4 text-green-800 bg-green-200 rounded-lg">
+    <x-success-message>
         {{ session('success') }}
-    </div>
+    </x-success-message>
     @endif
 
     @if (session()->has('error'))
-    <div class="p-4 mb-4 text-red-800 bg-red-200 rounded-lg">
+    <x-error-message>
         {{ session('error') }}
-    </div>
+    </x-error-message>
     @endif
 
     <form wire:submit.prevent="submit" class="space-y-6" novalidate>
@@ -132,9 +139,13 @@
                     Privacy Practices</a>.</p>
         </div>
         <div class="mt-7 flex flex-col sm:flex-row gap-4 justify-end">
-            <button type="submit"
-                class="cursor-pointer inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-7 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
-                style="background: {{ $primary }}">Request Tour</button>
+            <x-primary-button type="submit" :loading="$isSubmitting" loading-text="Requesting..."
+                icon="fas fa-calendar-check" :primary="$primary" :secondary="$secondary" :accent="$accent"
+                :neutral_dark="$neutral_dark" :neutral_light="$neutral_light" wire:loading.attr="disabled"
+                class="w-full sm:w-auto">
+                Request Tour
+            </x-primary-button>
+
             <a href="tel:{{ $facility['phone'] ?? '' }}"
                 class="inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-7 py-3 font-semibold ring-2 transition bg-white hover:bg-slate-100"
                 style="border-color: {{ $secondary }}; color: {{ $secondary }};">Call Us: <span

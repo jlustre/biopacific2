@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Helpers\FacilityDataHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Mail\BookATourMail;
 
 class BookATour extends Component
@@ -14,7 +15,10 @@ class BookATour extends Component
     public $primary;
     public $accent;
     public $secondary;
+    public $neutral_dark;
+    public $neutral_light;
     public $services = [];
+    public $isSubmitting = false;
 
     public $full_name;
     public $relationship;
@@ -49,6 +53,8 @@ class BookATour extends Component
         $this->primary = $colors['primary'];
         $this->accent = $colors['accent'];
         $this->secondary = $colors['secondary'];
+        $this->neutral_dark = $colors['neutral_dark'];
+        $this->neutral_light = $colors['neutral_light'];
         $this->services = FacilityDataHelper::getServices($facility);
         $this->recipient = FacilityDataHelper::getEmailRecipient($facility->id, 'book-a-tour');
         $this->recipients = FacilityDataHelper::getEmailRecipients($facility->id, 'book-a-tour');
@@ -63,7 +69,17 @@ class BookATour extends Component
 
     public function submit()
     {
+        // Clear previous flash messages
+        session()->forget(['success', 'error']);
+        $this->isSubmitting = true;
+        
         try {
+            // Debug: Log that submit was called
+            Log::info('BookATour submit called', [
+                'full_name' => $this->full_name,
+                'email' => $this->email,
+            ]);
+            
             $this->validate();
 
             if ($this->preferred_time === 'Other' && $this->specific_time) {
@@ -124,14 +140,24 @@ class BookATour extends Component
 
             session()->flash('success', 'Your tour request has been submitted successfully! An email confirmation has been sent.');
             
+            // Scroll to top to show success message
+            $this->dispatch('scrollToTop');
+            
             // Clear the form after successful submission
             $this->clearForm();
         } catch (\Illuminate\Validation\ValidationException $e) {
+            session()->flash('error', 'Please fix the validation errors below.');
             foreach ($e->errors() as $field => $messages) {
                 $this->addError($field, $messages[0]);
             }
+            // Scroll to top to show validation errors
+            $this->dispatch('scrollToTop');
         } catch (\Exception $e) {
             session()->flash('error', 'There was an error submitting your request. Please try again later.');
+            // Scroll to top to show error message
+            $this->dispatch('scrollToTop');
+        } finally {
+            $this->isSubmitting = false;
         }
     }
 
@@ -176,6 +202,8 @@ class BookATour extends Component
             'primary' => $this->primary,
             'accent' => $this->accent,
             'secondary' => $this->secondary,
+            'neutral_dark' => $this->neutral_dark,
+            'neutral_light' => $this->neutral_light,
             'services' => $this->services,
         ]);
     }

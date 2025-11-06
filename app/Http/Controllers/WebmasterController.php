@@ -10,7 +10,60 @@ use App\Models\WebmasterContact;
 
 class WebmasterController extends Controller
 {
-    public function submit(Request $request)
+    public function show($facility)
+    {
+        // Load the facility data
+        $facilityModel = \App\Models\Facility::where('slug', $facility)->firstOrFail();
+        
+        // Get colors using the same helper as other controllers
+        $colors = \App\Helpers\FacilityDataHelper::getColors($facilityModel);
+        
+        // Get the facility's web content to determine sections
+        $activeWebContent = $facilityModel->webcontents()->where('is_active', true)->first();
+        $sections = ['topbar']; // Always include topbar for navigation
+        $sectionVariances = ['topbar' => 'default'];
+        
+        if ($activeWebContent && $activeWebContent->sections) {
+            if (is_string($activeWebContent->sections)) {
+                $additionalSections = json_decode($activeWebContent->sections, true) ?? [];
+            } elseif (is_array($activeWebContent->sections)) {
+                $additionalSections = $activeWebContent->sections;
+            }
+            
+            if (!empty($additionalSections) && is_array($additionalSections)) {
+                $sections = array_merge($sections, $additionalSections);
+            }
+        }
+        
+        if ($activeWebContent && isset($activeWebContent->variances)) {
+            if (is_string($activeWebContent->variances)) {
+                $additionalVariances = json_decode($activeWebContent->variances, true) ?? [];
+            } elseif (is_array($activeWebContent->variances)) {
+                $additionalVariances = $activeWebContent->variances;
+            }
+            
+            if (!empty($additionalVariances) && is_array($additionalVariances)) {
+                $sectionVariances = array_merge($sectionVariances, $additionalVariances);
+            }
+        }
+        
+        $activeSections = \App\Helpers\FacilityDataHelper::getActiveSections($facilityModel);
+        
+        return view('webmaster.contact', [
+            'facilityModel' => $facilityModel,
+            'facility' => $facilityModel->toArray(),
+            'primary' => $colors['primary'],
+            'secondary' => $colors['secondary'],
+            'accent' => $colors['accent'],
+            'neutral_light' => $colors['neutral_light'],
+            'neutral_dark' => $colors['neutral_dark'],
+            'sections' => $sections,
+            'sectionVariances' => $sectionVariances,
+            'activeSections' => $activeSections
+        ]);
+    }
+
+    public function submit(Request $request, $facility = null)
     {
 
         $validated = $request->validate([

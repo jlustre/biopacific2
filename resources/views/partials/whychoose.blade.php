@@ -48,8 +48,7 @@
             </div>
             <h4 class="font-bold text-xl mb-4 text-secondary">Modern Amenities</h4>
             <p class="text-slate-600 leading-relaxed">Enjoy updated facilities, comfortable living spaces, and
-                convenient
-                amenities designed for safety and ease of daily living.</p>
+                convenient amenities designed for safety and ease of daily living.</p>
         </div>
         <div class="text-center group">
             <div

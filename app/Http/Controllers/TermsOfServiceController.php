@@ -57,7 +57,11 @@ class TermsOfServiceController extends Controller
         
         return view('terms-of-service', [
             'facility' => $facilityData,
-            'colors' => $colors,
+            'primary' => $colors['primary'],
+            'secondary' => $colors['secondary'],
+            'accent' => $colors['accent'],
+            'neutral_light' => $colors['neutral_light'],
+            'neutral_dark' => $colors['neutral_dark'],
             'sections' => $sections,
             'sectionVariances' => $sectionVariances,
             'activeSections' => $activeSections

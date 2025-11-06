@@ -18,8 +18,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section header (kept) --}}
         @include('partials.section_header', [
-        'section_header' => 'Our Services & Amenities',
-        'section_sub_header' => 'Comprehensive care and enriching amenities designed to enhance quality of life for
+        'section_header' => 'Our Care & Services',
+        'section_sub_header' => 'Comprehensive care and enriching services designed to enhance quality of life for
         every resident.'
         ])
 

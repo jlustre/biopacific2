@@ -1,5 +1,12 @@
 {{-- Livewire Contact Form Component --}}
-<div class="rounded-3xl border bg-white p-6 sm:p-8 shadow-xl h-full">
+<div id="contact-form" x-data="{ 
+        scrollToTop() {
+            document.getElementById('contact-form').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    }" @scroll-to-top.window="scrollToTop()" class="rounded-3xl border bg-white p-6 sm:p-8 shadow-xl h-full">
     <div class="flex items-center mb-6">
         <div class="mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full"
             style="background: {{ $primary }}1A; color: {{ $primary }}">
@@ -19,35 +26,19 @@
         privately.
     </div>
 
-    <div class="flex items-start mb-6">
-        <input id="no-phi" wire:model="no_phi" type="checkbox" required
-            class="mt-1 h-4 w-4 rounded text-primary focus:ring-primary/30 @error('no_phi') border-red-500 ring-2 ring-red-200 @enderror"
-            style="border: 1px solid {{ $primary ?? '#0EA5E9' }};">
-        <label for="no-phi" class="ml-2 block text-sm text-gray-700">
-            I confirm that I will not include any Protected Health Information (PHI) in this form. *
-        </label>
-    </div>
-    @error('no_phi')
-    <div class="mb-4 -mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">{{ $message }}</div>
-    @enderror
-
-    <p class="text-xs mb-6 text-slate-500">See our <a
-            href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}" class="underline hover:text-primary"
-            target="_blank" rel="noopener noreferrer">Notice of Privacy
-            Practices</a>.</p>
 
     {{-- Success Message --}}
     @if($successMessage)
-    <div class="rounded-xl bg-green-50 p-3 ring-1 ring-green-200 text-xs text-green-800 mb-6">
+    <x-success-message>
         {{ $successMessage }}
-    </div>
+    </x-success-message>
     @endif
 
     {{-- Error Message --}}
     @if($errorMessage)
-    <div class="rounded-xl bg-red-50 p-3 ring-1 ring-red-200 text-xs text-red-800 mb-6">
+    <x-error-message>
         {{ $errorMessage }}
-    </div>
+    </x-error-message>
     @endif
     <form class="space-y-6" wire:submit.prevent="submit" novalidate>
         <div>
@@ -103,31 +94,36 @@
         <div class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">{{ $message }}</div>
         @enderror
 
+        <div class="flex items-start mb-6">
+            <input id="no-phi" wire:model="no_phi" type="checkbox" required
+                class="mt-1 h-4 w-4 rounded text-primary focus:ring-primary/30 @error('no_phi') border-red-500 ring-2 ring-red-200 @enderror"
+                style="border: 1px solid {{ $primary ?? '#0EA5E9' }};">
+            <label for="no-phi" class="ml-2 block text-sm text-gray-700">
+                I confirm that I will not include any Protected Health Information (PHI) in this form. *
+            </label>
+        </div>
+        @error('no_phi')
+        <div class="mb-4 -mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">{{ $message }}</div>
+        @enderror
+
+        <p class="text-xs mb-6 text-slate-500">See our <a
+                href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
+                class="underline hover:text-primary" target="_blank" rel="noopener noreferrer">Notice of Privacy
+                Practices</a>.</p>
+
+
         <div class="flex flex-col sm:flex-row justify-end gap-3">
             <button type="reset" wire:click="$refresh"
                 class="px-6 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50 transition"
                 style="border: 1px solid {{ $secondary ?? '#155E75' }}; color: {{ $neutral_dark ?? '#1e293b' }};">
                 Clear Form
             </button>
-            <button type="submit" wire:loading.attr="disabled"
-                class="cursor-pointer inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-white transition shadow-sm hover:shadow disabled:opacity-50"
-                style="background: {{ $primary ?? '#0EA5E9' }}; color: {{ $accent ?? '#FFFFFF' }}">
 
-                {{-- Loading spinner --}}
-                <span wire:loading wire:target="submit">
-                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                        </circle>
-                        <path class="opacity-75" fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                        </path>
-                    </svg>
-                </span>
-
-                {{-- Button text --}}
-                <span wire:loading.remove wire:target="submit">Send Message</span>
-                <span wire:loading wire:target="submit">Sending...</span>
-            </button>
+            <x-primary-button type="submit" :loading="$isSubmitting" loading-text="Sending..." icon="fas fa-paper-plane"
+                :primary="$primary" :secondary="$secondary" :accent="$accent" :neutral_dark="$neutral_dark"
+                :neutral_light="$neutral_light" wire:loading.attr="disabled">
+                Send Message
+            </x-primary-button>
         </div>
     </form>
 </div>

@@ -1,6 +1,6 @@
 @extends('layouts.default-template')
 
-@section('title', 'Contact Webmaster - ' . ($facility['name'] ?? 'Bio-Pacific'))
+@section('title', 'Contact Webmaster - ' . ($facilityModel['name'] ?? 'Bio-Pacific'))
 
 @section('content')
 <div class="min-h-screen bg-slate-50">
@@ -9,7 +9,7 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="text-center">
                 <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Contact the Webmaster</h1>
-                <p class="text-lg text-slate-600">{{ $facility['name'] ?? 'Bio-Pacific' }}</p>
+                <p class="text-lg text-slate-600">{{ $facilityModel['name'] ?? 'Bio-Pacific' }}</p>
                 <p class="text-sm text-slate-500 mt-2">For website errors, change requests, or technical issues only.
                 </p>
             </div>
@@ -20,32 +20,33 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-8 md:p-12">
             @if(session('success'))
-            <div class="mb-4 p-3 rounded bg-green-100 text-green-800 border border-green-300">
+            <x-success-message>
                 {{ session('success') }}
-            </div>
+            </x-success-message>
             @endif
+
             @if($errors->any())
-            <div class="mb-4 p-3 rounded bg-red-100 text-red-800 border border-red-300">
+            <x-error-message>
                 <ul class="list-disc pl-5">
                     @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                     @endforeach
                 </ul>
-            </div>
+            </x-error-message>
             @endif
             <div class="prose max-w-none mb-8">
                 <p class="text-slate-700 mb-2">
                     Use this form strictly for <span class="font-semibold">website-related matters</span> such as
                     reporting errors, requesting modifications, or alerting us to technical concerns. All other general
                     inquiries should be submitted through our <a
-                        href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
+                        href="/{{ $facilityModel['slug'] ?? 'facility' }}#contact"
                         class="underline text-blue-700 hover:text-blue-900">Contact Us</a> page.
                 </p>
             </div>
-            <form method="POST" action="{{ route('webmaster.contact.submit') }}" class="space-y-5"
-                enctype="multipart/form-data" id="webmaster-contact-form" novalidate>
-                @if(isset($facility) && isset($facility['id']))
-                <input type="hidden" name="facility_id" value="{{ $facility['id'] }}">
+            <form method="POST" action="{{ route('webmaster.contact.facility.submit', $facilityModel->slug) }}"
+                class="space-y-5" enctype="multipart/form-data" id="webmaster-contact-form" novalidate>
+                @if(isset($facilityModel) && isset($facilityModel['id']))
+                <input type="hidden" name="facility_id" value="{{ $facilityModel['id'] }}">
                 @endif
                 @csrf
                 <div>
@@ -86,12 +87,13 @@
                 </div>
                 <div id="form-error-message"
                     class="mb-4 p-3 rounded bg-red-100 text-red-800 border border-red-300 hidden"></div>
-                <button type="submit"
-                    class="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition text-base">Send
-                    to Webmaster</button>
+
+                <x-primary-button type="submit" size="lg" icon="fas fa-paper-plane" class="w-full">
+                    Send to Webmaster
+                </x-primary-button>
             </form>
             <div class="mt-6 text-xs text-slate-500 text-center">This form is for website technical issues only. For
-                privacy or general questions, use the <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#contact"
+                privacy or general questions, use the <a href="/{{ $facilityModel['slug'] ?? 'facility' }}#contact"
                     class="underline">Contact Us</a> page.</div>
         </div>
         <script>
@@ -122,6 +124,16 @@
                 errorDiv.classList.add('hidden');
             }
         });
+        
+        // Auto-scroll to top if there are session messages
+        @if(session('success') || $errors->any())
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('webmaster-contact-form').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        });
+        @endif
         </script>
     </div>
 </div>

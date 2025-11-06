@@ -5,8 +5,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ $facility['subdomain'] }} ?? 'Quality Care For Your Loved Ones' }}</title>
-  <meta name="description" content="{{ $facility['meta_description'] }}">
+  <title>{{ ($facility['subdomain'] ?? '') ?: 'Quality Care For Your Loved Ones' }}</title>
+  <meta name="description" content="{{ $facility['meta_description'] ?? '' }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
   @vite(['resources/css/app.css', 'resources/js/app.js'])

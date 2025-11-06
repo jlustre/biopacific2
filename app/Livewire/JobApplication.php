@@ -21,6 +21,13 @@ class JobApplication extends Component
     public $jobOpening;
     public $facility;
     
+    // Color variables
+    public $primary;
+    public $secondary;
+    public $accent;
+    public $neutral_dark;
+    public $neutral_light;
+    
     // Form fields
     public $job_opening_id;
     public $first_name;
@@ -54,15 +61,22 @@ class JobApplication extends Component
         'consent.accepted' => 'You must consent to the application terms.',
     ];
     
-    public function mount($jobOpeningId = null)
+    public function mount($jobOpeningId = null, $primary = null, $secondary = null, $accent = null, $neutral_dark = null, $neutral_light = null)
     {
+        // Set color variables
+        $this->primary = $primary ?? '#3B82F6'; // Default blue if not provided
+        $this->secondary = $secondary ?? '#1E40AF'; // Default darker blue if not provided
+        $this->accent = $accent ?? '#6366F1'; // Default indigo if not provided
+        $this->neutral_dark = $neutral_dark ?? '#374151'; // Default gray-700 if not provided
+        $this->neutral_light = $neutral_light ?? '#F3F4F6'; // Default gray-100 if not provided
+        
         if ($jobOpeningId) {
             $this->job_opening_id = $jobOpeningId;
             $this->jobOpening = JobOpening::findOrFail($jobOpeningId);
             $this->facility = Facility::findOrFail($this->jobOpening->facility_id);
         }
     }
-
+    
     public function setJobOpening($jobOpeningId)
     {
         if (!$jobOpeningId) {
@@ -72,19 +86,26 @@ class JobApplication extends Component
             return;
         }
         
-        $this->jobOpening = JobOpening::findOrFail($jobOpeningId);
-        $this->facility = Facility::findOrFail($this->jobOpening->facility_id);
-        $this->job_opening_id = $jobOpeningId;
-        
-        // Clear any previous messages when switching jobs
-        $this->successMessage = '';
-        $this->errorMessage = '';
-        
-        Log::info('Job opening set via setJobOpening', [
-            'job_id' => $jobOpeningId,
-            'job_title' => $this->jobOpening->title,
-            'facility_name' => $this->facility->name
-        ]);
+        try {
+            $this->jobOpening = JobOpening::findOrFail($jobOpeningId);
+            $this->facility = Facility::findOrFail($this->jobOpening->facility_id);
+            $this->job_opening_id = $jobOpeningId;
+            
+            // Clear any previous messages when switching jobs
+            $this->successMessage = '';
+            $this->errorMessage = '';
+            
+            Log::info('Job opening set successfully', [
+                'job_id' => $jobOpeningId,
+                'job_title' => $this->jobOpening->title,
+                'facility_name' => $this->facility->name
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to set job opening', [
+                'job_id' => $jobOpeningId,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
     
     public function submit()
@@ -111,6 +132,7 @@ class JobApplication extends Component
             // Check if job opening is still active
             if (!$this->jobOpening->active) {
                 $this->errorMessage = 'This job opening is no longer available.';
+                $this->dispatch('scrollToTop');
                 $this->isSubmitting = false;
                 return;
             }
@@ -205,6 +227,8 @@ class JobApplication extends Component
             foreach ($e->errors() as $field => $messages) {
                 $this->addError($field, $messages[0]);
             }
+            // Scroll to top to show validation errors
+            $this->dispatch('scrollToTop');
         } catch (\Exception $e) {
             Log::error('Job application submission failed', [
                 'error' => $e->getMessage(),
@@ -213,6 +237,8 @@ class JobApplication extends Component
             ]);
             
             $this->errorMessage = 'There was an error submitting your application. Please try again. Error: ' . $e->getMessage();
+            // Scroll to top to show error message
+            $this->dispatch('scrollToTop');
         } finally {
             $this->isSubmitting = false;
         }
@@ -240,6 +266,12 @@ class JobApplication extends Component
     
     public function render()
     {
-        return view('livewire.job-application');
+        return view('livewire.job-application', [
+            'primary' => $this->primary,
+            'secondary' => $this->secondary,
+            'accent' => $this->accent,
+            'neutral_dark' => $this->neutral_dark,
+            'neutral_light' => $this->neutral_light,
+        ]);
     }
 }

@@ -43,6 +43,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.submit');
 
+// Webmaster contact form routes (facility-specific)
+Route::get('/{facility:slug}/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'show'])->name('webmaster.contact.show');
+Route::post('/{facility:slug}/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.facility.submit');
+
 Route::get('/', [App\Http\Controllers\HomeController::class, 'home'])->name('home');
 
 Route::get('/index', fn() => view('index'))->name('index');

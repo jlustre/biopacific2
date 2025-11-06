@@ -57,7 +57,11 @@ class PrivacyPolicyController extends Controller
 
         return view('privacy-policy', [
             'facility' => $facilityData,
-            'colors' => $colors,
+            'primary' => $colors['primary'],
+            'secondary' => $colors['secondary'],
+            'accent' => $colors['accent'],
+            'neutral_light' => $colors['neutral_light'],
+            'neutral_dark' => $colors['neutral_dark'],
             'sections' => $sections,
             'sectionVariances' => $sectionVariances,
             'activeSections' => $activeSections // Ensure active sections are derived from web_contents

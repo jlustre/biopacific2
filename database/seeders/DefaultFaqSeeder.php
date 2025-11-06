@@ -55,16 +55,16 @@ class DefaultFaqSeeder extends Seeder
             [
                 'question' => 'How are medications managed?',
                 'answer' => 'All medications are managed by our licensed nursing staff. We maintain detailed medication records, coordinate with physicians for any changes, and ensure medications are administered safely and on time. Families are kept informed of any medication adjustments.',
-                'category' => 'Care Services',
+                'category' => 'Services',
                 'icon' => 'fas fa-pills',
                 'sort_order' => 6
             ],
             
-            // Facility Amenities
+            // Facility Services
             [
-                'question' => 'What amenities do you offer?',
+                'question' => 'What services do you offer?',
                 'answer' => 'Our facility features comfortable private and semi-private rooms, common areas for socializing, a dining room with nutritious meals, activity rooms, outdoor spaces, and 24/7 nursing care. We also offer Wi-Fi, cable TV, and laundry services.',
-                'category' => 'Amenities',
+                'category' => 'Services',
                 'icon' => 'fas fa-building',
                 'sort_order' => 7
             ],

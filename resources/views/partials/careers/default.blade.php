@@ -111,10 +111,12 @@ $error = $errors->any();
             <button @click="
                 openApply=true; 
                 applyRole='{{ $job->id }}'; 
-                applyRoleTitle='{{ addslashes($job->title) }}'
+                applyRoleTitle='{{ addslashes($job->title) }}';
               "
-              class="flex-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-300 to-teal-600 text-xs font-semibold text-white shadow-sm hover:from-teal-600 hover:to-teal-700 cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
-              style="min-width: 0;">
+              class="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
+              style="min-width: 0; background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); &:hover { background: linear-gradient(to right, {{ $secondary }}, {{ $primary }}); }"
+              onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
+              onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17l4 4 4-4m-4-5v9" />
               </svg>
@@ -199,14 +201,22 @@ $error = $errors->any();
 
         <!-- Modal Content -->
         <div class="p-6">
-          <div x-data="{ currentJobId: null }" 
-               x-init="$watch('$parent.applyRole', (value) => { 
-                 currentJobId = value; 
-                 if (value) {
-                   $wire.call('setJobOpening', value);
-                 }
-               })">
-            @livewire('job-application', [], key('job-application-modal'))
+          @foreach($jobOpenings as $modalJob)
+          <div x-show="applyRole == '{{ $modalJob->id }}'" x-cloak>
+            @livewire('job-application', [
+            'jobOpeningId' => $modalJob->id,
+            'primary' => $primary,
+            'secondary' => $secondary,
+            'accent' => $accent,
+            'neutral_dark' => $neutral_dark,
+            'neutral_light' => $neutral_light
+            ], key('job-application-' . $modalJob->id))
+          </div>
+          @endforeach
+
+          <div x-show="!applyRole" class="text-center py-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Select a Position</h3>
+            <p class="text-gray-600">Please select a job opening to apply for.</p>
           </div>
         </div>
       </div>

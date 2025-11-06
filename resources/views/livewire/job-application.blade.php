@@ -1,16 +1,36 @@
-<div>
+<div id="job-application-form" x-data="{ 
+        scrollToTop() {
+            document.getElementById('job-application-form').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    }"
+    style="--primary-color: {{ $primary }}; --secondary-color: {{ $secondary }}; --accent-color: {{ $accent }}; --neutral-dark: {{ $neutral_dark }}; --neutral-light: {{ $neutral_light }};"
+    @scroll-to-top.window="scrollToTop()">
+    <style>
+        .custom-focus:focus {
+            --tw-ring-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .custom-checkbox:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+    </style>
     <!-- Success Message -->
     @if($successMessage)
-    <div class="mb-6 p-4 rounded-lg bg-green-100 text-green-800 border border-green-300" id="success-message" wire:key="success-{{ now() }}">
-        <i class="fas fa-check-circle mr-2"></i>{{ $successMessage }}
-    </div>
+    <x-success-message id="success-message" wire:key="success-{{ now() }}">
+        {{ $successMessage }}
+    </x-success-message>
     @endif
 
     <!-- Error Message -->
     @if($errorMessage)
-    <div class="mb-6 p-4 rounded-lg bg-red-100 text-red-800 border border-red-300">
-        <i class="fas fa-exclamation-circle mr-2"></i>{{ $errorMessage }}
-    </div>
+    <x-error-message dismissible="true">
+        {{ $errorMessage }}
+    </x-error-message>
     @endif
 
     @if($jobOpening && $facility)
@@ -39,7 +59,7 @@
                     First Name <span class="text-red-500">*</span>
                 </label>
                 <input type="text" id="first_name" wire:model="first_name"
-                    class="w-full rounded-lg border @error('first_name') border-red-300 bg-red-50 @else border-gray-300 @enderror px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    class="w-full rounded-lg border @error('first_name') border-red-300 bg-red-50 @else border-gray-300 @enderror px-4 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all custom-focus"
                     placeholder="Enter your first name">
                 @error('first_name')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -138,15 +158,11 @@
 
         <!-- Submit Button -->
         <div class="flex justify-end pt-6 border-t border-gray-200">
-            <button type="submit" wire:loading.attr="disabled"
-                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-                <span wire:loading.remove wire:target="submit">
-                    <i class="fas fa-paper-plane mr-2"></i>Submit Application
-                </span>
-                <span wire:loading wire:target="submit">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>Submitting...
-                </span>
-            </button>
+            <x-primary-button type="submit" size="lg" :loading="$isSubmitting" loading-text="Submitting..."
+                icon="fas fa-paper-plane" :primary="$primary" :secondary="$secondary" :accent="$accent"
+                :neutral_dark="$neutral_dark" :neutral_light="$neutral_light" wire:loading.attr="disabled">
+                Submit Application
+            </x-primary-button>
         </div>
     </form>
     @endif

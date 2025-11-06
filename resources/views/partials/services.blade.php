@@ -2,8 +2,8 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
     @include('partials.section_header', [
-    'section_header' => 'Our <span class="text-accent">Services & Amenities</span>',
-    'section_sub_header' => 'Comprehensive care and enriching amenities designed to enhance quality of life for every
+    'section_header' => 'Our <span class="text-accent">Care & Services</span>',
+    'section_sub_header' => 'Comprehensive care and enriching services designed to enhance quality of life for every
     resident.'
     ])
 

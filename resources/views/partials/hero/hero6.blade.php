@@ -28,39 +28,10 @@ $hasVideo = !empty($facility['hero_video_id']);
             style="background: {{ $primary }}"></div>
         <div class="pointer-events-none absolute -bottom-28 -right-28 h-96 w-96 rounded-full blur-3xl opacity-20"
             style="background: {{ $accent }}"></div>
-
-        {{-- Phone number positioned at top right of the image, behind modal overlay --}}
-        <div class="absolute top-6 right-6 z-0">
-            @if(!empty($facility['phone']))
-            <a href="tel:{{ $facility['phone'] }}"
-                class="inline-flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur px-4 py-3 text-slate-800 hover:bg-white shadow-lg hover:shadow-xl transition text-lg font-semibold">
-                <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-2.26 1.13a11.05 11.05 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2H18C9.72 21 3 14.28 3 6V5z" />
-                </svg>
-                Call Us: {{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $facility['phone']) }}
-            </a>
-            @endif
-        </div>
     </div>
 
     {{-- Content container --}}
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        {{-- Phone number positioned at top right of the image --}}
-        <div class="absolute top-6 right-6 z-10">
-            @if(!empty($facility['phone']))
-            <a href="tel:{{ $facility['phone'] }}"
-                class="inline-flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur px-4 py-3 hover:bg-white shadow-lg hover:shadow-xl transition text-lg font-semibold"
-                style="color: {{ $neutral_dark }}">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" style="color: {{ $neutral_dark }}">
-                    <path
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-2.26 1.13a11.05 11.05 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2H18C9.72 21 3 14.28 3 6V5z" />
-                </svg>
-                Call Us: {{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $facility['phone']) }}
-            </a>
-            @endif
-        </div>
 
         <div class="grid lg:grid-cols-12 gap-8 md:gap-10 items-center min-h-[82vh] md:min-h-[96vh] py-10 md:py-0">
 
@@ -182,6 +153,21 @@ $hasVideo = !empty($facility['hero_video_id']);
                     </div>
                 </div>
             </div>
+        </div>
+
+        {{-- Phone number positioned below and to the left of location badge --}}
+        <div class="absolute bottom-6 right-[250px] z-10 hidden md:block">
+            @if(!empty($facility['phone']))
+            <a href="tel:{{ $facility['phone'] }}"
+                class="inline-flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur px-4 py-3 hover:bg-white shadow-lg hover:shadow-xl transition text-lg font-semibold"
+                style="color: {{ $neutral_dark }}">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" style="color: {{ $neutral_dark }}">
+                    <path
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-2.26 1.13a11.05 11.05 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2H18C9.72 21 3 14.28 3 6V5z" />
+                </svg>
+                Call Us: {{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $facility['phone']) }}
+            </a>
+            @endif
         </div>
 
 
