@@ -9,7 +9,7 @@ class JobOpening extends Model
     use HasFactory;
 
     protected $fillable = [
-        'facility_id', 'title', 'description', 'department', 'employment_type', 'posted_at', 'expires_at', 'active'
+        'facility_id', 'title', 'description', 'detailed_description', 'department', 'employment_type', 'posted_at', 'expires_at', 'active'
     ];
 
     public function facility()

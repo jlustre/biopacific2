@@ -207,4 +207,99 @@ class SecureJobApplicationController extends Controller
             ]);
         }
     }
+
+    /**
+     * Download resume file securely
+     */
+    public function downloadResume(Request $request, string $token)
+    {
+        try {
+            // Find job application by access token
+            $jobApplication = JobApplication::where('access_token', $token)->first();
+
+            if (!$jobApplication) {
+                $this->logAccessAttempt('job_application', null, $token, 'invalid_token');
+                abort(404, 'Job application not found');
+            }
+
+            // Check if token is expired
+            if ($jobApplication->expires_at && Carbon::now()->isAfter($jobApplication->expires_at)) {
+                $this->logAccessAttempt('job_application', $jobApplication->id, $token, 'token_expired', $jobApplication->jobOpening->facility_id ?? null);
+                abort(403, 'Access token has expired');
+            }
+
+            // Check if staff verification is required and has been completed
+            $sessionKey = "staff_verified_job_application_{$jobApplication->id}";
+            if (!session($sessionKey)) {
+                abort(403, 'Staff verification required');
+            }
+
+            // Check if resume file exists
+            if (!$jobApplication->resume_path) {
+                abort(404, 'Resume file not found');
+            }
+
+            $filePath = storage_path('app/public/' . $jobApplication->resume_path);
+            
+            if (!file_exists($filePath)) {
+                Log::error('Resume file not found on disk', [
+                    'job_application_id' => $jobApplication->id,
+                    'resume_path' => $jobApplication->resume_path,
+                    'full_path' => $filePath
+                ]);
+                abort(404, 'Resume file not found on disk');
+            }
+
+            // Log the file access
+            $this->logAccessAttempt('job_application', $jobApplication->id, $token, 'resume_downloaded', $jobApplication->jobOpening->facility_id ?? null, session('verified_staff_email'));
+
+            Log::info('Secure resume download', [
+                'job_application_id' => $jobApplication->id,
+                'staff_email' => session('verified_staff_email'),
+                'file_path' => $jobApplication->resume_path,
+                'ip_address' => $request->ip()
+            ]);
+
+            // Get file info and sanitize filename
+            $originalFileName = basename($jobApplication->resume_path);
+            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalFileName);
+            $fileSize = filesize($filePath);
+            
+            // Determine proper MIME type based on file extension
+            $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $mimeType = match($extension) {
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'txt' => 'text/plain',
+                default => 'application/octet-stream'
+            };
+
+            // Return file response with comprehensive security headers
+            return response()->file($filePath, [
+                'Content-Type' => $mimeType,
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                'Content-Length' => $fileSize,
+                'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+                'X-Content-Type-Options' => 'nosniff',
+                'X-Frame-Options' => 'DENY',
+                'X-XSS-Protection' => '1; mode=block',
+                'Referrer-Policy' => 'strict-origin-when-cross-origin',
+                'X-Download-Options' => 'noopen',
+                'X-Permitted-Cross-Domain-Policies' => 'none'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error downloading secure resume', [
+                'token' => substr($token, 0, 8) . '...',
+                'error' => $e->getMessage(),
+                'ip_address' => $request->ip()
+            ]);
+            
+                        abort(500, 'Error downloading file');
+        }
+    }
 }
+

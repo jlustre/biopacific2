@@ -56,7 +56,12 @@ class SecureInquiryController extends Controller
             // Log successful access
             $this->logAccessAttempt('inquiry', $inquiry->id, $token, 'successful', $inquiry->facility_id, session('verified_staff_email'));
 
-            return view('secure.inquiry', compact('inquiry'));
+            return view('secure.inquiry-view', [
+                'inquiry' => $inquiry,
+                'facility' => $inquiry->facility,
+                'viewedBy' => session('verified_staff_email'),
+                'accessedAt' => now()
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Error accessing secure inquiry', [
@@ -110,7 +115,7 @@ class SecureInquiryController extends Controller
             // Log successful verification
             $this->logAccessAttempt('inquiry', $inquiry->id, $token, 'staff_verified', $inquiry->facility_id, $request->staff_email);
 
-            return redirect()->route('secure.inquiry', $token);
+            return redirect()->route('secure.inquiry.view', $token);
 
         } catch (\Exception $e) {
             Log::error('Staff verification failed for inquiry', [

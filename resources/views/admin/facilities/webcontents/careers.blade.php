@@ -110,62 +110,125 @@
         <!-- Add Job Opening Form -->
         <div class="mb-8 bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4" id="jobFormTitle">Add Job Opening</h3>
+
+            <!-- Success Message -->
+            @if(session('success'))
+            <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+                role="alert">
+                <strong class="font-bold">Success!</strong>
+                <span class="block sm:inline">{{ session('success') }}</span>
+            </div>
+            @endif
+
+            <!-- Error Messages -->
+            @if($errors->any())
+            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">Please fix the following errors:</strong>
+                <ul class="mt-2 list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+
             <form id="jobForm" method="POST" action="{{ route('admin.facilities.webcontents.careers.store') }}">
                 @csrf
                 <input type="hidden" name="facility_id" value="{{ $facilityId }}">
                 <input type="hidden" name="job_id" id="job_id" value="">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Title</label>
+                        <label class="block text-sm font-medium text-gray-700">Title *</label>
                         <input type="text" name="title" id="job_title"
                             class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary"
-                            required>
+                            value="{{ old('title') }}" required>
+                        @error('title')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Department</label>
+                        <label class="block text-sm font-medium text-gray-700">Department *</label>
                         <select name="department" id="job_department"
-                            class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary">
+                            class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary"
+                            required>
                             <option value="">Select Department...</option>
-                            <option value="Administration">Administration</option>
-                            <option value="Nursing">Nursing</option>
-                            <option value="Dietary/Food Services">Dietary / Food Services</option>
-                            <option value="Housekeeping">Housekeeping</option>
-                            <option value="Maintenance">Maintenance</option>
-                            <option value="Social Services">Social Services</option>
-                            <option value="Activities/Recreation">Activities / Recreation</option>
-                            <option value="Rehabilitation/Therapy">Rehabilitation / Therapy</option>
-                            <option value="Medical Records">Medical Records</option>
-                            <option value="Admissions">Admissions</option>
-                            <option value="Business Office">Business Office</option>
-                            <option value="Laundry">Laundry</option>
-                            <option value="Pharmacy">Pharmacy</option>
-                            <option value="Infection Control">Infection Control</option>
-                            <option value="Quality Assurance">Quality Assurance</option>
+                            <option value="Administration" {{ old('department')=='Administration' ? 'selected' : '' }}>
+                                Administration</option>
+                            <option value="Nursing" {{ old('department')=='Nursing' ? 'selected' : '' }}>Nursing
+                            </option>
+                            <option value="Dietary/Food Services" {{ old('department')=='Dietary/Food Services'
+                                ? 'selected' : '' }}>Dietary / Food Services</option>
+                            <option value="Housekeeping" {{ old('department')=='Housekeeping' ? 'selected' : '' }}>
+                                Housekeeping</option>
+                            <option value="Maintenance" {{ old('department')=='Maintenance' ? 'selected' : '' }}>
+                                Maintenance</option>
+                            <option value="Social Services" {{ old('department')=='Social Services' ? 'selected' : ''
+                                }}>Social Services</option>
+                            <option value="Activities/Recreation" {{ old('department')=='Activities/Recreation'
+                                ? 'selected' : '' }}>Activities / Recreation</option>
+                            <option value="Rehabilitation/Therapy" {{ old('department')=='Rehabilitation/Therapy'
+                                ? 'selected' : '' }}>Rehabilitation / Therapy</option>
+                            <option value="Medical Records" {{ old('department')=='Medical Records' ? 'selected' : ''
+                                }}>Medical Records</option>
+                            <option value="Admissions" {{ old('department')=='Admissions' ? 'selected' : '' }}>
+                                Admissions</option>
+                            <option value="Business Office" {{ old('department')=='Business Office' ? 'selected' : ''
+                                }}>Business Office</option>
+                            <option value="Laundry" {{ old('department')=='Laundry' ? 'selected' : '' }}>Laundry
+                            </option>
+                            <option value="Pharmacy" {{ old('department')=='Pharmacy' ? 'selected' : '' }}>Pharmacy
+                            </option>
+                            <option value="Infection Control" {{ old('department')=='Infection Control' ? 'selected'
+                                : '' }}>Infection Control</option>
+                            <option value="Quality Assurance" {{ old('department')=='Quality Assurance' ? 'selected'
+                                : '' }}>Quality Assurance</option>
                         </select>
+                        @error('department')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Employment Type</label>
+                        <label class="block text-sm font-medium text-gray-700">Employment Type *</label>
                         <select name="employment_type" id="job_employment_type"
-                            class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary">
+                            class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary"
+                            required>
                             <option value="">Select Employment Type...</option>
-                            <option value="Full-time">Full-time</option>
-                            <option value="Part-time">Part-time</option>
-                            <option value="On-Call">OnCall</option>
-                            <option value="Temporary">Temporary</option>
-                            <option value="Contract">Contract</option>
-                            <option value="Internship">Internship</option>
-                            <option value="Seasonal">Seasonal</option>
+                            <option value="Full-time" {{ old('employment_type')=='Full-time' ? 'selected' : '' }}>
+                                Full-time</option>
+                            <option value="Part-time" {{ old('employment_type')=='Part-time' ? 'selected' : '' }}>
+                                Part-time</option>
+                            <option value="On-Call" {{ old('employment_type')=='On-Call' ? 'selected' : '' }}>OnCall
+                            </option>
+                            <option value="Temporary" {{ old('employment_type')=='Temporary' ? 'selected' : '' }}>
+                                Temporary</option>
+                            <option value="Contract" {{ old('employment_type')=='Contract' ? 'selected' : '' }}>Contract
+                            </option>
+                            <option value="Internship" {{ old('employment_type')=='Internship' ? 'selected' : '' }}>
+                                Internship</option>
+                            <option value="Seasonal" {{ old('employment_type')=='Seasonal' ? 'selected' : '' }}>Seasonal
+                            </option>
                         </select>
+                        @error('employment_type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Posted At</label>
+                        <label class="block text-sm font-medium text-gray-700">Posted At *</label>
                         <input type="date" name="posted_at" id="job_posted_at"
-                            class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary">
+                            value="{{ old('posted_at', date('Y-m-d')) }}"
+                            class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary"
+                            required>
+                        @error('posted_at')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Expires At</label>
-                        <input type="date" name="expires_at" id="job_expires_at"
+                        <input type="date" name="expires_at" id="job_expires_at" value="{{ old('expires_at') }}"
                             class="mt-1 block w-full border-2 border-gray-400 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary">
+                        @error('expires_at')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex items-center mt-6">
                         <input type="checkbox" name="active" id="job_active" value="1" checked class="mr-2">
@@ -174,11 +237,26 @@
                 </div>
 
                 <div class="md:col-span-2 mt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Job Description *</label>
                     <textarea name="description" id="job_description"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        rows="4" placeholder="Brief job overview and summary..."
+                        required>{{ old('description') }}</textarea>
+                    <small class="text-gray-500">Brief job overview and summary.</small>
+                    @error('description')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="md:col-span-2 mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+                    <textarea name="detailed_description" id="detailed_description"
                         class="mt-1 block w-full border-2 border-gray-600 px-2 py-1 rounded-md shadow-sm focus:border-primary focus:ring-2 focus:ring-primary rtf-editor"
-                        rows="6"></textarea>
+                        rows="8">{{ old('detailed_description') }}</textarea>
                     <small class="text-gray-500">You can use rich text formatting by clicking the icons above.</small>
+                    @error('detailed_description')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mt-4">
                     <button type="submit" id="jobFormSubmit"
@@ -235,11 +313,14 @@
         document.getElementById('job_expires_at').value = job.expires_at || '';
         document.getElementById('job_active').checked = job.active ? true : false;
         
-        // Handle description with CKEditor
+        // Handle basic description - regular textarea
+        document.getElementById('job_description').value = job.description || '';
+        
+        // Handle detailed description with CKEditor
         if (editorInstance) {
-            editorInstance.setData(job.description || '');
+            editorInstance.setData(job.detailed_description || '');
         } else {
-            document.getElementById('job_description').value = job.description || '';
+            document.getElementById('detailed_description').value = job.detailed_description || '';
         }
         
         // Add PUT method
@@ -265,7 +346,7 @@
         document.getElementById('job_title').value = '';
         document.getElementById('job_department').value = '';
         document.getElementById('job_employment_type').value = '';
-        document.getElementById('job_posted_at').value = '';
+        document.getElementById('job_posted_at').value = new Date().toISOString().split('T')[0]; // Today's date
         document.getElementById('job_expires_at').value = '';
         document.getElementById('job_active').checked = true;
         
@@ -288,7 +369,7 @@
     // CKEditor initialization
     document.addEventListener('DOMContentLoaded', function() {
         if (window.ClassicEditor) {
-            ClassicEditor.create(document.querySelector('#job_description'), {
+            ClassicEditor.create(document.querySelector('#detailed_description'), {
                 toolbar: [
                     'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo'
                 ],

@@ -246,14 +246,16 @@ require __DIR__.'/admin_webmaster_contacts.php';
 // Secure Inquiry Routes
 Route::get('/secure/inquiry/{token}', [App\Http\Controllers\SecureInquiryController::class, 'view'])
     ->name('secure.inquiry.view');
-Route::post('/secure/inquiry/verify-staff', [App\Http\Controllers\SecureInquiryController::class, 'verifyStaff'])
+Route::post('/secure/inquiry/{token}/verify-staff', [App\Http\Controllers\SecureInquiryController::class, 'verifyStaff'])
     ->name('secure.inquiry.verify-staff');
     
 // Secure Job Application Routes  
-Route::get('/secure/job-application/{id}', [App\Http\Controllers\SecureJobApplicationController::class, 'show'])
-    ->name('secure.job-application.show');
-Route::post('/secure/job-application/verify-staff', [App\Http\Controllers\SecureJobApplicationController::class, 'verifyStaff'])
+Route::get('/secure/job-application/{token}', [App\Http\Controllers\SecureJobApplicationController::class, 'show'])
+    ->name('secure.job-application');
+Route::post('/secure/job-application/{token}/verify-staff', [App\Http\Controllers\SecureJobApplicationController::class, 'verifyStaff'])
     ->name('secure.job-application.verify-staff');
+Route::get('/secure/job-application/{token}/download-resume', [App\Http\Controllers\SecureJobApplicationController::class, 'downloadResume'])
+    ->name('secure.job-application.download-resume');
     
 // Secure Tour Request Routes
 Route::get('/secure/tour-request/{token}', [App\Http\Controllers\SecureTourRequestController::class, 'view'])
@@ -262,10 +264,6 @@ Route::post('/secure/tour-request/{token}/verify-staff', [App\Http\Controllers\S
     ->name('secure.verify-staff');
 Route::post('/secure/tour-request/{token}/log-access', [App\Http\Controllers\SecureTourRequestController::class, 'logAccess'])
     ->name('secure.tour-request.log-access');
-    
-// Secure Job Application Routes
-Route::get('/secure/job-application/{token}', [App\Http\Controllers\SecureJobApplicationController::class, 'show'])
-    ->name('secure.job-application');
     
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/secure-inquiries', [App\Http\Controllers\SecureInquiryController::class, 'adminIndex'])

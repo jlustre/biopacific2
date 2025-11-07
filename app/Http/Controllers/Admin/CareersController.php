@@ -23,6 +23,7 @@ class CareersController extends Controller
                 'id' => $job->id,
                 'title' => $job->title,
                 'description' => $job->description,
+                'detailed_description' => $job->detailed_description,
                 'department' => $job->department,
                 'employment_type' => $job->employment_type,
                 'posted_at' => $job->posted_at ? Carbon::parse($job->posted_at)->format('Y-m-d') : null,
@@ -40,6 +41,7 @@ class CareersController extends Controller
             'facility_id' => 'required|exists:facilities,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'detailed_description' => 'nullable|string',
             'department' => 'nullable|string|max:255',
             'employment_type' => 'nullable|string|max:255',
             'posted_at' => 'nullable|date',
@@ -55,6 +57,7 @@ class CareersController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'detailed_description' => 'nullable|string',
             'department' => 'nullable|string|max:255',
             'employment_type' => 'nullable|string|max:255',
             'posted_at' => 'nullable|date',

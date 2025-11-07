@@ -17,9 +17,11 @@ $error = $errors->any();
     openApply: false, 
     applyRole: '', 
     toastOpen: false, 
-    toastMsg: '' 
+    toastMsg: '',
+    infoModalOpen: false,
+    infoModalJobId: null
   }" x-init="applyRole = '{{ old('job_opening_id') ?? '' }}'" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50"
-  style="background: linear-gradient(to bottom right, #f8fafc, {{ $primary }});">
+  style="background: linear-gradient(to bottom right, #f8fafc, {{ $primary }});">\
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
     @include('partials.section_header', [
@@ -122,48 +124,17 @@ $error = $errors->any();
               </svg>
               Apply Now
             </button>
-          </div>
-
-          <!-- Info Modal -->
-          <div x-data="{ infoModalOpen: false, infoModalJobId: null }">
-            <template x-if="infoModalOpen && infoModalJobId === {{ $job->id }}">
-              <div x-cloak x-show="infoModalOpen" x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
-                x-transition:leave-end="opacity-0" style="display: none;"
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div @click.away="infoModalOpen=false" x-transition:enter="transition ease-out duration-300"
-                  x-transition:enter-start="opacity-0 transform scale-95"
-                  x-transition:enter-end="opacity-100 transform scale-100"
-                  x-transition:leave="transition ease-in duration-200"
-                  x-transition:leave-start="opacity-100 transform scale-100"
-                  x-transition:leave-end="opacity-0 transform scale-95"
-                  class="bg-white rounded-2xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-                  <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-2xl font-bold text-secondary">Job Details</h3>
-                    <button @click="infoModalOpen=false" class="text-slate-400 hover:text-slate-600 transition-colors">
-                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <h4 class="text-xl font-semibold mb-2">{{ $job->title }}</h4>
-                  <div class="text-sm text-slate-500 mb-2">{{ $job->employment_type }} • {{ $facility['location'] ?? ''
-                    }}
-                  </div>
-                  <div class="mb-4 text-slate-700">{!! $job->description !!}</div>
-                  <div class="mb-2"><strong>Department:</strong> {{ $job->department }}</div>
-                  <div class="mb-2"><strong>Posted:</strong> {{ $job->posted_at }}</div>
-                  <div class="mb-2"><strong>Expires:</strong> {{ $job->expires_at }}</div>
-                  <div class="mb-2"><strong>Status:</strong> {{ $job->active ? 'Active' : 'Inactive' }}</div>
-                  <div class="flex justify-end mt-6">
-                    <button @click="infoModalOpen=false"
-                      class="px-6 py-2 rounded-lg border text-primary border-primary bg-slate-50 hover:bg-primary hover:text-white transition">Close</button>
-                  </div>
-                </div>
-              </div>
-            </template>
+            <button @click="infoModalOpen=true; infoModalJobId={{ $job->id }}"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
+              style="border-color: {{ $primary }}; color: {{ $primary }};"
+              onmouseover="this.style.backgroundColor='{{ $primary }}'; this.style.color='white';"
+              onmouseout="this.style.backgroundColor='transparent'; this.style.color='{{ $primary }}';">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              View Details
+            </button>
           </div>
         </div>
       </div>
@@ -176,6 +147,78 @@ $error = $errors->any();
         <p>Please check back later or contact us for more information.</p>
       </div>
       @endforelse
+    </div>
+
+    <!-- Job Details Info Modal -->
+    <div x-cloak x-show="infoModalOpen" x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+      x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0" style="display: none;"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div @click.away="infoModalOpen=false" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform scale-100"
+        x-transition:leave-end="opacity-0 transform scale-95"
+        class="bg-white rounded-2xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+
+        <template x-for="job in @js($jobOpenings)" :key="job.id">
+          <div x-show="infoModalJobId === job.id">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-2xl font-bold text-secondary">Job Details</h3>
+              <button @click="infoModalOpen=false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <h4 class="text-xl font-semibold mb-2" x-text="job.title"></h4>
+            <div class="text-sm text-slate-500 mb-4">
+              <span x-text="job.employment_type"></span> • {{ $facility['location'] ?? '' }}
+            </div>
+
+            <div class="mb-6">
+              <h5 class="font-semibold mb-2 text-secondary">Job Description</h5>
+              <div class="text-slate-700 mb-4" x-html="job.description"></div>
+            </div>
+
+            <div class="mb-6">
+              <h5 class="font-semibold mb-2 text-secondary">Detailed Description</h5>
+              <div x-show="job.detailed_description && job.detailed_description.trim() !== ''"
+                class="text-slate-700 prose prose-sm max-w-none" x-html="job.detailed_description"></div>
+              <div x-show="!job.detailed_description || job.detailed_description.trim() === ''"
+                class="text-slate-500 italic">No detailed description available.</div>
+              <!-- Debug info - remove this later -->
+              <div class="mt-2 p-2 bg-gray-100 rounded text-xs">
+                <strong>Debug:</strong>
+                <span x-text="'Has detailed_description: ' + (job.detailed_description ? 'Yes' : 'No')"></span><br>
+                <span x-text="'Length: ' + (job.detailed_description ? job.detailed_description.length : 0)"></span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+              <div><strong>Department:</strong> <span x-text="job.department"></span></div>
+              <div><strong>Employment Type:</strong> <span x-text="job.employment_type"></span></div>
+              <div><strong>Posted:</strong> <span x-text="new Date(job.posted_at).toLocaleDateString()"></span></div>
+              <div x-show="job.expires_at"><strong>Expires:</strong> <span
+                  x-text="new Date(job.expires_at).toLocaleDateString()"></span></div>
+            </div>
+
+            <div class="flex justify-between items-center mt-6 gap-3">
+              <button @click="infoModalOpen=false"
+                class="px-6 py-2 rounded-lg border text-slate-600 border-slate-300 bg-slate-50 hover:bg-slate-100 transition">
+                Close
+              </button>
+              <button @click="infoModalOpen=false; openApply=true; applyRole=job.id; applyRoleTitle=job.title"
+                class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200"
+                style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
+                onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
+                onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'">
+                Apply Now
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Application Modal -->

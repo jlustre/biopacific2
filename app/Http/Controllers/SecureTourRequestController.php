@@ -75,7 +75,8 @@ class SecureTourRequestController extends Controller
                     'tourRequest' => $tourRequest,
                     'token' => $token,
                     'facility' => $tourRequest->facility,
-                    'expires_at' => $tourRequest->expires_at->format('M j, Y \a\t g:i A')
+                    'expires_at' => $tourRequest->expires_at->format('M j, Y \a\t g:i A'),
+                    'type' => 'tour-request'
                 ]);
             }
 

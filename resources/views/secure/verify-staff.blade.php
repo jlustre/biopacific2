@@ -39,7 +39,14 @@
             </div>
 
             <!-- Verification Form -->
-            <form action="{{ route('secure.verify-staff', $token) }}" method="POST" class="space-y-6">
+            @php
+            $formAction = match($type ?? '') {
+            'job-application' => route('secure.job-application.verify-staff', $token),
+            'inquiry' => route('secure.inquiry.verify-staff', $token),
+            default => route('secure.verify-staff', $token)
+            };
+            @endphp
+            <form action="{{ $formAction }}" method="POST" class="space-y-6">
                 @csrf
 
                 <div>
@@ -64,15 +71,34 @@
                     <select id="access_reason" name="access_reason" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                         <option value="">Select reason for access</option>
-                        <option value="follow_up">Follow up on inquiry</option>
-                        <option value="scheduling">Scheduling tour/appointment</option>
+                        @if(($type ?? '') === 'job-application' || ($jobApplication ?? false))
+                        <option value="review">Review application</option>
+                        <option value="hiring_decision">Hiring decision</option>
+                        <option value="background_check">Background check</option>
+                        <option value="scheduling">Scheduling interview</option>
                         <option value="processing">Processing application</option>
+                        @elseif(($type ?? '') === 'tour-request' || ($tourRequest ?? false))
+                        <option value="follow_up">Follow up on request</option>
+                        <option value="scheduling">Scheduling tour</option>
+                        <option value="processing">Processing request</option>
                         <option value="record_keeping">Record keeping/documentation</option>
                         <option value="compliance_review">Compliance review</option>
+                        @elseif(($type ?? '') === 'inquiry' || ($inquiry ?? false))
+                        <option value="follow_up">Follow up on inquiry</option>
+                        <option value="processing">Processing inquiry</option>
+                        <option value="record_keeping">Record keeping/documentation</option>
+                        <option value="compliance_review">Compliance review</option>
+                        <option value="response_preparation">Response preparation</option>
+                        @else
+                        <!-- Fallback options -->
+                        <option value="follow_up">Follow up</option>
+                        <option value="processing">Processing</option>
+                        <option value="record_keeping">Record keeping</option>
+                        @endif
                     </select>
                     @error('access_reason')
                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror>
+                    @enderror
                 </div>
 
                 <div class="bg-gray-50 rounded-lg p-4">

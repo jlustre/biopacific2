@@ -1,4 +1,6 @@
-@extends('layouts.dashboard')
+@extends('layouts.secure')
+
+@section('title', 'Secure Inquiry Details')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
