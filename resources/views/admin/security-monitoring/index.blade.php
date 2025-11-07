@@ -19,6 +19,10 @@
                     class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
                     📋 Security Incidents
                 </a>
+                <a href="{{ route('admin.security.cleanup') }}"
+                    class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                    🧹 Cleanup Logs
+                </a>
                 <a href="{{ route('admin.security.export') }}?start_date={{ $startDate }}&end_date={{ $endDate }}"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                     📊 Export Report

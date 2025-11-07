@@ -181,6 +181,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::get('/record-logs/{tokenType}/{recordId}', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'recordLogs'])->name('record-logs');
         Route::get('/incidents', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'incidents'])->name('incidents');
         Route::get('/export', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'exportReport'])->name('export');
+        Route::get('/cleanup', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'cleanup'])->name('cleanup');
+        Route::post('/cleanup', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'performCleanup'])->name('cleanup.perform');
         
         // AJAX endpoints for incident management
         Route::post('/anomalies/{id}/investigated', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'markAsInvestigated'])->name('anomalies.investigated');

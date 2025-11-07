@@ -7,6 +7,8 @@ use App\Models\SecureAccessLog;
 use App\Models\Facility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class SecurityMonitoringController extends Controller
@@ -396,5 +398,108 @@ class SecurityMonitoringController extends Controller
             'access_span_hours' => $logs->count() > 1 ? 
                 Carbon::parse($logs->max('access_time'))->diffInHours(Carbon::parse($logs->min('access_time'))) : 0
         ];
+    }
+
+    /**
+     * Show cleanup options page
+     */
+    public function cleanup()
+    {
+        // Get statistics for cleanup preview
+        $stats = [
+            'total_logs' => SecureAccessLog::count(),
+            'by_type' => SecureAccessLog::select('token_type', DB::raw('count(*) as count'))
+                ->groupBy('token_type')
+                ->get()
+                ->pluck('count', 'token_type'),
+            'by_status' => SecureAccessLog::select('access_status', DB::raw('count(*) as count'))
+                ->groupBy('access_status')
+                ->get()
+                ->pluck('count', 'access_status'),
+            'by_facility' => SecureAccessLog::select('facility_id', DB::raw('count(*) as count'))
+                ->groupBy('facility_id')
+                ->with('facility:id,name')
+                ->get(),
+            'oldest_log' => SecureAccessLog::oldest('access_time')->first()?->access_time,
+            'newest_log' => SecureAccessLog::latest('access_time')->first()?->access_time,
+        ];
+
+        $facilities = Facility::orderBy('name')->get();
+
+        return view('admin.security-monitoring.cleanup', compact('stats', 'facilities'));
+    }
+
+    /**
+     * Perform cleanup of access logs
+     */
+    public function performCleanup(Request $request)
+    {
+        $request->validate([
+            'cleanup_type' => 'required|string|in:all,by_type,by_status,by_facility,by_date,failed_only',
+            'token_type' => 'nullable|string|in:inquiry,job_application,tour_request',
+            'access_status' => 'nullable|string',
+            'facility_id' => 'nullable|exists:facilities,id',
+            'date_before' => 'nullable|date',
+            'confirm_cleanup' => 'required|accepted'
+        ]);
+
+        $deletedCount = 0;
+        $query = SecureAccessLog::query();
+
+        switch ($request->cleanup_type) {
+            case 'all':
+                $deletedCount = $query->count();
+                $query->delete();
+                break;
+
+            case 'by_type':
+                if ($request->token_type) {
+                    $query->where('token_type', $request->token_type);
+                    $deletedCount = $query->count();
+                    $query->delete();
+                }
+                break;
+
+            case 'by_status':
+                if ($request->access_status) {
+                    $query->where('access_status', $request->access_status);
+                    $deletedCount = $query->count();
+                    $query->delete();
+                }
+                break;
+
+            case 'by_facility':
+                if ($request->facility_id) {
+                    $query->where('facility_id', $request->facility_id);
+                    $deletedCount = $query->count();
+                    $query->delete();
+                }
+                break;
+
+            case 'by_date':
+                if ($request->date_before) {
+                    $query->where('access_time', '<', Carbon::parse($request->date_before)->endOfDay());
+                    $deletedCount = $query->count();
+                    $query->delete();
+                }
+                break;
+
+            case 'failed_only':
+                $query->whereIn('access_status', ['unauthorized', 'invalid_token', 'expired', 'unauthorized_email', 'staff_verification_failed']);
+                $deletedCount = $query->count();
+                $query->delete();
+                break;
+        }
+
+        // Log the cleanup action
+        Log::info('Security monitoring cleanup performed', [
+            'admin_user' => Auth::user()->email,
+            'cleanup_type' => $request->cleanup_type,
+            'deleted_count' => $deletedCount,
+            'criteria' => $request->only(['token_type', 'access_status', 'facility_id', 'date_before'])
+        ]);
+
+        return redirect()->route('admin.security.cleanup')
+            ->with('success', "Successfully cleaned up {$deletedCount} access log records.");
     }
 }
