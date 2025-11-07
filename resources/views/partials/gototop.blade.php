@@ -1,7 +1,23 @@
-<button x-show="showGoToTop" x-transition.opacity @click="scrollToTop"
-  class="fixed bottom-5 right-8 md:right-8 lg:right-8 z-40 w-8 h-8 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
-  aria-label="Go to top">
-  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-  </svg>
-</button>
+<div x-data="{ 
+    showGoToTop: false,
+    init() {
+        // Show/hide go to top button based on scroll position
+        window.addEventListener('scroll', () => {
+            this.showGoToTop = window.scrollY > 400;
+        });
+    },
+    scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+}">
+  <button x-show="showGoToTop" x-transition.opacity @click="scrollToTop"
+    class="fixed bottom-5 right-8 md:right-8 lg:right-8 z-40 w-8 h-8 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+    aria-label="Go to top">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+    </svg>
+  </button>
+</div>

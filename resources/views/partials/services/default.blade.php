@@ -34,7 +34,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
           <img
             src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1000&q=80' }}"
             alt="{{ $service->name }} at {{ $facility['name'] ?? 'our facility' }}"
-            class="h-44 w-full object-cover object-top sm:object-center md:object-[50%_20%] transition-transform duration-700 group-hover:scale-105"
+            class="h-56 sm:h-48 md:h-44 w-full object-cover object-top sm:object-center md:object-[50%_20%] transition-transform duration-700 group-hover:scale-105"
             loading="lazy" decoding="async">
           {{-- Brand accent bar --}}
           <div class="absolute bottom-0 left-0 right-0 h-1.5" style="background: {{ $primary }}"></div>

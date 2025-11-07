@@ -1,12 +1,5 @@
 {{-- Livewire Contact Form Component --}}
-<div id="contact-form" x-data="{ 
-        scrollToTop() {
-            document.getElementById('contact-form').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }
-    }" @scroll-to-top.window="scrollToTop()" class="rounded-3xl border bg-white p-6 sm:p-8 shadow-xl h-full">
+<div id="contact-form" class="rounded-3xl border bg-white p-6 sm:p-8 shadow-xl h-full">
     <div class="flex items-center mb-6">
         <div class="mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full"
             style="background: {{ $primary }}1A; color: {{ $primary }}">
@@ -26,19 +19,50 @@
         privately.
     </div>
 
+    {{-- Debug info for testing --}}
+    @if(config('app.debug'))
+    <div class="mb-4 p-2 bg-gray-100 text-xs text-gray-600 rounded">
+        Debug: isSubmitting={{ $isSubmitting ? 'true' : 'false' }},
+        errorMessage={{ $errorMessage ? 'set' : 'empty' }},
+        errors={{ $errors->count() }}
+    </div>
+    @endif
 
     {{-- Success Message --}}
     @if($successMessage)
-    <x-success-message>
-        {{ $successMessage }}
-    </x-success-message>
+    <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd"></path>
+            </svg>
+            {{ $successMessage }}
+        </div>
+    </div>
     @endif
 
-    {{-- Error Message --}}
-    @if($errorMessage)
-    <x-error-message>
-        {{ $errorMessage }}
-    </x-error-message>
+    {{-- Error Message Summary --}}
+    @if($errorMessage || $errors->any())
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 mr-2 mt-0.5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"></path>
+            </svg>
+            <div class="text-sm">
+                <strong>Please fix the following issues:</strong>
+                <ul class="mt-2 space-y-1">
+                    @if($errors->any())
+                    @foreach($errors->all() as $error)
+                    <li>• {{ $error }}</li>
+                    @endforeach
+                    @endif
+                </ul>
+            </div>
+        </div>
+    </div>
     @endif
     <form class="space-y-6" wire:submit.prevent="submit" novalidate>
         <div>
@@ -121,9 +145,25 @@
 
             <x-primary-button type="submit" :loading="$isSubmitting" loading-text="Sending..." icon="fas fa-paper-plane"
                 :primary="$primary" :secondary="$secondary" :accent="$accent" :neutral_dark="$neutral_dark"
-                :neutral_light="$neutral_light" wire:loading.attr="disabled">
+                :neutral_light="$neutral_light" wire:loading.attr="disabled" wire:target="submit">
                 Send Message
             </x-primary-button>
         </div>
+
+        {{-- Redundant mobile error display removed --}}
     </form>
 </div>
+
+<script>
+    document.addEventListener('livewire:init', () => {
+    Livewire.on('scroll-to-form', () => {
+        const form = document.getElementById('contact-form');
+        if (form) {
+            form.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    });
+});
+</script>

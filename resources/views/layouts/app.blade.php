@@ -1,137 +1,126 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.base')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+@push('head')
+{{-- Admin layout specific head content --}}
+@push('alpine-plugins')
+{{-- Alpine.js Collapse plugin for admin layout --}}
+<script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+@endpush
 
-    <!-- Alpine.js and Collapse plugin for x-collapse support (moved to end of body) -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @livewireScripts
+@section('body')
+<style>
+    /* ...existing styles... */
 
-    <!-- Alpine.js and Collapse plugin for x-collapse support (now loaded at end of body) -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-    <script>
-        // Alpine.js debug: log when Alpine initializes
-        document.addEventListener('alpine:init', () => {
-            console.log('Alpine initialized');
-        });
-    </script>
-    <style>
-        /* ...existing styles... */
+    align-items: center;
+    padding: 12px 16px;
+    }
 
-        align-items: center;
-        padding: 12px 16px;
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+        transform: translateX(5px);
+    }
+
+    .nav-link.active {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar-footer {
+        background: rgba(0, 0, 0, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .content-wrapper {
+        margin-left: 280px;
+        margin-top: 56px;
+        transition: margin-left 0.3s ease;
+        min-height: calc(100vh - 56px);
+    }
+
+    .content-wrapper.expanded {
+        margin-left: 0;
+    }
+
+    .main-content {
+        background: #f8f9fa;
+        min-height: calc(100vh - 56px);
+    }
+
+    .navbar {
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1020;
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            margin-left: -280px;
         }
 
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
-            color: white !important;
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.3) !important;
-            color: white !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .sidebar-footer {
-            background: rgba(0, 0, 0, 0.1);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-
-        .content-wrapper {
-            margin-left: 280px;
-            margin-top: 56px;
-            transition: margin-left 0.3s ease;
-            min-height: calc(100vh - 56px);
-        }
-
-        .content-wrapper.expanded {
+        .sidebar.show {
             margin-left: 0;
         }
 
-        .main-content {
-            background: #f8f9fa;
-            min-height: calc(100vh - 56px);
+        .content-wrapper {
+            margin-left: 0 !important;
         }
 
-        .navbar {
-            z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .sidebar-overlay.show {
+            display: block;
         }
+    }
 
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1020;
-        }
+    /* Additional improvements */
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+    }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                margin-left: -280px;
-            }
+    .dropdown-item {
+        transition: all 0.3s ease;
+    }
 
-            .sidebar.show {
-                margin-left: 0;
-            }
+    .dropdown-item:hover {
+        background: #f8f9fa;
+        transform: translateX(5px);
+    }
 
-            .content-wrapper {
-                margin-left: 0 !important;
-            }
+    /* Multi-level dropdown support */
+    .dropdown-submenu {
+        position: relative;
+    }
 
-            .sidebar-overlay.show {
-                display: block;
-            }
-        }
+    .dropdown-submenu>.dropdown-menu {
+        top: 0;
+        left: 100%;
+        margin-top: -6px;
+        margin-left: 0.1rem;
+        border-radius: 8px;
+    }
 
-        /* Additional improvements */
-        .dropdown-menu {
-            border: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
-        }
-
-        .dropdown-item {
-            transition: all 0.3s ease;
-        }
-
-        .dropdown-item:hover {
-            background: #f8f9fa;
-            transform: translateX(5px);
-        }
-
-        /* Multi-level dropdown support */
-        .dropdown-submenu {
-            position: relative;
-        }
-
-        .dropdown-submenu>.dropdown-menu {
-            top: 0;
-            left: 100%;
-            margin-top: -6px;
-            margin-left: 0.1rem;
-            border-radius: 8px;
-        }
-
-        .dropdown-submenu>.dropdown-item:after {
-            content: "\f105";
-            font-family: 'FontAwesome';
-            float: right;
-        }
-    </style>
+    .dropdown-submenu>.dropdown-item:after {
+        content: "\f105";
+        font-family: 'FontAwesome';
+        float: right;
+    }
+</style>
 </head>
 
 <body>
@@ -288,17 +277,6 @@
         });
 
     // Alpine.js debug: log when Alpine initializes
-    document.addEventListener('alpine:init', () => {
-        console.log('Alpine initialized');
-    });
+@endsection
 
-    document.addEventListener('alpine:init', () => {
-        Alpine.plugin(collapse);
-    });
-    </script>
-
-</body>
-
-<!-- DEBUG: This is layouts/app.blade.php -->
-
-</html>
+{{-- DEBUG: This is layouts/app.blade.php --}}

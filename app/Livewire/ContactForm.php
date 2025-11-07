@@ -97,12 +97,55 @@ class ContactForm extends Component
                 'facility_id' => $this->facility_id
             ]);
             
+            // Manual validation with custom error messages
+            $hasErrors = false;
+            
+            if (empty(trim($this->full_name))) {
+                $this->addError('full_name', 'Please enter your full name.');
+                $hasErrors = true;
+            }
+            if (empty(trim($this->email))) {
+                $this->addError('email', 'Please enter your email address.');
+                $hasErrors = true;
+            } elseif (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+                $this->addError('email', 'Please enter a valid email address.');
+                $hasErrors = true;
+            }
+            if (empty(trim($this->phone))) {
+                $this->addError('phone', 'Please enter your phone number.');
+                $hasErrors = true;
+            }
+            if (empty(trim($this->message))) {
+                $this->addError('message', 'Please enter your message.');
+                $hasErrors = true;
+            }
+            if (!$this->consent) {
+                $this->addError('consent', 'You must consent to be contacted.');
+                $hasErrors = true;
+            }
+            if (!$this->no_phi) {
+                $this->addError('no_phi', 'You must confirm no PHI is included.');
+                $hasErrors = true;
+            }
+            
+            // If there are validation errors, show them and stop
+            if ($hasErrors) {
+                // Don't set errorMessage - let the individual field errors show
+                Log::info('ContactForm validation failed', [
+                    'errors' => $this->getErrorBag()->toArray()
+                ]);
+                $this->dispatch('scroll-to-form');
+                $this->isSubmitting = false;
+                return;
+            }
+            
+            // Now validate with Livewire rules for additional checks
             $validatedData = $this->validate();
 
             // Check honeypot field
             if (!empty($validatedData['website'])) {
                 $this->errorMessage = 'Form submission failed.';
-                $this->dispatch('scrollToTop');
+                $this->dispatch('scroll-to-form');
                 $this->isSubmitting = false;
                 return;
             }
@@ -163,18 +206,23 @@ class ContactForm extends Component
             $this->successMessage = 'Thank you for your message! We\'ll get back to you promptly.';
             
             // Scroll to top to show success message
-            $this->dispatch('scrollToTop');
+            $this->dispatch('scroll-to-form');
             
             // Reset form fields
             $this->reset(['full_name', 'phone', 'email', 'message', 'consent', 'no_phi', 'website']);
             
         } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->errorMessage = 'Please fix the validation errors below.';
+            // Don't override our manual validation errors
+            if (!$this->errorMessage) {
+                $this->errorMessage = 'Please fix the validation errors below.';
+            }
             foreach ($e->errors() as $field => $messages) {
-                $this->addError($field, $messages[0]);
+                if (!$this->getErrorBag()->has($field)) {
+                    $this->addError($field, $messages[0]);
+                }
             }
             // Scroll to top to show validation errors
-            $this->dispatch('scrollToTop');
+            $this->dispatch('scroll-to-form');
         } catch (\Exception $e) {
             Log::error('Contact form submission failed via Livewire', [
                 'error' => $e->getMessage(),
@@ -183,7 +231,7 @@ class ContactForm extends Component
             
             $this->errorMessage = 'There was an issue submitting your message. Please try again or contact us directly.';
             // Scroll to top to show error message
-            $this->dispatch('scrollToTop');
+            $this->dispatch('scroll-to-form');
         }
         
         $this->isSubmitting = false;

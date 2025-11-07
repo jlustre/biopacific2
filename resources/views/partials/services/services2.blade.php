@@ -142,9 +142,10 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 
                 <div class="mt-6 grid gap-6 lg:grid-cols-3">
                     <div class="lg:col-span-1">
-                        <div class="h-40 rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-50">
+                        <div
+                            class="h-64 md:w-full md:h-auto  rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-50">
                             <img src="{{ $service->image ? asset($service->image) : '' }}" alt="{{ $service->name }}"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover object-top md:object-center">
                         </div>
                     </div>
                     <div class="lg:col-span-2">

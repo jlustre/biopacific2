@@ -1,20 +1,17 @@
-<!doctype html>
-<html lang="en" x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}"
+@extends('layouts.base')
+
+@section('title', ($facility['subdomain'] ?? '') ?: 'Quality Care For Your Loved Ones')
+
+@push('head')
+<meta name="description" content="{{ $facility['meta_description'] ?? '' }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+@endpush
+
+@section('body')
+<div x-data="siteUI()" :class="{'high-contrast': highContrast, 'text-lg': largeText, 'dark': darkMode}"
   class="scroll-smooth">
-
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ ($facility['subdomain'] ?? '') ?: 'Quality Care For Your Loved Ones' }}</title>
-  <meta name="description" content="{{ $facility['meta_description'] ?? '' }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
-  @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-  <!-- Load Alpine.js for non-Livewire pages -->
-  @if(!str_contains(request()->route()->getName() ?? '', 'livewire') && !request()->routeIs('*.hipaa.*'))
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  @endif
   <style>
     :root {
       --color-primary: {
@@ -47,33 +44,33 @@
       background-image: none !important;
     }
   </style>
-</head>
+  </head>
 
-<body
-  class="bg-white px-2 md:px-5 lg:mr-0 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
-  <!-- Header -->
-  @include('partials.header')
+  <body
+    class="bg-white px-2 md:px-5 lg:mr-0 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors">
+    <!-- Header -->
+    @include('partials.header')
 
-  <!-- Accessibility / Language Toolbar -->
-  {{-- @include('partials.accessibility') --}}
-  <!-- Main Content -->
-  <main id="top" class="px-4 lg:px-0">
-    @yield('content')
-  </main>
+    <!-- Accessibility / Language Toolbar -->
+    {{-- @include('partials.accessibility') --}}
+    <!-- Main Content -->
+    <main id="top" class="px-4 lg:px-0">
+      @yield('content')
+    </main>
 
-  <!-- Footer -->
-  @include('partials.footer.default', ['facility' => $facility ?? []])
+    <!-- Footer -->
+    @include('partials.footer.default', ['facility' => $facility ?? []])
 
-  <!-- Toast -->
-  @include('partials.toast')
+    <!-- Toast -->
+    @include('partials.toast')
 
-  <!-- Go to Top Button -->
-  @include('partials.gototop')
+    <!-- Go to Top Button -->
+    @include('partials.gototop')
 
-  @include('partials.screen-size-indicator')
+    @include('partials.screen-size-indicator')
 
-  <script>
-    function siteUI(){
+    <script>
+      function siteUI(){
       return {
         mobileOpen:false,
         openRates:false,
@@ -83,8 +80,6 @@
         highContrast: JSON.parse(localStorage.getItem('highContrast') || 'false'),
         darkMode: JSON.parse(localStorage.getItem('darkMode') || 'false'),
         lang: localStorage.getItem('lang') || 'en',
-        toastOpen:false, toastMsg:'',
-        showGoToTop: false,
         nav: [
           {label:'About', href:'#about'},
           {label:'Services', href:'#services'},
@@ -98,29 +93,25 @@
           {label:'Resources', href:'#resources'},
         ],
         init() {
-          // Show/hide go to top button based on scroll position
-          window.addEventListener('scroll', () => {
-            this.showGoToTop = window.scrollY > 400;
-          });
+          // siteUI initialization - go to top functionality moved to gototop.blade.php
         },
         toggleLargeText(){ this.largeText=!this.largeText; localStorage.setItem('largeText', this.largeText) },
         toggleHighContrast(){ this.highContrast=!this.highContrast; localStorage.setItem('highContrast', this.highContrast) },
         toggleDarkMode(){ this.darkMode=!this.darkMode; localStorage.setItem('darkMode', this.darkMode) },
         setLang(v){ this.lang=v; localStorage.setItem('lang', v) },
-        toast(msg){ this.toastMsg=msg; this.toastOpen=true; setTimeout(()=>this.toastOpen=false, 1800) },
-        scrollToTop() {
-          window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-          });
+        toast(msg){ 
+            // Dispatch event to the toast component
+            window.dispatchEvent(new CustomEvent('show-toast', { 
+                detail: { message: msg } 
+            }));
         }
       }
     }
 
-  </script>
+    </script>
 
-  <script>
-    document.addEventListener("livewire:navigated", () => {
+    <script>
+      document.addEventListener("livewire:navigated", () => {
     if (window.Alpine && Alpine.initTree) {
       Alpine.initTree(document.body);
     }
@@ -130,8 +121,6 @@
       Alpine.initTree(document.body);
     }
   });
-  </script>
-
-</body>
-
-</html>
+    </script>
+</div>
+@endsection

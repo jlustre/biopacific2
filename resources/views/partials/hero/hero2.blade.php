@@ -17,11 +17,11 @@ $hasVideo = !empty($facility['hero_video_id']);
 
     {{-- Left: Curved masked image --}}
     <div class="lg:col-span-7 relative">
-      <div class="relative h-[46vh] md:h-[60vh] lg:h-[72vh] overflow-hidden">
-        {{-- Curved mask via clip-path --}}
-        <div class="absolute inset-0 [clip-path:ellipse(120%_85%_at_0%_50%)]">
+      <div class="relative h-[55vh] md:h-[60vh] lg:h-[72vh] overflow-hidden rounded-2xl md:rounded-none">
+        {{-- Mobile: Simple container, Desktop: Curved mask via clip-path --}}
+        <div class="h-full w-full md:absolute md:inset-0 md:[clip-path:ellipse(120%_85%_at_0%_50%)]">
           <img src="{{ $poster }}" alt="Residents and caregivers at {{ $facility['name'] ?? 'our facility' }}"
-            class="h-full w-full object-cover object-center">
+            class="h-full w-full object-cover object-top sm:object-center">
           {{-- Gentle readable gradient on the right edge to meet content column --}}
           <div class="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent"></div>
         </div>
