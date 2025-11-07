@@ -574,7 +574,7 @@ class FacilitySeeder extends Seeder
                 'dsd' => $i['dsd'] ?? null,
                 'staffer' => $i['staffer'] ?? null,
                 'region' => $i['region'] ?? null,
-                'hipaa_flags' => ['npp_page' => true],
+                'hipaa_flags' => ['npp_page' => true, 'tls_hsts' => true],
             ]);
 
             foreach (['Compassion', 'Integrity', 'Respect', 'Excellence'] as $v) {

@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center h-16">
             <div class="flex items-center space-x-2">
                 <a href="{{ route('dashboard.index') }}" class="flex items-center">
-                    <img src="{{ asset('images/bplogo.png') }}" alt="Logo" class="h-12 w-auto" />
+                    <img src="@secureAsset('images/bplogo.png')" alt="Logo" class="h-12 w-auto" />
                     <div class="flex flex-col items-start leading-tight -mt-1">
                         <span class="text-xl font-bold text-teal-800">Bio-Pacific</span>
                         <span class="text-sm text-gray-700 -mt-2">Dashboard</span>

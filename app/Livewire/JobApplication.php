@@ -8,7 +8,7 @@ use Livewire\Attributes\On;
 use App\Models\JobApplication as JobApplicationModel;
 use App\Models\JobOpening;
 use App\Models\Facility;
-use App\Mail\JobApplicationMail;
+use App\Mail\SecureJobApplicationMail;
 use App\Helpers\FacilityDataHelper;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
@@ -160,52 +160,44 @@ class JobApplication extends Component
                 'resume_path' => $resumePath,
                 'status' => 'pending',
             ]);
+
+            // Generate secure access token
+            $application->generateSecureAccessToken();
             
             // Get all recipients for hiring category
             $allRecipients = FacilityDataHelper::getAllRecipientsForCategory($this->facility->id, 'hiring');
-            
-            // Prepare email data
-            $emailData = [
-                'facility' => $this->facility->toArray(),
-                'job_opening_id' => $this->jobOpening->id,
-                'job_title' => $this->jobOpening->title,
-                'first_name' => $this->first_name,
-                'last_name' => $this->last_name,
-                'email' => $this->email,
-                'phone' => $this->phone,
-                'cover_letter' => $this->cover_letter ?? null,
-                'resume_path' => $resumePath,
-            ];
-            
-            // Send notification emails
+
+            // Send secure notification emails
             try {
                 $emailsSent = 0;
                 $employeeEmails = $allRecipients['employee_emails'] ?? [];
                 
                 if (!empty($employeeEmails)) {
                     foreach ($employeeEmails as $employeeEmail) {
-                        Mail::to($employeeEmail)->send(new JobApplicationMail($emailData));
+                        Mail::to($employeeEmail)->send(new SecureJobApplicationMail($application, $this->facility));
                         $emailsSent++;
                     }
                 } else {
                     // Fallback to public emails if no employee emails configured
                     $publicEmails = $allRecipients['public_emails'] ?? [];
                     if (!empty($publicEmails)) {
-                        Mail::to($publicEmails[0])->send(new JobApplicationMail($emailData));
+                        Mail::to($publicEmails[0])->send(new SecureJobApplicationMail($application, $this->facility));
                         $emailsSent++;
                     }
                 }
                 
-                Log::info('Job application submitted via Livewire', [
+                Log::info('Secure job application submitted via Livewire', [
                     'application_id' => $application->id,
                     'job_opening' => $this->jobOpening->title,
                     'facility' => $this->facility->name,
                     'emails_sent' => $emailsSent,
-                    'recipients' => $employeeEmails
+                    'recipients' => $employeeEmails,
+                    'secure_token_generated' => true,
+                    'expires_at' => $application->expires_at
                 ]);
                 
             } catch (\Exception $e) {
-                Log::error('Failed to send job application email', [
+                Log::error('Failed to send secure job application email', [
                     'error' => $e->getMessage(),
                     'application_id' => $application->id
                 ]);

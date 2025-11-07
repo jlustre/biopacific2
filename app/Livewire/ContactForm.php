@@ -171,21 +171,9 @@ class ContactForm extends Component
                 $emailAddresses = $recipientData['employee_emails'] ?? [];
                 
                 if (!empty($emailAddresses)) {
-                    // Prepare data for the existing ContactMail format
-                    $emailData = [
-                        'full_name' => $this->full_name,
-                        'email' => $this->email,
-                        'phone' => $this->phone ?? '',
-                        'message' => $this->message,
-                        'facility' => [
-                            'name' => $this->facility['name'],
-                            'slug' => $this->facility['slug']
-                        ]
-                    ];
-                    
-                    // Send email to each recipient
+                    // Send secure notification emails (HIPAA compliant - no PHI in email)
                     foreach ($emailAddresses as $emailAddress) {
-                        Mail::to($emailAddress)->send(new ContactMail($emailData));
+                        Mail::to($emailAddress)->send(new \App\Mail\SecureContactMail($inquiry));
                     }
                     
                     Log::info('Contact form inquiry sent via Livewire', [

@@ -19,15 +19,6 @@
         privately.
     </div>
 
-    {{-- Debug info for testing --}}
-    @if(config('app.debug'))
-    <div class="mb-4 p-2 bg-gray-100 text-xs text-gray-600 rounded">
-        Debug: isSubmitting={{ $isSubmitting ? 'true' : 'false' }},
-        errorMessage={{ $errorMessage ? 'set' : 'empty' }},
-        errors={{ $errors->count() }}
-    </div>
-    @endif
-
     {{-- Success Message --}}
     @if($successMessage)
     <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg">

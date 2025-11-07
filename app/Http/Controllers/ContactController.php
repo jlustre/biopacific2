@@ -64,21 +64,9 @@ class ContactController extends Controller
                 $emailAddresses = $recipientData['employee_emails'] ?? [];
                 
                 if (!empty($emailAddresses)) {
-                    // Prepare data for the existing ContactMail format
-                    $emailData = [
-                        'full_name' => $validated['full_name'],
-                        'email' => $validated['email'],
-                        'phone' => $validated['phone'] ?? '',
-                        'message' => $validated['message'],
-                        'facility' => [
-                            'name' => $facility->name,
-                            'slug' => $facility->slug
-                        ]
-                    ];
-                    
-                    // Send email to each recipient
+                    // Send secure notifications (HIPAA compliant - no PHI in email)
                     foreach ($emailAddresses as $emailAddress) {
-                        Mail::to($emailAddress)->send(new ContactMail($emailData));
+                        Mail::to($emailAddress)->send(new \App\Mail\SecureContactMail($inquiry));
                     }
                     
                     Log::info('Contact form inquiry sent', [

@@ -12,7 +12,7 @@
 </head>
 
 <body class="min-h-screen antialiased"
-    style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
+    style="background-image: url('@secureAsset('images/auth_background.jpg')'); background-size: cover; background-position: center;">
     @include('layouts.partials.go_to_top')
     @include('layouts.topnav_user')
     <!-- Responsive Sidebar Layout -->

@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\TourRequestController;
 use App\Http\Controllers\Admin\EmailRecipientController;
 use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\JobApplicationController as AdminJobApplicationController;
+use App\Http\Controllers\Admin\SecurityMonitoringController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
@@ -28,6 +29,9 @@ use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CareersPublicController;
+use App\Http\Controllers\SecureInquiryController;
+use App\Http\Controllers\SecureTourRequestController;
+use App\Http\Controllers\SecureJobApplicationController;
 use App\Http\Controllers\BookATourController;
 use App\Http\Controllers\BlogController;
 use App\Livewire\FacilitiesIndex;
@@ -170,6 +174,20 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     // API endpoint for fetching a single testimonial (for edit modal)
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
 
+    // Security Monitoring Routes
+    Route::prefix('security')->name('security.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'index'])->name('dashboard');
+        Route::get('/anomalies', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'anomalies'])->name('anomalies');
+        Route::get('/record-logs/{tokenType}/{recordId}', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'recordLogs'])->name('record-logs');
+        Route::get('/incidents', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'incidents'])->name('incidents');
+        Route::get('/export', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'exportReport'])->name('export');
+        
+        // AJAX endpoints for incident management
+        Route::post('/anomalies/{id}/investigated', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'markAsInvestigated'])->name('anomalies.investigated');
+        Route::post('/incidents/{id}/resolve', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'resolveIncident'])->name('incidents.resolve');
+        Route::post('/incidents/{id}/review', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'markUnderReview'])->name('incidents.review');
+    });
+
 });
 
 // Careers CRUD and applications routes
@@ -224,6 +242,42 @@ Route::get('/facilities/{facility}/applications', [CareersApplicationsController
 
 // Register admin webmaster contacts routes
 require __DIR__.'/admin_webmaster_contacts.php';
+
+// Secure Inquiry Routes
+Route::get('/secure/inquiry/{token}', [App\Http\Controllers\SecureInquiryController::class, 'view'])
+    ->name('secure.inquiry.view');
+Route::post('/secure/inquiry/verify-staff', [App\Http\Controllers\SecureInquiryController::class, 'verifyStaff'])
+    ->name('secure.inquiry.verify-staff');
+    
+// Secure Job Application Routes  
+Route::get('/secure/job-application/{id}', [App\Http\Controllers\SecureJobApplicationController::class, 'show'])
+    ->name('secure.job-application.show');
+Route::post('/secure/job-application/verify-staff', [App\Http\Controllers\SecureJobApplicationController::class, 'verifyStaff'])
+    ->name('secure.job-application.verify-staff');
+    
+// Secure Tour Request Routes
+Route::get('/secure/tour-request/{token}', [App\Http\Controllers\SecureTourRequestController::class, 'view'])
+    ->name('secure.tour-request');
+Route::post('/secure/tour-request/{token}/verify-staff', [App\Http\Controllers\SecureTourRequestController::class, 'verifyStaff'])
+    ->name('secure.verify-staff');
+Route::post('/secure/tour-request/{token}/log-access', [App\Http\Controllers\SecureTourRequestController::class, 'logAccess'])
+    ->name('secure.tour-request.log-access');
+    
+// Secure Job Application Routes
+Route::get('/secure/job-application/{token}', [App\Http\Controllers\SecureJobApplicationController::class, 'show'])
+    ->name('secure.job-application');
+    
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/secure-inquiries', [App\Http\Controllers\SecureInquiryController::class, 'adminIndex'])
+        ->name('admin.secure-inquiries.index');
+    Route::post('/admin/secure-inquiries/{inquiry}/regenerate-token', [App\Http\Controllers\SecureInquiryController::class, 'regenerateToken'])
+        ->name('admin.secure-inquiries.regenerate-token');
+        
+    Route::get('/admin/secure-tour-requests', [App\Http\Controllers\SecureTourRequestController::class, 'adminIndex'])
+        ->name('admin.secure-tour-requests.index');
+    Route::post('/admin/secure-tour-requests/{tourRequest}/regenerate-token', [App\Http\Controllers\SecureTourRequestController::class, 'regenerateToken'])
+        ->name('admin.secure-tour-requests.regenerate-token');
+});
 
 // Public Facility Route (catch-all, must be last)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');

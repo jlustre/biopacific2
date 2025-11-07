@@ -86,7 +86,7 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
                         <h3 class="text-lg font-semibold text-slate-900">Schedule your in-person visit</h3>
                         <p class="text-sm text-slate-600">We’ll confirm within one business day.</p>
                     </div>
-                    <div class="mx-auto max-w-2xl mt-6 px-2">
+                    <div class="mx-auto max-w-2xl mt-6 px-2 mb-4">
                         <div class="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 text-xs text-amber-800">
                             ⚠ Please avoid sharing personal medical details (PHI) in this form. We’ll discuss specifics
                             privately.

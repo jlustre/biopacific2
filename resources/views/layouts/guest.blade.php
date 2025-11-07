@@ -17,7 +17,7 @@
 </head>
 
 <body class="font-sans text-gray-900 antialiased"
-    style="background: url('{{ asset('images/auth_background.jpg') }}') center center / cover no-repeat;">
+    style="background: url('@secureAsset('images/auth_background.jpg')') center center / cover no-repeat;">
     <div
         class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900 bg-opacity-80">
         <div>
