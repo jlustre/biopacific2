@@ -47,14 +47,21 @@ class SuperAdminSeeder extends Seeder
             $user = $existingUser;
             $this->command->info('User already exists, updating role...');
         } else {
-            // Create the super admin user
+            // Create the super admin user with Bio-Pacific corporate facility
             $user = User::create([
                 'name' => 'Super Admin',
                 'email' => 'admin@biopacific.com',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password123'),
+                'facility_id' => 99, // Assign to Bio-Pacific Corporate
             ]);
             $this->command->info('Super admin user created successfully.');
+        }
+
+        // Update existing user's facility if not set
+        if (!$user->facility_id) {
+            $user->update(['facility_id' => 99]);
+            $this->command->info('Updated user facility assignment.');
         }
 
         // Force assign the admin role to the user

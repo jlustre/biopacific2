@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'facility_id',
     ];
 
     /**
@@ -57,5 +58,47 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Get the facility this user belongs to
+     */
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class);
+    }
+
+    /**
+     * Check if user can manage a specific facility
+     */
+    public function canManageFacility($facilityId): bool
+    {
+        // Web admins and regular admins can manage all facilities
+        if ($this->hasRole(['web-admin', 'admin'])) {
+            return true;
+        }
+
+        // Facility admins and editors can only manage their assigned facility
+        if ($this->hasRole(['facility-admin', 'facility-editor'])) {
+            return $this->facility_id == $facilityId;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get facilities this user can manage
+     */
+    public function managedFacilities()
+    {
+        if ($this->hasRole(['web-admin', 'admin'])) {
+            return Facility::all();
+        }
+
+        if ($this->hasRole(['facility-admin', 'facility-editor']) && $this->facility_id) {
+            return Facility::where('id', $this->facility_id)->get();
+        }
+
+        return collect();
     }
 }

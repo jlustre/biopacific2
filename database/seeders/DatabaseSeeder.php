@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ColorSchemesTableSeeder::class,
             FacilitySeeder::class,
+            BioPacificCorporateSeeder::class,
             RolePermissionSeeder::class,
             SuperAdminSeeder::class,
             WebContentsSeeder::class,

@@ -20,6 +20,9 @@ use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\JobApplicationController as AdminJobApplicationController;
 use App\Http\Controllers\Admin\SecurityMonitoringController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminRoleController;
+use App\Http\Controllers\AdminPermissionController;
+use App\Http\Controllers\AdminRoleAssignmentController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
 use App\Http\Controllers\ServicesController;
@@ -94,6 +97,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     
     // HIPAA Toggle route (admin version) - handle both ID and slug
     Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('facilities.hipaa.toggle');
+    
     // User Management CRUD
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
@@ -101,6 +105,36 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    
+    // Role Management CRUD
+    Route::get('/roles', [AdminRoleController::class, 'index'])->name('roles.index');
+    Route::get('/roles/create', [AdminRoleController::class, 'create'])->name('roles.create');
+    Route::post('/roles', [AdminRoleController::class, 'store'])->name('roles.store');
+    Route::get('/roles/{role}', [AdminRoleController::class, 'show'])->name('roles.show');
+    Route::get('/roles/{role}/edit', [AdminRoleController::class, 'edit'])->name('roles.edit');
+    Route::put('/roles/{role}', [AdminRoleController::class, 'update'])->name('roles.update');
+    Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy'])->name('roles.destroy');
+    Route::get('/roles/{role}/permissions', [AdminRoleController::class, 'getPermissions'])->name('roles.permissions');
+    
+    // Permission Management CRUD
+    Route::get('/permissions', [AdminPermissionController::class, 'index'])->name('permissions.index');
+    Route::get('/permissions/create', [AdminPermissionController::class, 'create'])->name('permissions.create');
+    Route::post('/permissions', [AdminPermissionController::class, 'store'])->name('permissions.store');
+    Route::get('/permissions/{permission}', [AdminPermissionController::class, 'show'])->name('permissions.show');
+    Route::get('/permissions/{permission}/edit', [AdminPermissionController::class, 'edit'])->name('permissions.edit');
+    Route::put('/permissions/{permission}', [AdminPermissionController::class, 'update'])->name('permissions.update');
+    Route::delete('/permissions/{permission}', [AdminPermissionController::class, 'destroy'])->name('permissions.destroy');
+    Route::post('/permissions/bulk-assign', [AdminPermissionController::class, 'bulkAssign'])->name('permissions.bulk-assign');
+    
+    // Role Assignment Management
+    Route::get('/role-assignments', [AdminRoleAssignmentController::class, 'index'])->name('role-assignments.index');
+    Route::get('/role-assignments/{user}/edit', [AdminRoleAssignmentController::class, 'edit'])->name('role-assignments.edit');
+    Route::put('/role-assignments/{user}', [AdminRoleAssignmentController::class, 'update'])->name('role-assignments.update');
+    Route::post('/role-assignments/bulk-assign', [AdminRoleAssignmentController::class, 'bulkAssign'])->name('role-assignments.bulk-assign');
+    Route::post('/role-assignments/quick-assign', [AdminRoleAssignmentController::class, 'quickAssign'])->name('role-assignments.quick-assign');
+    Route::get('/role-assignments/statistics', [AdminRoleAssignmentController::class, 'statistics'])->name('role-assignments.statistics');
+    Route::get('/role-assignments/{role}/users', [AdminRoleAssignmentController::class, 'getUsersForRole'])->name('role-assignments.users-for-role');
+    
     // List testimonials (new route for index)
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
     Route::get('/facilities/web-contents/testimonials/{facility}/data', [FacilityAdminController::class, 'getTestimonials'])->name('facilities.webcontents.testimonials.data');
@@ -190,6 +224,15 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::post('/incidents/{id}/review', [\App\Http\Controllers\Admin\SecurityMonitoringController::class, 'markUnderReview'])->name('incidents.review');
     });
 
+});
+
+// Facility-specific admin routes for facility-admin and facility-editor roles
+Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor|admin', 'facility.access'])->name('admin.')->group(function () {
+    // Facility-specific content management routes that should be restricted to assigned facility
+    Route::get('/facility/dashboard', [FacilityAdminController::class, 'facilityDashboard'])->name('facility.dashboard');
+    Route::get('/facility/content', [FacilityAdminController::class, 'facilityContent'])->name('facility.content');
+    Route::get('/facility/users', [AdminUserController::class, 'facilityUsers'])->name('facility.users');
+    Route::get('/facility/settings', [FacilityAdminController::class, 'facilitySettings'])->name('facility.settings');
 });
 
 // Careers CRUD and applications routes
