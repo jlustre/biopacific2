@@ -51,7 +51,7 @@ class User extends Authenticatable
     /**
      * Get the user's initials
      */
-    public function initials(): string
+    public function getInitialsAttribute(): string
     {
         return Str::of($this->name)
             ->explode(' ')
