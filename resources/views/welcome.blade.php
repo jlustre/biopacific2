@@ -33,6 +33,21 @@
 ])
 @endif
 
+@php
+$isBioPacific = false;
+if (isset($facility)) {
+if (is_array($facility) && isset($facility['id']) && $facility['id'] == 99) {
+$isBioPacific = true;
+} elseif (is_object($facility) && isset($facility->id) && $facility->id == 99) {
+$isBioPacific = true;
+}
+}
+@endphp
+
+@if($isBioPacific)
+@include('facility_sections.facilities-map', ['facilities' => $facilities ?? []])
+@endif
+
 @if(is_array($sections) && in_array('rooms', $sections))
 {{-- @include('partials.divider') --}}
 @include('partials.rooms.' . ($sectionVariances['rooms'] ?? 'default'), [

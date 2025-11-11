@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\FacilityDataHelper;
-
 use App\Models\Facility;
 use App\Models\ColorScheme;
 use App\Models\Service;
@@ -14,6 +13,14 @@ use Illuminate\Support\Facades\Log;
 
 class FacilityController extends Controller
 {
+    /**
+     * Show all facilities on a map
+     */
+    public function mapView()
+    {
+        $facilities = Facility::whereNotNull('latitude')->whereNotNull('longitude')->get(['id', 'name', 'latitude', 'longitude', 'address', 'city', 'state', 'zip']);
+        return view('facilities.map', compact('facilities'));
+    }
     /**
      * Toggle a HIPAA flag for a facility (AJAX endpoint)
      */
@@ -119,6 +126,7 @@ class FacilityController extends Controller
         $services = FacilityDataHelper::getServices($facility);
         $newsItems = FacilityDataHelper::getFormattedNews($facility);
 
+        $facilities = Facility::whereNotNull('latitude')->whereNotNull('longitude')->get(['id', 'name', 'latitude', 'longitude', 'address', 'city', 'state', 'zip']);
         return view('welcome', [
             'facility' => $facility,
             'activeSections' => $activeSections,
@@ -138,6 +146,7 @@ class FacilityController extends Controller
             'aboutMenuItems' => $aboutMenuItems,
             'roomsMenuItems' => $roomsMenuItems,
             'contactMenuItems' => $contactMenuItems,
+            'facilities' => $facilities,
         ]);
     }
 

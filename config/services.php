@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'google_maps_api_key' => env('GOOGLE_API_KEY'),
+    'google_map_id' => env('GOOGLE_MAP_ID'),
 
     /*
     |--------------------------------------------------------------------------

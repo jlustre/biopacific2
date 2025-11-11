@@ -35,7 +35,7 @@
                     x-transition:leave-end="transform opacity-0 scale-95">
                     <a href="{{ route('admin.facilities.index') }}"
                         class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-list mr-2"></i> All
+                        <i class="fas fa-list mr-2"></i> Manage All
                     </a>
                     <hr class="my-1">
                     <div style="max-height: 400px; overflow-y: auto;">

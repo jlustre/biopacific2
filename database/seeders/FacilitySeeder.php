@@ -40,6 +40,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Seema Shresta',
                 'dsd' => 'Aanshu Pal',
                 'staffer' => 'Adrienne Ambrocio',
+                'latitude' => 37.24437,
+                'longitude' => -121.93338,
             ],
             [
                 'name' => 'Autumn Hills Healthcare Center',
@@ -69,6 +71,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Jackie Moon',
                 'dsd' => 'Miranda Burcham',
                 'staffer' => 'Joyce Alejandro',
+                'latitude' => 34.15310,
+                'longitude' => -118.24320,
             ],
             [
                 'name' => 'Creekside Healthcare Center',
@@ -98,6 +102,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Huang, Phi Hoang',
                 'dsd' => 'Saras Prakash',
                 'staffer' => 'Priya Vandni',
+                'latitude' => 37.95701,
+                'longitude' => -122.34054,
             ],
             [
                 'name' => 'Driftwood Healthcare Center- Hayward',
@@ -127,6 +133,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Patricia Martinez',
                 'dsd' => 'Nieves Antonina',
                 'staffer' => 'Joan Garcia',
+                'latitude' => 37.66876,
+                'longitude' => -122.11867,
             ],
             [
                 'name' => 'Driftwood Healthcare Center-Santa Cruz',
@@ -156,6 +164,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Navdeep Kaur ',
                 'dsd' => 'Daljit Bhullar',
                 'staffer' => 'Mariela Onofre',
+                'latitude' => 36.96521,
+                'longitude' => -121.98001,
             ],
             [
                 'name' => 'Fremont Healthcare Center',
@@ -185,6 +195,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Julius Ubando',
                 'dsd' => 'Paul Michael Garma',
                 'staffer' => 'Jeverlyn Prince',
+                'latitude' => 37.54461,
+                'longitude' => -121.99094,
             ],
             [
                 'name' => 'Fruitvale Healthcare Center',
@@ -214,6 +226,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Sheila Lubag',
                 'dsd' => 'Brigette Najjar',
                 'staffer' => 'Sarina Wixson',
+                'latitude' => 37.77986,
+                'longitude' => -122.22682,
             ],
             [
                 'name' => 'Glendale Transitional Care Center',
@@ -243,6 +257,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Norelyn Cantos',
                 'dsd' => 'Josephine Lina',
                 'staffer' => '',
+                'latitude' => 34.15057,
+                'longitude' => -118.23013,
             ],
             [
                 'name' => 'Hayward Hills Healthcare Center',
@@ -272,6 +288,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Edwinda Yap',
                 'dsd' => 'Sela N. Mola',
                 'staffer' => 'Leila Bustamante ',
+                'latitude' => 37.68227,
+                'longitude' => -122.06927,
             ],
             [
                 'name' => 'Inglewood Healthcare Center',
@@ -294,13 +312,15 @@ class FacilitySeeder extends Seeder
                 'hours' => '8:30 AM - 7:30 PM',
                 'hero_video_id' => 'u31qwQUeGuM',
                 'hero_image_url' => 'hero10.png',
-                 'region' => 'socal',
+                'region' => 'socal',
                 'facility_number' => '35472',
                 'legal_name' => 'Inglewood Operating Company LP',
                 'administrator' => 'Kiana Moten',
                 'don' => 'Firehiwot Yirgetu',
                 'dsd' => 'Mary Morales',
                 'staffer' => 'Laura Gutierrez ',
+                'latitude' => 33.96244,
+                'longitude' => -118.34851,
             ],
             [
                 'name' => 'La Crescenta Healthcare',
@@ -330,6 +350,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Alex Dela Cuadra',
                 'dsd' => 'Zenaida Agito',
                 'staffer' => 'Patricia Moreno',
+                'latitude' => 34.21963,
+                'longitude' => -118.24627,
             ],
             [
                 'name' => 'Monterey Palms Healthcare Center',
@@ -359,6 +381,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Claudia Olvera',
                 'dsd' => 'Paloma Ysiano',
                 'staffer' => 'Claudia Martinez',
+                'latitude' => 33.72491,
+                'longitude' => -116.38747,
             ],
             [
                 'name' => 'Palm Springs Healthcare & Rehabilitation Center',
@@ -388,6 +412,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Pamela Carcamo',
                 'dsd' => 'Helen Kinney',
                 'staffer' => 'Rhoda Lucas',
+                'latitude' => 33.82032,
+                'longitude' => -116.52869,
             ],
             [
                 'name' => 'Pine Ridge Healthcare Center',
@@ -416,7 +442,9 @@ class FacilitySeeder extends Seeder
                 'administrator' => 'Michael Monroe ',
                 'don' => 'Melijoy Adan',
                 'dsd' => 'Stella Veloz',
-                'staffer' => 'Candy Letatau'
+                'staffer' => 'Candy Letatau',
+                'latitude' => 38.01058,
+                'longitude' => -122.53970,
             ],
             [
                 'name' => 'Santa Monica Healthcare Center',
@@ -446,6 +474,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Mary Jane Gornet',
                 'dsd' => 'Maorjely Cadenas',
                 'staffer' => 'Eric Trujillo',
+                'latitude' => 34.02953,
+                'longitude' => -118.48115,
             ],
             [
                 'name' => 'Skyline Healthcare Center-San Jose',
@@ -475,6 +505,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Alexine Azores',
                 'dsd' => 'Madeline Webster',
                 'staffer' => 'Nikki Wallace',
+                'latitude' => 37.32750,
+                'longitude' => -121.93523,
             ],
             [
                 'name' => 'Vale Healthcare Center',
@@ -504,6 +536,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Germaine Carter',
                 'dsd' => 'Chimere Randell',
                 'staffer' => 'Yvonne Robles',
+                'latitude' => 37.95584,
+                'longitude' => -122.33502,
             ],
             [
                 'name' => 'Village Square Healthcare Center',
@@ -533,6 +567,8 @@ class FacilitySeeder extends Seeder
                 'don' => 'Laura Currey',
                 'dsd' => 'Briahna Alexander',
                 'staffer' => 'Rilen Robinson',
+                'latitude' => 33.13229,
+                'longitude' =>  -117.20316,
             ],
         ];
 
@@ -575,6 +611,9 @@ class FacilitySeeder extends Seeder
                 'staffer' => $i['staffer'] ?? null,
                 'region' => $i['region'] ?? null,
                 'hipaa_flags' => ['npp_page' => true, 'tls_hsts' => true],
+                // Example static lat/lng, replace with real coordinates for each facility
+                'latitude' => $i['latitude'] ?? 34.052235,
+                'longitude' => $i['longitude'] ?? -118.243683,
             ]);
 
             foreach (['Compassion', 'Integrity', 'Respect', 'Excellence'] as $v) {
