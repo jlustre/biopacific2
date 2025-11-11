@@ -1,5 +1,5 @@
 <header
-    class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-700">
+    class="fixed top-0 w-full z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             @if(is_array($sections) && in_array('topbar', $sections))
@@ -9,7 +9,7 @@
         </div>
     </div>
     <!-- Mobile menu -->
-    <div x-show="mobileOpen" x-transition
+    {{-- <div x-show="mobileOpen" x-transition
         class="md:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 max-h-[calc(100vh-4rem)] overflow-hidden">
         <div class="flex flex-col h-full max-h-[calc(100vh-4rem)]">
             <!-- Fixed header -->
@@ -80,12 +80,14 @@
 
                     <!-- Book button with extra padding at bottom -->
                     <div class="pt-2 pb-4">
+                        @if(!empty($activeSections) && in_array('book', $activeSections))
                         <a href="/facility/{{ $facility['slug'] ?? 'facility' }}#book"
                             class="block text-center px-3 py-3 rounded-lg bg-primary text-white font-medium"
                             @click="mobileOpen=false">Book a Tour</a>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 </header>

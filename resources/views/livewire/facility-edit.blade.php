@@ -2,6 +2,9 @@
     @if(session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+    @if(session('error'))
+    <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
 
     <form wire:submit.prevent="save" class="space-y-8">
         <!-- Facility Dropdown -->

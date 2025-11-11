@@ -29,13 +29,14 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                         class="h-[110%] w-full max-w-full object-cover object-top rounded-xl shadow-lg group-hover:scale-105 transition duration-700">
                 </div>
                 <div class="flex-1 flex flex-col p-6">
-                    <h3 class="text-xl font-bold mb-2" style="color: {{ $secondary }}">{{ $service->name }}</h3>
-                    <p class="mb-4 text-base line-clamp-3" style="color: {{ $accent }}">{{ $service->short_description
+                    <h3 class="text-xl font-bold mb-2" style="color: {{ $primary }}">{{ $service->name }}</h3>
+                    <p class="mb-4 text-base line-clamp-3" style="color: {{ $neutral_dark }}">{{
+                        $service->short_description
                         }}</p>
                     <ul class="mb-4 space-y-1 text-indigo-900 text-sm">
                         @foreach($service->features as $feature)
                         <li class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24" style="color: {{ $accent }}">
+                                stroke-width="2" viewBox="0 0 24 24" style="color: {{ $neutral_dark }}">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>{{ $feature }}</li>
                         @endforeach
@@ -77,7 +78,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                     </ul>
                 </div>
             </div>
-            <div class="mt-6 text-left text-base w-full" style="color: {{ $accent }}">{!! $service->detailed_description
+            <div class="mt-6 text-left text-base w-full" style="color: {{ $neutral_dark }}">{!!
+                $service->detailed_description
                 !!}</div>
             <div class="mt-6 flex justify-end">
                 <a href="#contact"

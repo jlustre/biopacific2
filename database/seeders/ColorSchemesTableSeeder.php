@@ -266,6 +266,14 @@ class ColorSchemesTableSeeder extends Seeder
                 'neutral_dark'    => '#4A2E2A',
                 'neutral_light'   => '#F5D4D0',
             ],
+            [
+                'name' => 'Teal Harmony',
+                'primary_color'   => '#0d9488', // teal-600 in Tailwind
+                'secondary_color' => '#2dd4bf',
+                'accent_color'    => '#ccfbf1',
+                'neutral_dark'    => '#134e4a',
+                'neutral_light'   => '#99f6e4',
+            ],
         ];
 
         DB::table('color_schemes')->insert($schemes);

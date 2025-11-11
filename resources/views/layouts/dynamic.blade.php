@@ -67,7 +67,7 @@ $facilityData = $facility ?? [];
 }
 @endphp
 
-<body class="font-sans antialiased">
+<body class="font-sans antialiased" style="padding-top: 72px;">
     {{-- Navigation --}}
     @include('partials.navigation', ['facility' => $facilityData])
 

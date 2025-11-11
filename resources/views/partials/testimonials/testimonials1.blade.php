@@ -202,9 +202,11 @@ $accent = '#F59E0B';
                 <p class="text-sm text-slate-600">Schedule a tour—meet the team and explore our community.</p>
             </div>
             <div class="flex gap-3">
+                @if(!empty($activeSections) && in_array('book', $activeSections))
                 <a href="#book"
                     class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow"
                     style="background: {{ $primary }}">Book a Tour</a>
+                @endif
                 <a href="#contact" class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"
                     class="text-primary border-primary">Contact Us</a>
             </div>

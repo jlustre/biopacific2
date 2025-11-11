@@ -87,7 +87,7 @@
                                 {{ $role['name'] === 'facility-editor' ? 'bg-green-500' : '' }}
                                 {{ $role['name'] === 'regular-user' ? 'bg-gray-500' : '' }}
                                 {{ !in_array($role['name'], ['admin', 'facility-admin', 'facility-editor', 'regular-user']) ? 'bg-purple-500' : '' }}"
-                                 style="width: {{ $role['percentage'] }}%"></div>
+                                style="width: {{ $role['percentage'] }}%"></div>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -131,7 +131,8 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                     {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : '' }}
                                     {{ $role->name === 'facility-admin' ? 'bg-blue-100 text-blue-800' : '' }}
                                     {{ $role->name === 'facility-editor' ? 'bg-green-100 text-green-800' : '' }}
@@ -145,10 +146,10 @@
                             <div class="flex items-center">
                                 <span class="font-medium">{{ $role->users_count }}</span>
                                 @if($role->users_count > 0)
-                                    <a href="{{ route('admin.role-assignments.users-for-role', $role) }}" 
-                                       class="ml-2 text-blue-600 hover:text-blue-800 text-xs">
-                                        View Users
-                                    </a>
+                                <a href="{{ route('admin.role-assignments.users-for-role', $role) }}"
+                                    class="ml-2 text-blue-600 hover:text-blue-800 text-xs">
+                                    View Users
+                                </a>
                                 @endif
                             </div>
                         </td>
@@ -160,14 +161,14 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center space-x-3">
-                                <a href="{{ route('admin.roles.show', $role) }}" 
-                                   class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                                   data-tooltip="View Role Details">
+                                <a href="{{ route('admin.roles.show', $role) }}"
+                                    class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                                    data-tooltip="View Role Details">
                                     <i class="fas fa-eye text-sm"></i>
                                 </a>
-                                <a href="{{ route('admin.roles.edit', $role) }}" 
-                                   class="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
-                                   data-tooltip="Edit Role">
+                                <a href="{{ route('admin.roles.edit', $role) }}"
+                                    class="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
+                                    data-tooltip="Edit Role">
                                     <i class="fas fa-edit text-sm"></i>
                                 </a>
                             </div>
@@ -183,8 +184,8 @@
     <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="{{ route('admin.roles.create') }}" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="{{ route('admin.roles.create') }}"
+                class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <i class="fas fa-plus text-blue-600"></i>
@@ -196,8 +197,8 @@
                 </div>
             </a>
 
-            <a href="{{ route('admin.permissions.index') }}" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="{{ route('admin.permissions.index') }}"
+                class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                         <i class="fas fa-key text-green-600"></i>
@@ -209,8 +210,8 @@
                 </div>
             </a>
 
-            <a href="{{ route('admin.role-assignments.index') }}" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="{{ route('admin.role-assignments.index') }}"
+                class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                         <i class="fas fa-users-cog text-purple-600"></i>

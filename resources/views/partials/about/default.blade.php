@@ -209,9 +209,11 @@
               <p class="text-slate-600 text-sm">Schedule a tour or speak with our admissions team today.</p>
             </div>
             <div class="flex gap-3">
+              @if(!empty($activeSections) && in_array('book', $activeSections))
               <a href="#book"
                 class="inline-flex items-center rounded-xl px-2 py-1 font-semibold text-white shadow transition"
                 style="background: {{ $primary }}">Book a Tour</a>
+              @endif
               <a href="#contact" class="inline-flex items-center rounded-xl px-2 py-1 font-semibold border transition"
                 style="border-color: {{ $secondary }}; color: {{ $secondary }}">Contact
                 Us</a>

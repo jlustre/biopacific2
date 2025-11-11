@@ -18,7 +18,7 @@ $primary = '#047857';
 <span class="ml-2 text-xl font-bold text-gray-900">
   {{ $facility['name'] ?? 'Bio-Pacific' }}
 </span>nt --}}
-<nav class="bg-white shadow-lg sticky top-0 z-50">
+<nav class="bg-white shadow-lg fixed top-0 w-full z-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-16">
 

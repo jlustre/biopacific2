@@ -37,11 +37,13 @@ ACCESSIBLE STICKY TOPBAR
             <span class="hidden lg:inline text-slate-600">Tours {{ $facility['hours'] ?? '9AM–7PM' }}</span>
         </div>
         <div class="flex items-center gap-2">
+            @if(!empty($activeSections) && in_array('book', $activeSections))
             <a href="#book"
                 class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
                 style="background: var(--primary);">
                 Book a Tour
             </a>
+            @endif
             <a href="#contact"
                 class="hidden sm:inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ring-1"
                 style="color: var(--primary); border-color: var(--primary);">
@@ -115,9 +117,12 @@ ACCESSIBLE STICKY TOPBAR
                             <p class="text-sm text-slate-600">See our spaces and daily life.</p>
                         </a>
                         <a href="#book" class="rounded-xl p-3 hover:bg-slate-50">
-                            <div class="font-semibold text-slate-900">Book a Tour</div>
-                            <p class="text-sm text-slate-600">Schedule a visit in minutes.</p>
-                        </a>
+                            @if(!empty($activeSections) && in_array('book', $activeSections))
+                            <a href="#book" class="rounded-xl p-3 hover:bg-slate-50">
+                                <div class="font-semibold text-slate-900">Book a Tour</div>
+                                <p class="text-sm text-slate-600">Schedule a visit in minutes.</p>
+                            </a>
+                            @endif
                     </div>
                 </div>
 
@@ -173,9 +178,10 @@ ACCESSIBLE STICKY TOPBAR
 
             {{-- Right: CTAs + Mobile burger --}}
             <div class="flex items-center gap-2">
-                <a href="#book"
+                <a href="#book" @if(!empty($activeSections) && in_array('book', $activeSections)) <a href="#book"
                     class="hidden md:inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white shadow"
                     style="background: var(--primary);">Book a Tour</a>
+                @endif
                 <button @click="drawer = true"
                     class="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-xl ring-1 ring-slate-200">
                     <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">

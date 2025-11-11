@@ -10,7 +10,7 @@ class JobApplication extends Model
     use HasFactory, EncryptsEphi;
 
     protected $fillable = [
-        'job_opening_id', 'first_name', 'last_name', 'email', 'phone', 'cover_letter', 'resume_path', 'consent', 'status', 'access_token', 'expires_at', 'audit_log', 'viewed_at'
+        'job_opening_id', 'desired_position', 'department', 'employment_type', 'first_name', 'last_name', 'email', 'phone', 'cover_letter', 'resume_path', 'consent', 'status', 'access_token', 'expires_at', 'audit_log', 'viewed_at'
     ];
 
     // Define which fields contain ePHI and should be encrypted

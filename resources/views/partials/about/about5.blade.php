@@ -295,9 +295,11 @@ $hero = asset('images/' . ltrim($aboutUrl, '/'));
         </script>
 
         <div class="mt-8">
+            @if(!empty($activeSections) && in_array('book', $activeSections))
             <a href="#book"
                 class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700">Schedule
                 a tour</a>
+            @endif
         </div>
     </div>
 </section>

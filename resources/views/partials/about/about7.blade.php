@@ -9,7 +9,7 @@ elseif (file_exists(public_path('build/images/' . $heroUrl))) $heroUrl = asset('
 }
 
 $stats = [
-'Licensed beds' => $facility['licensed_beds'] ?? ($facility['beds'] ?? 25),
+'Licensed beds' => $facility->licensed_beds ?? ($facility->beds ?? 25),
 'Nursing' => $facility['nursing_coverage'] ?? '24/7',
 'Family rating' => $facility['satisfaction_rating'] ?? '4.8/5',
 ];
@@ -107,11 +107,13 @@ $testimonials = $facility['testimonials'] ?? ($facility['testimonial'] ? [$facil
                 @endphp
 
                 <div class="mt-6 flex flex-wrap gap-3">
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
                     <a href="{{ $bookUrl }}" @if(preg_match('/^https?:\\/\\//i', $bookUrl)) target="_blank"
                         rel="noopener" @endif
                         class="inline-flex items-center justify-center px-5 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow hover:bg-indigo-700 transition">
                         Book A Tour
                     </a>
+                    @endif
 
                     <a href="{{ $contactUrl }}" @if(preg_match('/^https?:\\/\\//i', $contactUrl)) target="_blank"
                         rel="noopener" @endif

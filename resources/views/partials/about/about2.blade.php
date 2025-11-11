@@ -1,6 +1,6 @@
 @php
 $cityState = trim(($facility['city'] ?? '').(isset($facility['state']) ? ', '.$facility['state'] : ''));
-$beds = $facility['beds'] ?? null;
+$beds = $facility->beds ?? null;
 
 // Optional images (swap with your own)
 $aboutHero = asset('images/about-hero.png');
@@ -181,9 +181,11 @@ $aboutPeople = asset('images/about-people.png');
             <p class="text-sm text-slate-600">Schedule a private tour—meet our team, ask questions, and explore.</p>
           </div>
           <div class="flex gap-3">
+            @if(!empty($activeSections) && in_array('book', $activeSections))
             <a href="#book"
               class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow"
               style="background: {{ $primary }}">Book A Tour</a>
+            @endif
             @if(!empty($facility['phone']))
             <a href="tel:{{ $facility['phone'] }}"
               class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"

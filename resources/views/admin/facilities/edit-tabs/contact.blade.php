@@ -43,11 +43,10 @@
             </div>
 
             <div>
-                <label for="beds" class="block text-sm font-bold text-gray-700 mb-2">Number
-                    of
-                    Beds</label>
-                <input type="number" id="beds" name="beds" value="{{ old('beds', $facility->beds) }}" min="1"
-                    class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary">
+                <label for="beds" class="block text-sm font-bold text-gray-700 mb-2">Number of Beds</label>
+                <input type="number" id="beds" name="beds" value="{{ old('beds', $facility->beds ?? 0) }}" min="1"
+                    class="w-full rounded border border-gray-400 bg-yellow-50 px-4 shadow-sm focus:border-primary focus:ring-primary"
+                    @if(empty($facility->rooms) || !$facility->rooms) disabled min="0" @endif>
                 @error('beds')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>

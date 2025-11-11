@@ -144,7 +144,17 @@ $error = $errors->any();
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12h20L12 2z" />
         </svg>
         <h4 class="text-lg font-semibold mb-2">No job openings available at this time.</h4>
-        <p>Please check back later or contact us for more information.</p>
+        <p class="mb-6">You may still submit an application for future consideration. Please click the button below to
+          fill out the form and
+          indicate your desired position or title. We'll keep your application on file and reach out if a suitable
+          opportunity arises.</p>
+        <button @click="openApply=true; applyRole=''; applyRoleTitle=''"
+          class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200"
+          style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
+          onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
+          onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'">
+          Submit Application
+        </button>
       </div>
       @endforelse
     </div>
@@ -244,6 +254,7 @@ $error = $errors->any();
 
         <!-- Modal Content -->
         <div class="p-6">
+          @if(!empty($jobOpenings))
           @foreach($jobOpenings as $modalJob)
           <div x-show="applyRole == '{{ $modalJob->id }}'" x-cloak>
             @livewire('job-application', [
@@ -256,10 +267,17 @@ $error = $errors->any();
             ], key('job-application-' . $modalJob->id))
           </div>
           @endforeach
+          @endif
 
-          <div x-show="!applyRole" class="text-center py-8">
-            <h3 class="text-xl font-bold text-gray-900 mb-2">Select a Position</h3>
-            <p class="text-gray-600">Please select a job opening to apply for.</p>
+          <div x-show="!applyRole" x-cloak>
+            @livewire('job-application', [
+            'primary' => $primary,
+            'secondary' => $secondary,
+            'accent' => $accent,
+            'neutral_dark' => $neutral_dark,
+            'neutral_light' => $neutral_light,
+            'facility_id' => $facility['id'] ?? null
+            ], key('job-application-general'))
           </div>
         </div>
       </div>

@@ -83,7 +83,7 @@ $poster = !empty($facility['about_image_url'])
                         </div>
                         <div>
                             <dt class="text-slate-500">Capacity</dt>
-                            <dd class="mt-1 font-semibold text-slate-900">{{ $facility['beds'] ?? '—' }} beds</dd>
+                            <dd class="mt-1 font-semibold text-slate-900">{{ $facility->beds ?? '—' }} beds</dd>
                         </div>
                         <div>
                             <dt class="text-slate-500">Tours</dt>
@@ -304,9 +304,11 @@ $poster = !empty($facility['about_image_url'])
                     <span class="rounded-full px-3 py-1 ring-1 ring-slate-200 text-xs">Staff credentialing</span>
                 </div>
                 <div class="flex gap-3 justify-start md:justify-end">
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
                     <a href="#book"
                         class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold text-white shadow transition"
                         style="background: {{ $primary }}">Book a Tour</a>
+                    @endif
                     <a href="#contact"
                         class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold border transition"
                         style="border-color: {{ $primary }}; color: {{ $primary }}">Contact Us</a>

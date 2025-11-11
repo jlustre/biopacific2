@@ -52,9 +52,11 @@
                 </ul>
 
                 <div class="mt-8 flex space-x-4">
+                    @if(!empty($activeSections) && in_array('book', $activeSections))
                     <a href="#book"
                         class="inline-flex items-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Schedule
                         a tour</a>
+                    @endif
                     <a href="#services"
                         class="inline-flex items-center px-5 py-3 border border-indigo-200 text-base font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100">Our
                         services</a>

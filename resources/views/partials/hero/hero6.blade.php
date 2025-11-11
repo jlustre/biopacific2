@@ -98,9 +98,11 @@ $hasVideo = !empty($facility['hero_video_id']);
                         $activeSections = (array) $activeSections;
                         }
                         @endphp
+                        @if(!empty($activeSections) && in_array('book', $activeSections))
                         <a href="#book"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold text-white shadow-lg hover:shadow-xl transition"
                             style="background: {{ $primary }}">Book a Tour</a>
+                        @endif
 
                         <a href="#contact"
                             class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold ring-1 hover:bg-slate-50 transition"

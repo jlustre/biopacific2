@@ -238,7 +238,7 @@ class FacilityAdminController extends Controller
             'state' => $validated['state'],
             'phone' => $validated['phone'],
             'email' => $validated['email'],
-            'beds' => $validated['beds'],
+            'beds' => $validated['beds'] ?? 0,
             'hours' => $validated['hours'],
             'color_scheme_id' => $validated['color_scheme_id'],
             'headline' => $validated['headline'],

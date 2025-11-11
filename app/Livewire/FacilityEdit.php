@@ -27,9 +27,13 @@ class FacilityEdit extends Component
 
     public function save()
     {
-        $this->validate();
-        $this->facility->save();
-        Session::flash('success', 'Facility updated successfully!');
+        try {
+            $this->validate();
+            $this->facility->save();
+            Session::flash('success', 'Facility updated successfully!');
+        } catch (\Exception $e) {
+            Session::flash('error', 'Error saving facility: ' . $e->getMessage());
+        }
     }
 
     public function switchTab($tab)

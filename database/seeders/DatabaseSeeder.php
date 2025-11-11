@@ -28,7 +28,8 @@ class DatabaseSeeder extends Seeder
             NewsSeeder::class,
             FacilityNewsSeeder::class,
             EmailRecipientsTableSeeder::class,
-            EmployeeEmailMappingsTableSeeder::class
+            EmployeeEmailMappingsTableSeeder::class,
+            GeneralJobOpeningSeeder::class
         ]);
 
     }

@@ -51,11 +51,13 @@
 
                 <!-- Facility Filter -->
                 <div>
-                    <label for="facility" class="block text-sm font-medium text-gray-700 mb-1">Filter by Facility</label>
+                    <label for="facility" class="block text-sm font-medium text-gray-700 mb-1">Filter by
+                        Facility</label>
                     <select name="facility" id="facility"
                         class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="all" {{ request('facility')==='all' ? 'selected' : '' }}>All Facilities</option>
-                        <option value="corporate" {{ request('facility')==='corporate' ? 'selected' : '' }}>Bio-Pacific Corporate</option>
+                        <option value="corporate" {{ request('facility')==='corporate' ? 'selected' : '' }}>Bio-Pacific
+                            Corporate</option>
                         @foreach($facilities as $facility)
                         <option value="{{ $facility->id }}" {{ request('facility')==$facility->id ? 'selected' : '' }}>
                             {{ $facility->name }}
@@ -91,12 +93,18 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Facility</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Facility</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -107,7 +115,8 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @foreach($user->roles as $role)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                 {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : '' }}
                                 {{ $role->name === 'facility-admin' ? 'bg-blue-100 text-blue-800' : '' }}
                                 {{ $role->name === 'facility-editor' ? 'bg-green-100 text-green-800' : '' }}
@@ -118,7 +127,8 @@
                             @endforeach
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                                 {{ $user->facility ? $user->facility->name : 'Bio-Pacific Corporate' }}
                             </span>
                         </td>
@@ -131,7 +141,8 @@
                                     <i class="fas fa-edit text-sm"></i>
                                 </a>
                                 <!-- Delete Icon -->
-                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block"
+                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST"
+                                    class="inline-block"
                                     onsubmit="return confirm('Are you sure you want to delete this user?');">
                                     @csrf
                                     @method('DELETE')
@@ -165,7 +176,8 @@
                     <div class="flex-1 min-w-0">
                         <!-- User Info -->
                         <div class="flex items-center mb-2">
-                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <div
+                                class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                                 <span class="text-blue-600 font-medium text-sm">{{ substr($user->name, 0, 1) }}</span>
                             </div>
                             <div class="flex-1 min-w-0">
@@ -177,7 +189,8 @@
                         <!-- Role and Facility Info -->
                         <div class="flex flex-wrap gap-2 mb-3">
                             @foreach($user->roles as $role)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                 {{ $role->name === 'admin' ? 'bg-red-100 text-red-800' : '' }}
                                 {{ $role->name === 'facility-admin' ? 'bg-blue-100 text-blue-800' : '' }}
                                 {{ $role->name === 'facility-editor' ? 'bg-green-100 text-green-800' : '' }}
@@ -189,7 +202,8 @@
                         </div>
 
                         <div class="mb-3">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                                 <i class="fas fa-building mr-1"></i>
                                 {{ $user->facility ? $user->facility->name : 'Bio-Pacific Corporate' }}
                             </span>
@@ -288,13 +302,13 @@
             padding-left: 1rem;
             padding-right: 1rem;
         }
-        
+
         /* Adjust badge sizes for mobile */
         .mobile-badge {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
         }
-        
+
         /* Improve button spacing on mobile */
         .mobile-buttons {
             gap: 0.5rem;

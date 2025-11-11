@@ -45,7 +45,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
           <h3 class="text-lg font-semibold text-slate-900">
             {{ $service->name }}
           </h3>
-          <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $accent }}">
+          <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $neutral_dark ?? '#334155' }}">
             {{ $service->short_description }}
           </p>
 

@@ -167,7 +167,7 @@ $accent = '#F59E0B';
                     $facilityHours = $facility['hours'] ?? null;
                     $facilityName = $facility['name'] ?? null;
                     $facilityEmail = $facility['email'] ?? null;
-                    $facilityBeds = $facility['beds'] ?? null;
+                    $facilityBeds = $facility->beds ?? null;
                     $facilityAddress = trim(($facility['address'] ?? '') . ', ' . ($facility['city'] ?? '') . ', ' .
                     ($facility['state'] ?? ''), ', ');
                     } elseif (is_object($facility)) {

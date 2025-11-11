@@ -75,18 +75,20 @@ $hasVideo = !empty($facility['hero_video_id']);
         $activeSections = (array) $activeSections;
         }
         @endphp
+        @if(!empty($activeSections) && in_array('book', $activeSections))
         <a href="#book"
           class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold border-2 shadow-lg transition-all duration-200"
           style="
-            color: {{ $secondary }};
-            border-color: {{ $secondary }};
-            background: linear-gradient(135deg, white 0%, #fff8 100%);
-            box-shadow: 0 2px 8px 0 {{ $secondary }}22;
-          "
+              color: {{ $secondary }};
+              border-color: {{ $secondary }};
+              background: linear-gradient(135deg, white 0%, #fff8 100%);
+              box-shadow: 0 2px 8px 0 {{ $secondary }}22;
+            "
           onmouseover="this.style.background='linear-gradient(135deg, {{ $secondary }}33 0%, #fff 100%)'; this.style.color='#fff'; this.style.borderColor='{{ $secondary }}'; this.style.boxShadow='0 4px 16px 0 {{ $secondary }}44';"
           onmouseout="this.style.background='linear-gradient(135deg, white 0%, #fff8 100%)'; this.style.color='{{ $secondary }}'; this.style.borderColor='{{ $secondary }}'; this.style.boxShadow='0 2px 8px 0 {{ $secondary }}22';">
           Book a Tour
         </a>
+        @endif
 
         @if(!empty($facility['hero_video_id']))
         <button id="playVideoBtn"
@@ -101,6 +103,7 @@ $hasVideo = !empty($facility['hero_video_id']);
       </div>
 
       {{-- Chips --}}
+      @if(($facility['id'] ?? null) != 99)
       <div class="mt-6 flex flex-wrap gap-2">
         <span
           class="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-medium text-white ring-1 ring-white/30">
@@ -115,6 +118,7 @@ $hasVideo = !empty($facility['hero_video_id']);
           Tours Daily {{ $facility['hours'] ?? '9AM–7PM' }}
         </span>
       </div>
+      @endif
     </div>
   </div>
   @if(!empty($facility['hero_video_id']))
