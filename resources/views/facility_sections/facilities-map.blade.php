@@ -1,7 +1,6 @@
 {{-- Facilities Map Section --}}
 {{-- Debug output removed --}}
-@auth
-<h2 class="text-2xl font-bold mb-4" style="color: {{ $primary }}">Our Locations</h2>
+<h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-center" style="color: {{ $primary }}">Our Locations</h2>
 <div id="facilities-map" style="height: 500px; width: 100%;"></div>
 
 <script>
@@ -44,4 +43,3 @@
 
     window.addEventListener('DOMContentLoaded', loadGoogleMapsScript);
 </script>
-@endauth

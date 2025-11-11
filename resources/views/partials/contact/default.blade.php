@@ -46,7 +46,16 @@ $facility['social'] = [
     @endphp
 
     {{-- 1 col on small, 3 cols on md+ --}}
-    <div class="mt-10 grid gap-8 md:grid-cols-3 items-start">
+    @php
+    $isBioPacific = false;
+    if (isset($facility)) {
+    if ((is_array($facility) && isset($facility['id']) && $facility['id'] == 99) || (is_object($facility) &&
+    isset($facility->id) && $facility->id == 99)) {
+    $isBioPacific = true;
+    }
+    }
+    @endphp
+    <div class="mt-10 grid gap-8 @if($isBioPacific) md:grid-cols-2 @else md:grid-cols-3 @endif items-start">
 
       {{-- Contact Information (with social icons) --}}
       <aside class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-xl p-6 sm:p-8 h-full">
@@ -192,7 +201,19 @@ $facility['social'] = [
       'neutral_dark' => $neutral_dark ?? '#1e293b'
       ])
 
-      {{-- Map --}}
+      {{-- Map: Show all facilities for Bio-Pacific only --}}
+      @php
+      $isBioPacific = false;
+      if (isset($facility)) {
+      if ((is_array($facility) && isset($facility['id']) && $facility['id'] == 99) || (is_object($facility) &&
+      isset($facility->id) && $facility->id == 99)) {
+      $isBioPacific = true;
+      }
+      }
+      @endphp
+      @if($isBioPacific && Auth::check())
+      {{-- @include('facility_sections.facilities-map', ['facilities' => $facilities ?? []]) --}}
+      @else
       <div class="rounded-3xl border bg-white shadow-xl overflow-hidden h-full">
         <div class="flex items-center justify-between border-b px-6 py-4">
           <div class="flex items-center gap-3">
@@ -223,6 +244,7 @@ $facility['social'] = [
           @endif
         </div>
       </div>
+      @endif
 
     </div>
   </div>

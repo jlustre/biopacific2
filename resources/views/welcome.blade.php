@@ -33,30 +33,6 @@
 ])
 @endif
 
-@php
-$isBioPacific = false;
-if (isset($facility)) {
-if (is_array($facility) && isset($facility['id']) && $facility['id'] == 99) {
-$isBioPacific = true;
-} elseif (is_object($facility) && isset($facility->id) && $facility->id == 99) {
-$isBioPacific = true;
-}
-}
-@endphp
-
-@if($isBioPacific)
-@include('facility_sections.facilities-map', ['facilities' => $facilities ?? []])
-@endif
-
-@if(is_array($sections) && in_array('rooms', $sections))
-{{-- @include('partials.divider') --}}
-@include('partials.rooms.' . ($sectionVariances['rooms'] ?? 'default'), [
-'primary' => $primary,
-'secondary' => $secondary,
-'accent' => $accent
-])
-@endif
-
 @if(is_array($sections) && in_array('gallery', $sections))
 {{-- @include('partials.divider') --}}
 @include('partials.gallery.' . ($sectionVariances['gallery'] ?? 'default'), [
@@ -112,6 +88,31 @@ $newsItems = $newsItems ?? [];
 @if(is_array($sections) && in_array('contact', $sections))
 {{-- @include('partials.divider') --}}
 @include('partials.contact.' . ($sectionVariances['contact'] ?? 'default'), [
+'primary' => $primary,
+'secondary' => $secondary,
+'accent' => $accent,
+'facilities' => $facilities ?? []
+])
+@endif
+
+@php
+$isBioPacific = false;
+if (isset($facility)) {
+if (is_array($facility) && isset($facility['id']) && $facility['id'] == 99) {
+$isBioPacific = true;
+} elseif (is_object($facility) && isset($facility->id) && $facility->id == 99) {
+$isBioPacific = true;
+}
+}
+@endphp
+
+@if($isBioPacific && Auth::check())
+@include('facility_sections.facilities-map', ['facilities' => $facilities ?? []])
+@endif
+
+@if(is_array($sections) && in_array('rooms', $sections))
+{{-- @include('partials.divider') --}}
+@include('partials.rooms.' . ($sectionVariances['rooms'] ?? 'default'), [
 'primary' => $primary,
 'secondary' => $secondary,
 'accent' => $accent
