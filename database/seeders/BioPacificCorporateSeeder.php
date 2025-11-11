@@ -49,7 +49,7 @@ class BioPacificCorporateSeeder extends Seeder
             'staffer' => 'HR Director',
             'is_active' => false,
             'slug' => 'bio-pacific-corporate',
-            'about_text' => 'Bio-Pacific Facility Management Corporation is dedicated to providing top-tier management services to our network of healthcare facilities across California. Our corporate team ensures operational excellence, regulatory compliance, and the highest standards of patient care.',
+            'about_text' => 'Bio-Pacific Corporation is dedicated to providing top-tier management services to our network of healthcare facilities across California. Our corporate team ensures operational excellence, regulatory compliance, and the highest standards of patient care.',
         ]);
 
         // Activate all sections except book, testimonials, room

@@ -147,6 +147,29 @@ $linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
           Care & Services
         </a>
 
+        {{-- Admin Dashboard Button for facility id = 99 only --}}
+        @php
+        $facilityId = null;
+        if (isset($facility) && is_array($facility) && isset($facility['id'])) {
+        $facilityId = $facility['id'];
+        } elseif (isset($facility) && is_object($facility) && isset($facility->id)) {
+        $facilityId = $facility->id;
+        }
+        @endphp
+        @if($facilityId === 99)
+        <a href="{{ route('admin.dashboard.index') }}"
+          class="max-w-[180px] min-w-[120px] mx-auto cursor-pointer px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center ml-2 shadow-md"
+          style="background-color: {{ $primary }}; color: white; border: none;"
+          @mouseenter="$el.style.backgroundColor = '{{ $secondary }}'; $el.style.color = 'white';"
+          @mouseleave="$el.style.backgroundColor = '{{ $primary }}'; $el.style.color = 'white';">
+          <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm4-4h2v-2H7v2zm0 4h2v-2H7v2zm4-4h2v-2h-2v2zm0 4h2v-2h-2v2zm4-4h2v-2h-2v2zm0 4h2v-2h-2v2z" />
+          </svg>
+          Dashboard
+        </a>
+        @endif
+
         <!-- Book a Tour Button -->
         @if(!empty($activeSections) && in_array('book', $activeSections))
         <div class="hidden md:block">

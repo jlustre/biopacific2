@@ -6,6 +6,11 @@
         class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30 transform"
         :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
         <nav class="flex flex-col space-y-2">
+            <!-- Bio-Pacific Facility Public Web Page -->
+            <a href="{{ route('facility.public', 'bio-pacific-corporate') }}" target="_blank"
+                class="flex items-center px-4 py-2 text-teal-700 hover:bg-teal-50 rounded font-semibold">
+                <i class="fas fa-globe mr-2"></i> Bio-Pacific Home
+            </a>
             <!-- Dashboard -->
             <a href="{{ route('admin.dashboard.index') }}"
                 class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
