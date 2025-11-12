@@ -70,10 +70,10 @@ $linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
 
         <!-- Community Dropdown -->
         @php
-        $communityMenuItems = collect(['news', 'gallery', 'blog'])
+        $experienceMenuItems = collect(['news', 'gallery', 'blog', 'careers', 'resources'])
         ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
         @endphp
-        @if($communityMenuItems->count())
+        @if($experienceMenuItems->count())
         <div x-data="{ open: false }" class="relative">
           <button @click="open = !open"
             class="cursor-pointer px-3 py-2 rounded-md transition-all duration-200 flex items-center gap-1 text-center"
@@ -87,7 +87,7 @@ $linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
           </button>
           <div x-cloak x-show="open" @click.away="open = false" x-transition
             class="absolute left-0 mt-2 w-40 shadow-lg rounded z-10">
-            @foreach($communityMenuItems as $section)
+            @foreach($experienceMenuItems as $section)
             <a href="{{ $linkPrefix }}#{{ $section }}"
               class="cursor-pointer block px-4 py-2 transition-all duration-200"
               style="color: #374151; background-color: white;"
@@ -95,7 +95,9 @@ $linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
               @mouseleave="$el.style.backgroundColor = 'white'; $el.style.color = '#374151';">{{
               $section == 'news' ? 'News & Events' :
               ($section == 'gallery' ? 'Galleries' :
-              ($section == 'blog' ? 'Blogs' : ucfirst($section)))
+              ($section == 'blog' ? 'Blogs' :
+              ($section == 'careers' ? 'Careers' :
+              ($section == 'resources' ? 'Resources' : ucfirst($section)))))
               }}</a>
             @endforeach
           </div>
@@ -103,36 +105,6 @@ $linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
         @endif
 
         <!-- Careers & Resources Dropdown -->
-        @php
-        $careersResourcesMenuItems = collect(['careers', 'resources'])
-        ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
-        @endphp
-        @if($careersResourcesMenuItems->count())
-        <div x-data="{ open: false }" class="relative">
-          <button @click="open = !open"
-            class="cursor-pointer px-3 py-2 rounded-md transition-all duration-200 flex items-center gap-1 text-center"
-            style="color: #374151; background-color: transparent;"
-            @mouseenter="$el.style.backgroundColor = '{{ $primary }}20'; $el.style.color = '{{ $primary }}';"
-            @mouseleave="$el.style.backgroundColor = 'transparent'; $el.style.color = '#374151';">
-            Careers
-            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div x-cloak x-show="open" @click.away="open = false" x-transition
-            class="absolute left-0 mt-2 w-40 bg-white shadow-lg rounded z-10">
-            @foreach($careersResourcesMenuItems as $section)
-            <a href="{{ $linkPrefix }}#{{ $section }}"
-              class="cursor-pointer block px-4 py-2 transition-all duration-200"
-              style="color: #374151; background-color: white;"
-              @mouseenter="$el.style.backgroundColor = '{{ $primary }}'; $el.style.color = 'white';"
-              @mouseleave="$el.style.backgroundColor = 'white'; $el.style.color = '#374151';">{{
-              ucfirst($section)
-              }}</a>
-            @endforeach
-          </div>
-        </div>
-        @endif
 
         <!-- Services Button (Standalone) -->
         <a href="#services"

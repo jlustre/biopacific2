@@ -97,12 +97,24 @@ The application automatically detects the current tenant (facility) based on the
 
 The application currently supports these nursing homes:
 
-1. **Vale Health Care Center** - `valehealthcare.com`
-2. **Pacific Manor Care** - `pacificmanorcare.com`
-3. **Sunrise Gardens Healthcare** - `sunrisegardens.com`
-4. **Mountain View Assisted Living** - `mountainviewal.com`
-5. **Oakwood Senior Community** - `oakwoodsenior.com`
-6. **[Additional 12+ facilities as configured]**
+1. **Almaden Healthcare and Rehabilitation Center** - `almadenhealthandrehabilitationcenter.com`
+2. **Autumn Hills Healthcare Center** - `autumnhillshealthcarecenter.com`
+3. **Creekside Healthcare Center** - `creeksidehealthcarecenter.com`
+4. **Driftwood Healthcare Center- Hayward** - `driftwoodhealthcarecenter-hayward.com`
+5. **Driftwood Healthcare Center-Santa Cruz** - `driftwoodhealthcarecenter-santacruz.com`
+6. **Fremont Healthcare Center** - `fremonthealthcarecenter.com`
+7. **Fruitvale Healthcare Center** - `fruitvalehealthcarecenter.com`
+8. **Glendale Transitional Care Center** - `glendaletransitionalcarecenter.com`
+9. **Hayward Hills Healthcare Center** - `haywardhillshealthcarecenter.com`
+10. **Inglewood Healthcare Center** - `inglewoodhealthcarecenter.com`
+11. **La Crescenta Healthcare** - `lacrescentahealthcarecenter.com`
+12. **Monterey Palms Healthcare Center** - `montereypalmshealthcarecenter.com`
+13. **Palm Springs Healthcare & Rehabilitation Center** - `palmspringshealthandrehabilitationcenter.com`
+14. **Pine Ridge Healthcare Center** - `pineridgecarecenter.com`
+15. **Santa Monica Healthcare Center** - `santamonicahealthcarecenter.com`
+16. **Skyline Healthcare Center-San Jose** - `skylinehealthcarecenter-sanjose.com`
+17. **Vale Healthcare Center** - `valehealthcarecenter.com`
+18. **Village Square Healthcare Center** - `villagesquarehealthcarecenter.com`
 
 ---
 
@@ -298,14 +310,15 @@ Defines individual sections and their variants.
 **Key Attributes:**
 
 ```php
-- name, slug, description
-- variants, config_schema
-- component_path, is_active
+name, slug, template_id
+variant, config
+order, is_active
+created_at, updated_at
 ```
 
 ### User Model (Enhanced)
 
-User management with role-based permissions.
+User management with role-based permissions and granular CMS access.
 
 **Roles:**
 
@@ -314,17 +327,17 @@ User management with role-based permissions.
 - **Content Manager**: Content editing permissions
 - **Viewer**: Read-only access
 
-### BookATour Model (NEW)
+### BookATour Model
 
 Tour booking request management for facilities.
 
 **Key Attributes:**
 
 ```php
-- facility_id, name, email, phone
-- preferred_date, preferred_time
-- message, status
-- created_at, updated_at
+facility_id, name, email, phone
+preferred_date, preferred_time
+message, status
+created_at, updated_at
 ```
 
 **Features:**
@@ -332,7 +345,7 @@ Tour booking request management for facilities.
 - Email notification system
 - Status tracking (pending, confirmed, completed)
 - Facility-specific tour management
-- Integration with contact forms
+- Integration with contact forms and admin dashboard
 
 ### AuditLog Model
 
@@ -345,7 +358,8 @@ Comprehensive activity logging for compliance and security.
 - Settings changes
 - Data exports
 - Administrative actions
-- Tour booking submissions (NEW)
+- Tour booking submissions
+- CMS article changes (NEW)
 
 ---
 

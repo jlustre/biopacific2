@@ -37,7 +37,7 @@
         <div class="grid grid-cols-2 gap-3 sm:gap-4">
           <div class="aspect-[3/2] overflow-hidden rounded-2xl shadow-lg col-span-2 relative">
             <img src="{{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }}"
-              alt="Physical therapy session" class="h-full w-full object-cover max-w-full h-auto block">
+              alt="Physical therapy session" class="w-full object-cover max-w-full block">
             <div class="absolute bottom-4 right-4 z-10">
               <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
                 <div class="text-2xl md:text-3xl font-black" style="color: {{ $primary }}">
@@ -189,10 +189,11 @@
           <div class="rounded-2xl border bg-white p-3 shadow-md hover:shadow-lg transition">
             <div class="flex items-center gap-3">
               <div class="h-10 w-10 rounded-full flex items-center justify-center
-                          @if($tone==='green') bg-green-100 text-green-700
-                          @elseif($tone==='amber') bg-amber-100 text-amber-700
-                          @elseif($tone==='blue') bg-blue-100 text-blue-700
-                          @else bg-purple-100 text-purple-700 @endif">
+                          {{
+                            $tone === 'green' ? 'bg-green-100 text-green-700' :
+                            ($tone === 'amber' ? 'bg-amber-100 text-amber-700' :
+                            ($tone === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'))
+                          }}">
                 ✓
               </div>
               <div class="font-semibold text-slate-900">{{ $k }}</div>

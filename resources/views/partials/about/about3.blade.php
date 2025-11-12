@@ -149,11 +149,11 @@
             ] as [$title,$desc,$tone])
             <div class="rounded-2xl bg-white ring-1 ring-slate-200 p-4 shadow hover:shadow-md transition">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-xl flex items-center justify-center
-             @if($tone==='green') bg-green-100 text-green-700
-             @elseif($tone==='amber') bg-amber-100 text-amber-700
-             @elseif($tone==='blue') bg-blue-100 text-blue-700
-             @else bg-purple-100 text-purple-700 @endif">
+                    <div class="h-10 w-10 rounded-xl flex items-center justify-center {{
+                        $tone === 'green' ? 'bg-green-100 text-green-700' :
+                        ($tone === 'amber' ? 'bg-amber-100 text-amber-700' :
+                        ($tone === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'))
+                    }}">
                         ✓
                     </div>
                     <div class="font-semibold text-slate-900">{{ $title }}</div>

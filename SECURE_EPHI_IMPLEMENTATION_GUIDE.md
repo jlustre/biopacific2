@@ -1,10 +1,10 @@
 # Secure ePHI Forms Implementation Guide
 
-This document explains the HIPAA-compliant secure ePHI (Electronic Protected Health Information) handling system implemented for form submissions in the Bio-Pacific application.
+This document explains the HIPAA-compliant secure ePHI (Electronic Protected Health Information) handling system implemented for form submissions, Book a Tour, and CMS articles in the Bio-Pacific application.
 
 ## Overview
 
-The system ensures that all form submissions containing potential PHI are:
+The system ensures that all form submissions, Book a Tour requests, and CMS articles containing potential PHI are:
 
 - **Encrypted at rest** in the database
 - **Never transmitted via email** in plain text
@@ -17,7 +17,7 @@ The system ensures that all form submissions containing potential PHI are:
 
 #### EncryptsEphi Trait (`app/Traits/EncryptsEphi.php`)
 
-- Automatically encrypts sensitive fields before database storage
+- Automatically encrypts sensitive fields before database storage (Contact, Book a Tour, CMS)
 - Decrypts data when retrieved (only in secure contexts)
 - Generates secure access tokens for viewing
 - Provides audit logging capabilities
@@ -31,7 +31,7 @@ The system ensures that all form submissions containing potential PHI are:
 
 #### Database Schema Changes
 
-New fields added to `inquiries` table:
+New fields added to `inquiries`, `book_a_tour_requests`, and `cms_articles` tables:
 
 ```sql
 access_token VARCHAR(64) UNIQUE    -- Secure access token
@@ -52,12 +52,21 @@ encryption_key_hint TEXT           -- Key verification hint
 - Provides inquiry metadata (date, facility, consent status)
 - Auto-generates time-limited access tokens
 
-#### Email Template (`resources/views/emails/secure-contact-notification.blade.php`)
+#### SecureBookATourMail (`app/Mail/SecureBookATourMail.php`)
+
+- Sends notifications for Book a Tour requests with no PHI content
+- Includes secure access links and request metadata
+
+#### Email Templates
+
+- `resources/views/emails/secure-contact-notification.blade.php`
+- `resources/views/emails/secure-book-a-tour-notification.blade.php`
 
 **What's INCLUDED in emails:**
 
 - Facility name
-- Inquiry received timestamp
+- Inquiry or request received timestamp
+- Secure access link
 - Consent/PHI confirmation status
 - Secure access link (24-hour expiration)
 

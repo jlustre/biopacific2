@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to deploy the Bio-Pacific facility management system to production where each facility has its own domain name without exposing "admin" in public URLs. The system maintains a single codebase serving multiple facilities while keeping admin functionality separate and secure.
+This guide explains how to deploy the Bio-Pacific facility management system to production, supporting multiple facility domains, secure admin separation, and HIPAA-compliant features (including Book a Tour and CMS). The system maintains a single codebase serving all facilities, with admin functionality isolated and secure.
 
 ## Table of Contents
 
@@ -23,43 +23,56 @@ This guide explains how to deploy the Bio-Pacific facility management system to 
 
 ## Current Architecture
 
-Your existing system already includes:
+Your system includes:
 
-- **Tenant Resolution**: `ResolveTenant` middleware resolves facilities by domain
-- **Facility Model**: Has domain fields and `findByDomain()` method
-- **Public Routes**: Routes that don't require authentication
+- **Tenant Resolution**: `ResolveTenant` middleware resolves facilities by domain/subdomain
+- **Facility Model**: Domain/subdomain fields, `findByDomain()` method, and multi-tenant isolation
+- **Public Routes**: Facility-specific routes, no authentication required
+- **Admin Routes**: Isolated under admin domain, protected by authentication and permissions
+- **Book a Tour System**: Secure, encrypted, token-based access for ePHI
+- **CMS Integration**: Admin dashboard for blog/article management
 
 ## Implementation Strategy
 
 ### System Overview
 
-- Single Laravel application serves multiple facility domains
+- Single Laravel application serves multiple facility domains and subdomains
 - Public facility routes require no authentication
-- Admin routes are domain-separated and protected
-- Each facility maintains its branding and content
+- Admin routes are separated under a dedicated admin domain and protected by authentication/permissions
+- Each facility maintains its branding, content, and layout configuration
+- Book a Tour and contact forms use secure, encrypted, token-based access for ePHI
+- CMS is available for authorized admin users only
 
 ### Domain Structure
 
 ```
 Public Facility Domains:
 ├── valehealthcare.com → Vale Health Care Center
-├── pacificmanor.com → Pacific Manor Care
-└── creeksidehcc.com → Creekside Health Care Center
+├── pacificmanorcare.com → Pacific Manor Care
+├── sunrisegardens.com → Sunrise Gardens Healthcare
+├── mountainviewal.com → Mountain View Assisted Living
+├── oakwoodsenior.com → Oakwood Senior Community
+└── [other configured facilities]
 
 Admin Domain:
-└── admin.biopacific.com → Administrative Interface
+└── admin.biopacific.com → Administrative Interface (CMS, Book a Tour management, audit logs)
 ```
 
 ## Domain Configuration
 
-Each facility will have its own domain pointing to the same Laravel application:
+Each facility has its own domain/subdomain pointing to the same Laravel application. The admin domain is used for all administrative and CMS functions.
 
-| Facility                     | Domain                 | Purpose               |
-| ---------------------------- | ---------------------- | --------------------- |
-| Vale Health Care Center      | `valehealthcare.com`   | Public website        |
-| Pacific Manor Care           | `pacificmanor.com`     | Public website        |
-| Creekside Health Care Center | `creeksidehcc.com`     | Public website        |
-| Admin Interface              | `admin.biopacific.com` | Administrative access |
+| Facility                      | Domain                 | Purpose               |
+| ----------------------------- | ---------------------- | --------------------- |
+| Vale Health Care Center       | `valehealthcare.com`   | Public website        |
+| Pacific Manor Care            | `pacificmanorcare.com` | Public website        |
+| Sunrise Gardens Healthcare    | `sunrisegardens.com`   | Public website        |
+| Mountain View Assisted Living | `mountainviewal.com`   | Public website        |
+| Oakwood Senior Community      | `oakwoodsenior.com`    | Public website        |
+| [Other facilities]            | [domain]               | Public website        |
+| Admin Dashboard               | `admin.biopacific.com` | Admin/CMS interface   |
+| Creekside Health Care Center  | `creeksidehcc.com`     | Public website        |
+| Admin Interface               | `admin.biopacific.com` | Administrative access |
 
 ## Route Structure Changes
 

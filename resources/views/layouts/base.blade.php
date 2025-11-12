@@ -29,7 +29,6 @@
     <script>
         // Ensure Alpine.js is only initialized once
         document.addEventListener('alpine:init', () => {
-            console.log('Alpine.js initialized - single instance');
             
             // Add global fallback data to prevent undefined variable errors
             if (window.Alpine) {

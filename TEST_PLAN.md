@@ -186,13 +186,227 @@ This test plan covers the comprehensive testing strategy for the Bio-Pacific Hea
 
 ### Facility Management
 
-- Test creating a facility with valid and invalid data
-- Test updating facility details (name, address, images, colors)
-- Test deleting a facility and verifying data removal
-- Test listing all facilities (admin and public views)
-- Test multi-tenant isolation (no cross-facility data access)
-- Test facility-specific layout selection and rendering
-- Test searching/filtering facilities
+**Test Cases:**
+
+- Create facility with valid/invalid data
+- Update facility details (name, address, images, colors, hero_video_id)
+- Delete facility and verify data removal
+- List facilities (admin/public views)
+- Multi-tenant isolation (no cross-facility data access)
+- Facility-specific layout selection/rendering
+- Search/filter facilities
+- Assign color scheme and verify rendering
+- Assign layout template and config, verify preview
+- Validate facility relationships (services, news, faqs, testimonials)
+
+### User Management
+
+**Test Cases:**
+
+- Register user with valid/invalid data
+- Login/logout with correct/incorrect credentials
+- Password reset flow
+- Two-factor authentication setup/login
+- Role assignment and permission enforcement
+- Access restrictions for each role
+- Session expiration and logout
+- Assign user to facility and verify isolation
+
+### Service Management
+
+**Test Cases:**
+
+- Create/edit/delete service
+- Assign service to facility
+- Feature highlighting and ordering
+- Validate service fields (name, description, icon, features)
+- Display services on public/admin views
+
+### Tour Request System
+
+**Test Cases:**
+
+- Submit tour booking form (valid/invalid data)
+- Email notification delivery to facility contacts
+- Store and retrieve tour requests
+- Facility-specific tour booking configurations
+- Integration with contact forms
+- Spam protection and rate limiting
+- Mobile responsiveness of booking forms
+- Admin interface for managing tour requests
+- Audit log for tour requests
+
+### Testimonial Management
+
+**Test Cases:**
+
+- Create/edit/delete testimonial
+- Assign testimonial to facility
+- Display testimonials on public/admin views
+- Feature highlighting and rating validation
+- Delete testimonial and verify photo removal from storage
+
+### Blog Management
+
+**Test Cases:**
+
+- Create/edit/delete blog post
+- Assign blog to facility
+- Publish/unpublish blog
+- Display blog posts on public/admin views
+- Validate blog fields (title, content, author, images)
+
+### Audit Logging
+
+**Test Cases:**
+
+- Log user login/logout events
+- Log content changes (create, update, delete)
+- Log settings changes
+- Retrieve/filter/export audit logs
+- Compliance with security/privacy requirements
+
+### Web Content Management
+
+**Test Cases:**
+
+- Edit/publish web content per facility
+- Versioning and rollback
+- Display web content on public site
+- Validate web content fields (sections, variances)
+
+### Job Application & Opening
+
+**Test Cases:**
+
+- Create/edit/delete job opening
+- Submit job application (valid/invalid data)
+- Assign application to job opening
+- Encrypt ePHI fields in job application
+- Admin interface for managing applications
+
+### FAQ Management
+
+**Test Cases:**
+
+- Create/edit/delete FAQ
+- Assign FAQ to facility
+- Display FAQs on public/admin views
+- Default and facility-specific FAQ scopes
+
+### News Management
+
+**Test Cases:**
+
+- Create/edit/delete news
+- Assign news to facility
+- Display news on public/admin views
+- Image upload and deletion
+
+### Webmaster Contact
+
+**Test Cases:**
+
+- Submit contact request (public/admin)
+- Email notification delivery
+- Log contact requests
+- View/manage contact requests in admin
+
+### Employee Email Mapping & Email Recipient
+
+**Test Cases:**
+
+- Create/edit/delete employee email mapping
+- Assign mapping to facility
+- Primary/active contact scopes
+- Create/edit/delete email recipient
+- Assign recipient to facility
+
+### Color Scheme
+
+**Test Cases:**
+
+- Create/edit/delete color scheme
+- Assign color scheme to facility
+- Validate color rendering in UI
+
+### Layout Builder (Template & Section)
+
+**Test Cases:**
+
+- Create/edit/delete layout template
+- Assign template to facility
+- Configure layout sections and variants
+- Preview and apply layout changes
+- Validate section config and component paths
+
+### Policy Version & Legal
+
+**Test Cases:**
+
+- Create/edit/delete policy version/legal
+- Assign to facility
+- Display policies/legal on public/admin views
+
+### Data & Database
+
+**Test Cases:**
+
+- Run migrations/seeders
+- Factory-based test data generation
+- Data integrity and relationship constraints
+- Backup/restore operations
+- Validate hero_video_id field storage
+- Validate book a tour data persistence/relationships
+
+### Frontend & UI
+
+**Test Cases:**
+
+- Blade view rendering for all modules
+- Livewire component interactivity
+- Responsive design on multiple devices
+- Accessibility (ARIA, keyboard navigation)
+- Error/edge case handling in UI
+
+### Security & Compliance
+
+**Test Cases:**
+
+- Authentication/session management
+- Authorization/role checks
+- Audit log completeness/integrity
+- HIPAA compliance validation
+- Data privacy/isolation
+
+### Video Integration & Modal System
+
+**Test Cases:**
+
+- YouTube video embedding (valid/invalid IDs)
+- Video modal opening/closing
+- Video autoplay/user controls
+- Modal accessibility (keyboard/screen readers)
+- Responsive video display
+- Integration with hero layouts
+- Reduced motion preferences
+
+### Recent Feature Enhancements (Nov 2025)
+
+**Test Cases:**
+
+- Video modal functionality across browsers
+- Tour booking form submission/email delivery
+- Hero layout rendering with video integration
+- Video playback on Chrome, Firefox, Safari, Edge
+- Modal functionality on mobile devices
+- JavaScript compatibility
+- Video loading/streaming performance
+- Modal rendering speed
+- Hero section loading times
+- Screen reader compatibility for video controls
+- Keyboard navigation for modals
+- Reduced motion preferences handling
 
 ### User Authentication & Authorization
 

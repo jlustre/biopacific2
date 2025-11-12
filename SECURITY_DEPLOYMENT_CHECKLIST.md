@@ -10,6 +10,7 @@
 - [ ] **Database credentials** - Secure and encrypted connection
 - [ ] **Email configuration** - SMTP with TLS encryption
 - [ ] **HTTPS enforcement** - All traffic encrypted
+- [ ] **ePHI Encryption Enabled** - All PHI fields encrypted at rest (Book a Tour, Contact, CMS)
 
 ### Database Security
 
@@ -21,11 +22,12 @@
 
 ### Code Security Review
 
-- [ ] **EncryptsEphi trait** - Applied to all models with ePHI
-- [ ] **Secure controllers** - Proper token validation
-- [ ] **Audit logging** - Complete coverage of access attempts
-- [ ] **Email templates** - Zero ePHI in email content
-- [ ] **Route security** - Proper middleware and protection
+- [ ] **EncryptsEphi trait** - Applied to all models with ePHI (Contact, Book a Tour, CMS)
+- [ ] **Secure controllers** - Proper token validation and time-limited access
+- [ ] **Audit logging** - Complete coverage of access attempts and ePHI access
+- [ ] **Email templates** - Zero ePHI in email content; secure access links only
+- [ ] **Route security** - Proper middleware and protection for admin, CMS, and ePHI endpoints
+- [ ] **CMS Permissions** - Granular permissions for article management, media, and revisions
 
 ## 🔒 Production Deployment Steps
 
@@ -58,6 +60,9 @@ echo 'Facilities: ' . App\Models\Facility::count() . ' records' . PHP_EOL;
 
 ```bash
 # Clean any test data
+# Verify ePHI encryption and token-based access
+# Test Book a Tour and Contact forms for secure handling
+# Test CMS for permission enforcement and audit logging
 php artisan security:clean-test-data --confirm
 
 # Verify data sources
@@ -289,9 +294,9 @@ php artisan up
 
 ### Security Team Approval
 
-- [ ] **Security Officer**: **********\_********** Date: **\_\_\_**
-- [ ] **Technical Lead**: **********\_********** Date: **\_\_\_**
-- [ ] **Compliance Officer**: ********\_******** Date: **\_\_\_**
+- [ ] **Security Officer**: ****\*\*****\_****\*\***** Date: **\_\_\_**
+- [ ] **Technical Lead**: ****\*\*****\_****\*\***** Date: **\_\_\_**
+- [ ] **Compliance Officer**: **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
 
 ### Production Readiness Confirmation
 
@@ -302,8 +307,8 @@ php artisan up
 - [ ] Emergency procedures established
 - [ ] Staff training completed
 
-**Deployment Approved By**: **********\_**********  
-**Date**: **********\_**********  
+**Deployment Approved By**: ****\*\*****\_****\*\*****  
+**Date**: ****\*\*****\_****\*\*****  
 **Environment**: Production  
 **Version**: 1.0
 

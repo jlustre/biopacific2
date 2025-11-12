@@ -55,7 +55,7 @@ $facility['social'] = [
     }
     }
     @endphp
-    <div class="mt-10 grid gap-8 @if($isBioPacific) md:grid-cols-2 @else md:grid-cols-3 @endif items-start">
+    <div class="mt-10 grid gap-8 {{ $isBioPacific ? 'md:grid-cols-2' : 'md:grid-cols-3' }} items-start">
 
       {{-- Contact Information (with social icons) --}}
       <aside class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-xl p-6 sm:p-8 h-full">
