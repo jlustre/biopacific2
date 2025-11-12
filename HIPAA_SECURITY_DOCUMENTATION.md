@@ -16,6 +16,8 @@
 12. [Compliance Features](#compliance-features)
 13. [Troubleshooting](#troubleshooting)
 
+14. [Business Associate Agreements (BAA)](#business-associate-agreements-baa)
+
 ---
 
 ## Overview
@@ -1188,3 +1190,36 @@ For additional support or questions, refer to the Laravel documentation and HIPA
 **Document Version**: 1.0  
 **Last Updated**: November 7, 2025  
 **Prepared By**: BioPacific Development Team
+
+---
+
+## Business Associate Agreements (BAA)
+
+### Vendor BAA Registry
+
+All vendors and service providers who may access, process, transmit, or store ePHI must have a signed Business Associate Agreement (BAA) on file. This includes hosting, database, mail, chat, logs, and backup providers.
+
+- See `docs/BAA_VENDOR_REGISTRY.md` for a complete list of vendors and BAA status.
+- Registry is updated whenever a new vendor is onboarded or an existing vendor changes services.
+
+### BAA Storage Process
+
+Signed BAAs are stored securely in a private, access-controlled location (e.g., Google Drive, OneDrive, or internal secure server). The code repository only contains references and status, not the actual signed documents.
+
+Access to signed BAAs is restricted to compliance, legal, and executive staff. All access requests and changes are logged.
+
+See `docs/BAA_STORAGE_PROCESS.md` for details.
+
+### Access Controls for BAA and Vendor Information
+
+- Only authorized personnel may access BAA documents and vendor registry.
+- Access is managed via role-based permissions and documented in internal policy.
+- Registry and process documentation are read-only for most staff; edit access is limited to compliance and executive roles.
+
+### Periodic BAA Review Process
+
+- BAAs are reviewed annually and upon any vendor/service change.
+- Compliance team verifies that all vendors with ePHI access have current BAAs.
+- Review results are documented in the registry and reported to executive leadership.
+
+---

@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\JobApplicationController as AdminJobApplicationController;
 use App\Http\Controllers\Admin\SecurityMonitoringController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\Admin\BaaRegistryController;
 use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminPermissionController;
 use App\Http\Controllers\AdminRoleAssignmentController;
@@ -91,6 +92,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
     
     // HIPAA Interactive route
+    Route::get('/hipaa-checklist', function () {
+        // TODO: Replace with actual controller if needed
+        return view('admin.hipaa-checklist.index');
+    })->name('hipaa-checklist.index');
     Route::get('/facilities/{facility}/hipaa-interactive', function (Facility $facility) {
         return view('admin.facilities.hipaa-interactive', compact('facility'));
     })->name('facilities.hipaa.interactive');
@@ -118,6 +123,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     
     // Permission Management CRUD
     Route::get('/permissions', [AdminPermissionController::class, 'index'])->name('permissions.index');
+
+    // BAA Registry CRUD
+    Route::get('/baa-registry', [BaaRegistryController::class, 'index'])->name('baa-registry.index');
+    Route::get('/baa-registry/create', [BaaRegistryController::class, 'create'])->name('baa-registry.create');
+    Route::post('/baa-registry', [BaaRegistryController::class, 'store'])->name('baa-registry.store');
+    Route::get('/baa-registry/{vendor}/edit', [BaaRegistryController::class, 'edit'])->name('baa-registry.edit');
+    Route::put('/baa-registry/{vendor}', [BaaRegistryController::class, 'update'])->name('baa-registry.update');
+    Route::delete('/baa-registry/{vendor}', [BaaRegistryController::class, 'destroy'])->name('baa-registry.destroy');
     Route::get('/permissions/create', [AdminPermissionController::class, 'create'])->name('permissions.create');
     Route::post('/permissions', [AdminPermissionController::class, 'store'])->name('permissions.store');
     Route::get('/permissions/{permission}', [AdminPermissionController::class, 'show'])->name('permissions.show');
@@ -169,7 +182,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::get('/communications/employee-email-mappings', function () {
         return view('admin.employee-email-mappings');
     })->name('communications.employee-email-mappings');
-
 
     
     // Gallery image management
