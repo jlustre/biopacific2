@@ -12,9 +12,10 @@
         <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-8 md:p-12">
 
             <div class="prose prose-lg max-w-none">
-                <div class="bg-blue-50 rounded-xl p-6 mb-8">
-                    <h2 class="text-xl font-bold text-blue-900 mb-2">Our Commitment to Accessibility</h2>
-                    <p class="text-blue-800 text-sm">
+                <div class="rounded-xl p-6 mb-8" style="background-color: {{ $accent }}">
+                    <h2 class="text-xl font-bold mb-2" style="color: {{ $neutral_dark }}">Our Commitment to
+                        Accessibility</h2>
+                    <p class="text-slate-600 text-sm">
                         We are committed to ensuring digital accessibility for people with disabilities and providing
                         equal access to our website and healthcare services.
                     </p>

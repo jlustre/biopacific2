@@ -139,13 +139,11 @@
                                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <h4 class="font-bold text-secondary">Accreditations</h4>
+                            <h4 class="font-bold" style="color: {{ $primary }}">Accreditations</h4>
                         </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">
-                            State-licensed facility with Medicare and Medicaid certification, ensuring compliance with
-                            highest care
-                            standards.
-                        </p>
+                        <p class="text-sm leading-relaxed" style="color: {{ $neutral_dark }}">State-licensed facility
+                            with Medicare and
+                            Medicaid certification, ensuring compliance with highest care standards. </p>
                     </div>
 
                     <div
@@ -159,9 +157,9 @@
                                     </path>
                                 </svg>
                             </div>
-                            <h4 class="font-bold text-secondary">Awards</h4>
+                            <h4 class="font-bold" style="color: {{ $primary }}">Awards</h4>
                         </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">
+                        <p class="text-sm leading-relaxed" style="color: {{ $neutral_dark }}">
                             Recognized for outstanding quality care and exceptional resident satisfaction scores by
                             state health
                             authorities.
@@ -179,9 +177,9 @@
                                     </path>
                                 </svg>
                             </div>
-                            <h4 class="font-bold text-secondary">Facility</h4>
+                            <h4 class="font-bold" style="color: {{ $primary }}">Facility</h4>
                         </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">
+                        <p class="text-sm leading-relaxed" style="color: {{ $neutral_dark }}">
                             Modern, comfortable facilities designed with accessibility and safety in mind for optimal
                             resident
                             well-being.
@@ -199,9 +197,9 @@
                                     </path>
                                 </svg>
                             </div>
-                            <h4 class="font-bold text-secondary">Staff</h4>
+                            <h4 class="font-bold" style="color: {{ $primary }}">Staff</h4>
                         </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">
+                        <p class="text-sm leading-relaxed" style="color: {{ $neutral_dark }}">
                             Highly trained, compassionate healthcare professionals dedicated to providing personalized,
                             24/7 care.
                         </p>

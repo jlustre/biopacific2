@@ -73,18 +73,19 @@ $hasVideo = !empty($facility['hero_video_id']);
 
         {{-- Tagline --}}
         <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1"
-          class="text-primary border-primary">
-          <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+          class="border-primary" style="color: {{ $primary }}">
+          <span class="inline-block h-2.5 w-2.5 rounded-full"
+            style="background: {{ $primary }}; color: {{ $primary }};"></span>
           {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
         </span>
 
         {{-- Headline --}}
-        <h1 class="mt-4 text-3xl md:text-5xl font-black leading-tight" style="color: {{ $primary }};">
+        <h1 class="mt-4 text-3xl md:text-4xl lg:text-5xl font-black leading-tight" style="color: {{ $primary }};">
           {!! $facility['headline'] ?? 'Where Comfort Meets Compassion' !!}
         </h1>
 
         {{-- Subheadline --}}
-        <p class="mt-3 md:mt-4 text-slate-600 md:text-lg">
+        <p class="mt-3 md:mt-4 md:text-lg" style="color: {{ $neutral_dark }}">
           {!! $facility['subheadline'] ?? 'Skilled nursing, rehabilitation, memory care, and hospice in a warm,
           dignified setting.' !!}
         </p>
@@ -92,7 +93,7 @@ $hasVideo = !empty($facility['hero_video_id']);
         {{-- Action tray --}}
         <div class="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
           @php
-          $activeSections = $active_sections ?? ($facility['active_sections'] ?? []);
+          $activeSections = $activeSections ?? ($facility['active_sections'] ?? []);
           if (is_string($activeSections)) {
           $activeSections = json_decode($activeSections, true) ?: [];
           } elseif ($activeSections instanceof \Illuminate\Support\Collection) {
@@ -103,16 +104,17 @@ $hasVideo = !empty($facility['hero_video_id']);
           @endphp
           @if(!empty($activeSections) && in_array('book', $activeSections))
           <a href="#book"
-            class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold text-white shadow-lg hover:shadow-xl transition"
+            class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold text-white shadow-lg transition duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:brightness-110 hover:bg-opacity-90"
             style="background: {{ $primary }}">Book a Tour</a>
           @endif
 
           <a href="#contact"
-            class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 hover:bg-slate-50 transition"
+            class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 transition duration-200 hover:bg-slate-50 hover:-translate-y-0.5 hover:brightness-110"
             style="border-color: {{ $secondary }}; color: {{ $secondary }};">Contact Us</a>
 
           @if(!empty($facility['hero_video_id']))
-          <button id="playVideoBtn" class="inline-flex items-center rounded-xl px-5 py-3 text-white font-medium"
+          <button id="playVideoBtn"
+            class="cursor-pointer inline-flex items-center rounded-xl px-5 py-3 text-white font-medium transition duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:brightness-110"
             style="background-color: {{ $neutral_dark }}; color: {{ $neutral_light }}">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path d="M8 5v10l8-5-8-5z" />

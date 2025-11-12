@@ -27,12 +27,13 @@ $accent = '#F59E0B';
         <div class="text-center max-w-3xl mx-auto">
             <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
                 class="text-primary border-primary">
-                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $primary }}"></span>
                 We’re here to help
             </span>
             <h2 class="mt-4 text-3xl md:text-4xl font-extrabold" style="color: {{ $primary }};">Frequently Asked
                 Questions</h2>
-            <p class="mt-2 text-slate-600 md:text-lg">Answers to common questions about care, visits, dining, safety,
+            <p class="mt-2 md:text-lg" style="color: {{ $neutral_dark }}">Answers to common questions about care,
+                visits, dining, safety,
                 and more.</p>
         </div>
 
@@ -41,8 +42,9 @@ $accent = '#F59E0B';
             {{-- LEFT: Intro, quick links, contact --}}
             <aside class="space-y-6">
                 <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-slate-900">Find answers fast</h3>
-                    <p class="mt-1 text-sm text-slate-600">Search FAQs or browse the most common topics.</p>
+                    <h3 class="text-lg font-semibold" style="color: {{ $primary }};">Find answers fast</h3>
+                    <p class="mt-1 text-sm" style="color: {{ $neutral_dark }}">Search FAQs or browse the most common
+                        topics.</p>
 
                     {{-- Search --}}
                     <div class="mt-4">
@@ -86,14 +88,17 @@ $accent = '#F59E0B';
                                             style="background: {{ $primary }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
                                                 viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 14h.01M12 8a2 2 0 00-2 2c0 1.1.9 2 2 2s2 .9 2 2-.9 2-2 2" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                                    d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 14h.01M12 8a2 2 0 1 1 4 0c0 1.1-.9 2-2 2s-2 .9-2 2 .9 2 2 2" />
+                                                <text x="12" y="16" text-anchor="middle" font-size="10"
+                                                    fill="currentColor" font-family="Arial" dy="-2">?</text>
                                             </svg>
                                         </span>
                                         <div class="flex-1">
                                             <div class="flex items-center justify-between gap-3">
                                                 <div>
-                                                    <span class="font-semibold text-slate-900">{{ $faq->question
+                                                    <span class="font-semibold" style="color: {{ $neutral_dark }}">{{
+                                                        $faq->question
                                                         }}</span>
                                                     <div class="flex items-center gap-2 mt-1">
                                                         @if($faq->category)
@@ -110,7 +115,8 @@ $accent = '#F59E0B';
                                                         @endif
                                                         @if($faq->is_default)
                                                         <span
-                                                            class="text-xs text-blue-800 font-medium bg-blue-100 px-2 py-1 rounded-full">
+                                                            class="text-xs text-blue-800 font-medium bg-blue-100 px-2 py-1 rounded-full"
+                                                            style="color: {{ $secondary }}; background: {{ $neutral_light }}20;">
                                                             Default
                                                         </span>
                                                         @endif
@@ -144,8 +150,9 @@ $accent = '#F59E0B';
 
                 {{-- Contact CTA --}}
                 <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-slate-900">Still have questions?</h3>
-                    <p class="mt-1 text-sm text-slate-600">Our caring team is here to help with any additional questions
+                    <h3 class="text-lg font-semibold" style="color: {{ $primary }};">Still have questions?</h3>
+                    <p class="mt-1 text-sm" style="color: {{ $neutral_dark }};">Our caring team is here to help with any
+                        additional questions
                         about our services.</p>
 
                     @php
@@ -232,10 +239,10 @@ $accent = '#F59E0B';
                     }
                     @endphp
 
-                    <div class="mt-4 space-y-3">
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                         <a href="tel:{{ \App\Helpers\PhoneHelper::forTel($facilityPhone) }}"
-                            class="inline-flex items-center justify-center w-full px-4 py-3 rounded-xl text-white font-medium shadow-sm transition-colors duration-200"
-                            style="background: {{ $primary }}; hover:opacity-90;">
+                            class="inline-flex items-center justify-center w-full px-4 py-3 rounded-xl text-white font-medium shadow-sm transition duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:brightness-110"
+                            style="background: {{ $primary }};">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
@@ -244,7 +251,8 @@ $accent = '#F59E0B';
                             Call {{ \App\Helpers\PhoneHelper::format($facilityPhone) }}
                         </a>
                         <a href="#contact"
-                            class="inline-flex items-center justify-center w-full px-4 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors duration-200">
+                            class="inline-flex items-center justify-center w-full px-4 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl transition duration-200 hover:bg-slate-200 hover:shadow-lg hover:-translate-y-0.5"
+                            style="border: 1px solid {{ $neutral_dark }}">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">

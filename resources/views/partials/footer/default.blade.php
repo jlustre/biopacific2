@@ -20,7 +20,7 @@
                 @if(!empty($facility['logo_url']))
                 <img src="{{ asset('images/' . $facility['logo_url']) }}"
                   alt="{{ $facility['name'] ?? 'Bio-Pacific' }} Logo"
-                  class="h-12 w-12 rounded-2xl object-contain bg-white/10 shadow-lg">
+                  class="h-12 w-12 rounded-2xl object-contain bg-white/70 shadow-lg">
                 @else
                 <span
                   class="inline-flex h-12 w-12 rounded-2xl items-center justify-center bg-gradient-to-br from-primary to-primary/80 text-white font-bold text-lg shadow-lg">

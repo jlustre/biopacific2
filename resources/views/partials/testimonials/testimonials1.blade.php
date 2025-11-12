@@ -1,4 +1,4 @@
-@php
+{{-- @php
 if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
 $scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
 $primary = $scheme->primary_color ?? '#0EA5E9';
@@ -9,7 +9,7 @@ $primary = '#0EA5E9';
 $secondary = '#1E293B';
 $accent = '#F59E0B';
 }
-@endphp
+@endphp --}}
 
 @if(isset($testimonials) && $testimonials && $testimonials->count() > 0)
 <section id="testimonials" class="relative isolate overflow-hidden py-16 sm:py-24">
@@ -28,11 +28,13 @@ $accent = '#F59E0B';
         <div class="text-center max-w-3xl mx-auto">
             <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1"
                 class="text-primary border-primary">
-                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+                <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $primary }}"></span>
                 Voices from Our Community
             </span>
-            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold text-slate-900">What Families & Residents Say</h2>
-            <p class="mt-2 text-slate-600 md:text-lg">Real experiences about our care, communication, and daily life.
+            <h2 class="mt-4 text-3xl md:text-4xl font-extrabold" style="color: {{ $primary }}">What Families & Residents
+                Say</h2>
+            <p class="mt-2 md:text-lg" style="color: {{ $neutral_dark }}">Real experiences about our care,
+                communication, and daily life.
             </p>
         </div>
 
@@ -42,7 +44,7 @@ $accent = '#F59E0B';
             <div class="rounded-3xl bg-white ring-1 ring-slate-200 p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <div class="text-sm text-slate-600">Average Rating</div>
+                        <div class="text-sm" style="color: {{ $neutral_dark }}">Average Rating</div>
                         <div class="mt-1 flex items-end gap-3">
                             <div class="text-3xl font-extrabold text-slate-900" x-text="avgRating.toFixed(1)"></div>
                             <div class="flex items-center">
@@ -56,7 +58,7 @@ $accent = '#F59E0B';
                         </div>
                     </div>
                     <div class="w-32">
-                        <div class="text-xs text-slate-500 mb-1">5-star share</div>
+                        <div class="text-xs mb-1" style="color: {{ $neutral_dark }}">5-star share</div>
                         <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
                             <div class="h-full rounded-full"
                                 :style="`width:${fiveStarPct}%; background: linear-gradient(90deg, var(--primary), var(--accent));`">
@@ -66,17 +68,17 @@ $accent = '#F59E0B';
                         </div>
                     </div>
                 </div>
-                <div class="mt-4 grid grid-cols-3 gap-3 text-xs text-slate-600">
+                <div class="mt-4 grid grid-cols-3 gap-3 text-xs" style="color: {{ $neutral_dark }}">
                     <div class="rounded-xl ring-1 ring-slate-200 p-3 text-center">
-                        <div class="text-slate-400 uppercase">Total</div>
+                        <div class="uppercase" style="color: {{ $neutral_dark }}">Total</div>
                         <div class="mt-1 font-semibold text-slate-900" x-text="all.length"></div>
                     </div>
                     <div class="rounded-xl ring-1 ring-slate-200 p-3 text-center">
-                        <div class="text-slate-400 uppercase">Family</div>
+                        <div class="uppercase" style="color: {{ $neutral_dark }}">Family</div>
                         <div class="mt-1 font-semibold text-slate-900" x-text="countBy('Family')"></div>
                     </div>
                     <div class="rounded-xl ring-1 ring-slate-200 p-3 text-center">
-                        <div class="text-slate-400 uppercase">Residents</div>
+                        <div class="uppercase" style="color: {{ $neutral_dark }}">Residents</div>
                         <div class="mt-1 font-semibold text-slate-900" x-text="countBy('Resident')"></div>
                     </div>
                 </div>

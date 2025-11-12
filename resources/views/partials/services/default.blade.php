@@ -42,7 +42,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 
         {{-- Body --}}
         <div class="p-5">
-          <h3 class="text-lg font-semibold text-slate-900">
+          <h3 class="text-lg font-semibold" style="color: {{ $primary }}">
             {{ $service->name }}
           </h3>
           <p class="mt-2 text-sm leading-relaxed line-clamp-3" style="color: {{ $neutral_dark ?? '#334155' }}">
@@ -52,8 +52,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
           {{-- Actions --}}
           <div class="mt-4 flex items-center justify-center">
             <button onclick="openServiceModal('modal-{{ $index }}')"
-              class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+              class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow transition duration-200 shadow hover:shadow-lg hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
               aria-controls="modal-{{ $index }}" aria-expanded="false">
               Details
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -127,7 +127,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
             class="w-11 h-11 rounded-xl bg-{{ $service->color ?? 'gray' }}-100 ring-1 ring-{{ $service->color ?? 'gray' }}-200 overflow-hidden">
             <img src="{{ $service->image ? asset($service->image) : '' }}" alt="" class="w-full h-full object-cover">
           </div>
-          <h3 id="modal-title-{{ $index }}" class="text-xl font-bold text-slate-900">
+          <h3 id="modal-title-{{ $index }}" class="text-xl font-bold" style="color: {{ $primary }}">
             {{ $service->name }}
           </h3>
         </div>
@@ -152,7 +152,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
             </div>
           </div>
           <div class="lg:col-span-2">
-            <h4 class="text-base font-semibold text-slate-900 mb-3">Key Features</h4>
+            <h4 class="text-base font-semibold mb-2" style="color: {{ $neutral_dark }}">Key Features</h4>
             @if(!empty($service->features) && is_array($service->features))
             <ul class="space-y-2">
               @foreach($service->features as $feature)
@@ -176,14 +176,14 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
 
         <div class="mt-6 flex flex-col sm:flex-row gap-3">
           <a href="#contact"
-            class="cursor-pointer flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition shadow"
-            style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+            class="cursor-pointer flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition duration-200 shadow hover:shadow-lg hover:-translate-y-0.5 hover:brightness-110"
+            style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
             onclick="closeServiceModal('modal-{{ $index }}')">
             Contact Us About This Service
           </a>
           <button
-            class="flex-1 inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
-            onclick="closeServiceModal('modal-{{ $index }}')">
+            class="flex-1 inline-flex items-center justify-center rounded-full px-3 py-2 font-semibold bg-slate-100 text-slate-800 transition duration-200 hover:bg-slate-200 hover:shadow-lg hover:-translate-y-0.5"
+            style="border: 1px solid {{ $neutral_dark }};" onclick="closeServiceModal('modal-{{ $index }}')">
             Close
           </button>
         </div>

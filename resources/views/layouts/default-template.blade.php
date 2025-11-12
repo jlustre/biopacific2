@@ -45,9 +45,7 @@
     }
   </style>
 
-  <div
-    class="bg-white px-2 md:px-5 lg:mr-0 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors"
-    style="padding-top: 72px;">
+  <div class="bg-white px-2 md:px-5 antialiased transition-colors mx-0" style="padding-top: 72px;">
     <!-- Header -->
     @include('partials.header')
 
