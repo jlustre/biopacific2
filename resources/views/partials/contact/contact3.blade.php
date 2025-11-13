@@ -1,10 +1,11 @@
 @php
-$scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) : null;
-$primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
-$secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
-$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+use Illuminate\Support\Str;
+
+$primary = $primary ?? '#0EA5E9';
+$secondary = $secondary ?? '#1E293B';
+$accent = $accent ?? '#F59E0B';
 $mapsEmbed = $facility['location_map'] ?? null;
-$mapsHref = (isset($mapsEmbed) && \Illuminate\Support\Str::startsWith($mapsEmbed, ['http://','https://']))
+$mapsHref = (isset($mapsEmbed) && Str::startsWith($mapsEmbed, ['http://','https://']))
 ? $mapsEmbed
 : 'https://www.google.com/maps?q=' . urlencode(trim(($facility['address']??'').' '.($facility['city']??'').'
 '.($facility['state']??'').' '.($facility['zip']??'')));

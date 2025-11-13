@@ -43,6 +43,8 @@ use App\Livewire\Settings\Profile;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Admin\ServiceController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Auth\AdminMfaController;
+use App\Http\Controllers\Auth\AdminMfaSetupController;
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -332,6 +334,18 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.secure-tour-requests.index');
     Route::post('/admin/secure-tour-requests/{tourRequest}/regenerate-token', [App\Http\Controllers\SecureTourRequestController::class, 'regenerateToken'])
         ->name('admin.secure-tour-requests.regenerate-token');
+});
+
+// MFA routes for admin
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/mfa', [AdminMfaController::class, 'showMfaForm'])->name('admin.mfa.form');
+    Route::post('/admin/mfa', [AdminMfaController::class, 'verifyMfa'])->name('admin.mfa.verify');
+});
+
+// MFA setup routes for admin (web guard)
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/mfa/setup', [App\Http\Controllers\Auth\AdminMfaSetupController::class, 'showSetupForm'])->name('admin.mfa.setup.form');
+    Route::post('/admin/mfa/setup', [App\Http\Controllers\Auth\AdminMfaSetupController::class, 'storeSetup'])->name('admin.mfa.setup.store');
 });
 
 // Public Facility Route (catch-all, must be last)

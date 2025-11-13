@@ -1,9 +1,10 @@
 @php
+use Illuminate\Support\Str;
+
 // Color scheme logic
-$scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) : null;
-$primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
-$secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
-$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+$primary = $primary ?? '#0EA5E9';
+$secondary = $secondary ?? '#1E293B';
+$accent = $accent ?? '#F59E0B';
 
 // Social links
 $facility['social'] = [
@@ -39,7 +40,7 @@ $facility['social'] = [
 
     // Maps link fallback
     $mapsEmbed = $facility['location_map'] ?? null;
-    $mapsHref = (isset($mapsEmbed) && \Illuminate\Support\Str::startsWith($mapsEmbed, ['http://','https://']))
+    $mapsHref = (isset($mapsEmbed) && Str::startsWith($mapsEmbed, ['http://','https://']))
     ? $mapsEmbed
     : 'https://www.google.com/maps?q=' . urlencode(trim(($facility['address']??'').' '.($facility['city']??'').'
     '.($facility['state']??'').' '.($facility['zip']??'')));
@@ -232,7 +233,7 @@ $facility['social'] = [
         </div>
         <div>
           @if(!empty($facility['location_map']))
-          @if(\Illuminate\Support\Str::startsWith($facility['location_map'], ['http://','https://']))
+          @if(Str::startsWith($facility['location_map'], ['http://','https://']))
           <iframe src="{{ $facility['location_map'] }}" class="block w-full" height="560" loading="lazy"
             style="border:0;" allowfullscreen></iframe>
           @else

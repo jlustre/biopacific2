@@ -610,7 +610,9 @@ class FacilitySeeder extends Seeder
                 'dsd' => $i['dsd'] ?? null,
                 'staffer' => $i['staffer'] ?? null,
                 'region' => $i['region'] ?? null,
-                'hipaa_flags' => ['npp_page' => true, 'tls_hsts' => true, 'forms_secure' => true, 'baa_vendors' => true],
+                'hipaa_flags' => ['npp_page' => true, 
+                'tls_hsts' => true, 'forms_secure' => true, 
+                'baa_vendors' => true, 'tracking_controls' => true, 'security_headers' => true],
                 'latitude' => $i['latitude'] ?? 34.052235,
                 'longitude' => $i['longitude'] ?? -118.243683,
             ]);

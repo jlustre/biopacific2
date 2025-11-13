@@ -28,13 +28,22 @@ class AdminAuthenticatedSessionController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-    if (!Auth::guard('manager')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+    if (!Auth::guard('admin')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             return back()->withErrors([
                 'email' => trans('auth.failed'),
             ])->withInput();
         }
 
         $request->session()->regenerate();
+
+        // MFA enforcement for admins with google2fa_secret
+    $user = Auth::guard('admin')->user();
+        if ($user && $user->google2fa_secret) {
+            $request->session()->put('mfa_pending', true);
+            Auth::guard('admin')->logout(); // Log out to require MFA verification
+            $request->session()->save();
+            return redirect()->route('admin.mfa.form');
+        }
 
         return redirect()->intended(route('admin.dashboard.index', absolute: false));
     }
@@ -44,7 +53,7 @@ class AdminAuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-    Auth::guard('manager')->logout();
+    Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect('/admin/login');

@@ -1,4 +1,6 @@
 @php
+use Illuminate\Support\Str;
+
 $primary = $facility['primary_color'] ?? '#0EA5E9';
 $secondary = $facility['secondary_color'] ?? '#1E293B';
 $accent = $facility['accent_color'] ?? '#F59E0B';

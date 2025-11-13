@@ -4,16 +4,9 @@
     <div class="pointer-events-none absolute inset-0 -z-10">
         <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50"></div>
         @php
-        if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-        $scheme = \DB::table('color_schemes')->where('id', $facility['color_scheme_id'])->first();
-        $primary = $scheme ? ($scheme->primary_color ?? '#0EA5E9') : '#0EA5E9';
-        $secondary = $scheme ? ($scheme->secondary_color ?? '#155E75') : '#155E75';
-        $accent = $scheme ? ($scheme->accent_color ?? '#F59E0B') : '#F59E0B';
-        } else {
-        $primary = '#0EA5E9';
-        $secondary = '#155E75';
-        $accent = '#F59E0B';
-        }
+        $primary = $primary ?? '#0EA5E9';
+        $secondary = $secondary ?? '#155E75';
+        $accent = $accent ?? '#F59E0B';
         @endphp
         <div class="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-25"
             style="background: {{ $primary }}"></div>
@@ -29,6 +22,8 @@
         ])
 
         @php
+        use Illuminate\Support\Str;
+
         // Phone formatting
         $p_raw = preg_replace('/\D/','', $facility['phone'] ?? '');
         $p_fmt = $p_raw ? sprintf('(%s) %s-%s', substr($p_raw,0,3), substr($p_raw,3,3), substr($p_raw,6,4)) : 'N/A';

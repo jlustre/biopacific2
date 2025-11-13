@@ -1,15 +1,9 @@
 @php
+use Illuminate\Support\Str;
 
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->where('id', $facility['color_scheme_id'])->first();
-$primary = $scheme ? ($scheme->primary_color ?? '#0EA5E9') : '#0EA5E9';
-$secondary = $scheme ? ($scheme->secondary_color ?? '#1E293B') : '#1E293B';
-$accent = $scheme ? ($scheme->accent_color ?? '#F59E0B') : '#F59E0B';
-} else {
-$primary = '#0EA5E9';
-$secondary = '#1E293B';
-$accent = '#F59E0B';
-}
+$primary = $primary ?? '#0EA5E9';
+$secondary = $secondary ?? '#1E293B';
+$accent = $accent ?? '#F59E0B';
 @endphp
 
 <section id="faqs" class="relative isolate overflow-hidden py-16 sm:py-24">

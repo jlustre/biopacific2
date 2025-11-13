@@ -14,6 +14,7 @@ Route::middleware('guest')->group(function () {
     Route::get('register', Register::class)->name('register');
     Route::get('forgot-password', ForgotPassword::class)->name('password.request');
     Route::get('reset-password/{token}', ResetPassword::class)->name('password.reset');
+    Route::get('/admin/login', \App\Livewire\Auth\Login::class)->name('admin.login');
 });
 
 Route::middleware('auth')->group(function () {

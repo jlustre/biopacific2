@@ -1,10 +1,7 @@
 @php
-if (isset($facility['color_scheme_id']) && $facility['color_scheme_id']) {
-$scheme = \DB::table('color_schemes')->find($facility['color_scheme_id']);
-$primary = $scheme->primary_color ?? '#0EA5E9';
-} else {
-$primary = '#0EA5E9';
-}
+$primary = $primary ?? '#0EA5E9';
+$secondary = $secondary ?? '#1E293B';
+$accent = $accent ?? '#F59E0B';
 @endphp
 <section id="resources" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

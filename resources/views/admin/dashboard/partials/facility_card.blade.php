@@ -1,3 +1,5 @@
+{{-- Import Str helper for Blade --}}
+@inject('strHelper', 'Illuminate\\Support\\Str')
 <div
     class="relative bg-teal-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl py-6 px-3 shadow-sm hover:shadow-lg transition group overflow-hidden">
     <!-- Facility ID badge (top left) -->
@@ -25,8 +27,8 @@
         <div class="flex-1 min-w-0">
             <h4 class="text-md font-bold text-gray-900 dark:text-white truncate">{{ $facility->name }}</h4>
             @if($facility->tagline)
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">{{
-                Str::limit($facility->tagline, 50) }}
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">
+                {{ \Illuminate\Support\Str::limit($facility->tagline, 50) }}
             </p>
             @endif
         </div>
@@ -36,8 +38,8 @@
     <div class="flex items-center gap-2 my-2">
         <div class="flex-1 min-w-0">
             <h4 class="text-center text-xs font-semibold text-slate-600 dark:text-white truncate">Headline</h4>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">{{
-                Str::limit($facility->headline, 50) }}
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">
+                {{ \Illuminate\Support\Str::limit($facility->headline, 50) }}
             </p>
         </div>
     </div>
@@ -46,8 +48,8 @@
     <div class="flex items-center gap-2 my-2">
         <div class="flex-1 min-w-0">
             <h4 class="text-center text-xs font-semibold text-slate-600 dark:text-white truncate">Sub-Headline</h4>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">{{
-                Str::limit($facility->subheadline, 50) }}
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate text-center">
+                {{ \Illuminate\Support\Str::limit($facility->subheadline, 50) }}
             </p>
         </div>
     </div>

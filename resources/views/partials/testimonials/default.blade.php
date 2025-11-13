@@ -1,9 +1,8 @@
 @if(isset($testimonials) && $testimonials && $testimonials->count() > 0)
 @php
-$scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) : null;
-$primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
-$secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
-$accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+$primary = $primary ?? '#0EA5E9';
+$secondary = $secondary ?? '#1E293B';
+$accent = $accent ?? '#F59E0B';
 
 @include('components.color-scheme-vars')
 @endphp

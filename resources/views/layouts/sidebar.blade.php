@@ -1,3 +1,6 @@
+@php
+use Illuminate\Support\Str;
+@endphp
 <div class="flex min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
     @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
     x-init="window.addEventListener('resize', () => { sidebarOpen = window.innerWidth >= 1024 })">
@@ -76,12 +79,15 @@
                                 @mouseenter="subOpen = true" @mouseleave="subOpen = false">
                                 @php
                                 $abbr = $facility->name;
-                                if (\Str::contains($abbr, 'Driftwood') && \Str::contains($abbr, 'Hayward')) {
+                                if (\Illuminate\Support\Str::contains($abbr, 'Driftwood') &&
+                                \Illuminate\Support\Str::contains($abbr, 'Hayward')) {
                                 $abbr = 'Driftwood HCC - Hywd';
-                                } elseif (\Str::contains($abbr, 'Driftwood') && \Str::contains($abbr, 'Santa Cruz'))
+                                } elseif (\Illuminate\Support\Str::contains($abbr, 'Driftwood') &&
+                                \Illuminate\Support\Str::contains($abbr, 'Santa Cruz'))
                                 {
                                 $abbr = 'Driftwood HCC - SCruz';
-                                } elseif (\Str::contains($abbr, 'Glendale Transitional Care Center')) {
+                                } elseif (\Illuminate\Support\Str::contains($abbr, 'Glendale Transitional Care Center'))
+                                {
                                 $abbr = 'Glendale TCC';
                                 } else {
                                 $abbr = str_replace('Health and Rehabilitation Center', 'HRC', $abbr);

@@ -1,11 +1,10 @@
 {{-- ABOUT — Version B: Collage + Tabs + Timeline + Accreditations --}}
+@php use Illuminate\Support\Facades\DB; @endphp
 <section class="relative overflow-hidden py-20 md:py-28" id="about">
   @php
-  $scheme = isset($facility['color_scheme_id']) ? \DB::table('color_schemes')->find($facility['color_scheme_id']) :
-  null;
-  $primary = $primary ?? ($scheme->primary_color ?? '#0EA5E9');
-  $secondary = $secondary ?? ($scheme->secondary_color ?? '#1E293B');
-  $accent = $accent ?? ($scheme->accent_color ?? '#F59E0B');
+  $primary = $primary ?? '#0EA5E9';
+  $secondary = $secondary ?? '#1E293B';
+  $accent = $accent ?? '#F59E0B';
   @endphp
   {{-- Background decoration --}}
   <div class="pointer-events-none absolute inset-0 -z-10">

@@ -1,3 +1,6 @@
+@php
+use Illuminate\Support\Facades\Auth;
+@endphp
 <div class="flex items-center space-x-6">
     <!-- Notifications -->
     <x-admin.webmaster-contact-notifications />
