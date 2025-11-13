@@ -28,7 +28,8 @@ $hasVideo = !empty($facility['hero_video_id']);
     {{-- Fallback image (for <noscript> or if video fails completely) --}}
       <noscript>
         <img src="{{ $poster }}" alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
-          class="absolute inset-0 w-full h-auto max-w-full object-cover block" />
+          class="absolute inset-0 w-full h-auto max-w-full object-cover block" loading="lazy"
+          srcset="{{ $poster }} 1200w, {{ $poster }} 800w" sizes="(max-width: 768px) 100vw, 1200px" />
       </noscript>
 
       {{-- Readability overlays --}}

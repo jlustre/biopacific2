@@ -36,7 +36,9 @@
         <div class="grid grid-cols-2 gap-3 sm:gap-4">
           <div class="aspect-[3/2] overflow-hidden rounded-2xl shadow-lg col-span-2 relative">
             <img src="{{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }}"
-              alt="Physical therapy session" class="w-full object-cover max-w-full block">
+              alt="Physical therapy session" class="w-full object-cover max-w-full block" loading="lazy"
+              srcset="{{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }} 800w, {{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }} 400w"
+              sizes="(max-width: 768px) 100vw, 800px">
             <div class="absolute bottom-4 right-4 z-10">
               <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
                 <div class="text-2xl md:text-3xl font-black" style="color: {{ $primary }}">

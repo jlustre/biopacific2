@@ -13,7 +13,8 @@ $poster = asset('images/hero1.jpg');
         <div class="hidden md:block absolute inset-0 bg-fixed bg-cover bg-top"
             style="background-image:url('{{ $poster }}')"></div>
         <img src="{{ $poster }}" alt="Residents and caregivers at {{ $facility['name'] ?? 'our facility' }}"
-            class="md:hidden absolute inset-0 w-full h-full object-cover object-[25%_75%]">
+            class="md:hidden absolute inset-0 w-full h-full object-cover object-[25%_75%]" loading="lazy"
+            srcset="{{ $poster }} 1200w, {{ $poster }} 800w" sizes="(max-width: 768px) 100vw, 1200px">
 
         <!-- Framing gradients for contrast (top+bottom, not full overlay) -->
         <div class="absolute inset-x-0 top-0 h-40 md:h-64 bg-gradient-to-b from-black/20 to-transparent"></div>

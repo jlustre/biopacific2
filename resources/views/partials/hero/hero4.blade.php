@@ -97,7 +97,8 @@ asset('images/hero1.jpg'));
                     <figure class="relative rounded-[28px] overflow-hidden ring-1 ring-slate-200 shadow-xl bg-white">
                         <img src="{{ $poster }}"
                             alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
-                            class="h-80 w-full object-cover md:h-[28rem]">
+                            class="h-80 w-full object-cover md:h-[28rem]" loading="lazy"
+                            srcset="{{ $poster }} 1200w, {{ $poster }} 800w" sizes="(max-width: 768px) 100vw, 1200px">
 
                         <figcaption class="absolute inset-x-0 bottom-0">
                             <div

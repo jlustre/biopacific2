@@ -125,6 +125,8 @@ $poster = asset('images/hero1.jpg');
                         <div
                             class="absolute inset-0 [clip-path:polygon(6%_0,100%_0,100%_100%,0%_100%)] overflow-hidden rounded-3xl ring-1 ring-slate-200 shadow-lg bg-slate-200">
                             <img src="{{ $poster }}" alt="Residents and caregiver" class="h-full w-full object-cover"
+                                loading="lazy" srcset="{{ $poster }} 1200w, {{ $poster }} 800w"
+                                sizes="(max-width: 768px) 100vw, 1200px"
                                 onerror="console.error('Image failed to load:', this.src); this.src='{{ asset('images/hero1.jpg') }}';">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent">
                             </div>

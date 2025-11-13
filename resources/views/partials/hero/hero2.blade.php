@@ -21,7 +21,8 @@ $hasVideo = !empty($facility['hero_video_id']);
         {{-- Mobile: Simple container, Desktop: Curved mask via clip-path --}}
         <div class="h-full w-full md:absolute md:inset-0 md:[clip-path:ellipse(120%_85%_at_0%_50%)]">
           <img src="{{ $poster }}" alt="Residents and caregivers at {{ $facility['name'] ?? 'our facility' }}"
-            class="h-full w-full object-cover object-top sm:object-center">
+            class="h-full w-full object-cover object-top sm:object-center" loading="lazy"
+            srcset="{{ $poster }} 1200w, {{ $poster }} 800w" sizes="(max-width: 768px) 100vw, 1200px">
           {{-- Gentle readable gradient on the right edge to meet content column --}}
           <div class="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent"></div>
         </div>

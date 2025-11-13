@@ -99,7 +99,8 @@ $testimonials = $facility['testimonials'] ?? ($facility['testimonial'] ? [$facil
 
             <div>
                 <div class="rounded-2xl overflow-hidden shadow-lg">
-                    <img src="{{ $heroUrl }}" alt="About image" class="w-full h-96 object-cover" />
+                    <img src="{{ $heroUrl }}" alt="About image" class="w-full h-96 object-cover" loading="lazy"
+                        srcset="{{ $heroUrl }} 800w, {{ $heroUrl }} 400w" sizes="(max-width: 768px) 100vw, 800px" />
                 </div>
                 @php
                 $bookUrl = '#book';

@@ -12,7 +12,8 @@ $hasVideo = !empty($facility['hero_video_id']);
     {{-- Background image with diagonal mask --}}
     <div class="absolute inset-0 -z-10">
         <img src="{{ $poster }}" alt="Residents and caregivers at {{ $facility['name'] ?? 'our facility' }}"
-            class="h-[82vh] md:h-[96vh] w-full object-cover object-center">
+            class="h-[82vh] md:h-[96vh] w-full object-cover object-center" loading="lazy"
+            srcset="{{ $poster }} 1200w, {{ $poster }} 800w" sizes="(max-width: 768px) 100vw, 1200px">
         {{-- Diagonal split overlay (reveals image on right) --}}
         <div class="absolute inset-0 bg-gradient-to-tr from-white via-white/20 to-white/10"></div>
         <div class="absolute inset-0 [clip-path:polygon(0%_0%,62%_0%,48%_100%,0%_100%)]"

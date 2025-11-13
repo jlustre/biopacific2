@@ -78,9 +78,11 @@
   </style>
 
   <section class="relative">
-    <img src="{{ $facility->hero_image_url }}" class="w-full h-96 object-cover" alt="{{ $facility->name }}">
+    <img src="{{ $facility->hero_image_url }}" class="w-full h-96 object-cover" alt="{{ $facility->name }}"
+      loading="lazy" srcset="{{ $facility->hero_image_url }} 1200w, {{ $facility->hero_image_url }} 800w"
+      sizes="(max-width: 768px) 100vw, 1200px">
     <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center text-white">
-      <img src="{{ $facility->logo_url }}" class="h-20 w-20 rounded-full mb-4 shadow-lg" alt="Logo">
+      <img src="{{ $facility->logo_url }}" class="h-20 w-20 rounded-full mb-4 shadow-lg" alt="Logo" loading="lazy">
       <h1 class="text-4xl font-bold">{{ $facility->name }}</h1>
       <p class="mt-2 text-lg">{{ $facility->headline }}</p>
       <div class="mt-4 flex gap-2 text-sm">
@@ -91,7 +93,9 @@
   </section>
 
   <section class="py-12 max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
-    <img src="{{ $facility->about_image_url }}" class="rounded-lg shadow-md" alt="About">
+    <img src="{{ $facility->about_image_url }}" class="rounded-lg shadow-md" alt="About" loading="lazy"
+      srcset="{{ $facility->about_image_url }} 800w, {{ $facility->about_image_url }} 400w"
+      sizes="(max-width: 768px) 100vw, 800px">
     <div>
       <h2 class="text-2xl font-bold mb-3">About Us</h2>
       <p class="text-gray-600">{{ $facility->about_text }}</p>
@@ -124,7 +128,8 @@
       <div class="grid md:grid-cols-3 gap-6">
         @foreach($facility->testimonials as $t)
         <div class="p-6 bg-white rounded-lg shadow text-center">
-          <img src="{{ $t->photo_url }}" alt="{{ $t->name }}" class="w-16 h-16 rounded-full mx-auto mb-3">
+          <img src="{{ $t->photo_url }}" alt="{{ $t->name }}" class="w-16 h-16 rounded-full mx-auto mb-3"
+            loading="lazy">
           <p class="italic text-gray-700">"{{ $t->quote }}"</p>
           <p class="mt-2 font-semibold">{{ $t->name }}</p>
         </div>
@@ -138,7 +143,9 @@
       <h2 class="text-2xl font-bold mb-6 text-center">Gallery</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         @foreach($facility->galleryImages as $img)
-        <img src="{{ $img->thumbnail_url }}" class="rounded-lg shadow hover:opacity-90 transition" alt="Gallery image">
+        <img src="{{ $img->thumbnail_url }}" class="rounded-lg shadow hover:opacity-90 transition" alt="Gallery image"
+          loading="lazy" srcset="{{ $img->thumbnail_url }} 600w, {{ $img->thumbnail_url }} 300w"
+          sizes="(max-width: 600px) 100vw, 600px">
         @endforeach
       </div>
     </div>
