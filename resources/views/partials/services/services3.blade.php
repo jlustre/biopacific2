@@ -45,7 +45,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                         <button onclick="openServiceModal3('modal-{{ $service->id }}')"
                             class="w-full inline-flex items-center justify-center px-6 py-2.5 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer"
                             style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});">View
-                            Details</button>
+                            View Service Details</button>
                     </div>
                 </div>
             </div>

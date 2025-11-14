@@ -6,15 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Bio-Pacific') }}</title>
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-    <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
+    <title>{{ $facility->getMeta('title', $section) ?? config('app.name', 'Facility') }}</title>
+    @php
+    $currentSection = $section ?? 'home';
+    $metaDescription = '';
+    if (
+    isset($facility['meta_description']) &&
+    is_array($facility['meta_description']) &&
+    isset($facility['meta_description'][$currentSection]['meta_description']) &&
+    is_string($facility['meta_description'][$currentSection]['meta_description'])
+    ) {
+    $metaDescription = $facility['meta_description'][$currentSection]['meta_description'];
+    } elseif (
+    isset($facility['meta_description']) &&
+    is_string($facility['meta_description'])
+    ) {
+    $metaDescription = $facility['meta_description'];
+    }
+    @endphp
+    <meta name="description" content="{{ $metaDescription }}">
 
 <body class="font-sans text-gray-900 antialiased"
     style="background: url('@secureAsset('images/auth_background.jpg')') center center / cover no-repeat;">

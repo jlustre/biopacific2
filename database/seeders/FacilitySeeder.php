@@ -574,6 +574,15 @@ class FacilitySeeder extends Seeder
 
         // Seed the database
         foreach ($items as $i) {
+            $facilityName = $i['name'];
+            $city = $i['city'];
+            // Enhanced SEO meta description template with more keywords
+            $metaDescriptionTemplate = "{facilityName} in {city} offers top-rated skilled nursing, rehabilitation therapy, long-term senior care, and memory care services. Our experienced clinical team provides personalized support, post-acute recovery, respite care, and 24/7 nursing in a safe, compassionate, and home-like environment—trusted by families seeking quality senior care and healthcare services.";
+            $metaDescription = str_replace([
+                '{facilityName}', '{city}'
+            ], [
+                $facilityName, $city
+            ], $metaDescriptionTemplate);
             $facility = Facility::create([
                 'color_scheme_id' => $i['color_scheme_id'] ?? 1,
                 'name' => $i['name'],
@@ -615,6 +624,7 @@ class FacilitySeeder extends Seeder
                 'baa_vendors' => true, 'tracking_controls' => true, 'security_headers' => true],
                 'latitude' => $i['latitude'] ?? 34.052235,
                 'longitude' => $i['longitude'] ?? -118.243683,
+                'meta_description' => $metaDescription,
             ]);
 
             foreach (['Compassion', 'Integrity', 'Respect', 'Excellence'] as $v) {

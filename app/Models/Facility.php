@@ -38,7 +38,7 @@ class Facility extends Model
       'layout_config','location_map', 'facility_image', 'hours', 'hero_video_id',
       'hipaa_flags', 'npp_url', 'color_scheme_id', 'facility_number', 
       'legal_name', 'administrator', 'don', 'dsd', 'staffer', 'region',
-      'meta_title', 'meta_description',
+  // meta_title removed; now stored in meta JSON
       // Shutdown fields
       'is_shutdown', 'shutdown_message', 'shutdown_eta'
     ];

@@ -198,7 +198,7 @@
         <button type="button" data-modal-target="modal-{{ $index }}" aria-controls="modal-{{ $index }}"
           aria-expanded="false"
           class="inline-flex items-center justify-center gap-2 bg-{{ $service['color'] }}-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow hover:bg-{{ $service['color'] }}-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ $service['color'] }}-300">
-          <span>Learn more</span>
+          <span>View Service Details</span>
           <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>

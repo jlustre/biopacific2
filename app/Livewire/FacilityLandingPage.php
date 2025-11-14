@@ -24,7 +24,7 @@ class FacilityLandingPage extends Component
 
         return view('livewire.facility-landing-page', [
             'facility' => $this->facility,
-            'metaTitle'       => $title,
+            // metaTitle removed; now stored in meta JSON
             'metaDescription' => $desc ?: 'Compassionate senior care and rehabilitation services.',
             'metaKeywords'    => 'nursing home, skilled nursing, rehabilitation, memory care, hospice, '.$this->facility->city,
             'canonical'       => $url,

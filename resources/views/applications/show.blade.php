@@ -1,6 +1,6 @@
 @extends('layouts.default-template')
 
-@section('content')
+@section('page')
 <div class="max-w-2xl mx-auto mt-12 bg-white rounded-xl shadow p-8">
     <h2 class="text-2xl font-bold mb-6">Job Application Details2</h2>
     <table class="w-full mb-6">

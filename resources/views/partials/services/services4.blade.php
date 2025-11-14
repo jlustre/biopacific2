@@ -41,7 +41,8 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                     </ul>
                     <div class="mt-auto pt-4">
                         <button onclick="openServiceModal4('modal-{{ $service->id }}')"
-                            class="w-full inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-teal-700 to-teal-500 text-white font-semibold rounded-full shadow hover:from-teal-800 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition cursor-pointer">Details</button>
+                            class="w-full inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-teal-700 to-teal-500 text-white font-semibold rounded-full shadow hover:from-teal-800 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition cursor-pointer">View
+                            Service Details</button>
                     </div>
                 </div>
             </div>

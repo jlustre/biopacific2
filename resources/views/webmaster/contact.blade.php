@@ -2,7 +2,7 @@
 
 @section('title', 'Contact Webmaster - ' . ($facilityModel['name'] ?? 'Bio-Pacific'))
 
-@section('content')
+@section('page')
 <div class="min-h-screen bg-slate-50">
     <!-- Header Section -->
     <div class="bg-white border-b border-slate-200">

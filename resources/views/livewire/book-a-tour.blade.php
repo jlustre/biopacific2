@@ -138,7 +138,7 @@
                     class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
                     Privacy Practices</a>.</p>
         </div>
-        <div class="mt-7 flex flex-col sm:flex-row gap-4 justify-end">
+        <div class="mt-7 flex flex-col sm:flex-row gap-4 justify-end mr-0 sm:mr-6">
             <x-primary-button type="submit" :loading="$isSubmitting" loading-text="Requesting..."
                 icon="fas fa-calendar-check" :primary="$primary" :secondary="$secondary" :accent="$accent"
                 :neutral_dark="$neutral_dark" :neutral_light="$neutral_light" wire:loading.attr="disabled"

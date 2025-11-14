@@ -84,7 +84,7 @@
             <div class="flex items-center justify-between">
               <button @click="showModal(news)"
                 class="inline-flex items-center text-primary font-semibold text-sm hover:text-primary/80 transition-colors duration-300 group/link">
-                Learn More
+                View News Details
                 <svg class="ml-1 w-4 h-4 transform group-hover/link:translate-x-1 transition-transform duration-300"
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -176,7 +176,7 @@
                   <div class="mt-4 flex items-center justify-between">
                     <span
                       class="inline-flex items-center text-primary font-semibold text-sm group-hover:text-primary/80 transition-colors">
-                      Learn More
+                      View News Details
                       <svg class="ml-1 w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

@@ -55,7 +55,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
               class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white transition-shadow transition duration-200 shadow hover:shadow-lg hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
               aria-controls="modal-{{ $index }}" aria-expanded="false">
-              Details
+              View Service Details
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>

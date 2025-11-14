@@ -3,7 +3,8 @@
 @section('title', ($facility['subdomain'] ?? '') ?: 'Quality Care For Your Loved Ones')
 
 @push('head')
-<meta name="description" content="{{ $facility['meta_description'] ?? '' }}">
+{{--
+<meta name="description" content="{{ $facility['meta_description'] ?? '' }}"> --}}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="icon" href="@secureAsset('images/bplogo.png')" type="image/png">
 @vite(['resources/css/app.css', 'resources/js/app.js'])

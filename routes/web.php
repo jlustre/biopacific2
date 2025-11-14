@@ -78,6 +78,9 @@ Route::get('/{facility:slug}/notice-of-privacy-practices', [NoticeOfPrivacyPract
 Route::get('/{facility:slug}/terms-of-service', [TermsOfServiceController::class, 'show'])->name('terms.service');
 
 // Accessibility
+
+// Dynamic sitemap for all facilities
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index']);
 Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 'show'])->name('accessibility');
 
 // Admin Routes (auth + admin role)

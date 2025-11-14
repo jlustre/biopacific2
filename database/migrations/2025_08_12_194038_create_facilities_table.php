@@ -41,8 +41,8 @@ return new class extends Migration
             $table->string('dsd')->nullable();
             $table->string('staffer')->nullable();
             $table->enum('region', ['socal', 'seb', 'esb'])->nullable();
-            $table->string('meta_title')->nullable();
-            $table->string('meta_description')->nullable();
+            // meta_title column removed; now stored in meta JSON
+            $table->longText('meta_description')->nullable();
             $table->json('hipaa_flags')->nullable();
             $table->string('npp_url')->nullable(); 
             $table->string('facebook')->nullable();

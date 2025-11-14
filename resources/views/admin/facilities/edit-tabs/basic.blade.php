@@ -1,3 +1,6 @@
+@php
+use Illuminate\Support\Str;
+@endphp
 <div id="basic-content" class="tab-pane">
     <div class="p-6">
         <!-- Facility Shutdown Controls -->

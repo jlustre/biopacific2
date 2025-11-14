@@ -1,7 +1,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<title>{{ $title ?? config('app.name') }}</title>
+<title>{{ isset($facility) && method_exists($facility, 'getMeta') ? $facility->getMeta('title', $section) : ($title ??
+    '') }}</title>
+<meta name="description" content="{{ $facility->meta_description ?? $meta_description ?? '' }}">
 
 <link rel="icon" type="image/png" href="{{ asset('bplogo.png') }}">
 <link rel="apple-touch-icon" type="image/png" href="{{ asset('bplogo.png') }}">

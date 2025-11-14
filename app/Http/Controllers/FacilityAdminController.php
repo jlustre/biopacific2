@@ -18,6 +18,8 @@ use Carbon\Carbon;
 use App\Models\News;
 use App\Models\Event;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Exception;
 class FacilityAdminController extends Controller
 {
     /**
@@ -38,7 +40,7 @@ class FacilityAdminController extends Controller
             'settings', 'layout_template', 'layout_config', 'location_map', 'facility_image', 'hours',
             'hero_video_id', 'hipaa_flags', 'npp_url', 'color_scheme_id', 'facility_number',
             'legal_name', 'administrator', 'don', 'dsd', 'staffer', 'region',
-            'meta_title', 'meta_description', 'is_shutdown', 'shutdown_message', 'shutdown_eta'
+            'meta_description', 'is_shutdown', 'shutdown_message', 'shutdown_eta'
         ])->get()->groupBy('state');
 
 
