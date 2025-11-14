@@ -20,71 +20,16 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if ($user->hasRole('admin')) {
-            // Admin dashboard
-            $totalFacilities = Facility::count();
-            $activeFacilities = Facility::where('is_active', true)->count();
-            $inactiveFacilities = $totalFacilities - $activeFacilities;
-            $recentFacilities = Facility::orderBy('created_at', 'desc')->take(5)->get();
+        // Recent Activity Data
+        $lastUpdated = $user->updated_at;
+        $newFacilitiesCount = Facility::where('created_at', '>=', now()->subWeek())->count();
+        $newFaqsCount = Faq::where('created_at', '>=', now()->subWeek())->count();
 
-        }
-        else if ($user->hasRole('manager')) {
-            // Facility admin dashboard
-            $facility = $user->facility;
-
-            if ($facility) {
-                $activeWebContent = $facility->webContents()->where('is_active', true)->first();
-                $sections = [];
-                if ($activeWebContent) {
-                    $rawSections = $activeWebContent->sections;
-                    if (is_string($rawSections)) {
-                        $sections = json_decode($rawSections, true) ?: [];
-                    } elseif (is_array($rawSections)) {
-                        $sections = $rawSections;
-                    } elseif ($rawSections instanceof \Illuminate\Support\Collection) {
-                        $sections = $rawSections->toArray();
-                    } else {
-                        $sections = (array) $rawSections;
-                    }
-                }
-                $faqs = FacilityDataHelper::getFaqs($facility);
-                $categories = $faqs->pluck('category')->filter()->unique()->values();
-                $testimonials = FacilityDataHelper::getTestimonials($facility);
-                $services = FacilityDataHelper::getServices($facility);
-                $newsItems = FacilityDataHelper::getFormattedNews($facility);
-
-                $colors = FacilityDataHelper::getColors($facility);
-
-                // Ensure services are defined with a fallback
-                $services = property_exists($facility, 'services') && is_array($facility->services) ? $facility->services : [];
-
-                return view('welcome', [
-                    'facility' => $facility,
-                    'active_sections' => is_array($sections) ? $sections : [],
-                    'layoutTemplate' => $activeWebContent ? $activeWebContent->layout_template : 'default-template',
-                    'sections' => $sections,
-                    'sectionVariances' => [],
-                    'faqs' => $faqs,
-                    'categories' => $categories,
-                    'testimonials' => $testimonials,
-                    'primary' => $colors['primary'] ?? '#000000',
-                    'secondary' => $colors['secondary'] ?? '#000000',
-                    'accent' => $colors['accent'] ?? '#000000',
-                    'neutral_light' => $colors['neutral_light'] ?? '#FFFFFF',
-                    'neutral_dark' => $colors['neutral_dark'] ?? '#000000',
-                    'services' => $services,
-                    'newsItems' => $newsItems
-                ]);
-            } else {
-                // No facility associated with this admin
-                return view('dashboard')->with('error', 'No facility associated with your account.');
-            }
-        } else {
-            // Other roles or no specific role
-            return view('dashboard')->with('error', 'You do not have access to a specific dashboard.');
-        }               
-        // General dashboard for authenticated users
-        return view('dashboard');
+        return view('dashboard', [
+            'lastUpdated' => $lastUpdated,
+            'newFacilitiesCount' => $newFacilitiesCount,
+            'newFaqsCount' => $newFaqsCount,
+        ]);
     }
 
     public function facility(Request $request)

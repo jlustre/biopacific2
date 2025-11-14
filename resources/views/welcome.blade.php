@@ -1,6 +1,10 @@
 {{-- filepath: resources/views/welcome.blade.php --}}
 @extends('layouts.' . ($layoutTemplate ?? 'default-template'))
 
+@php
+use Illuminate\Support\Facades\Auth;
+@endphp
+
 @section('content')
 
 @if(is_array($sections) && in_array('hero', $sections))

@@ -16,7 +16,7 @@
             </div>
         </flux:button>
 
-        <flux:button icon="cog" variant="outline" class="justify-start">
+        <flux:button href="{{ route('admin.settings.index') }}" icon="cog" variant="outline" class="justify-start">
             <div class="text-left">
                 <div class="font-medium">System Settings</div>
                 <div class="text-sm text-gray-500">Configure global settings</div>

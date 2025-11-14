@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Auth;
     </div>
 
     <!-- Quick Stats -->
-    {{-- @include('partials.quick_stats') --}}
+    @include('partials.quick_stats')
 
     <!-- Recent Activity (placeholder) -->
     @include('partials.recent_activity')
@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Auth;
     @if (session('status'))
     <div class="mb-4 text-green-600 text-center font-semibold">{{ session('status') }}</div>
     @endif
+
     @if ($errors->any())
     <div class="mb-4 text-red-600 text-center font-semibold">
         @foreach ($errors->all() as $error)

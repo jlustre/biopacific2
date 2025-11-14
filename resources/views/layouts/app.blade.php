@@ -275,8 +275,8 @@
                 });
             });
         });
+    </script>
 
-    // Alpine.js debug: log when Alpine initializes
-@endsection
+    @endsection
 
-{{-- DEBUG: This is layouts/app.blade.php --}}
+    {{-- DEBUG: This is layouts/app.blade.php --}}

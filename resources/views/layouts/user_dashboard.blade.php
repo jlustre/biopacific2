@@ -9,6 +9,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     @livewireStyles
+    <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
 </head>
 
 <body class="min-h-screen antialiased"

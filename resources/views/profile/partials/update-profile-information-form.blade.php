@@ -1,4 +1,8 @@
-@php use Illuminate\Support\Facades\Auth; @endphp
+@extends('layouts.user_dashboard')
+
+@php
+use Illuminate\Support\Facades\Auth;
+@endphp
 
 <section>
     <header>
@@ -25,31 +29,30 @@
         @csrf
         @method('patch')
 
+
         <div>
             <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full"
+            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full px-2 py-1"
                 :value="old('name', Auth::user()->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
+            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full px-2 py-1"
                 :value="old('email', Auth::user()->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-            @if (Auth::user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !
-            Auth::user()->hasVerifiedEmail())
+            @if (Auth::user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&
+            !Auth::user()->hasVerifiedEmail())
             <div>
                 <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
                     {{ __('Your email address is unverified.') }}
-
                     <button form="send-verification"
                         class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
                         {{ __('Click here to re-send the verification email.') }}
                     </button>
                 </p>
-
                 @if (session('status') === 'verification-link-sent')
                 <p class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
                     {{ __('A new verification link has been sent to your email address.') }}
@@ -57,6 +60,27 @@
                 @endif
             </div>
             @endif
+        </div>
+
+        <div>
+            <x-input-label for="facility_id" :value="__('Facility ID')" />
+            <x-text-input id="facility_id" name="facility_id" type="text" class="mt-1 block w-full px-2 py-1"
+                :value="old('facility_id', Auth::user()->facility_id)" autocomplete="facility_id" />
+            <x-input-error class="mt-2" :messages="$errors->get('facility_id')" />
+        </div>
+
+        <div>
+            <x-input-label for="google2fa_secret" :value="__('Google 2FA Secret')" />
+            <x-text-input id="google2fa_secret" name="google2fa_secret" type="text" class="mt-1 block w-full px-2 py-1"
+                :value="old('google2fa_secret', Auth::user()->google2fa_secret)" autocomplete="google2fa_secret" />
+            <x-input-error class="mt-2" :messages="$errors->get('google2fa_secret')" />
+        </div>
+
+        <div>
+            <x-input-label for="email_verified_at" :value="__('Email Verified At')" />
+            <x-text-input id="email_verified_at" name="email_verified_at" type="text"
+                class="mt-1 block w-full px-2 py-1" :value="old('email_verified_at', Auth::user()->email_verified_at)"
+                autocomplete="email_verified_at" disabled />
         </div>
 
         <div class="flex items-center gap-4">

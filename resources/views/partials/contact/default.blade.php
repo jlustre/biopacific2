@@ -1,5 +1,6 @@
 @php
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 // Color scheme logic
 $primary = $primary ?? '#0EA5E9';
