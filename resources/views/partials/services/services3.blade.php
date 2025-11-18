@@ -44,8 +44,10 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                     <div class="mt-auto pt-4">
                         <button onclick="openServiceModal3('modal-{{ $service->id }}')"
                             class="w-full inline-flex items-center justify-center px-6 py-2.5 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer"
-                            style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});">View
-                            View Service Details</button>
+                            style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); transition: background 0.3s;"
+                            onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
+                            onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'">View
+                            Service Details</button>
                     </div>
                 </div>
             </div>
@@ -83,8 +85,10 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 !!}</div>
             <div class="mt-6 flex justify-end">
                 <a href="#contact"
-                    class="inline-flex items-center px-8 py-3 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                    style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }});"
+                    class="inline-flex items-center px-8 py-3 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer"
+                    style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); transition: background 0.3s;"
+                    onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
+                    onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'"
                     onclick="closeServiceModal3('modal-{{ $service->id }}')">Contact Us About This Service</a>
             </div>
         </div>

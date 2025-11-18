@@ -42,7 +42,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 </ul>
                 <button onclick="openServiceModal6('modal-{{ $service->id }}')"
                     class="cursor-pointer mt-auto px-5 py-2.5"
-                    style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }}); color: white; font-weight: 600; border-radius: 9999px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); transition: background 0.3s, transform 0.3s;"
+                    style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); color: white; font-weight: 600; border-radius: 9999px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); transition: background 0.3s, transform 0.3s;"
                     onmouseover="this.style.transform='translateY(-2px)'"
                     onmouseout="this.style.transform='translateY(0)'">
                     More Info</button>
@@ -77,7 +77,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
             </div>
             <a href="#contact"
                 class="cursor-pointer inline-flex items-center px-8 py-3 font-semibold rounded-full shadow focus:outline-none focus:ring-2 transition mt-2"
-                style="background: linear-gradient(to right, {{ $primary }}, {{ $accent }}); font-weight: 600; border-radius: 9999px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); transition: background 0.3s, transform 0.3s; color: white;"
+                style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); font-weight: 600; border-radius: 9999px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); transition: background 0.3s, transform 0.3s; color: white;"
                 onclick="closeServiceModal6('modal-{{ $service->id }}')">Contact Us About This Service</a>
         </div>
     </div>

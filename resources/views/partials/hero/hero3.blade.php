@@ -33,8 +33,9 @@ $poster = asset('images/hero1.jpg');
             <div class="w-full text-center">
                 <!-- Tagline pill -->
                 <span
-                    class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white/90 backdrop-blur-sm text-primary border-primary">
-                    <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $accent }}"></span>
+                    class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 bg-white/90 backdrop-blur-sm border-primary"
+                    style="border-color: {{ $primary }}; color: {{ $primary }}">
+                    <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: {{ $secondary }}"></span>
                     {{ $facility['tagline'] ?? 'Guided by Compassion. Focused on You.' }}
                 </span>
 
@@ -96,17 +97,18 @@ $poster = asset('images/hero1.jpg');
                     @endif
 
                     <a href="#contact"
-                        class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold backdrop-blur text-slate-900 ring-2 ring-white/80 hover:bg-white/80 hover:ring-white transition-all duration-200"
-                        style="background: {{ $neutral_light }}; border-color: {{ $neutral_dark }}; color: {{ $neutral_dark }};">
-                        Quick Contact
-                    </a>
+                        class="inline-flex justify-center items-center rounded-2xl px-6 py-3 font-semibold backdrop-blur text-slate-900 ring-2 ring-white/80 transition-all duration-200 cursor-pointer"
+                        style="background: {{ $neutral_light }}; border-color: {{ $neutral_dark }}; color: {{ $neutral_dark }}; transition: background 0.3s, color 0.3s;"
+                        onmouseover="this.style.background='{{ $primary }}'; this.style.color='{{ $neutral_light }}'"
+                        onmouseout="this.style.background='{{ $neutral_light }}'; this.style.color='{{ $neutral_dark }}'">Quick
+                        Contact</a>
 
                     @if(!empty($facility['hero_video_id']))
                     <button id="playVideoBtn"
-                        class="inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white backdrop-blur ring-1 ring-white/30 hover:brightness-110 hover:scale-[1.02] transition-all duration-200"
-                        style="background: {{ $neutral_dark }}; color: {{ $neutral_light }}; transition: background-color 0.3s, color 0.3s;"
-                        onmouseover="this.style.background='{{ $neutral_light }}'; this.style.color='{{ $neutral_dark }}';"
-                        onmouseout="this.style.background='{{ $neutral_dark }}'; this.style.color='{{ $neutral_light }}';">
+                        class="cursor-pointer inline-flex justify-center items-center rounded-2xl px-5 py-3 font-semibold text-white backdrop-blur ring-1 ring-white/30 hover:brightness-110 hover:scale-[1.02] transition-all duration-200"
+                        style="background: {{ $primary }}; color: {{ $neutral_light }}; transition: background-color 0.3s, color 0.3s;"
+                        onmouseover="this.style.background='{{ $secondary }}'; this.style.color='{{ $neutral_dark }}';"
+                        onmouseout="this.style.background='{{ $primary }}'; this.style.color='{{ $neutral_light }}';">
                         <svg class="mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M8 5v10l8-5-8-5z" />
                         </svg>

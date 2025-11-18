@@ -67,7 +67,10 @@ $accent = $accent ?? '#F59E0B';
 
             <p class="text-lg text-slate-700 mb-6">Want to hear more stories from our community?</p>
             <a href="#contact"
-                class="inline-block bg-primary text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-primary/90 transition">
+                class="inline-block px-8 py-3 rounded-full font-semibold shadow-lg transition cursor-pointer"
+                style="color: {{ $neutral_light }}; background-color: {{ $primary }};"
+                onmouseover="this.style.backgroundColor='{{ $secondary }}'; this.style.color='{{ $neutral_light }}'"
+                onmouseout="this.style.backgroundColor='{{ $primary }}'; this.style.color='{{ $neutral_light }}'">
                 Contact Us Today
             </a>
         </div>

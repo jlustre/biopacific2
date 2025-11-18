@@ -49,14 +49,14 @@ $testimonials = $facility['testimonials'] ?? ($facility['testimonial'] ? [$facil
                 <div x-data="{tab: 'mission'}" class="mt-8">
                     <div role="tablist" aria-label="Our mission vision values" class="flex space-x-2">
                         <button @click="tab='mission'"
-                            :class="tab==='mission' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700'"
-                            class="px-4 py-2 rounded">Mission</button>
+                            :style="tab==='mission' ? 'background: {{ $primary }}; color: white;' : 'background: white; color: {{ $primary }};'"
+                            class="px-4 py-2 rounded cursor-pointer border border-[{{ $primary }}] transition">Mission</button>
                         <button @click="tab='vision'"
-                            :class="tab==='vision' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700'"
-                            class="px-4 py-2 rounded">Vision</button>
+                            :style="tab==='vision' ? 'background: {{ $primary }}; color: white;' : 'background: white; color: {{ $primary }};'"
+                            class="px-4 py-2 rounded cursor-pointer border border-[{{ $primary }}] transition">Vision</button>
                         <button @click="tab='values'"
-                            :class="tab==='values' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700'"
-                            class="px-4 py-2 rounded">Values</button>
+                            :style="tab==='values' ? 'background: {{ $primary }}; color: white;' : 'background: white; color: {{ $primary }};'"
+                            class="px-4 py-2 rounded cursor-pointer border border-[{{ $primary }}] transition">Values</button>
                     </div>
 
                     <div class="mt-4 bg-white p-6 rounded-lg shadow-sm">

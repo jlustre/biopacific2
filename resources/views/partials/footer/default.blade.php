@@ -29,7 +29,7 @@
                 @endif
               </div>
               <div>
-                <div class="font-bold text-lg text-white">{{ $facility['name'] ?? 'Bio-Pacific' }}</div>
+                <div class="font-bold text-lg text-white">{{ $facility['name'] ?? 'Nursing Home' }}</div>
                 <div class="text-xs text-slate-300 font-medium">{{ $facility['tagline'] ?? 'Healthcare Excellence' }}
                 </div>
               </div>
@@ -151,7 +151,7 @@
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <div class="text-slate-400 text-sm">Operating Hours</div>
+                  <div class="text-slate-400 text-sm">Visiting Hours</div>
                   <div class="text-slate-300 font-medium">{{ $facility['hours'] ?? '24/7 Care' }}</div>
                 </div>
               </div>
@@ -242,6 +242,8 @@
       <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm px-4">
         <a href="{{ url($facility['slug'] .'/privacy-policy') }}"
           class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
+        <a href="{{ url($facility['slug'] .'/webmaster/contact') }}"
+          class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
         <a href="{{ url($facility['slug'] .'/notice-of-privacy-practices') }}"
           class="text-slate-400 hover:text-primary transition-colors">Notice of Privacy Practices</a>
         <a href="{{ url($facility['slug'] .'/terms-of-service') }}"

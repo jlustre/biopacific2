@@ -93,8 +93,10 @@
                                     availability.</span>
                             </div>
                             <a href="tel:{{ $facility['phone'] }}"
-                                class="inline-flex items-center gap-2 rounded-xl hover:bg-amber-600 text-white font-semibold px-5 py-2 shadow transition"
-                                style="background: {{ $accent }};">
+                                class="inline-flex items-center gap-2 rounded-xl text-white font-semibold px-5 py-2 shadow cursor-pointer"
+                                style="background: {{ $primary }}; transition: background 0.3s;"
+                                onmouseover="this.style.background='{{ $secondary }}'"
+                                onmouseout="this.style.background='{{ $primary }}'">
                                 Call Us:
                                 <span>
                                     {{

@@ -61,9 +61,10 @@ $testimonials = $facility->testimonials ?? collect();
             @endforelse
         </div>
         <div class="mt-16 text-center">
-            <p class="text-lg text-slate-700 mb-6">Want to hear more stories from our community?</p>
-            <a href="#contact"
-                class="inline-block bg-teal-500 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-teal-400 transition">
+            <p class="text-lg mb-6">Want to hear more stories from our community?</p>
+            <a href=" #contact"
+                class="inline-block bg-teal-500 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-teal-400 transition"
+                style="color: {{ $neutral_dark }}">
                 Contact Us Today
             </a>
         </div>

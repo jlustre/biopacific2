@@ -31,7 +31,7 @@ class FacilitySeeder extends Seeder
                 'years' => '20',
                 'facility_image' => 'almadenhcc.jpg',
                 'hours' => '8:30 AM - 7:30 PM',
-                'hero_video_id' => 'uLhPSFyuhbE',
+                'hero_video_id' => 'u31qwQUeGuM',
                 'hero_image_url' => 'hero1.jpg',
                 'region' => 'seb',
                 'facility_number' => '35463',

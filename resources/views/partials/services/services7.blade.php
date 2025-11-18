@@ -56,13 +56,16 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                             $service->name }}</span>
                     </div>
                     <div class="flex-1 flex flex-col p-6">
-                        <h3 class="text-xl font-bold mb-2" style="color: {{ $accent }}">{{ $service->name }}</h3>
-                        <p class="mb-4 text-base line-clamp-3" style="color: {{ $secondary }}">{{
+                        <h3 class="text-xl font-bold mb-2" style="color: {{ $secondary }}">{{ $service->name }}</h3>
+                        <p class="mb-4 text-base line-clamp-3" style="color: {{ $primary }}"
+                            onmouseover="this.style.color = '{{ $secondary }}'"
+                            onmouseout="this.style.color = '{{ $primary }}'">{{
                             $service->short_description }}</p>
                         <ul class="mb-4 space-y-1 text-blue-900 text-sm">
                             @foreach($service->features as $feature)
-                            <li class="flex items-center gap-2"><svg class="w-4 h-4 text-sky-400" fill="none"
-                                    stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <li class="flex items-center gap-2" style="color: {{ $primary }}"><svg class="w-4 h-4"
+                                    style="color: {{ $neutral_dark }}" fill="none" stroke="currentColor"
+                                    stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>{{ $feature }}</li>
                             @endforeach
@@ -71,7 +74,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                             <button onclick="openServiceModal7('modal-{{ $service->id }}')"
                                 class="cursor-pointer w-full inline-flex items-center justify-center px-6 py-2.5 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
                                 style="background: {{ $primary }}; transition: background-color 0.3s ease;"
-                                onmouseover="this.style.backgroundColor = '#004080'"
+                                onmouseover="this.style.backgroundColor = '{{ $secondary }}'"
                                 onmouseout="this.style.backgroundColor = '{{ $primary }}'">Learn
                                 More</button>
                         </div>
@@ -95,12 +98,14 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <div class="flex flex-col items-center">
                     <img src="{{ $service->image ? asset($service->image) : 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80' }}"
                         alt="{{ $service->name }}" class="w-40 h-40 object-cover rounded-2xl mb-4 shadow">
-                    <h3 id="modal-title-{{ $service->id }}" class="text-2xl font-bold text-blue-900 mb-2">{{
+                    <h3 id="modal-title-{{ $service->id }}" class="text-2xl font-bold mb-2"
+                        style="color: {{ $primary }}">{{
                         $service->name }}</h3>
                 </div>
                 <div>
-                    <h4 class="text-base font-semibold text-blue-900 mb-2">Key Features</h4>
-                    <ul class="list-disc list-inside space-y-1 text-blue-900">
+                    <h4 class="text-base font-semibold mb-2" style="color: {{ $secondary }}">Key Features
+                    </h4>
+                    <ul class="list-disc list-inside space-y-1" style="color: {{ $neutral_dark }}">
                         @foreach($service->features as $feature)
                         <li>{{ $feature }}</li>
                         @endforeach
@@ -113,7 +118,7 @@ $services = Service::where('is_active', 1)->orderBy('order')->get();
                 <a href="#contact"
                     class="inline-flex items-center px-8 py-3 text-white font-semibold rounded-full shadow focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
                     style="background: {{ $primary }}; transition: background-color 0.3s ease;"
-                    onmouseover="this.style.backgroundColor = '#004080'"
+                    onmouseover="this.style.backgroundColor = '{{ $secondary }}'"
                     onmouseout="this.style.backgroundColor = '{{ $primary }}'"
                     onclick="closeServiceModal7('modal-{{ $service->id }}')">Contact Us About This Service</a>
             </div>

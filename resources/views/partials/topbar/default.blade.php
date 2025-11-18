@@ -145,7 +145,8 @@ $linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
         <!-- Book a Tour Button -->
         @if(!empty($activeSections) && in_array('book', $activeSections))
         <div class="hidden md:block">
-          <x-primary-button href="{{ $linkPrefix }}#book" size="sm" :primary="$primary" class="ml-2">
+          <x-primary-button href="{{ $linkPrefix }}#book" size="sm" :primary="$primary" :secondary="$secondary"
+            class="ml-2">
             Book a Tour
           </x-primary-button>
         </div>

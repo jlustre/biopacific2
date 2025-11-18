@@ -66,10 +66,8 @@ Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
     return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
 });
 
-// Ensure middleware is applied to the following routes
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/{facility:slug}/privacy-policy', [PrivacyPolicyController::class, 'show'])->name('privacy.policy');
-});
+// Publicly accessible Privacy Policy route
+Route::get('/{facility:slug}/privacy-policy', [PrivacyPolicyController::class, 'show'])->name('privacy.policy');
 
 // Notice of Privacy Practices
 Route::get('/{facility:slug}/notice-of-privacy-practices', [NoticeOfPrivacyPracticesController::class, 'show'])->name('notice.privacy.practices');

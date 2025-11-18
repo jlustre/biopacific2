@@ -25,13 +25,14 @@ $poster = null;
                 </a>
                 @if(!empty($activeSections) && in_array('book', $activeSections))
                 <a href="#book"
-                    class="px-6 py-3 bg-transparent border border-white text-white font-semibold rounded-lg shadow hover:bg-white hover:text-blue-600">
+                    class="px-6 py-3 bg-transparent border border-[{{ $primary }}] text-[{{ $primary }}] font-semibold rounded-lg shadow hover:bg-[{{ $primary }}] hover:text-white transition"
+                    style="transition: background 0.3s, color 0.3s;">
                     Book a Tour
                 </a>
                 @endif
                 @if(!empty($facility['hero_video_id']))
-                <button id="playVideoBtn" class="px-6 py-3  font-semibold rounded-lg shadow"
-                    style="background-color: {{ $neutral_dark }}; color: {{ $neutral_light }}">
+                <button id="playVideoBtn" type="button" class="px-6 py-3 font-semibold rounded-lg shadow"
+                    style="background-color: {{ $neutral_dark }}; color: {{ $neutral_light }};">
                     <svg class="w-5 h-5 inline-block mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M8 5v10l8-5-8-5z" />
                     </svg>
@@ -135,71 +136,50 @@ $poster = null;
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-  @if(!empty($facility['hero_video_id']))
-  // Video modal functionality
-  console.log('Hero1: Video functionality initializing...');
-  const playVideoBtn = document.getElementById('playVideoBtn');
-  const videoModal = document.getElementById('videoModal');
-  const closeVideoBtn = document.getElementById('closeVideoBtn');
-  const youtubeIframe = document.getElementById('youtubeIframe');
+  
+        @if(!empty($facility['hero_video_id']))
+            // Video modal functionality
+            const playVideoBtn = document.getElementById('playVideoBtn');
+            const videoModal = document.getElementById('videoModal');
+            const closeVideoBtn = document.getElementById('closeVideoBtn');
+            const youtubeIframe = document.getElementById('youtubeIframe');
 
-  console.log('Hero1: Elements found:', {
-    playVideoBtn: !!playVideoBtn,
-    videoModal: !!videoModal,
-    closeVideoBtn: !!closeVideoBtn,
-    youtubeIframe: !!youtubeIframe
-  });
+            // Get YouTube video ID from database
+            const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
 
-  // Get YouTube video ID from database
-  const youtubeVideoId = @json($facility['hero_video_id'] ?? null);
-  console.log('Hero1: Video ID:', youtubeVideoId);
+            if (playVideoBtn && videoModal && closeVideoBtn && youtubeIframe && youtubeVideoId) {
+                playVideoBtn.addEventListener('click', function() {
+                    // Set the YouTube URL with autoplay
+                    youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
+                    videoModal.classList.remove('hidden');
+                    videoModal.classList.add('flex');
+                    document.body.classList.add('modal-open');
+                });
 
-  if (playVideoBtn && videoModal && closeVideoBtn && youtubeIframe && youtubeVideoId) {
-      console.log('Hero1: Setting up video functionality');
-      playVideoBtn.addEventListener('click', function() {
-          console.log('Hero1: Button clicked!');
-          // Set the YouTube URL with autoplay
-          youtubeIframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
-          videoModal.classList.remove('hidden');
-          videoModal.classList.add('flex');
-          document.body.classList.add('modal-open');
-          console.log('Hero1: Modal should be open now');
-      });
+                function closeModal() {
+                    videoModal.classList.add('hidden');
+                    videoModal.classList.remove('flex');
+                    document.body.classList.remove('modal-open');
+                    // Stop the video by clearing the src
+                    youtubeIframe.src = '';
+                }
 
-      function closeModal() {
-          console.log('Hero1: Closing modal');
-          videoModal.classList.add('hidden');
-          videoModal.classList.remove('flex');
-          document.body.classList.remove('modal-open');
-          // Stop the video by clearing the src
-          youtubeIframe.src = '';
-      }
+                closeVideoBtn.addEventListener('click', closeModal);
 
-      closeVideoBtn.addEventListener('click', closeModal);
+                // Close modal when clicking outside the video
+                videoModal.addEventListener('click', function(e) {
+                    if (e.target === videoModal) {
+                        closeModal();
+                    }
+                });
 
-      // Close modal when clicking outside the video
-      videoModal.addEventListener('click', function(e) {
-          if (e.target === videoModal) {
-              closeModal();
-          }
-      });
-
-      // Close modal with Escape key
-      document.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-              closeModal();
-          }
-      });
-  } else {
-      console.log('Hero1: Setup failed - missing elements or video ID');
-      console.log('Missing elements:', {
-          playVideoBtn: !playVideoBtn,
-          videoModal: !videoModal,
-          closeVideoBtn: !closeVideoBtn,
-          youtubeIframe: !youtubeIframe,
-          youtubeVideoId: !youtubeVideoId
-      });
-  }
-  @endif
-});
+                // Close modal with Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+                        closeModal();
+                    }
+                });
+            } 
+        @endif
+    });
 </script>

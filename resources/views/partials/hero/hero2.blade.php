@@ -105,12 +105,12 @@ $hasVideo = !empty($facility['hero_video_id']);
           @endphp
           @if(!empty($activeSections) && in_array('book', $activeSections))
           <a href="#book"
-            class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold text-white shadow-lg transition duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:brightness-110 hover:bg-opacity-90"
+            class="cursor-pointer inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold text-white shadow-lg transition duration-200 hover:shadow-xl hover:-translate-y-0.5 hover:brightness-110 hover:bg-opacity-90"
             style="background: {{ $primary }}">Book a Tour</a>
           @endif
 
           <a href="#contact"
-            class="inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 transition duration-200 hover:bg-slate-50 hover:-translate-y-0.5 hover:brightness-110"
+            class="cursor-pointer inline-flex items-center justify-center rounded-xl px-3 py-2 font-semibold ring-2 transition duration-200 hover:bg-slate-50 hover:-translate-y-0.5 hover:brightness-110"
             style="border-color: {{ $secondary }}; color: {{ $secondary }};">Contact Us</a>
 
           @if(!empty($facility['hero_video_id']))

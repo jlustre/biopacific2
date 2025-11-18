@@ -2,7 +2,7 @@
 
 @section('title', 'Privacy Policy - ' . ($facility['name'] ?? 'Bio-Pacific'))
 
-@section('page')
+@section('content')
 <div class="min-h-screen bg-slate-50">
     <!-- Header Section -->
     @include('components.legal-header', ['legal_title' => 'Privacy Policy', 'facility' => $facility])

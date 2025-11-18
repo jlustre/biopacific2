@@ -183,13 +183,17 @@ $aboutPeople = asset('images/about-people.png');
           <div class="flex gap-3">
             @if(!empty($activeSections) && in_array('book', $activeSections))
             <a href="#book"
-              class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow"
-              style="background: {{ $primary }}">Book A Tour</a>
+              class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow cursor-pointer"
+              style="background: {{ $primary }}; transition: background 0.3s;"
+              onmouseover="this.style.background='{{ $secondary }}'"
+              onmouseout="this.style.background='{{ $primary }}'">Book A Tour</a>
             @endif
             @if(!empty($facility['phone']))
             <a href="tel:{{ $facility['phone'] }}"
-              class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2"
-              class="text-primary border-primary">Call Us</a>
+              class="inline-flex items-center rounded-2xl px-5 py-3 text-sm font-semibold ring-2 text-primary border-primary cursor-pointer"
+              style="background: transparent; transition: background 0.3s;"
+              onmouseover="this.style.background='{{ $neutral_light }}'"
+              onmouseout="this.style.background='transparent'">Call Us</a>
             @endif
           </div>
         </div>

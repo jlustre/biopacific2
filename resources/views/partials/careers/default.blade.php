@@ -143,8 +143,10 @@ $error = $errors->any();
         <svg class="mx-auto mb-4 w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12h20L12 2z" />
         </svg>
-        <h4 class="text-lg font-semibold mb-2">No job openings available at this time.</h4>
-        <p class="mb-6">You may still submit an application for future consideration. Please click the button below to
+        <h4 class="text-2xl font-semibold mb-2" style="color: {{ $neutral_dark }}">No job openings available at this
+          time.</h4>
+        <p class="mb-6" style="color: {{ $neutral_light }}">You may still submit an application for future
+          consideration. Please click the button below to
           fill out the form and
           indicate your desired position or title. We'll keep your application on file and reach out if a suitable
           opportunity arises.</p>

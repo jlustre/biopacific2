@@ -186,6 +186,16 @@
           @else
           <a href="#accessibility" class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
           @endif
+          @if(!empty($facility['slug']))
+          <a href="{{ route('webmaster.contact.show', $facility['slug']) }}"
+            class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
+          @elseif(!empty($facility['email']))
+          <a href="mailto:webmaster@{{ explode('@', $facility['email'])[1] ?? 'example.com' }}"
+            class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
+          @else
+          <a href="mailto:webmaster@example.com" class="text-slate-400 hover:text-primary transition-colors">Contact
+            Webmaster</a>
+          @endif
         </div>
       </div>
     </div>
