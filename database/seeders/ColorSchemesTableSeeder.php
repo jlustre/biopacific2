@@ -274,6 +274,14 @@ class ColorSchemesTableSeeder extends Seeder
                 'neutral_dark'    => '#134e4a',
                 'neutral_light'   => '#99f6e4',
             ],
+            [
+                'name' => 'Driftwood Green',
+                'primary_color'   => '#47824d', // teal-600 in Tailwind
+                'secondary_color' => '#77af7b',
+                'accent_color'    => '#ccfbf1',
+                'neutral_dark'    => '#152a30',
+                'neutral_light'   => '#99f6e4',
+            ],
         ];
 
         DB::table('color_schemes')->insert($schemes);

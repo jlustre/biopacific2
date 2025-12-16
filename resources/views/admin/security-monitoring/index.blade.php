@@ -4,27 +4,33 @@
 <div class="container mx-auto px-4 py-6">
     <!-- Header -->
     <div class="mb-8">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">🛡️ Security Monitoring</h1>
-                <p class="text-gray-600 mt-2">Monitor secure access attempts and detect anomalies across all facilities
-                </p>
-            </div>
-            <div class="flex space-x-3">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">🛡️ Security Monitoring</h1>
+            <p class="text-gray-600 mt-2 mb-2">Monitor secure access attempts and detect anomalies across all facilities
+            </p>
+            <div class="flex flex-wrap gap-3 mt-4">
+                <a href="{{ asset('docs/INCIDENT_RESPONSE_PLAYBOOK.md') }}" target="_blank"
+                    class="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 flex items-center">
+                    📄 Incident Response Playbook
+                </a>
+                <a href="{{ route('admin.incident-contacts.index') }}"
+                    class="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 flex items-center">
+                    📇 Incident Response Contacts
+                </a>
                 <a href="{{ route('admin.security.anomalies') }}"
-                    class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                    class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center">
                     🚨 View Anomalies
                 </a>
                 <a href="{{ route('admin.security.incidents') }}"
-                    class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
+                    class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center">
                     📋 Security Incidents
                 </a>
                 <a href="{{ route('admin.security.cleanup') }}"
-                    class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                    class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center">
                     🧹 Cleanup Logs
                 </a>
                 <a href="{{ route('admin.security.export') }}?start_date={{ $startDate }}&end_date={{ $endDate }}"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
                     📊 Export Report
                 </a>
             </div>

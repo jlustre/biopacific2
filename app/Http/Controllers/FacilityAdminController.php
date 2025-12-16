@@ -43,7 +43,6 @@ class FacilityAdminController extends Controller
             'meta_description', 'is_shutdown', 'shutdown_message', 'shutdown_eta'
         ])->get()->groupBy('state');
 
-
         return view('admin.dashboard.index', compact(
             'facilities',
             'activeFacilities',

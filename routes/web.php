@@ -305,6 +305,8 @@ Route::get('/facilities/{facility}/applications', [CareersApplicationsController
 
 // Register admin webmaster contacts routes
 require __DIR__.'/admin_webmaster_contacts.php';
+// Register admin incident contacts routes
+require __DIR__.'/admin_incident_contacts.php';
 
 // Secure Inquiry Routes
 Route::get('/secure/inquiry/{token}', [App\Http\Controllers\SecureInquiryController::class, 'view'])

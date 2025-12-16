@@ -5,7 +5,6 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use App\Models\Facility;
 use App\Models\FacilityValue;
-
 class FacilitySeeder extends Seeder
 {
     public function run(): void
@@ -54,7 +53,7 @@ class FacilitySeeder extends Seeder
                 'state' => 'CA',
                 'zip' => '91206',
                 'beds' => 92,
-                'color_scheme_id' => 27,
+                'color_scheme_id' => 13,
                 'about_image_url' => 'about-people.png',
                 'location_map' => 'https://www.google.com/maps?q=Autumn+Hills+Health+Care+Center,430+N.GLENDALE+AVE%2CGLENDALE%2CCA+91206&output=embed',
                 'domain' => 'autumnhillshealthcarecenter.com',
@@ -619,9 +618,13 @@ class FacilitySeeder extends Seeder
                 'dsd' => $i['dsd'] ?? null,
                 'staffer' => $i['staffer'] ?? null,
                 'region' => $i['region'] ?? null,
-                'hipaa_flags' => ['npp_page' => true, 
-                'tls_hsts' => true, 'forms_secure' => true, 
-                'baa_vendors' => true, 'tracking_controls' => true, 'security_headers' => true],
+                'hipaa_flags' => ["npp_page"=> true,
+                                    "tls_hsts"=> true,
+                                    "baa_vendors"=> true,
+                                    "forms_secure"=> true,
+                                    "incident_plan"=> true,
+                                    "security_headers"=> true,
+                                    "tracking_controls"=> true],
                 'latitude' => $i['latitude'] ?? 34.052235,
                 'longitude' => $i['longitude'] ?? -118.243683,
                 'meta_description' => $metaDescription,

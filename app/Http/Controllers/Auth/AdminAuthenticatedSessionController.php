@@ -37,7 +37,7 @@ class AdminAuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // MFA enforcement for admins with google2fa_secret
-    $user = Auth::guard('admin')->user();
+        $user = Auth::guard('admin')->user();
         if ($user && $user->google2fa_secret) {
             $request->session()->put('mfa_pending', true);
             Auth::guard('admin')->logout(); // Log out to require MFA verification
