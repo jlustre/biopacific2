@@ -6,17 +6,38 @@
         class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30 transform"
         :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
         <nav class="flex flex-col space-y-2">
-            <!-- Dashboard -->
+            <!-- Always show personal dashboard -->
             <a href="{{ route('dashboard.index') }}"
-                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('dashboard.index') ? 'bg-gray-100 font-bold' : '' }}">
-                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                class="flex items-center px-4 py-2 text-blue-700 hover:bg-blue-50 rounded {{ request()->routeIs('dashboard.index') ? 'bg-blue-100 font-bold' : '' }}">
+                <i class="fas fa-user mr-2"></i> My Dashboard
             </a>
+
+            <!-- Show Admin Dashboard if user is admin -->
+            @if(auth()->user() && auth()->user()->hasRole('admin'))
+            <a href="{{ route('admin.dashboard.index') }}"
+                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
+                <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
+            </a>
+            @endif
+
+            <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
+            @if(auth()->user() && auth()->user()->hasRole('admin'))
+            <a href="{{ route('hr-portal.index') }}"
+                class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
+                <i class="fas fa-users-cog mr-2"></i> HR Portal
+            </a>
+            @elseif(auth()->user() && auth()->user()->hasRole(['hrrd','facility-admin','facility-dsd']))
+            <a href="{{ route('user.hr-portal') }}"
+                class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
+                <i class="fas fa-users-cog mr-2"></i> HR Portal
+            </a>
+            @endif
+
             <!-- Profile -->
             <a href="{{ route('settings.profile') }}"
                 class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('settings.profile') ? 'bg-gray-100 font-bold' : '' }}">
                 <i class="fas fa-user mr-2"></i> My Profile
             </a>
-            <!-- Other user links can be added here -->
         </nav>
     </aside>
     <!-- Main Content Area -->

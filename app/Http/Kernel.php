@@ -63,7 +63,9 @@ class Kernel extends HttpKernel
         // Spatie role/permission middleware
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-        'facility.access' => \App\Http\Middleware\FacilityAccessMiddleware::class,
+        'facility.access' => \App\Http\Middleware\FacilityAccess::class,
         'auth.admin' => \App\Http\Middleware\Authenticate::class, // For administrator guard
+        'internal.password' => \App\Http\Middleware\InternalPasswordMiddleware::class,
+        'facility.public.password' => \App\Http\Middleware\FacilityPublicPasswordMiddleware::class,
     ];
 }

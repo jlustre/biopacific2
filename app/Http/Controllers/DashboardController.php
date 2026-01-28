@@ -25,6 +25,21 @@ class DashboardController extends Controller
         $newFacilitiesCount = Facility::where('created_at', '>=', now()->subWeek())->count();
         $newFaqsCount = Faq::where('created_at', '>=', now()->subWeek())->count();
 
+        // Determine which dashboard view to show
+        $routeName = request()->route()->getName();
+        if ($routeName === 'admin.dashboard.index' && $user->hasRole('admin')) {
+            // Admin dashboard view (with admin sidebar and widgets)
+            $facilities = Facility::all();
+            $facilitiesByState = $facilities->groupBy('state');
+            return view('admin.dashboard.index', [
+                'lastUpdated' => $lastUpdated,
+                'newFacilitiesCount' => $newFacilitiesCount,
+                'newFaqsCount' => $newFaqsCount,
+                'facilitiesByState' => $facilitiesByState,
+                'facilities' => $facilities,
+            ]);
+        }
+        // Default: user dashboard
         return view('dashboard', [
             'lastUpdated' => $lastUpdated,
             'newFacilitiesCount' => $newFacilitiesCount,

@@ -9,17 +9,44 @@ use Illuminate\Support\Str;
         class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30 transform"
         :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
         <nav class="flex flex-col space-y-2">
+            @php
+            $user = auth()->user();
+            @endphp
+
             <!-- Bio-Pacific Facility Public Web Page -->
             <a href="{{ route('facility.public', 'bio-pacific-corporate') }}" target="_blank"
                 class="flex items-center px-4 py-2 text-teal-700 hover:bg-teal-50 rounded font-semibold">
                 <i class="fas fa-globe mr-2"></i> Bio-Pacific Home
             </a>
-            <!-- Dashboard -->
-            <a href="{{ route('admin.dashboard.index') }}"
-                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
-                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+
+            <!-- Always show personal dashboard -->
+            <a href="{{ route('dashboard.index') }}"
+                class="flex items-center px-4 py-2 text-blue-700 hover:bg-blue-50 rounded {{ request()->routeIs('dashboard.index') ? 'bg-blue-100 font-bold' : '' }}">
+                <i class="fas fa-user mr-2"></i> My Dashboard
             </a>
 
+            <!-- Show Admin Dashboard if user is admin -->
+            @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+            <a href="{{ route('admin.dashboard.index') }}"
+                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
+                <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
+            </a>
+            @endif
+
+            <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
+            @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+            <a href="{{ route('hr-portal.index') }}"
+                class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
+                <i class="fas fa-users-cog mr-2"></i> HR Portal
+            </a>
+            @elseif($user && $user->hasRole(['hrrd','facility-admin','facility-dsd']))
+            <a href="{{ route('user.hr-portal') }}"
+                class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
+                <i class="fas fa-users-cog mr-2"></i> HR Portal
+            </a>
+            @endif
+
+            @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
             <!-- HIPAA Compliance Dropdown -->
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
@@ -47,6 +74,8 @@ use Illuminate\Support\Str;
                     </a>
                 </div>
             </div>
+            @endif
+            @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
             <!-- Facilities Menu -->
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
@@ -100,12 +129,19 @@ use Illuminate\Support\Str;
                                     class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-hospital mr-2"></i> {{ $abbr }}
                                 </a>
+                                @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+                                <a href="{{ route('admin.facility.dashboard', $facility) }}"
+                                    class="flex items-center w-full px-4 py-2 text-blue-700 hover:bg-blue-50">
+                                    <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
+                                </a>
+                                @endif
                             </div>
                             @endforeach
                         </div>
                     </div>
                 </div>
             </div>
+            @endif
 
             <!-- Web Contents Menu -->
             <div x-data="{ open: false }" class="relative">
@@ -195,6 +231,7 @@ use Illuminate\Support\Str;
                 </div>
             </div>
 
+            @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
             <!-- Security Monitoring -->
             <a href="{{ route('admin.security.dashboard') }}"
                 class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.security.*') ? 'bg-gray-100 font-bold' : '' }}">
@@ -243,6 +280,7 @@ use Illuminate\Support\Str;
                     </a>
                 </div>
             </div>
+            @endif
 
         </nav>
     </aside>

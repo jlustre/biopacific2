@@ -50,7 +50,15 @@ class Facility extends Model
     'hipaa_flags' => 'array',
   ];
 
-  public function getRouteKeyName() { return 'slug'; }
+  // Allow both id and slug for route model binding
+  public function getRouteKeyName()
+  {
+    $value = request()->route('facility');
+    if (is_numeric($value)) {
+      return 'id';
+    }
+    return 'slug';
+  }
 
   // Multi-tenant methods
   public static function findByDomain($domain)

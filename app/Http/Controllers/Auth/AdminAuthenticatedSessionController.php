@@ -45,7 +45,16 @@ class AdminAuthenticatedSessionController extends Controller
             return redirect()->route('admin.mfa.form');
         }
 
-        return redirect()->intended(route('admin.dashboard.index', absolute: false));
+        // Only allow users with 'admin' role to log in via admin login form
+        $user = Auth::guard('admin')->user();
+        if (!$user->hasRole('admin')) {
+            Auth::guard('admin')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect('/admin/login')->withErrors(['email' => 'Access denied. Only admin users can log in here.']);
+        }
+        // Admin lands on user dashboard, can access admin dashboard from sidebar
+        return redirect('http://biopacific.test/dashboard');
     }
 
     /**

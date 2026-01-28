@@ -36,6 +36,10 @@
     style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
     <div
         class="w-full max-w-md bg-white shadow-2xl rounded-2xl p-8 text-center flex flex-col items-center animate-fade-in">
+        @php
+        $user = auth()->user();
+        $roles = $user ? $user->getRoleNames() : collect();
+        @endphp
         <img src="{{ asset('images/403.png') }}" alt="403 Forbidden"
             class="mb-6 w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 object-contain drop-shadow-lg">
 

@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        @if(in_array($role->name, ['web-admin', 'admin']))
+        @if($role->name === 'admin')
         <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div class="flex items-start">
                 <i class="fas fa-shield-alt text-yellow-600 mt-1 mr-3"></i>
@@ -246,7 +246,7 @@
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                     <i class="fas fa-user-tag mr-2"></i> Manage Assignments
                 </a>
-                @if(!in_array($role->name, ['web-admin', 'admin']) && $role->users->count() == 0)
+                @if($role->name !== 'admin' && $role->users->count() == 0)
                 <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="inline-block"
                     onsubmit="return confirm('Are you sure you want to delete this role? This action cannot be undone.')">
                     @csrf

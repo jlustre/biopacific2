@@ -19,34 +19,34 @@
 
 <body class="min-h-screen antialiased"
     style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
-    <!-- Go to Top Button -->
-    @include('layouts.partials.go_to_top')
-
-    <!-- Top Navigation (Fixed) -->
-    @include('layouts.topnav')
-
-    <!-- Responsive Sidebar Layout -->
-    @auth
-    @if(auth()->user()->hasRole('admin'))
-    @include('layouts.sidebar')
-    @else
-    @include('layouts.sidebar_user')
-    @endif
-    @endauth
-    @guest
-    {{-- Optionally, show nothing or a guest sidebar --}}
-    @endguest
-    @include('partials.screen-size-indicator')
+    @if (request()->routeIs('internal.login.form'))
     <main class="py-8">
-        <div class="max-w-7xl mx-auto">
-            @stack('content')
-        </div>
-    </main>
+        @else
+        <!-- Go to Top Button -->
+        @include('layouts.partials.go_to_top')
 
-    @stack('scripts')
-    @livewireScripts
+        <!-- Top Navigation (Fixed) -->
+        @include('layouts.topnav')
 
-    <script src="/js/color-scheme-dropdown.js"></script>
+        <!-- Responsive Sidebar Layout -->
+        @auth
+        @include('layouts.sidebar')
+        @endauth
+        @guest
+        {{-- Optionally, show nothing or a guest sidebar --}}
+        @endguest
+        @include('partials.screen-size-indicator')
+        <main class="py-8">
+            @endif
+            <div class="max-w-7xl mx-auto">
+                @stack('content')
+            </div>
+        </main>
+
+        @stack('scripts')
+        @livewireScripts
+
+        <script src="/js/color-scheme-dropdown.js"></script>
 </body>
 
 </html>

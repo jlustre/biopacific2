@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 
 @section('content')
 
-@if(is_array($sections) && in_array('hero', $sections))
+@if(isset($sections) && is_array($sections) && in_array('hero', $sections))
 
 @include('partials.hero.' . ($sectionVariances['hero'] ?? 'default'), [
 'primary' => $primary,
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Auth;
 ])
 @endif
 
-@if(is_array($sections) && in_array('about', $sections))
+@if(isset($sections) && is_array($sections) && in_array('about', $sections))
 {{-- @include('partials.divider') --}}
 @include('partials.about.' . ($sectionVariances['about'] ?? 'default'), [
 'primary' => $primary,
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Auth;
 
 @include('partials.whychoose')
 
-@if(is_array($sections) && in_array('services', $sections))
+@if(isset($sections) && is_array($sections) && in_array('services', $sections))
 {{-- @include('partials.divider') --}}
 @include('partials.services.' . ($sectionVariances['services'] ?? 'default'), [
 'primary' => $primary,
@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\Auth;
 ])
 @endif
 
-@if(is_array($sections) && in_array('gallery', $sections))
+@if(isset($sections) && is_array($sections) && in_array('gallery', $sections))
 {{-- @include('partials.divider') --}}
 @include('partials.gallery.' . ($sectionVariances['gallery'] ?? 'default'), [
 'primary' => $primary,

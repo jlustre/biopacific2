@@ -81,7 +81,6 @@ class HomeController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
     }
-    $services = \App\Models\Service::orderBy('title')->get();
     $services = \App\Models\Service::orderBy('name')->get();
     
     return view('welcome', [

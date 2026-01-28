@@ -74,7 +74,7 @@ class User extends Authenticatable
     public function canManageFacility($facilityId): bool
     {
         // Web admins and regular admins can manage all facilities
-        if ($this->hasRole(['web-admin', 'admin'])) {
+        if ($this->hasRole(['admin'])) {
             return true;
         }
 
@@ -91,7 +91,7 @@ class User extends Authenticatable
      */
     public function managedFacilities()
     {
-        if ($this->hasRole(['web-admin', 'admin'])) {
+        if ($this->hasRole(['admin'])) {
             return Facility::all();
         }
 

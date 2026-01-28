@@ -98,7 +98,7 @@
                     </div>
 
                     <div class="flex items-center space-x-2">
-                        @if(in_array($role->name, ['web-admin', 'admin']))
+                        @if($role->name === 'admin')
                         <span
                             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             <i class="fas fa-shield-alt mr-1"></i> Protected
@@ -217,7 +217,7 @@
 
 // Add warning for protected roles
 document.addEventListener('DOMContentLoaded', function() {
-    const protectedRoles = ['web-admin', 'admin'];
+    const protectedRoles = ['admin'];
     const checkboxes = document.querySelectorAll('input[name="roles[]"]');
     
     checkboxes.forEach(checkbox => {

@@ -33,13 +33,13 @@
                     Role Name <span class="text-red-500">*</span>
                 </label>
                 <input type="text" id="name" name="name" value="{{ old('name', $role->name) }}"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 {{ in_array($role->name, ['web-admin', 'admin']) ? 'bg-gray-100' : '' }}"
-                    {{ in_array($role->name, ['web-admin', 'admin']) ? 'readonly' : '' }}
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 {{ $role->name === 'admin' ? 'bg-gray-100' : '' }}"
+                    {{ $role->name === 'admin' ? 'readonly' : '' }}
                 required>
                 @error('name')
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
-                @if(in_array($role->name, ['web-admin', 'admin']))
+                @if($role->name === 'admin')
                 <p class="mt-1 text-sm text-yellow-600">
                     <i class="fas fa-shield-alt mr-1"></i>
                     This is a protected role. The name cannot be changed.

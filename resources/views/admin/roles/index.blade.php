@@ -112,7 +112,7 @@
                                 class="text-yellow-600 hover:text-yellow-900" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            @if(!in_array($role->name, ['web-admin', 'admin']))
+                            @if($role->name !== 'admin')
                             <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="inline-block"
                                 onsubmit="return confirm('Are you sure you want to delete this role?')">
                                 @csrf

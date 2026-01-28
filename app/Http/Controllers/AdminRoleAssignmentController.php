@@ -11,7 +11,7 @@ class AdminRoleAssignmentController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:web-admin|admin']);
+        $this->middleware(['auth', 'role:admin']);
     }
 
     /**

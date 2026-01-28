@@ -31,10 +31,16 @@ class AuthenticatedSessionController extends Controller
         $isAdmin = $user && method_exists($user, 'hasRole') ? $user->hasRole('admin') : ($user && $user->roles && $user->roles->pluck('name')->contains('admin'));
 
         if ($isAdmin) {
-            return redirect()->intended(route('admin.dashboard.index'));
+            // Only redirect to /admin routes if the intended URL is an admin page
+            $intended = session()->pull('url.intended');
+            if ($intended && str_contains($intended, '/admin')) {
+                return redirect()->to($intended);
+            }
+            // Otherwise, go to user dashboard
+            return redirect()->route('dashboard.index');
         }
-        // All other users go to /dashboard
-        return redirect()->intended(route('dashboard.index'));
+        // All other users always go to /dashboard, never to any /admin route
+        return redirect()->route('dashboard.index');
     }
 
     /**

@@ -88,25 +88,18 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Create roles with descriptions
-        $webAdmin = Role::firstOrCreate(['name' => 'web-admin'], ['name' => 'web-admin']);
         $facilityAdmin = Role::firstOrCreate(['name' => 'facility-admin'], ['name' => 'facility-admin']);
         $facilityEditor = Role::firstOrCreate(['name' => 'facility-editor'], ['name' => 'facility-editor']);
         $regularUser = Role::firstOrCreate(['name' => 'regular-user'], ['name' => 'regular-user']);
-        
-        // Legacy roles (keeping for backward compatibility)
-        $admin = Role::firstOrCreate(['name' => 'admin'], ['name' => 'admin']);
-        $manager = Role::firstOrCreate(['name' => 'manager'], ['name' => 'manager']);
-        $editor = Role::firstOrCreate(['name' => 'editor'], ['name' => 'editor']);
-        $viewer = Role::firstOrCreate(['name' => 'viewer'], ['name' => 'viewer']);
+
+        // New HR roles (short names)
+        $hrrd = Role::firstOrCreate(['name' => 'hrrd'], ['name' => 'hrrd']);
+        $facilityDsd = Role::firstOrCreate(['name' => 'facility-dsd'], ['name' => 'facility-dsd']);
 
         // Assign permissions to roles
-        
+
         // Web Admin - Full system access
-        $webAdmin->syncPermissions(Permission::all());
-        
-        // Legacy Admin - Full system access (for backward compatibility)
-        $admin->syncPermissions(Permission::all());
-        
+
         // Facility Admin - Comprehensive facility management
         $facilityAdmin->syncPermissions([
             'access admin panel',
@@ -117,7 +110,23 @@ class RolePermissionSeeder extends Seeder
             'view communications', 'manage tour requests', 'manage inquiries', 'manage job applications',
             'view reports', 'export data'
         ]);
-        
+
+        // HR Regional Director (hrrd) - All facilities HR portal access
+        $hrrd->syncPermissions([
+            'access admin panel',
+            'view facilities', 'view users', 'view user profiles',
+            'view content', 'view communications', 'view reports',
+            // Add more HR-specific permissions as needed
+        ]);
+
+        // Facility DSD - Assigned facility HR portal access
+        $facilityDsd->syncPermissions([
+            'access admin panel',
+            'view facilities', 'view users', 'view user profiles',
+            'view content', 'view communications', 'view reports',
+            // Add more HR-specific permissions as needed
+        ]);
+
         // Facility Editor - Content and basic management
         $facilityEditor->syncPermissions([
             'access admin panel',
@@ -127,7 +136,7 @@ class RolePermissionSeeder extends Seeder
             'manage testimonials', 'manage news', 'manage faqs', 'manage galleries', 'manage services',
             'view communications', 'manage tour requests', 'manage inquiries'
         ]);
-        
+
         // Regular User - View only access
         $regularUser->syncPermissions([
             'access admin panel',
@@ -135,27 +144,6 @@ class RolePermissionSeeder extends Seeder
             'view users', 'view user profiles',
             'view content',
             'view communications'
-        ]);
-        
-        // Legacy role permissions (keeping for backward compatibility)
-        $manager->syncPermissions([
-            'access admin panel',
-            'view facilities', 'create facilities', 'edit facilities',
-            'view users', 'view user profiles',
-            'view content', 'create content', 'edit content'
-        ]);
-        
-        $editor->syncPermissions([
-            'access admin panel',
-            'view facilities', 'edit facilities',
-            'view content', 'create content', 'edit content',
-            'manage testimonials', 'manage news', 'manage faqs'
-        ]);
-        
-        $viewer->syncPermissions([
-            'access admin panel',
-            'view facilities',
-            'view content'
         ]);
     }
 }

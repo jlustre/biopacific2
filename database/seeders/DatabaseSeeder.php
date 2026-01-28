@@ -29,7 +29,8 @@ class DatabaseSeeder extends Seeder
             FacilityNewsSeeder::class,
             EmailRecipientsTableSeeder::class,
             EmployeeEmailMappingsTableSeeder::class,
-            GeneralJobOpeningSeeder::class
+            GeneralJobOpeningSeeder::class,
+            TestUsersSeeder::class,
         ]);
 
     }

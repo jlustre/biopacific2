@@ -2,7 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FacilityAdminController;
+use App\Http\Controllers\Admin\Facilities\QuickActionsController;
 use App\Http\Controllers\FacilityController;
+// (reverted: removed FacilityPublicLoginController and related routes)
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\TourController;
@@ -43,8 +45,66 @@ use App\Livewire\Settings\Profile;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Admin\ServiceController;
 use Illuminate\Support\Facades\Auth;
+// (reverted: removed InternalLoginController and internal.password middleware group)
 use App\Http\Controllers\Auth\AdminMfaController;
 use App\Http\Controllers\Auth\AdminMfaSetupController;
+
+use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
+
+// HRRD dashboard redirect (must be before admin-only group)
+// HRRD dashboard: HR portal (all facilities) and user dashboard
+Route::middleware(['auth', 'role:hrrd|admin|facility-admin|facility-dsd,web'])->group(function () {
+    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+    // New HR portal route for HRRD, admin, facility-admin, and facility-dsd
+    Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
+});
+
+// Facility-admin & facility-dsd: HR portal (assigned facility only) and user dashboard
+Route::middleware(['auth', 'role:facility-admin|facility-dsd'])->group(function () {
+    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+});
+
+// All users: user dashboard only
+Route::middleware(['auth', 'role:user'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+});
+
+// Admin: access to all dashboards
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+});
+
+// Admin dashboard route: only admin can access
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+});
+// Facility-specific admin dashboard
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
+    Route::get('/admin/facility/{facility}/dashboard', [\App\Http\Controllers\Admin\FacilityDashboardController::class, 'show'])->name('admin.facility.dashboard');
+
+    // Facility Quick Actions
+    Route::get('/admin/facility/{facility}/hiring', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'hiring'])->name('admin.facility.hiring');
+    Route::get('/admin/facility/{facility}/termination', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'termination'])->name('admin.facility.termination');
+    Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'employees'])->name('admin.facility.employees');
+    Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
+    Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
+    Route::get('/admin/facility/{facility}/requests', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'requests'])->name('admin.facility.requests');
+});
+// Redirect root to facility public page based on domain
+Route::get('/', function () {
+    $host = request()->getHost();
+    $facility = \App\Models\Facility::where('domain', $host)->orWhere('subdomain', $host)->first();
+    if ($facility) {
+        return redirect()->route('facility.public', $facility->slug);
+    }
+    // fallback: redirect to main corporate page
+    return redirect('http://biopacific.test/bio-pacific-corporate');
+});
+
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -53,39 +113,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.submit');
 
-// Webmaster contact form routes (facility-specific)
-Route::get('/{facility:slug}/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'show'])->name('webmaster.contact.show');
-Route::post('/{facility:slug}/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.facility.submit');
-
-Route::get('/', [App\Http\Controllers\HomeController::class, 'home'])->name('home');
-
-Route::get('/index', fn() => view('index'))->name('index');
-
-// Redirect old privacy-policy route to new one
-Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
-    return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
-});
-
-// Publicly accessible Privacy Policy route
-Route::get('/{facility:slug}/privacy-policy', [PrivacyPolicyController::class, 'show'])->name('privacy.policy');
-
-// Notice of Privacy Practices
-Route::get('/{facility:slug}/notice-of-privacy-practices', [NoticeOfPrivacyPracticesController::class, 'show'])->name('notice.privacy.practices');
-
-// Terms of Service
-Route::get('/{facility:slug}/terms-of-service', [TermsOfServiceController::class, 'show'])->name('terms.service');
-
-// Accessibility
-
 // Dynamic sitemap for all facilities
 Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index']);
-Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 'show'])->name('accessibility');
+
 
 // Admin Routes (auth + admin role)
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+    // HR Portal Route removed from admin group; now only in HRRD-specific group above
     // Blog management (admin only, under web contents)
     Route::resource('blogs', BlogController::class)->names('blogs');
-    Route::get('/dashboard', [FacilityAdminController::class, 'dashboard'])->name('dashboard.index');
+    // Admin dashboard route for compatibility with legacy references
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/facilities', [FacilityAdminController::class, 'index'])->name('facilities.index');
     Route::get('/facilities/create', [FacilityAdminController::class, 'create'])->name('facilities.create');
     Route::post('/facilities', [FacilityAdminController::class, 'store'])->name('facilities.store');
@@ -245,13 +283,16 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
 });
 
 // Facility-specific admin routes for facility-admin and facility-editor roles
-Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor|admin', 'facility.access'])->name('admin.')->group(function () {
-    // Facility-specific content management routes that should be restricted to assigned facility
-    Route::get('/facility/dashboard', [FacilityAdminController::class, 'facilityDashboard'])->name('facility.dashboard');
-    Route::get('/facility/content', [FacilityAdminController::class, 'facilityContent'])->name('facility.content');
-    Route::get('/facility/users', [AdminUserController::class, 'facilityUsers'])->name('facility.users');
-    Route::get('/facility/settings', [FacilityAdminController::class, 'facilitySettings'])->name('facility.settings');
-});
+Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor|admin'])
+    ->name('admin.')
+    ->group(function () {
+        // Route::get('/facility/{facility}/dashboard', [FacilityAdminController::class, 'dashboard'])->name('facility.dashboard'); // Removed to avoid conflict; handled by FacilityDashboardController
+        Route::get('/facility/content', [FacilityAdminController::class, 'facilityContent'])->name('facility.content');
+        Route::get('/facility/users', [AdminUserController::class, 'facilityUsers'])->name('facility.users');
+        Route::get('/facility/settings', [FacilityAdminController::class, 'facilitySettings'])->name('facility.settings');
+        // Shortcut: /admin/facility/{facility} redirects to dashboard
+        Route::get('/facility/{facility}', [FacilityAdminController::class, 'dashboard'])->name('facility.dashboard.shortcut');
+    });
 
 // Careers CRUD and applications routes
 Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin'])->group(function () {
@@ -288,6 +329,10 @@ Route::get('/book', [TourController::class, 'showForm'])->name('tours.form');
 Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 
 // FAQ Section
+
+
+use App\Http\Controllers\HomeController;
+Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/faqs', [FaqController::class, 'index'])->name('faqs.index');
 
 Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('careers.apply');
@@ -296,6 +341,12 @@ Route::post('/contact', [ContactController::class, 'submit'])->name('contact.sub
 
 // Auth routes (must be before catch-all routes)
 require __DIR__.'/auth.php';
+
+// Explicit admin login routes (GET and POST)
+Route::middleware('guest')->group(function () {
+    Route::get('/admin/login', [AdminAuthenticatedSessionController::class, 'create'])->name('admin.login');
+    Route::post('/admin/login', [AdminAuthenticatedSessionController::class, 'store']);
+});
 
 // Job applications viewing route
 Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->name('applications.show');
@@ -354,5 +405,52 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/mfa/setup', [App\Http\Controllers\Auth\AdminMfaSetupController::class, 'storeSetup'])->name('admin.mfa.setup.store');
 });
 
+
+// Public facility routes (placed at the end)
+    Route::get('/{facility:slug}/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'show'])->name('webmaster.contact.show');
+    Route::post('/{facility:slug}/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.facility.submit');
+
+// Redirect old privacy-policy route to new one
+Route::get('/{facility:slug}/privacy-policy', function (Facility $facility) {
+    return redirect()->route('privacy.policy', ['facility' => $facility->slug]);
+});
+
+// Publicly accessible Privacy Policy route
+Route::get('/{facility:slug}/privacy-policy', [PrivacyPolicyController::class, 'show'])->name('privacy.policy');
+
+// Notice of Privacy Practices
+Route::get('/{facility:slug}/notice-of-privacy-practices', [NoticeOfPrivacyPracticesController::class, 'show'])->name('notice.privacy.practices');
+
+// Terms of Service
+Route::get('/{facility:slug}/terms-of-service', [TermsOfServiceController::class, 'show'])->name('terms.service');
+
+// Accessibility
+Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 'show'])->name('accessibility');
+
 // Public Facility Route (catch-all, must be last)
+
+
+// Redirect /{facility}/admin/dashboard to facility dashboard if user has access
+Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {
+    $facility = \App\Models\Facility::where('slug', $facilitySlug)->firstOrFail();
+    $user = \Illuminate\Support\Facades\Auth::user();
+    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('hrrd') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
+        // Optionally check if user is assigned to this facility
+        return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug]);
+    }
+    abort(403, 'Unauthorized');
+})->middleware(['auth'])->name('facility.admin.dashboard.redirect');
+
+// Redirect /{facility}/dashboard to facility dashboard if user has access
+Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
+    $facility = \App\Models\Facility::where('slug', $facilitySlug)->firstOrFail();
+    $user = \Illuminate\Support\Facades\Auth::user();
+    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('hrrd') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
+        // You may want to check if the user is assigned to this facility
+        // Example: if ($user->facility_id == $facility->id) { ... }
+        return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug]);
+    }
+    abort(403, 'Unauthorized');
+})->middleware(['auth'])->name('facility.dashboard.redirect');
+
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');

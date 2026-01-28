@@ -1,0 +1,10 @@
+@extends('layouts.dashboard')
+
+@section('content')
+<div class="container py-8">
+    <h1 class="text-2xl font-bold mb-4">Attendance</h1>
+    <div class="bg-white p-6 rounded shadow">
+        <p>Track and manage attendance for this facility here.</p>
+    </div>
+</div>
+@endsection
