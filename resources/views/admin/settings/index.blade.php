@@ -33,7 +33,7 @@ $enable_mfa = Setting::where('key', 'enable_mfa')->value('value');
                         Email</label>
                     <input type="email" id="site_email" name="site_email"
                         class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                        value="{{ $site_email }}" placeholder="admin@biopacific.test" />
+                        value="{{ $site_email }}" placeholder="admin@biopacificoperational.com" />
                 </div>
             </div>
             <div class="border-b pb-6 mb-6">

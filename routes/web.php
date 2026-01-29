@@ -102,7 +102,7 @@ Route::get('/', function () {
         return redirect()->route('facility.public', $facility->slug);
     }
     // fallback: redirect to main corporate page
-    return redirect('http://biopacific.test/bio-pacific-corporate');
+    return redirect(url('/bio-pacific-corporate'));
 });
 
 

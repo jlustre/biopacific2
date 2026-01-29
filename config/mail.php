@@ -103,7 +103,7 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'noreply@biopacific.test'),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@biopacificoperational.com'),
         'name' => env('MAIL_FROM_NAME', 'Biopacific'),
     ],
 ];

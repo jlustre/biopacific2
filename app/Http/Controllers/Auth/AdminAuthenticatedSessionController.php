@@ -54,7 +54,7 @@ class AdminAuthenticatedSessionController extends Controller
             return redirect('/admin/login')->withErrors(['email' => 'Access denied. Only admin users can log in here.']);
         }
         // Admin lands on user dashboard, can access admin dashboard from sidebar
-        return redirect('http://biopacific.test/dashboard');
+        return redirect(url('/dashboard'));
     }
 
     /**
