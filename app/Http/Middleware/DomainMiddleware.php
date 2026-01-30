@@ -17,15 +17,17 @@ class DomainMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $host = $request->getHost(); // e.g., 'almadenhrc.com'
-    
-    // Look up the facility in your database by the domain
-    $facility = Facility::where('domain', $host)->first();
+        $facility = Facility::where('domain', $host)->first();
 
-    if ($facility) {
-        // Share the facility data with all views
-        view()->share('currentFacility', $facility);
-    }
+        if ($facility) {
+            // Share the facility data with all views
+            view()->share('currentFacility', $facility);
 
-    return $next($request);
+            // Internally dispatch to the facility public controller action
+            // This will render the facility public page without changing the URL
+            return app()->call('App\\Http\\Controllers\\FacilityController@publicView', ['facility' => $facility]);
+        }
+
+        return $next($request);
     }
 }
