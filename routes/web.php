@@ -94,14 +94,9 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/requests', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'requests'])->name('admin.facility.requests');
 });
-// Redirect root to facility public page based on domain
+// Root route: handled by FacilityDomainRedirect middleware for custom domains
+// If not a facility domain, fallback to main corporate page
 Route::get('/', function () {
-    $host = request()->getHost();
-    $facility = \App\Models\Facility::where('domain', $host)->orWhere('subdomain', $host)->first();
-    if ($facility) {
-        return redirect()->route('facility.public', $facility->slug);
-    }
-    // fallback: redirect to main corporate page
     return redirect(url('/bio-pacific-corporate'));
 });
 
@@ -453,4 +448,5 @@ Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
     abort(403, 'Unauthorized');
 })->middleware(['auth'])->name('facility.dashboard.redirect');
 
+// Facility public page by slug (e.g. /almaden-healthcare-and-rehabilitation-center)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
