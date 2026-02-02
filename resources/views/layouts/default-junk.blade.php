@@ -76,7 +76,7 @@ $metaDescription = $facility['meta_description'];
     <!-- Go to Top Button -->
     @include('partials.gototop')
 
-    @include('partials.screen-size-indicator')
+    {{-- @include('partials.screen-size-indicator') --}}
 
     @include('partials.scripts')
 </div>

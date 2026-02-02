@@ -66,7 +66,7 @@
     <!-- Go to Top Button -->
     @include('partials.gototop')
 
-    @include('partials.screen-size-indicator')
+    {{-- @include('partials.screen-size-indicator') --}}
 
     @include('partials.scripts')
 
