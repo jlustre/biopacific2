@@ -35,7 +35,7 @@
         @guest
         {{-- Optionally, show nothing or a guest sidebar --}}
         @endguest
-        @include('partials.screen-size-indicator')
+        {{-- @include('partials.screen-size-indicator') --}}
         <main class="py-8">
             @endif
             <div class="max-w-7xl mx-auto">
