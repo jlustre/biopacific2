@@ -14,7 +14,7 @@ class EmployeeEmailMapping extends Model
         'category',
         'employee_name',
         'employee_email',
-        'position',
+        'title',
         'is_primary',
         'is_active',
     ];

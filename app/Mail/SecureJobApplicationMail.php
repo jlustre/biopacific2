@@ -48,7 +48,7 @@ class SecureJobApplicationMail extends Mailable
             with: [
                 'secureUrl' => $secureUrl,
                 'applicationId' => $this->jobApplication->id,
-                'jobTitle' => $this->jobApplication->jobOpening->title ?? 'Unknown Position',
+                'jobTitle' => $this->jobApplication->jobOpening->title ?? 'Unknown title',
                 'facilityName' => $this->facility->name ?? 'BioPacific',
                 'submittedAt' => $this->jobApplication->created_at->format('M j, Y \a\t g:i A'),
                 'expiresAt' => $this->jobApplication->expires_at->format('M j, Y \a\t g:i A'),

@@ -114,7 +114,7 @@
                         <p><strong>Submitted:</strong> {{ $inquiry->created_at->format('M j, Y \a\t g:i A') }}</p>
                         @elseif($jobApplication ?? false)
                         <p><strong>Type:</strong> Job Application</p>
-                        <p><strong>Position:</strong> {{ $jobApplication->jobOpening->title ?? 'N/A' }}</p>
+                        <p><strong>Title:</strong> {{ $jobApplication->jobOpening->title ?? 'N/A' }}</p>
                         <p><strong>Submitted:</strong> {{ $jobApplication->created_at->format('M j, Y \a\t g:i A') }}
                         </p>
                         @endif

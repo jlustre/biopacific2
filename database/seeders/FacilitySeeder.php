@@ -231,7 +231,7 @@ class FacilitySeeder extends Seeder
             [
                 'name' => 'Glendale Transitional Care Center',
                 'tagline' => 'Guiding Recovery With Compassion and Expertise',
-                'headline' => 'Guided by Faith, Committed to Compassion',
+                'headline' => 'Built On Trust, Driven By Compassion',
                 'subheadline' => 'Providing personalized transitional care and rehabilitation services to restore independence and quality of life.',
                 'address' => '1509 Wilson Terrace, North Tower, 2nd Floor',
                 'phone' => '8184098072',
@@ -604,7 +604,7 @@ class FacilitySeeder extends Seeder
                 'domain' => $i['domain'],
                 'subdomain' => $i['subdomain'],
                 'phone' => $i['phone'],
-                'email' => 'info@example.com',
+                'email' => 'info@' . $i['domain'],
                 'facebook' => 'https://facebook.com',
                 'twitter' => 'https://twitter.com',
                 'instagram' => 'https://instagram.com',

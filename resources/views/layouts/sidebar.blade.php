@@ -130,157 +130,165 @@ use Illuminate\Support\Str;
                                     <i class="fas fa-hospital mr-2"></i> {{ $abbr }}
                                 </a>
                                 @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
-                                <a href="{{ route('admin.facility.dashboard', $facility) }}"
-                                    class="flex items-center w-full px-4 py-2 text-blue-700 hover:bg-blue-50">
+                                <a href="{{ route('admin.dashboard.index') }}"
+                                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
                                     <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
                                 </a>
                                 @endif
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
 
-            <!-- Web Contents Menu -->
-            <div x-data="{ open: false }" class="relative">
-                <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-                    <i class="fas fa-globe-americas mr-2"></i> Web Contents
-                    <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
-                    style="display: none;" x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="transform opacity-0 scale-95"
-                    x-transition:enter-end="transform opacity-100 scale-100"
-                    x-transition:leave="transition ease-in duration-75"
-                    x-transition:leave-start="transform opacity-100 scale-100"
-                    x-transition:leave-end="transform opacity-0 scale-95">
-                    <a href="{{ route('admin.facilities.webcontents.testimonials') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-quote-right mr-2"></i> Testimonials Management
-                    </a>
-                    <a href="{{ route('admin.facilities.webcontents.faqs') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-question-circle mr-2"></i> FAQs Management
-                    </a>
-                    <a href="{{ route('admin.galleries.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-images mr-2"></i> Galleries Management
-                    </a>
-                    <a href="{{ route('admin.news.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-newspaper mr-2"></i> News Management
-                    </a>
-                    <a href="{{ route('admin.facilities.webcontents.blogs') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-blog mr-2"></i> Blogs Management
-                    </a>
-                    <a href="{{ route('admin.facilities.webcontents.careers') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-briefcase mr-2"></i> Careers Management
-                    </a>
-                    <a href="{{ route('admin.services.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-cogs mr-2"></i> Services Management
-                    </a>
-                </div>
-            </div>
+                                <!-- Move Web Contents Menu here -->
+                                <div x-data="{ open: false }" class="relative">
+                                    <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
+                                        <i class="fas fa-globe-americas mr-2"></i> Web Contents
+                                        <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                                        style="display: none;" x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95">
+                                        ...existing code...
+                                    </div>
+                                </div>
 
-            <!-- Communications Menu -->
-            <div x-data="{ open: false }" class="relative">
-                <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-                    <i class="fas fa-comments mr-2"></i> Communications
-                    <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
-                    style="display: none;" x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="transform opacity-0 scale-95"
-                    x-transition:enter-end="transform opacity-100 scale-100"
-                    x-transition:leave="transition ease-in duration-75"
-                    x-transition:leave-start="transform opacity-100 scale-100"
-                    x-transition:leave-end="transform opacity-0 scale-95">
-                    <a href="{{ route('admin.tour-requests.index') }}"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-calendar-alt mr-2"></i> Tour Requests
-                    </a>
-                    <a href="{{ route('admin.inquiries.index') }}"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-question-circle mr-2"></i> General Inquiries
-                    </a>
-                    <a href="{{ route('admin.job-applications.index') }}"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-briefcase mr-2"></i> Job Applications
-                    </a>
-                    <a href="{{ route('admin.email-recipients.index') }}"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-envelope mr-2"></i> Email Recipients
-                    </a>
-                    <a href="{{ route('admin.communications.employee-email-mappings') }}"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-user-tie mr-2"></i> Employee Email Mappings
-                    </a>
-                </div>
-            </div>
+                                <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
+                                @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+                                <a href="{{ route('hr-portal.index') }}"
+                                    class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
+                                    <i class="fas fa-users-cog mr-2"></i> HR Portal
+                                </a>
+                                @elseif($user && $user->hasRole(['hrrd','facility-admin','facility-dsd']))
+                                <a href="{{ route('user.hr-portal') }}"
+                                    class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
+                                    <i class="fas fa-users-cog mr-2"></i> HR Portal
+                                </a>
+                                @endif
 
-            @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
-            <!-- Security Monitoring -->
-            <a href="{{ route('admin.security.dashboard') }}"
-                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.security.*') ? 'bg-gray-100 font-bold' : '' }}">
-                <i class="fas fa-shield-alt mr-2"></i> Security Monitoring
-            </a>
+                                @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+                                <!-- HIPAA Compliance Dropdown -->
+                                <div x-data="{ open: false }" class="relative">
+                                    <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.baa-registry.*') || request()->routeIs('admin.hipaa-checklist.*') ? 'bg-gray-100 font-bold' : '' }}">
+                                        <i class="fas fa-shield-alt mr-2"></i> HIPAA Compliance
+                                        <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                                        style="display: none;" x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95">
+                                        ...existing code...
+                                    </div>
+                                </div>
+                                @endif
+                                <div x-data="{ open: false }" class="relative">
+                                    <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
+                                        <i class="fas fa-comments mr-2"></i> Communications
+                                        <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                                        style="display: none;" x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95">
+                                        <a href="{{ route('admin.tour-requests.index') }}"
+                                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-calendar-alt mr-2"></i> Tour Requests
+                                        </a>
+                                        <a href="{{ route('admin.inquiries.index') }}"
+                                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-question-circle mr-2"></i> General Inquiries
+                                        </a>
+                                        <a href="{{ route('admin.job-applications.index') }}"
+                                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-briefcase mr-2"></i> Job Applications
+                                        </a>
+                                        <a href="{{ route('admin.email-recipients.index') }}"
+                                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-envelope mr-2"></i> Email Recipients
+                                        </a>
+                                        <a href="{{ route('admin.communications.employee-email-mappings') }}"
+                                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-user-tie mr-2"></i> Employee Email Mappings
+                                        </a>
+                                    </div>
+                                </div>
 
-            <!-- Users Management -->
-            <a href="{{ route('admin.users.index') }}"
-                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.users.*') ? 'bg-gray-100 font-bold' : '' }}">
-                <i class="fas fa-users mr-2"></i> Users Mgmnt
-            </a>
+                                @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+                                <!-- Security Monitoring -->
+                                <a href="{{ route('admin.security.dashboard') }}"
+                                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.security.*') ? 'bg-gray-100 font-bold' : '' }}">
+                                    <i class="fas fa-shield-alt mr-2"></i> Security Monitoring
+                                </a>
 
-            <!-- Role & Permission Management -->
-            <div x-data="{ open: false }" class="relative">
-                <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') || request()->routeIs('admin.role-assignments.*') ? 'bg-gray-100 font-bold' : '' }}">
-                    <i class="fas fa-shield-alt mr-2"></i> Role & Permissions
-                    <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
-                    class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
-                    style="display: none;" x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="transform opacity-0 scale-95"
-                    x-transition:enter-end="transform opacity-100 scale-100"
-                    x-transition:leave="transition ease-in duration-75"
-                    x-transition:leave-start="transform opacity-100 scale-100"
-                    x-transition:leave-end="transform opacity-0 scale-95">
-                    <a href="{{ route('admin.roles.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.roles.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
-                        <i class="fas fa-user-tag mr-2 text-blue-600"></i> Manage Roles
-                    </a>
-                    <a href="{{ route('admin.permissions.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.permissions.*') ? 'bg-green-50 text-green-700 font-medium' : '' }}">
-                        <i class="fas fa-key mr-2 text-green-600"></i> Manage Permissions
-                    </a>
-                    <a href="{{ route('admin.role-assignments.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.role-assignments.*') ? 'bg-purple-50 text-purple-700 font-medium' : '' }}">
-                        <i class="fas fa-user-cog mr-2 text-purple-600"></i> Role Assignments
-                    </a>
-                    <hr class="my-1">
-                    <a href="{{ route('admin.role-assignments.statistics') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-chart-pie mr-2 text-orange-600"></i> Statistics
-                    </a>
-                </div>
-            </div>
-            @endif
+                                <!-- Users Management -->
+                                <a href="{{ route('admin.users.index') }}"
+                                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.users.*') ? 'bg-gray-100 font-bold' : '' }}">
+                                    <i class="fas fa-users mr-2"></i> Users Mgmnt
+                                </a>
+
+                                <!-- Role & Permission Management -->
+                                <div x-data="{ open: false }" class="relative">
+                                    <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') || request()->routeIs('admin.role-assignments.*') ? 'bg-gray-100 font-bold' : '' }}">
+                                        <i class="fas fa-shield-alt mr-2"></i> Role & Permissions
+                                        <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="open" @mouseenter="open = true" @mouseleave="open = false"
+                                        class="absolute left-full top-0 mt-0 w-64 bg-white border border-gray-200 rounded shadow-lg z-50"
+                                        style="display: none;" x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95">
+                                        <a href="{{ route('admin.roles.index') }}"
+                                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.roles.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
+                                            <i class="fas fa-user-tag mr-2 text-blue-600"></i> Manage Roles
+                                        </a>
+                                        <a href="{{ route('admin.permissions.index') }}"
+                                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.permissions.*') ? 'bg-green-50 text-green-700 font-medium' : '' }}">
+                                            <i class="fas fa-key mr-2 text-green-600"></i> Manage Permissions
+                                        </a>
+                                        <a href="{{ route('admin.role-assignments.index') }}"
+                                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.role-assignments.*') ? 'bg-purple-50 text-purple-700 font-medium' : '' }}">
+                                            <i class="fas fa-user-cog mr-2 text-purple-600"></i> Role Assignments
+                                        </a>
+                                        <hr class="my-1">
+                                        <a href="{{ route('admin.role-assignments.statistics') }}"
+                                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-chart-pie mr-2 text-orange-600"></i> Statistics
+                                        </a>
+                                    </div>
+                                </div>
+                                @endif
 
         </nav>
     </aside>

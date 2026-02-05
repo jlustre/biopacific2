@@ -24,7 +24,7 @@ class EmployeeEmailMappings extends Component
     public $category = '';
     public $employee_name = '';
     public $employee_email = '';
-    public $position = '';
+    public $title = '';
     public $is_primary = false;
     public $is_active = true;
     
@@ -53,7 +53,7 @@ class EmployeeEmailMappings extends Component
                     ->where('category', $this->category)
                     ->ignore($this->employee_id)
             ],
-            'position' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
             'is_primary' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -117,7 +117,7 @@ class EmployeeEmailMappings extends Component
         $this->category = $mapping->category;
         $this->employee_name = $mapping->employee_name;
         $this->employee_email = $mapping->employee_email;
-        $this->position = $mapping->position;
+        $this->title = $mapping->title;
         $this->is_primary = $mapping->is_primary;
         $this->is_active = $mapping->is_active;
         
@@ -152,7 +152,7 @@ class EmployeeEmailMappings extends Component
                 'category' => $this->category,
                 'employee_name' => $this->employee_name,
                 'employee_email' => $this->employee_email,
-                'position' => $this->position,
+                'title' => $this->title,
                 'is_primary' => $this->is_primary,
                 'is_active' => $this->is_active,
             ]);
@@ -164,7 +164,7 @@ class EmployeeEmailMappings extends Component
                 'category' => $this->category,
                 'employee_name' => $this->employee_name,
                 'employee_email' => $this->employee_email,
-                'position' => $this->position,
+                'title' => $this->title,
                 'is_primary' => $this->is_primary,
                 'is_active' => $this->is_active,
             ]);
@@ -266,7 +266,7 @@ class EmployeeEmailMappings extends Component
         $this->category = '';
         $this->employee_name = '';
         $this->employee_email = '';
-        $this->position = '';
+        $this->title = '';
         $this->is_primary = false;
         $this->is_active = true;
         $this->resetErrorBag();
@@ -279,7 +279,7 @@ class EmployeeEmailMappings extends Component
                 $q->where(function($query) {
                     $query->where('employee_name', 'like', '%' . $this->search . '%')
                           ->orWhere('employee_email', 'like', '%' . $this->search . '%')
-                          ->orWhere('position', 'like', '%' . $this->search . '%');
+                          ->orWhere('title', 'like', '%' . $this->search . '%');
                 });
             })
             ->when($this->selectedFacility, function($q) {

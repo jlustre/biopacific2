@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('category'); // 'book-a-tour', 'inquiry', 'hiring'
             $table->string('employee_name');
             $table->string('employee_email');
-            $table->string('position')->nullable();
+            $table->string('title')->nullable();
             $table->boolean('is_primary')->default(false); // Primary contact for this category
             $table->boolean('is_active')->default(true);
             $table->timestamps();

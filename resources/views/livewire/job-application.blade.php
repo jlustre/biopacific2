@@ -103,7 +103,7 @@
                 class="mt-1 h-4 w-4 text-blue-600 border border-teal-300 rounded focus:ring-blue-500">
             <label for="consent" class="text-sm text-gray-700">
                 I consent to the processing of my personal data for recruitment purposes and understand that my
-                information will be used to evaluate my application for this position.
+                information will be used to evaluate my application for this title.
                 <span class="text-red-500">*</span>
             </label>
         </div>

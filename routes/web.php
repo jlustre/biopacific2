@@ -1,55 +1,53 @@
 <?php
-
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FacilityAdminController;
-use App\Http\Controllers\Admin\Facilities\QuickActionsController;
-use App\Http\Controllers\FacilityController;
-// (reverted: removed FacilityPublicLoginController and related routes)
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\AuditController;
-use App\Http\Controllers\TourController;
-use App\Http\Controllers\FaqController;
-use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Appearance;
-use App\Models\Facility;
-use App\Http\Controllers\Admin\NewsController;
-use App\Http\Controllers\Admin\GalleryController;
-use App\Http\Controllers\Admin\EventController;
-use App\Http\Controllers\Admin\CareersController;
-use App\Http\Controllers\Admin\TourRequestController;
-use App\Http\Controllers\Admin\EmailRecipientController;
-use App\Http\Controllers\Admin\InquiryController;
-use App\Http\Controllers\Admin\JobApplicationController as AdminJobApplicationController;
-use App\Http\Controllers\Admin\SecurityMonitoringController;
+use App\Livewire\Settings\Password;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacilityAdminController;
+use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\Admin\BaaRegistryController;
 use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminPermissionController;
+use App\Http\Controllers\BaaRegistryController;
 use App\Http\Controllers\AdminRoleAssignmentController;
+use App\Http\Controllers\FacilityController;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\CareersController;
+use App\Http\Controllers\CareersPublicController;
+use App\Http\Controllers\BookATourController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\AuditController;
+use App\Http\Controllers\TourController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
-use App\Http\Controllers\ServicesController;
-use App\Http\Controllers\AccessibilityController;
-use App\Http\Controllers\TermsOfServiceController;
-use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\PrivacyPolicyController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\CareersPublicController;
-use App\Http\Controllers\SecureInquiryController;
-use App\Http\Controllers\SecureTourRequestController;
-use App\Http\Controllers\SecureJobApplicationController;
-use App\Http\Controllers\BookATourController;
-use App\Http\Controllers\BlogController;
-use App\Livewire\FacilitiesIndex;
-use App\Livewire\Settings\Profile;
-use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Admin\ServiceController;
-use Illuminate\Support\Facades\Auth;
-// (reverted: removed InternalLoginController and internal.password middleware group)
-use App\Http\Controllers\Auth\AdminMfaController;
-use App\Http\Controllers\Auth\AdminMfaSetupController;
+use App\Http\Controllers\NoticeOfPrivacyPracticesController;
+use App\Http\Controllers\TermsOfServiceController;
+use App\Http\Controllers\AccessibilityController;
+use App\Http\Controllers\AdminJobApplicationController;
+use App\Http\Controllers\AdminMfaController;
+use App\Http\Controllers\AdminAuthenticatedSessionController;
+use App\Models\Facility;
+use App\Models\Position;
 
-use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
+
+// Job Description Template AJAX/CRUD routes
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/job-description-templates', [\App\Http\Controllers\Admin\JobOpeningController::class, 'getTemplatesForTitle'])->name('admin.job_description_templates.index');
+    Route::post('/job-description-templates', [\App\Http\Controllers\Admin\JobOpeningController::class, 'storeTemplate'])->name('admin.job_description_templates.store');
+    Route::put('/job-description-templates/{id}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'updateTemplate'])->name('admin.job_description_templates.update');
+    Route::delete('/job-description-templates/{id}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'destroyTemplate'])->name('admin.job_description_templates.destroy');
+    Route::get('/job-descriptions/by-position/{position}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'getJobDescriptionsByPosition']);
+});
+
+// Allow public access for AJAX department/position select
+Route::get('/admin/positions/all', function() {
+    return \App\Models\Position::select('id', 'title', 'department')->get();
+});
 
 // HRRD dashboard redirect (must be before admin-only group)
 // HRRD dashboard: HR portal (all facilities) and user dashboard
@@ -87,6 +85,12 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::get('/admin/facility/{facility}/dashboard', [\App\Http\Controllers\Admin\FacilityDashboardController::class, 'show'])->name('admin.facility.dashboard');
 
     // Facility Quick Actions
+    Route::get('/admin/facility/{facility}/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'index'])->name('admin.facility.job_openings');
+    Route::post('/admin/facility/{facility}/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'store'])->name('admin.facility.job_openings.store');
+    Route::get('/admin/facility/{facility}/job-openings/{jobOpening}/edit', [\App\Http\Controllers\Admin\JobOpeningController::class, 'edit'])->name('admin.facility.job_openings.edit');
+    Route::get('/admin/facility/{facility}/job-openings/{jobOpening}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'show'])->name('admin.facility.job_openings.show');
+    Route::put('/admin/facility/{facility}/job-openings/{jobOpening}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'update'])->name('admin.facility.job_openings.update');
+    Route::delete('/admin/facility/{facility}/job-openings/{jobOpening}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'destroy'])->name('admin.facility.job_openings.destroy');
     Route::get('/admin/facility/{facility}/hiring', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'hiring'])->name('admin.facility.hiring');
     Route::get('/admin/facility/{facility}/termination', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'termination'])->name('admin.facility.termination');
     Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'employees'])->name('admin.facility.employees');
@@ -94,10 +98,9 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/requests', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'requests'])->name('admin.facility.requests');
 });
-// Root route: handled by FacilityDomainRedirect middleware for custom domains
-// If not a facility domain, fallback to main corporate page
+// Root route: show landing page (welcome)
 Route::get('/', function () {
-    return redirect(url('/bio-pacific-corporate'));
+    return view('welcome');
 });
 
 

@@ -6,6 +6,11 @@ use App\Models\Content;
 
 class Facility extends Model
 {
+  // Job Openings relationship
+  public function jobOpenings()
+  {
+    return $this->hasMany(JobOpening::class);
+  }
   // FAQs relationship (many-to-many)
   public function faqs()
   {

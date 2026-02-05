@@ -39,7 +39,7 @@
         <main class="py-8">
             @endif
             <div class="max-w-7xl mx-auto">
-                @stack('content')
+                @yield('content')
             </div>
         </main>
 

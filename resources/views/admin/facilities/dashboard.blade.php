@@ -17,6 +17,11 @@
 
     <!-- Quick Actions Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+        <a href="{{ route('admin.facility.job_openings', ['facility' => $facility->id]) }}"
+            class="flex flex-col items-center justify-center bg-indigo-50 hover:bg-indigo-100 rounded-xl p-6 shadow transition">
+            <i class="fas fa-briefcase text-3xl text-indigo-600 mb-2"></i>
+            <span class="font-semibold text-lg text-indigo-800">Job Listing</span>
+        </a>
         <a href="{{ route('admin.facility.hiring', ['facility' => $facility->id]) }}"
             class="flex flex-col items-center justify-center bg-blue-50 hover:bg-blue-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-user-plus text-3xl text-blue-600 mb-2"></i>

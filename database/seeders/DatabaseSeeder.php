@@ -31,6 +31,8 @@ class DatabaseSeeder extends Seeder
             EmployeeEmailMappingsTableSeeder::class,
             GeneralJobOpeningSeeder::class,
             TestUsersSeeder::class,
+            JobDescriptionsSeeder::class,
+            PositionsSeeder::class,
         ]);
 
     }
