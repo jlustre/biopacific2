@@ -49,36 +49,25 @@ Route::get('/admin/positions/all', function() {
     return \App\Models\Position::select('id', 'title', 'department')->get();
 });
 
-// HRRD dashboard redirect (must be before admin-only group)
-// HRRD dashboard: HR portal (all facilities) and user dashboard
-Route::middleware(['auth', 'role:hrrd|admin|facility-admin|facility-dsd,web'])->group(function () {
-    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-    // New HR portal route for HRRD, admin, facility-admin, and facility-dsd
-    Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
-});
-
-// Facility-admin & facility-dsd: HR portal (assigned facility only) and user dashboard
-Route::middleware(['auth', 'role:facility-admin|facility-dsd'])->group(function () {
-    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-});
-
-// All users: user dashboard only
-Route::middleware(['auth', 'role:user'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-});
-
-// Admin: access to all dashboards
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
-});
-
-// Admin dashboard route: only admin can access
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+// Dashboard and HR Portal routes, grouped by role to avoid duplication
+Route::middleware(['auth'])->group(function () {
+    // Admin: access to all dashboards and HR portal
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+        Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+        Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
+    });
+    // HRRD, facility-admin, facility-dsd: HR portal and user dashboard
+    Route::middleware('role:hrrd|facility-admin|facility-dsd')->group(function () {
+        Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+        Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
+    });
+    // User: user dashboard only
+    Route::middleware('role:user')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+    });
 });
 // Facility-specific admin dashboard
 Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
@@ -98,9 +87,9 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/requests', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'requests'])->name('admin.facility.requests');
 });
-// Root route: show landing page (welcome)
+// Root route: redirect to /bio-pacific-corporate
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/bio-pacific-corporate');
 });
 
 

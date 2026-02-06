@@ -1,4 +1,9 @@
 <!-- Enhanced Why Choose Us Section -->
+@php
+$primary = $primary ?? '#007bff'; // Default to a blue color if not provided
+$facility = $facility ?? ['name' => 'Our Facility']; // Default if not provided
+$sections = $sections ?? [];
+@endphp
 <div class="bg-gradient-to-r from-white to-slate-50 rounded-3xl shadow-xl p-4 border border-slate-100">
     <!-- SectionHeader -->
     <div class="text-center mb-16">

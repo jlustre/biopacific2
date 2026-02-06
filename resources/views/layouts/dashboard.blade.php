@@ -19,9 +19,8 @@
 
 <body class="min-h-screen antialiased"
     style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
-    @if (request()->routeIs('internal.login.form'))
     <main class="py-8">
-        @else
+
         <!-- Go to Top Button -->
         @include('layouts.partials.go_to_top')
 
@@ -29,23 +28,17 @@
         @include('layouts.topnav')
 
         <!-- Responsive Sidebar Layout -->
-        @auth
         @include('layouts.sidebar')
-        @endauth
-        @guest
-        {{-- Optionally, show nothing or a guest sidebar --}}
-        @endguest
         {{-- @include('partials.screen-size-indicator') --}}
         <main class="py-8">
-            @endif
+            {{-- @if (request()->routeIs('internal.login.form')) --}}
             <div class="max-w-7xl mx-auto">
                 @yield('content')
             </div>
+            {{-- @endif --}}
         </main>
-
         @stack('scripts')
         @livewireScripts
-
         <script src="/js/color-scheme-dropdown.js"></script>
 </body>
 

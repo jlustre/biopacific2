@@ -20,19 +20,6 @@
             </a>
             @endif
 
-            <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
-            @if(auth()->user() && auth()->user()->hasRole('admin'))
-            <a href="{{ route('hr-portal.index') }}"
-                class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
-                <i class="fas fa-users-cog mr-2"></i> HR Portal
-            </a>
-            @elseif(auth()->user() && auth()->user()->hasRole(['hrrd','facility-admin','facility-dsd']))
-            <a href="{{ route('user.hr-portal') }}"
-                class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
-                <i class="fas fa-users-cog mr-2"></i> HR Portal
-            </a>
-            @endif
-
             <!-- Profile -->
             <a href="{{ route('settings.profile') }}"
                 class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('settings.profile') ? 'bg-gray-100 font-bold' : '' }}">

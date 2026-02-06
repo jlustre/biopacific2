@@ -1,3 +1,6 @@
+@php
+$facility = $facility ?? ['facility_image' => 'images/default-facility.jpg'];
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 @php
