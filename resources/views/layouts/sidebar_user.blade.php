@@ -13,7 +13,7 @@
             </a>
 
             <!-- Show Admin Dashboard if user is admin -->
-            @if(auth()->user() && auth()->user()->hasRole('admin'))
+            @if(auth()->user() && auth()->user()->hasRole(['admin','hrrd','facility-admin','facility-dsd']))
             <a href="{{ route('admin.dashboard.index') }}"
                 class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.dashboard.*') ? 'bg-gray-100 font-bold' : '' }}">
                 <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard

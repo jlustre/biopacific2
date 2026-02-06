@@ -87,9 +87,9 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/requests', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'requests'])->name('admin.facility.requests');
 });
-// Root route: redirect to /bio-pacific-corporate
+// Root route: show landing page (welcome)
 Route::get('/', function () {
-    return redirect('/bio-pacific-corporate');
+    return view('welcome');
 });
 
 
