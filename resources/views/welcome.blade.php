@@ -2,11 +2,11 @@
 $sections = $sections ?? [];
 @endphp
 {{-- filepath: resources/views/welcome.blade.php --}}
-@extends('layouts.' . ($layoutTemplate ?? 'default-template'))
 
-@php
-use Illuminate\Support\Facades\Auth;
-@endphp
+
+
+{{-- @extends('layouts.' . ($layoutTemplate ?? 'default-template')) --}}
+@extends('layouts.dashboard')
 
 @section('content')
 

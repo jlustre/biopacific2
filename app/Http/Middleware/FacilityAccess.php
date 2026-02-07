@@ -16,7 +16,7 @@ class FacilityAccess
         if (!$user) {
             return redirect()->route('login');
         }
-        if ($user->hasRole(['admin'])) {
+        if ($user->hasRole(['admin', 'hrrd'])) {
             return $next($request);
         }
         $facilityId = $request->route('facility');
@@ -26,7 +26,7 @@ class FacilityAccess
         if (!$facilityId) {
             return $next($request);
         }
-        if ($user->hasRole(['facility-admin', 'facility-editor'])) {
+        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
             if (!$user->canManageFacility($facilityId)) {
                 abort(403, 'You do not have permission to access this facility.');
             }

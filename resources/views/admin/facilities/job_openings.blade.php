@@ -3,7 +3,7 @@
 @section('content')
 <div class="container py-4">
     <h1 class="text-2xl font-bold mb-4">Job Openings for <strong>{{ $facility->name }}</strong></h1>
-    <form method="POST" action="{{ route('admin.facility.job_openings.store', $facility) }}"
+    <form method="POST" action="{{ route('admin.facility.job_openings.store', ['facility' => $facility->id]) }}"
         class="mb-6 bg-white p-4 rounded shadow">
         @csrf
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

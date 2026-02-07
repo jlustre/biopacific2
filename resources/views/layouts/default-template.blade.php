@@ -46,6 +46,12 @@
     }
   </style>
 
+  @guest
+  @include('layouts.topnav_user')
+  @endguest
+  @auth
+  @include('layouts.topnav')
+  @endauth
   <div class="bg-white px-2 md:px-5 antialiased transition-colors mx-0" style="padding-top: 72px;">
     <!-- Header -->
     @include('partials.header')

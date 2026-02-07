@@ -31,6 +31,8 @@ use App\Http\Controllers\AccessibilityController;
 use App\Http\Controllers\AdminJobApplicationController;
 use App\Http\Controllers\AdminMfaController;
 use App\Http\Controllers\AdminAuthenticatedSessionController;
+use App\Http\Controllers\TourRequestController;
+use App\Http\Controllers\InquiryController;
 use App\Models\Facility;
 use App\Models\Position;
 
@@ -52,12 +54,16 @@ Route::get('/admin/positions/all', function() {
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 Route::middleware(['auth'])->group(function () {
     // Admin: access to all dashboards and HR portal
-    Route::middleware('role:admin')->group(function () {
-        Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-        Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
-        Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
-    });
+        Route::middleware('role:admin|hrrd|facility-admin|facility-dsd')->group(function () {
+            Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+            Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
+            Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+            Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
+        });
+        // Add explicit route for hrrd, facility-admin, facility-dsd
+        Route::middleware('role:hrrd|facility-admin|facility-dsd')->group(function () {
+            Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
+        });
     // HRRD, facility-admin, facility-dsd: HR portal and user dashboard
     Route::middleware('role:hrrd|facility-admin|facility-dsd')->group(function () {
         Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
@@ -212,7 +218,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     // Employee Email Mappings Management
     Route::get('/communications/employee-email-mappings', function () {
         return view('admin.employee-email-mappings');
-    })->name('communications.employee-email-mappings');
+    })->middleware(['auth', 'role:admin|facility-admin|hrrd|facility-dsd'])->name('communications.employee-email-mappings');
 
     
     // Gallery image management
@@ -282,7 +288,7 @@ Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor
     });
 
 // Careers CRUD and applications routes
-Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin|facility-admin|hrrd|facility-dsd'])->group(function () {
     Route::get('careers', [CareersController::class, 'index'])->name('admin.facilities.webcontents.careers');
     Route::post('careers', [CareersController::class, 'store'])->name('admin.facilities.webcontents.careers.store');
     Route::put('careers/{jobOpening}', [CareersController::class, 'update'])->name('admin.facilities.webcontents.careers.update');
