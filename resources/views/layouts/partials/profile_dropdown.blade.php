@@ -2,6 +2,7 @@
 use Illuminate\Support\Facades\Auth;
 @endphp
 <div class="flex items-center space-x-6">
+    @if(Auth::check())
     <!-- Notifications -->
     <x-admin.webmaster-contact-notifications />
     <!-- Profile Dropdown -->
@@ -13,18 +14,15 @@ use Illuminate\Support\Facades\Auth;
             $userName = Auth::user()->name ?? 'Admin';
             $initials = collect(explode(' ', $userName))->map(function($w) { return strtoupper($w[0]); })->join('');
             @endphp
-            @if($hasProfile)
-            <img src="{{ asset('images/profile.png') }}" alt="Profile"
-                class="h-8 w-8 rounded-full border bg-gray-200" />
-            @else
             <span
                 class="h-8 w-8 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 font-bold text-lg border">{{
                 $initials }}</span>
-            @endif
             <span class="ml-2 text-gray-700 font-medium">{{ $userName }}</span>
             <svg class="ml-1 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
+            {{-- <img src="{{ asset('images/profile.png') }}" alt="Profile"
+                class="h-8 w-8 rounded-full border bg-gray-200" /> --}}
         </button>
         <div x-show="open" @click.away="open = false"
             class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50"
@@ -50,4 +48,7 @@ use Illuminate\Support\Facades\Auth;
             </form>
         </div>
     </div>
+    @else
+    <a href="{{ route('login') }}" class="px-4 py-2 text-gray-700 hover:bg-green-300">Log In</a>
+    @endif
 </div>

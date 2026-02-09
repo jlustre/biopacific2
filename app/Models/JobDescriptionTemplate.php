@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class JobDescriptionTemplate extends Model
 {
     protected $fillable = [
-        'title', 'position_id', 'contents', 'created_by'
+        'name', 'title', 'contents', 'created_by'
     ];
 
     public function position()

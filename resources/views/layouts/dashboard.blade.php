@@ -33,7 +33,7 @@
         <main class="py-8">
             {{-- @if (request()->routeIs('internal.login.form')) --}}
             <div class="max-w-7xl mx-auto">
-                @yield('content')
+                {{-- @yield('content') --}}
             </div>
             {{-- @endif --}}
         </main>

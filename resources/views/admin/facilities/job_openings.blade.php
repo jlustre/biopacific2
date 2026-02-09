@@ -97,11 +97,25 @@
                             <input type="text" id="template-name" class="form-input w-full" required>
                         </div>
                         <div>
-                            <label class="block font-semibold mb-1">Title (optional)</label>
-                            <input type="text" id="template-title" class="form-input w-full">
+                            <label class="block font-semibold mb-1">Title <span class="text-red-500">*</span></label>
+                            <select id="template-title" class="form-select w-full" required>
+                                <option value="">Select Title</option>
+                                <option value="Registered Nurse">Registered Nurse</option>
+                                <option value="Licensed Vocational Nurse">Licensed Vocational Nurse</option>
+                                <option value="Certified Nursing Assistant">Certified Nursing Assistant</option>
+                                <option value="Director of Nursing">Director of Nursing</option>
+                                <option value="Administrator">Administrator</option>
+                                <option value="Dietary Aide">Dietary Aide</option>
+                                <option value="Housekeeper">Housekeeper</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Social Worker">Social Worker</option>
+                                <option value="Activities Director">Activities Director</option>
+                                <option value="Receptionist">Receptionist</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block font-semibold mb-1">Description</label>
+                            <label class="block font-semibold mb-1">Job Summary</label>
                             <textarea id="template-description" class="form-input w-full" rows="2"></textarea>
                         </div>
                         <div>
@@ -117,6 +131,7 @@
                                 class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Apply to
                                 Form</button>
                         </div>
+                        <div id="template-message" class="mt-2 text-center text-sm"></div>
                     </form>
                 </div>
             </div>
@@ -223,19 +238,34 @@
                     .then(res => res.json())
                     .then(data => renderTemplatesTable(data));
             }
+            let selectedTemplate = null;
             function renderTemplatesTable(templates) {
                 const tbody = document.querySelector('#templates-table tbody');
                 tbody.innerHTML = '';
-                templates.forEach(t => {
+                templates.forEach((t, idx) => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class='px-2 py-1'>${t.name}</td><td class='px-2 py-1'>${t.title || ''}</td><td class='px-2 py-1'><button type='button' class='text-blue-600 hover:underline' onclick='editTemplate(${JSON.stringify(t)})'>Edit</button></td>`;
+                    tr.innerHTML = `<td class='px-2 py-1 cursor-pointer'>${t.name}</td><td class='px-2 py-1 cursor-pointer'>${t.title || ''}</td><td class='px-2 py-1'><button type='button' class='text-blue-600 hover:underline' onclick='editTemplate(${JSON.stringify(t)})'>Edit</button></td>`;
+                    tr.classList.add('hover:bg-blue-50');
+                    tr.onclick = function(e) {
+                        // Only select row if not clicking Edit button
+                        if (e.target.tagName.toLowerCase() !== 'button') {
+                            // Remove highlight from all rows
+                            Array.from(tbody.children).forEach(row => row.classList.remove('bg-blue-100'));
+                            tr.classList.add('bg-blue-100');
+                            selectedTemplate = t;
+                        }
+                    };
                     tbody.appendChild(tr);
                 });
+                selectedTemplate = null;
             }
             document.getElementById('fetch-templates').onclick = fetchTemplates;
             document.getElementById('template-title-filter').onchange = fetchTemplates;
 
             // Template form logic
+            const saveBtn = document.getElementById('save-template-btn');
+            const templateNameInput = document.getElementById('template-name');
+            const templateTitleInput = document.getElementById('template-title');
             function clearTemplateForm() {
                 document.getElementById('template-id').value = '';
                 document.getElementById('template-name').value = '';
@@ -243,25 +273,75 @@
                 document.getElementById('template-description').value = '';
                 document.getElementById('template-detailed-description').value = '';
                 document.getElementById('delete-template-btn').classList.add('hidden');
+                // Always disable Save when modal opens or cleared
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        // When modal opens, always clear form and disable Save
+                        clearTemplateForm();
             }
-            document.getElementById('new-template-btn').onclick = () => { clearTemplateForm(); };
+            document.getElementById('new-template-btn').onclick = () => {
+                clearTemplateForm();
+                // Auto-populate title if a specific title is selected in the filter
+                const filter = document.getElementById('template-title-filter').value;
+                if (filter && filter !== 'All Titles' && filter !== 'Other') {
+                    document.getElementById('template-title').value = filter;
+                }
+                // Enable Save only after New Template is clicked and required fields are filled
+                validateTemplateForm();
+            };
 
             window.editTemplate = function(template) {
                 document.getElementById('template-id').value = template.id;
                 document.getElementById('template-name').value = template.name;
                 document.getElementById('template-title').value = template.title || '';
-                document.getElementById('template-description').value = template.description || '';
-                document.getElementById('template-detailed-description').value = template.detailed_description || '';
+                // Split contents into description and detailed_description
+                let desc = '', detail = '';
+                if (template.contents) {
+                    const parts = template.contents.split('\n\n');
+                    desc = parts[0] || '';
+                    detail = parts.slice(1).join('\n\n') || '';
+                }
+                document.getElementById('template-description').value = desc;
+                document.getElementById('template-detailed-description').value = detail;
                 document.getElementById('delete-template-btn').classList.remove('hidden');
+                // Enable Save only after Edit is clicked and required fields are filled
+                validateTemplateForm();
             };
 
+            function validateTemplateForm() {
+                const name = templateNameInput.value.trim();
+                const title = templateTitleInput.value.trim();
+                const desc = document.getElementById('template-description').value.trim();
+                const detail = document.getElementById('template-detailed-description').value.trim();
+                // Only enable Save if New Template or Edit is active and all required fields are filled
+                const isEditingOrCreating = document.getElementById('template-id').value !== '' || document.activeElement === document.getElementById('new-template-btn');
+                if (isEditingOrCreating && name && title && title !== '' && title !== 'Select Title' && desc && detail) {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    saveBtn.disabled = true;
+                    saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                        // Ensure Save button is disabled when modal opens
+                        saveBtn.disabled = true;
+                        saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            templateNameInput.addEventListener('input', validateTemplateForm);
+            templateTitleInput.addEventListener('change', validateTemplateForm);
+            document.getElementById('template-description').addEventListener('input', validateTemplateForm);
+            document.getElementById('template-detailed-description').addEventListener('input', validateTemplateForm);
+
             document.getElementById('save-template-btn').onclick = function() {
+                const saveBtn = document.getElementById('save-template-btn');
+                const msgDiv = document.getElementById('template-message');
+                msgDiv.textContent = '';
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 const id = document.getElementById('template-id').value;
                 const payload = {
                     name: document.getElementById('template-name').value,
                     title: document.getElementById('template-title').value,
-                    description: document.getElementById('template-description').value,
-                    detailed_description: document.getElementById('template-detailed-description').value
+                    contents: document.getElementById('template-description').value + '\n\n' + document.getElementById('template-detailed-description').value
                 };
                 const url = id ? `/admin/job-description-templates/${id}` : '/admin/job-description-templates';
                 const method = id ? 'PUT' : 'POST';
@@ -270,8 +350,41 @@
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCSRF() },
                     body: JSON.stringify(payload)
                 })
-                .then(res => res.json())
-                .then(() => { fetchTemplates(); clearTemplateForm(); });
+                .then(async res => {
+                    let text = await res.text();
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        // Not JSON, likely an error page
+                        throw new Error('Server error. Please check your input or try again later.');
+                    }
+                    if (!res.ok) {
+                        // If Laravel validation error, show first error if possible
+                        if (data && data.errors) {
+                            let firstKey = Object.keys(data.errors)[0];
+                            throw new Error(data.errors[firstKey][0]);
+                        }
+                        throw new Error(data.message || 'Failed to save template');
+                    }
+                    return data;
+                })
+                .then(() => {
+                    msgDiv.textContent = 'Template saved successfully!';
+                    msgDiv.className = 'mt-2 text-center text-green-600 text-sm';
+                    // Reset filter to All Titles so new template always appears
+                    document.getElementById('template-title-filter').value = '';
+                    fetchTemplates();
+                    clearTemplateForm();
+                })
+                .catch(e => {
+                    msgDiv.textContent = 'Error: ' + (e.message || 'Failed to save template.');
+                    msgDiv.className = 'mt-2 text-center text-red-600 text-sm';
+                })
+                .finally(() => {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
             };
 
             document.getElementById('delete-template-btn').onclick = function() {
@@ -287,8 +400,56 @@
             };
 
             document.getElementById('apply-template-btn').onclick = function() {
-                document.querySelector('textarea[name="description"]').value = document.getElementById('template-description').value;
-                document.querySelector('textarea[name="detailed_description"]').value = document.getElementById('template-detailed-description').value;
+                // Use selectedTemplate if available
+                if (selectedTemplate) {
+                    // Split contents into description and detailed_description
+                    let desc = '', detail = '';
+                    if (selectedTemplate.contents) {
+                        const parts = selectedTemplate.contents.split('\n\n');
+                        desc = parts[0] || '';
+                        detail = parts.slice(1).join('\n\n') || '';
+                    }
+                    document.querySelector('textarea[name="description"]').value = desc;
+                    document.querySelector('textarea[name="detailed_description"]').value = detail;
+                    // Populate other fields if template has them
+                    if (selectedTemplate.title) {
+                        const mainTitleSelect = document.getElementById('title-select');
+                        if (mainTitleSelect) mainTitleSelect.value = selectedTemplate.title;
+                    }
+                    // Add more fields if template contains them (department, employment_type, reporting_to, posted_at, status, active, created_by)
+                    if (selectedTemplate.department) {
+                        const deptSelect = document.querySelector('select[name="department"]');
+                        if (deptSelect) deptSelect.value = selectedTemplate.department;
+                    }
+                    if (selectedTemplate.employment_type) {
+                        const empTypeSelect = document.querySelector('select[name="employment_type"]');
+                        if (empTypeSelect) empTypeSelect.value = selectedTemplate.employment_type;
+                    }
+                    if (selectedTemplate.reporting_to) {
+                        const reportingSelect = document.querySelector('select[name="reporting_to"]');
+                        if (reportingSelect) reportingSelect.value = selectedTemplate.reporting_to;
+                    }
+                    if (selectedTemplate.posted_at) {
+                        const postedInput = document.querySelector('input[name="posted_at"]');
+                        if (postedInput) postedInput.value = selectedTemplate.posted_at;
+                    }
+                    if (selectedTemplate.status) {
+                        const statusSelect = document.querySelector('select[name="status"]');
+                        if (statusSelect) statusSelect.value = selectedTemplate.status;
+                    }
+                    if (selectedTemplate.active !== undefined) {
+                        const activeCheckbox = document.querySelector('input[name="active"]');
+                        if (activeCheckbox) activeCheckbox.checked = !!selectedTemplate.active;
+                    }
+                    if (selectedTemplate.created_by) {
+                        const createdByInput = document.querySelector('input[name="created_by"]');
+                        if (createdByInput) createdByInput.value = selectedTemplate.created_by;
+                    }
+                } else {
+                    // Fallback to form fields
+                    document.querySelector('textarea[name="description"]').value = document.getElementById('template-description').value;
+                    document.querySelector('textarea[name="detailed_description"]').value = document.getElementById('template-detailed-description').value;
+                }
                 modal.classList.add('hidden');
                 clearTemplateForm();
             };

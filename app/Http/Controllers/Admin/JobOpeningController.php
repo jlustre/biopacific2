@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use \Illuminate\Support\Facades\Log;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Facility;
@@ -64,18 +66,26 @@ class JobOpeningController extends Controller
 
     public function getTemplatesForTitle(Request $request)
     {
-        $title = $request->input('title');
-        $templates = \App\Models\JobDescriptionTemplate::where('title', $title)->orWhereNull('title')->get();
+        $title = trim($request->input('title'));
+        if ($title === '' || $title === null) {
+            // Show all templates if filter is empty
+            $templates = \App\Models\JobDescriptionTemplate::all();
+        } else {
+            // Case-insensitive, trimmed match
+            $templates = \App\Models\JobDescriptionTemplate::whereRaw('LOWER(TRIM(title)) = ?', [strtolower($title)])
+                ->get();
+        }
+        // Debug: log all template titles being returned
+        logger()->info('Template titles returned:', $templates->pluck('title')->toArray());
         return response()->json($templates);
     }
 
     public function storeTemplate(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'detailed_description' => 'nullable|string',
+            'name' => 'required|string|max:255|unique:job_description_templates,name',
+            'title' => 'required|string|max:255',
+            'contents' => 'nullable|string',
         ]);
         $data['created_by'] = $request->user() ? $request->user()->id : null;
         $template = \App\Models\JobDescriptionTemplate::create($data);
@@ -86,10 +96,9 @@ class JobOpeningController extends Controller
     {
         $template = \App\Models\JobDescriptionTemplate::findOrFail($id);
         $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'detailed_description' => 'nullable|string',
+            'name' => 'required|string|max:255|unique:job_description_templates,name,' . $id,
+            'title' => 'required|string|max:255',
+            'contents' => 'nullable|string',
         ]);
         $template->update($data);
         return response()->json($template);

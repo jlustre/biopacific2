@@ -65,7 +65,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
         });
     // HRRD, facility-admin, facility-dsd: HR portal and user dashboard
-    Route::middleware('role:hrrd|facility-admin|facility-dsd')->group(function () {
+    Route::middleware('role:admin|hrrd|facility-admin|facility-dsd')->group(function () {
         Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
         Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
