@@ -15,7 +15,7 @@ use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\GalleryController;
-use App\Http\Controllers\Admin\CareersController;
+use App\Http\Controllers\CareersController;
 use App\Http\Controllers\CareersPublicController;
 use App\Http\Controllers\BookATourController;
 use App\Http\Controllers\ContactController;
