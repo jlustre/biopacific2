@@ -11,6 +11,73 @@ use Carbon\Carbon;
 
 class CareersController extends Controller
 {
+    public function indexAll(Request $request)
+    {
+        $facilities = Facility::orderBy('name')->get();
+        $facilityId = $request->query('facility_id');
+        $jobOpenings = collect([]);
+        
+        if ($facilityId) {
+            $facility = Facility::find($facilityId);
+            if ($facility) {
+                $jobOpenings = $facility->jobOpenings()->latest()->get();
+            }
+        }
+        
+        return view('admin.facilities.webcontents.careers', compact('facilities', 'facilityId', 'jobOpenings'));
+    }
+
+    public function templates()
+    {
+        return view('admin.facilities.webcontents.careers-templates');
+    }
+
+    public function getTemplatesForTitle(Request $request)
+    {
+        $title = $request->input('title');
+        $templates = \App\Models\JobDescriptionTemplate::where('title', $title)->orWhereNull('title')->get();
+        return response()->json($templates);
+    }
+
+    public function storeTemplate(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'detailed_description' => 'nullable|string',
+        ]);
+        $data['created_by'] = $request->user() ? $request->user()->id : null;
+        $template = \App\Models\JobDescriptionTemplate::create($data);
+        return response()->json($template);
+    }
+
+    public function updateTemplate(Request $request, $id)
+    {
+        $template = \App\Models\JobDescriptionTemplate::findOrFail($id);
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'detailed_description' => 'nullable|string',
+        ]);
+        $template->update($data);
+        return response()->json($template);
+    }
+
+    public function destroyTemplate($id)
+    {
+        $template = \App\Models\JobDescriptionTemplate::findOrFail($id);
+        $template->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function getJobDescriptionsByPosition($positionId)
+    {
+        $descriptions = \App\Models\JobDescription::where('position_id', $positionId)->get(['id', 'title', 'description']);
+        return response()->json($descriptions);
+    }
+
     public function index(Request $request)
     {
         $facilities = Facility::all();
