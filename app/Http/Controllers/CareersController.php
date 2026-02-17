@@ -11,7 +11,8 @@ use Carbon\Carbon;
 
 class CareersController extends Controller
 {
-    public function indexAll(Request $request)
+// Admin view for managing job openings and applications    
+public function indexAll(Request $request)
     {
         $facilities = Facility::orderBy('name')->get();
         $facilityId = $request->query('facility_id');
