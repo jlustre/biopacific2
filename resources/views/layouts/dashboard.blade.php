@@ -12,34 +12,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-scheme-dropdown.css">
     <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
-    @livewireStyles
+    <livewire:styles />
     <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
 
 </head>
 
 <body class="min-h-screen antialiased"
     style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
-    <main class="py-8">
+    <!-- Go to Top Button -->
+    @include('layouts.partials.go_to_top')
 
-        <!-- Go to Top Button -->
-        @include('layouts.partials.go_to_top')
+    <!-- Top Navigation (Fixed) -->
+    @include('layouts.topnav')
 
-        <!-- Top Navigation (Fixed) -->
-        @include('layouts.topnav')
+    <!-- Responsive Sidebar Layout -->
+    @include('layouts.sidebar')
 
-        <!-- Responsive Sidebar Layout -->
-        @include('layouts.sidebar')
-        {{-- @include('partials.screen-size-indicator') --}}
-        <main class="py-8">
-            {{-- @if (request()->routeIs('internal.login.form')) --}}
-            <div class="max-w-7xl mx-auto">
-                {{-- @yield('content') --}}
-            </div>
-            {{-- @endif --}}
-        </main>
-        @stack('scripts')
-        @livewireScripts
-        <script src="/js/color-scheme-dropdown.js"></script>
+    {{-- @include('partials.screen-size-indicator') --}}
+    @stack('scripts')
+    <livewire:scripts />
+    <script src="/js/color-scheme-dropdown.js"></script>
 </body>
 
 </html>

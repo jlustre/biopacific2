@@ -52,7 +52,8 @@
                         <p class="text-sm font-medium text-gray-900">Resume File</p>
                         <p class="text-sm text-gray-500">{{ basename($jobApplication->resume_path) }}</p>
                         <p class="text-xs text-gray-400">{{ strtoupper($extension) }} • {{
-                            number_format(Storage::disk('public')->size($jobApplication->resume_path) / 1024, 1) }} KB
+                            number_format(\Illuminate\Support\Facades\Storage::disk('public')->size($jobApplication->resume_path)
+                            / 1024, 1) }} KB
                         </p>
                     </div>
                     <div class="flex space-x-2">
@@ -217,7 +218,7 @@
             <div class="bg-white rounded-lg shadow-sm border p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
                 <div class="space-y-3">
-                    <a href="mailto:{{ $jobApplication->email }}?subject=Re: Your Application for {{ $jobApplication->jobOpening->title ?? 'Job Opening' }}"
+                    <a href="{{ route('admin.email-templates.index', ['reply_to' => $jobApplication->email, 'job_application_id' => $jobApplication->id, 'applicant_name' => $jobApplication->first_name . ' ' . $jobApplication->last_name]) }}"
                         class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <i class="fas fa-reply mr-2"></i>Reply via Email
                     </a>

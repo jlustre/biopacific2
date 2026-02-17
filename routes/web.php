@@ -48,7 +48,10 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
 // Allow public access for AJAX department/position select
 Route::get('/admin/positions/all', function() {
-    return \App\Models\Position::select('id', 'title', 'department')->get();
+    return \App\Models\Position::join('departments', 'positions.department_id', '=', 'departments.id')
+        ->select('positions.id', 'positions.title', 'departments.name as department')
+        ->orderBy('positions.title')
+        ->get();
 });
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
@@ -95,9 +98,8 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
 });
 // Root route: show landing page (welcome)
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/bio-pacific-corporate');
 });
-
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -210,10 +212,19 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     
     Route::get('/facilities/{facility}/hipaa', fn(Facility $facility) => view('facilities.hipaa', compact('facility')))->name('facilities.hipaa');
     
-    // News management using FacilityAdminController
-    Route::resource('news', NewsController::class)->names('news');
-    Route::delete('news/{news}/delete-image', [NewsController::class, 'deleteImage'])->name('news.deleteImage');
-    Route::resource('admin/events', EventController::class)->names('events');
+    // News management using Admin\NewsController
+    Route::resource('news', \App\Http\Controllers\Admin\NewsController::class)->names('news');
+    Route::delete('news/{news}/delete-image', [\App\Http\Controllers\Admin\NewsController::class, 'deleteImage'])->name('news.deleteImage');
+    Route::resource('events', \App\Http\Controllers\Admin\EventController::class)->names('events');
+
+    // Positions Management CRUD
+    Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class)->names('positions');
+
+    // Departments Management CRUD
+    Route::resource('departments', \App\Http\Controllers\Admin\DepartmentController::class)->names('departments');
+
+    // Email Recipients Management CRUD
+    Route::resource('email-recipients', \App\Http\Controllers\Admin\EmailRecipientController::class)->names('email-recipients');
 
     // Employee Email Mappings Management
     Route::get('/communications/employee-email-mappings', function () {
@@ -244,15 +255,12 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
         Route::put('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'update'])->name('admin.facilities.testimonials.update');
         Route::delete('/{facility}/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'destroy'])->name('admin.facilities.testimonials.destroy');
     });
-    Route::resource('tour-requests', TourRequestController::class)->names('tour-requests');
+    Route::resource('tour-requests', \App\Http\Controllers\Admin\TourRequestController::class)->names('tour-requests');
     Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'destroy']);
     Route::resource('job-applications', AdminJobApplicationController::class)->only(['index', 'show', 'destroy'])->names('job-applications');
     Route::patch('/job-applications/{jobApplication}/status', [AdminJobApplicationController::class, 'updateStatus'])->name('job-applications.update-status');
     Route::get('/job-applications/{jobApplication}/download-resume', [AdminJobApplicationController::class, 'downloadResume'])->name('job-applications.download-resume');
     Route::get('/job-applications/{jobApplication}/preview-resume', [AdminJobApplicationController::class, 'previewResume'])->name('job-applications.preview-resume');
-    Route::get('/email-recipients', function () {
-        return view('admin.email-recipients');
-    })->name('email-recipients.index');
 
     // API endpoint for fetching a single testimonial (for edit modal)
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
@@ -275,6 +283,13 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
 
 });
 
+// Email Templates Management (admin + facility-admin + facility-dsd + hrrd)
+Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])
+    ->name('admin.')
+    ->group(function () {
+        Route::resource('email-templates', \App\Http\Controllers\Admin\EmailTemplateController::class)->names('email-templates');
+    });
+
 // Facility-specific admin routes for facility-admin and facility-editor roles
 Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor|admin'])
     ->name('admin.')
@@ -289,8 +304,10 @@ Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor
 
 // Careers CRUD and applications routes
 Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin|facility-admin|hrrd|facility-dsd'])->group(function () {
-    Route::get('careers', [CareersController::class, 'index'])->name('admin.facilities.webcontents.careers');
-    Route::post('careers', [CareersController::class, 'store'])->name('admin.facilities.webcontents.careers.store');
+    Route::get('careers/templates', [CareersController::class, 'templates'])->name('admin.facilities.webcontents.careers.templates');
+    Route::get('careers', [CareersController::class, 'indexAll'])->name('admin.facilities.webcontents.careers');
+    Route::get('careers/{facility}', [CareersController::class, 'index'])->name('admin.facilities.webcontents.careers.show');
+    Route::post('careers/{facility}', [CareersController::class, 'store'])->name('admin.facilities.webcontents.careers.store');
     Route::put('careers/{jobOpening}', [CareersController::class, 'update'])->name('admin.facilities.webcontents.careers.update');
     Route::delete('careers/{jobOpening}', [CareersController::class, 'destroy'])->name('admin.facilities.webcontents.careers.destroy');
     Route::get('careers/{jobOpening}/applications', [CareersController::class, 'applications'])->name('admin.facilities.webcontents.careers.applications');
@@ -422,6 +439,10 @@ Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 's
 
 // Public Facility Route (catch-all, must be last)
 
+// Redirect /home to /bio-pacific-corporate
+Route::get('/home', function() {
+    return redirect('/bio-pacific-corporate');
+})->name('home');
 
 // Redirect /{facility}/admin/dashboard to facility dashboard if user has access
 Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {
@@ -448,3 +469,13 @@ Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
 
 // Facility public page by slug (e.g. /almaden-healthcare-and-rehabilitation-center)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+
+// Gallery routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/galleries', [GalleryController::class, 'index'])->name('gallery.index');
+    Route::get('/admin/galleries', [GalleryController::class, 'index'])->name('admin.galleries.index');
+    Route::get('/admin/galleries/upload', function() {
+        return view('gallery.upload');
+    })->name('gallery.upload');
+    Route::post('/admin/galleries/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
+});

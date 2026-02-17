@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ColorScheme;
+use App\Models\JobDescriptionTemplate;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -29,10 +30,12 @@ class DatabaseSeeder extends Seeder
             FacilityNewsSeeder::class,
             EmailRecipientsTableSeeder::class,
             EmployeeEmailMappingsTableSeeder::class,
-            GeneralJobOpeningSeeder::class,
+            EmailTemplatesSeeder::class,
+            // GeneralJobOpeningSeeder::class,
             TestUsersSeeder::class,
-            JobDescriptionsSeeder::class,
+            DepartmentSeeder::class,
             PositionsSeeder::class,
+            JobDescriptionsSeeder::class,
         ]);
 
     }

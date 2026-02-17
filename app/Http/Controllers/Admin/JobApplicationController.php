@@ -81,7 +81,7 @@ class JobApplicationController extends Controller
         }
 
         $filePath = Storage::disk('public')->path($jobApplication->resume_path);
-        $fileName = $jobApplication->first_name . '_' . $jobApplication->last_name . '_Resume_' . pathinfo($jobApplication->resume_path, PATHINFO_EXTENSION);
+        $fileName = strtolower($jobApplication->first_name) . '_' . strtolower($jobApplication->last_name) . '_resume.pdf';
         
         return response()->download($filePath, $fileName);
     }

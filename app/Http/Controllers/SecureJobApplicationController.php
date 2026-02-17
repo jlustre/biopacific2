@@ -260,10 +260,9 @@ class SecureJobApplicationController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
-            // Get file info and sanitize filename
-            $originalFileName = basename($jobApplication->resume_path);
-            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalFileName);
+            // Get file info and create consistent filename
             $fileSize = filesize($filePath);
+            $fileName = strtolower($jobApplication->first_name) . '_' . strtolower($jobApplication->last_name) . '_resume.pdf';
             
             // Determine proper MIME type based on file extension
             $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));

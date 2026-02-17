@@ -3,13 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\GalleryImage;
+use App\Models\Facility;
 
 class GalleryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Return a view or JSON listing gallery images
-        return view('gallery.index');
+        $user = Auth::user();
+        $isAdmin = $user && $user->hasRole('admin');
+        $isFacilityAdmin = $user && $user->hasRole(['facility-admin', 'facility-dsd']);
+        $facilityId = $isAdmin ? $request->input('facility_id') : ($user ? $user->facility_id : null);
+        $facilities = $isAdmin ? Facility::all() : ($user && $user->facility ? collect([$user->facility]) : collect());
+        $images = $facilityId ? GalleryImage::where('facility_id', $facilityId)->get() : collect();
+        return view('gallery.index', compact('images', 'facilities', 'facilityId', 'isAdmin'));
     }
 
     public function create()
@@ -51,11 +59,28 @@ class GalleryController extends Controller
         return redirect()->route('gallery.index');
     }
 
-    public function upload(Request $request, $facility)
+    public function upload(Request $request)
     {
-        // Handle uploading a gallery image for a facility
-        // Example: $facility->gallery()->create($request->all());
-        return redirect()->route('facilities.galleries.index', ['facility' => $facility]);
+        $user = Auth::user();
+        $isAdmin = $user && $user->hasRole('admin');
+        $isFacilityAdmin = $user && $user->hasRole(['facility-admin', 'facility-dsd']);
+        $facilityId = $isAdmin ? $request->input('facility_id') : ($user ? $user->facility_id : null);
+        if (!$facilityId) {
+            return redirect()->back()->withErrors(['facility_id' => 'Facility is required.']);
+        }
+        $request->validate([
+            'image' => 'required|image|max:4096',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+        $path = $request->file('image')->store('gallery', 'public');
+        $image = GalleryImage::create([
+            'facility_id' => $facilityId,
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'image_url' => $path,
+        ]);
+        return redirect()->route('gallery.index', ['facility_id' => $facilityId])->with('success', 'Image uploaded successfully.');
     }
 
     public function delete($image)

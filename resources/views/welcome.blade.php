@@ -1,4 +1,5 @@
 @php
+use Illuminate\Support\Facades\Auth;
 $sections = $sections ?? [];
 @endphp
 {{-- filepath: resources/views/welcome.blade.php --}}
@@ -6,7 +7,7 @@ $sections = $sections ?? [];
 
 
 {{-- @extends('layouts.' . ($layoutTemplate ?? 'default-template')) --}}
-@extends('layouts.dashboard')
+@extends('layouts.' . ($layoutTemplate ?? 'default-template'))
 
 @section('content')
 

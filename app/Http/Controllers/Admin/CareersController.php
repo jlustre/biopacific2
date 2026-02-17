@@ -112,8 +112,7 @@ class CareersController extends Controller
         }
 
         $filePath = Storage::disk('public')->path($jobApplication->resume_path);
-        $extension = pathinfo($jobApplication->resume_path, PATHINFO_EXTENSION);
-        $fileName = $jobApplication->first_name . '_' . $jobApplication->last_name . '_Resume.' . $extension;
+        $fileName = strtolower($jobApplication->first_name) . '_' . strtolower($jobApplication->last_name) . '_resume.pdf';
         
         return response()->download($filePath, $fileName);
     }

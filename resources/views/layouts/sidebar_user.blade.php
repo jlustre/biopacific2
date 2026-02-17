@@ -118,6 +118,10 @@
                         class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-envelope mr-2"></i> Email Recipients
                     </a>
+                    <a href="{{ route('admin.email-templates.index') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-envelope-open-text mr-2"></i> Email Templates
+                    </a>
                     <a href="{{ route('admin.communications.employee-email-mappings') }}"
                         class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-user-tie mr-2"></i> Employee Email Mappings

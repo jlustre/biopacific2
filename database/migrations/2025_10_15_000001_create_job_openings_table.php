@@ -15,6 +15,8 @@ return new class extends Migration {
             $table->string('reporting_to')->nullable();
             $table->string('department')->nullable();
             $table->string('employment_type')->nullable();
+            $table->string('salary_range')->nullable();
+            $table->enum('salary_unit', ['hourly', 'weekly', 'monthly', 'yearly'])->nullable();
             $table->date('posted_at')->nullable();
             $table->date('expires_at')->nullable();
             $table->boolean('active')->default(true);

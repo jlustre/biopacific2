@@ -8,6 +8,7 @@ use Livewire\Attributes\On;
 use App\Models\JobApplication as JobApplicationModel;
 use App\Models\JobOpening;
 use App\Models\Facility;
+use App\Models\Department;
 use App\Mail\SecureJobApplicationMail;
 use App\Helpers\FacilityDataHelper;
 use Illuminate\Support\Facades\Storage;
@@ -43,6 +44,7 @@ class JobApplication extends Component
     public $desired_position;
     public $department;
     public $employment_type;
+    public array $facilityDepartments = [];
     
     // UI state
     public $successMessage = '';
@@ -204,6 +206,9 @@ class JobApplication extends Component
             // Clear the form
             $this->clearForm();
 
+            // Close the apply modal after a successful submission
+            $this->dispatch('close-apply-modal');
+
             // Scroll to top of form to show success message
             $this->dispatch('scrollToTop');
 
@@ -246,6 +251,18 @@ class JobApplication extends Component
         $this->neutral_dark = $neutral_dark ?? '#374151'; // Default gray-700 if not provided
         $this->neutral_light = $neutral_light ?? '#F3F4F6'; // Default gray-100 if not provided
         
+        // Load facility departments from database
+        $this->facilityDepartments = Department::where('type', 'facility')
+            ->select('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->toArray();
+        
+        // Add "Other" option
+        if (!in_array('Other', $this->facilityDepartments)) {
+            $this->facilityDepartments[] = 'Other';
+        }
+        
         if ($jobOpeningId) {
             $this->job_opening_id = $jobOpeningId;
             $this->jobOpening = JobOpening::findOrFail($jobOpeningId);
@@ -264,6 +281,20 @@ class JobApplication extends Component
                 $this->facility = null;
             }
         }
+    }
+
+    #[On('setJobOpening')]
+    public function handleSetJobOpening($jobOpeningId = null)
+    {
+        if ($jobOpeningId) {
+            $this->setJobOpening($jobOpeningId);
+            return;
+        }
+
+        $this->jobOpening = null;
+        $this->job_opening_id = null;
+        $this->successMessage = '';
+        $this->errorMessage = '';
     }
     
     public function setJobOpening($jobOpeningId)
@@ -399,6 +430,9 @@ class JobApplication extends Component
             
             // Clear the form
             $this->clearForm();
+
+            // Close the apply modal after a successful submission
+            $this->dispatch('close-apply-modal');
             
             // Scroll to top of form to show success message
             $this->dispatch('scrollToTop');
@@ -455,6 +489,7 @@ class JobApplication extends Component
             'accent' => $this->accent,
             'neutral_dark' => $this->neutral_dark,
             'neutral_light' => $this->neutral_light,
+            'facilityDepartments' => $this->facilityDepartments,
         ]);
     }
 }

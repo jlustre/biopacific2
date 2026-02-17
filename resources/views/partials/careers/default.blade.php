@@ -19,8 +19,11 @@ $error = $errors->any();
     toastOpen: false, 
     toastMsg: '',
     infoModalOpen: false,
-    infoModalJobId: null
-  }" x-init="applyRole = '{{ old('job_opening_id') ?? '' }}'" class="py-16 sm:py-24 bg-gradient-to-br from-slate-50"
+    infoModalJobId: null,
+    selectedJobData: {}
+  }" x-init="applyRole = '{{ old('job_opening_id') ?? '' }}'"
+  @close-apply-modal.window="openApply=false; applyRole=''; applyRoleTitle=''; if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: null }); }"
+  class="py-16 sm:py-24 bg-gradient-to-br from-slate-50"
   style="background: linear-gradient(to bottom right, #f8fafc, {{ $primary }});">\
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- SectionHeader -->
@@ -80,11 +83,9 @@ $error = $errors->any();
 
         <div class="p-6 sm:p-8">
           <!-- Icon -->
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
             style="background: linear-gradient(to bottom right, {{ $primary }}, {{ $accent }});">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12h20L12 2z" />
-            </svg>
+            <img src="{{ asset('images/bplogo.png') }}" alt="Bio-Pacific logo" class="w-8 h-8 object-contain">
           </div>
 
           <!-- Job meta -->
@@ -104,8 +105,9 @@ $error = $errors->any();
           </h3>
 
           <!-- Description -->
-          <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-            {!! $job->description !!}
+          <p class="text-slate-600 text-sm mb-6 leading-relaxed line-clamp-3">
+            {{ substr(strip_tags($job->description), 0, 150) }}{{ strlen(strip_tags($job->description)) > 150 ? '...' :
+            '' }}
           </p>
 
           <!-- Action Buttons -->
@@ -114,6 +116,7 @@ $error = $errors->any();
                 openApply=true; 
                 applyRole='{{ $job->id }}'; 
                 applyRoleTitle='{{ addslashes($job->title) }}';
+                if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: {{ $job->id }} }); }
               "
               class="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
               style="min-width: 0; background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); &:hover { background: linear-gradient(to right, {{ $secondary }}, {{ $primary }}); }"
@@ -124,8 +127,8 @@ $error = $errors->any();
               </svg>
               Apply Now
             </button>
-            <button @click="infoModalOpen=true; infoModalJobId={{ $job->id }}"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
+            <button @click="infoModalOpen=true; infoModalJobId={{ $job->id }}; selectedJobData={{ json_encode($job) }}"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1 cursor-pointer"
               style="border-color: {{ $primary }}; color: {{ $primary }};"
               onmouseover="this.style.backgroundColor='{{ $primary }}'; this.style.color='white';"
               onmouseout="this.style.backgroundColor='transparent'; this.style.color='{{ $primary }}';">
@@ -150,7 +153,8 @@ $error = $errors->any();
           fill out the form and
           indicate your desired position or title. We'll keep your application on file and reach out if a suitable
           opportunity arises.</p>
-        <button @click="openApply=true; applyRole=''; applyRoleTitle=''"
+        <button
+          @click="openApply=true; applyRole=''; applyRoleTitle=''; if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: null }); }"
           class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200"
           style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
           onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
@@ -171,65 +175,92 @@ $error = $errors->any();
         x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform scale-100"
         x-transition:leave-end="opacity-0 transform scale-95"
-        class="bg-white rounded-2xl max-w-xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+        class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
 
-        <template x-for="job in @js($jobOpenings)" :key="job.id">
-          <div x-show="infoModalJobId === job.id">
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-2xl font-bold text-secondary">Job Details</h3>
-              <button @click="infoModalOpen=false" class="text-slate-400 hover:text-slate-600 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <h4 class="text-xl font-semibold mb-2" x-text="job.title"></h4>
-            <div class="text-sm text-slate-500 mb-4">
-              <span x-text="job.employment_type"></span> • {{ $facility['location'] ?? '' }}
-            </div>
-
-            <div class="mb-6">
-              <h5 class="font-semibold mb-2 text-secondary">Job Description</h5>
-              <div class="text-slate-700 mb-4" x-html="job.description"></div>
-            </div>
-
-            <div class="mb-6">
-              <h5 class="font-semibold mb-2 text-secondary">Detailed Description</h5>
-              <div x-show="job.detailed_description && job.detailed_description.trim() !== ''"
-                class="text-slate-700 prose prose-sm max-w-none" x-html="job.detailed_description"></div>
-              <div x-show="!job.detailed_description || job.detailed_description.trim() === ''"
-                class="text-slate-500 italic">No detailed description available.</div>
-              <!-- Debug info - remove this later -->
-              <div class="mt-2 p-2 bg-gray-100 rounded text-xs">
-                <strong>Debug:</strong>
-                <span x-text="'Has detailed_description: ' + (job.detailed_description ? 'Yes' : 'No')"></span><br>
-                <span x-text="'Length: ' + (job.detailed_description ? job.detailed_description.length : 0)"></span>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
-              <div><strong>Department:</strong> <span x-text="job.department"></span></div>
-              <div><strong>Employment Type:</strong> <span x-text="job.employment_type"></span></div>
-              <div><strong>Posted:</strong> <span x-text="new Date(job.posted_at).toLocaleDateString()"></span></div>
-              <div x-show="job.expires_at"><strong>Expires:</strong> <span
-                  x-text="new Date(job.expires_at).toLocaleDateString()"></span></div>
-            </div>
-
-            <div class="flex justify-between items-center mt-6 gap-3">
-              <button @click="infoModalOpen=false"
-                class="px-6 py-2 rounded-lg border text-slate-600 border-slate-300 bg-slate-50 hover:bg-slate-100 transition">
-                Close
-              </button>
-              <button @click="infoModalOpen=false; openApply=true; applyRole=job.id; applyRoleTitle=job.title"
-                class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200"
-                style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
-                onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
-                onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'">
-                Apply Now
-              </button>
-            </div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <img src="{{ asset('images/bplogo.png') }}" alt="Bio-Pacific logo" class="w-10 h-10 object-contain">
+            <h3 class="text-2xl font-bold text-secondary">Job Details</h3>
           </div>
-        </template>
+          <button @click="infoModalOpen=false"
+            class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <h4 class="text-xl font-semibold mb-2" x-text="selectedJobData?.title || 'Job Details'"></h4>
+        <div class="text-sm text-slate-500 mb-4">
+          <span x-text="selectedJobData?.employment_type || ''"></span> • {{ $facility['location'] ?? '' }}
+        </div>
+
+        <div class="mb-6">
+          <style>
+            .job-detail-content ul {
+              list-style-type: disc !important;
+              margin-left: 1.5rem !important;
+              padding-left: 1.5rem !important;
+              margin-bottom: 1rem !important;
+            }
+
+            .job-detail-content ol {
+              list-style-type: decimal !important;
+              margin-left: 1.5rem !important;
+              padding-left: 1.5rem !important;
+              margin-bottom: 1rem !important;
+            }
+
+            .job-detail-content li {
+              margin-bottom: 0.5rem !important;
+              margin-left: 0 !important;
+            }
+
+            .job-detail-content h4 {
+              font-weight: bold;
+              margin-top: 1rem;
+              margin-bottom: 0.5rem;
+            }
+
+            .job-detail-content p {
+              margin-bottom: 1rem;
+              line-height: 1.6;
+            }
+          </style>
+          <div class="text-slate-700 prose prose-sm max-w-none job-detail-content"
+            x-html="selectedJobData?.description || 'Loading...'"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+          <div><strong>Department:</strong> <span x-text="selectedJobData?.department || 'N/A'"></span></div>
+          <div><strong>Employment Type:</strong> <span x-text="selectedJobData?.employment_type || 'N/A'"></span></div>
+          <div><strong>Location:</strong> <span>{{ $facility['city'] ?? '' }}{{ isset($facility['city']) &&
+              isset($facility['state']) ? ', ' : '' }}{{ $facility['state'] ?? '' }}</span></div>
+          <div x-show="selectedJobData?.salary_range"><strong>Salary Range:</strong> <span
+              x-text="selectedJobData?.salary_range || 'N/A'"></span><span x-show="selectedJobData?.salary_unit"
+              x-text="' / ' + selectedJobData.salary_unit"></span></div>
+          <div><strong>Posted:</strong> <span
+              x-text="selectedJobData?.posted_at ? new Date(selectedJobData.posted_at).toLocaleDateString() : 'N/A'"></span>
+          </div>
+          <div x-show="selectedJobData?.expires_at"><strong>Expires:</strong> <span
+              x-text="selectedJobData?.expires_at ? new Date(selectedJobData.expires_at).toLocaleDateString() : 'N/A'"></span>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center mt-6 gap-3">
+          <button @click="infoModalOpen=false"
+            class="px-6 py-2 rounded-lg border text-slate-600 border-slate-300 bg-slate-50 hover:bg-slate-100 transition cursor-pointer">
+            Close
+          </button>
+          <button
+            @click="infoModalOpen=false; openApply=true; applyRole=selectedJobData.id; applyRoleTitle=selectedJobData.title; if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: selectedJobData.id }); }"
+            class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200 cursor-pointer"
+            style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
+            onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
+            onmouseout="this.style.background='linear-gradient(to right, {{ $primary }}, {{ $secondary }})'">
+            Apply Now
+          </button>
+        </div>
       </div>
     </div>
 
@@ -256,31 +287,14 @@ $error = $errors->any();
 
         <!-- Modal Content -->
         <div class="p-6">
-          @if(!empty($jobOpenings))
-          @foreach($jobOpenings as $modalJob)
-          <div x-show="applyRole == '{{ $modalJob->id }}'" x-cloak>
-            @livewire('job-application', [
-            'jobOpeningId' => $modalJob->id,
-            'primary' => $primary,
-            'secondary' => $secondary,
-            'accent' => $accent,
-            'neutral_dark' => $neutral_dark,
-            'neutral_light' => $neutral_light
-            ], key('job-application-' . $modalJob->id))
-          </div>
-          @endforeach
-          @endif
-
-          <div x-show="!applyRole" x-cloak>
-            @livewire('job-application', [
-            'primary' => $primary,
-            'secondary' => $secondary,
-            'accent' => $accent,
-            'neutral_dark' => $neutral_dark,
-            'neutral_light' => $neutral_light,
-            'facility_id' => $facility['id'] ?? null
-            ], key('job-application-general'))
-          </div>
+          @livewire('job-application', [
+          'primary' => $primary,
+          'secondary' => $secondary,
+          'accent' => $accent,
+          'neutral_dark' => $neutral_dark,
+          'neutral_light' => $neutral_light,
+          'facility_id' => $facility['id'] ?? null
+          ], key('job-application-modal'))
         </div>
       </div>
     </div>

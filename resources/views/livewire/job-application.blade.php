@@ -180,13 +180,9 @@
             <select id="department" wire:model="department"
                 class="block w-full rounded-lg border border-teal-300 shadow-sm custom-focus px-2 py-1">
                 <option value="">Select Department</option>
-                <option value="Nursing">Nursing</option>
-                <option value="Administration">Administration</option>
-                <option value="Therapy">Therapy</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Housekeeping">Housekeeping</option>
-                <option value="Food Services">Food Services</option>
-                <option value="Other">Other</option>
+                @foreach($facilityDepartments as $dept)
+                <option value="{{ $dept }}">{{ $dept }}</option>
+                @endforeach
             </select>
             @error('department')
             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Facility;
 use App\Models\JobOpening;
+use App\Models\Position;
 
 class JobOpeningController extends Controller
 {
@@ -56,7 +57,29 @@ class JobOpeningController extends Controller
 
     public function edit(Facility $facility, JobOpening $jobOpening)
     {
-        return view('admin.facilities.edit_job_opening', compact('facility', 'jobOpening'));
+        // Load reporting_to positions from database
+        $reportingToPositions = Position::select('title')
+            ->distinct()
+            ->orderBy('title')
+            ->pluck('title')
+            ->toArray();
+        
+        // Add common reporting titles
+        $commonTitles = ['Administrator', 'Director of Nursing', 'Charge Nurse', 'Medical Director', 'Social Services Director'];
+        foreach ($commonTitles as $title) {
+            if (!in_array($title, $reportingToPositions)) {
+                $reportingToPositions[] = $title;
+            }
+        }
+        
+        // Add "Other" option
+        if (!in_array('Other', $reportingToPositions)) {
+            $reportingToPositions[] = 'Other';
+        }
+        
+        sort($reportingToPositions);
+        
+        return view('admin.facilities.edit_job_opening', compact('facility', 'jobOpening', 'reportingToPositions'));
     }
 
     public function show(Facility $facility, JobOpening $jobOpening)
