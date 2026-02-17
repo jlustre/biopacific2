@@ -469,13 +469,3 @@ Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
 
 // Facility public page by slug (e.g. /almaden-healthcare-and-rehabilitation-center)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
-
-// Gallery routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/admin/galleries', [GalleryController::class, 'index'])->name('gallery.index');
-    Route::get('/admin/galleries', [GalleryController::class, 'index'])->name('admin.galleries.index');
-    Route::get('/admin/galleries/upload', function() {
-        return view('gallery.upload');
-    })->name('gallery.upload');
-    Route::post('/admin/galleries/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
-});
