@@ -59,6 +59,23 @@ class GalleryController extends Controller
         return redirect()->route('gallery.index');
     }
 
+    public function showUploadForm(Request $request)
+    {
+        $user = Auth::user();
+        $isAdmin = $user && $user->hasRole('admin');
+        $isFacilityAdmin = $user && $user->hasRole(['facility-admin', 'facility-dsd']);
+        $facilityId = $request->input('facility_id');
+        $selectedFacility = $facilityId;
+        $facilities = $isAdmin ? Facility::all() : ($user && $user->facility ? collect([$user->facility]) : collect());
+        
+        // If no facility selected and user is not admin, use their facility
+        if (!$facilityId && !$isAdmin && $user && $user->facility_id) {
+            $selectedFacility = $user->facility_id;
+        }
+        
+        return view('gallery.upload', compact('facilities', 'selectedFacility', 'isAdmin'));
+    }
+
     public function upload(Request $request)
     {
         $user = Auth::user();
@@ -80,7 +97,7 @@ class GalleryController extends Controller
             'description' => $request->input('description'),
             'image_url' => $path,
         ]);
-        return redirect()->route('gallery.index', ['facility_id' => $facilityId])->with('success', 'Image uploaded successfully.');
+        return redirect()->route('galleries.index', ['facility_id' => $facilityId])->with('success', 'Image uploaded successfully.');
     }
 
     public function delete($image)

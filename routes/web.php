@@ -239,7 +239,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     // Gallery image creation for a specific facility
     Route::get('/galleries/{facility}/create', [GalleryController::class, 'create'])->name('facilities.galleries.create');
 
-    Route::post('/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
+    // Gallery upload form and submission    Route::get('/gallery/upload', [GalleryController::class, 'showUploadForm'])->name('gallery.upload');
+    Route::post('/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload.submit');
     Route::post('/facilities/{facility}/gallery/upload', [GalleryController::class, 'upload'])->name('admin.gallery.upload');
     Route::delete('/gallery/{image}', [GalleryController::class, 'delete'])->name('gallery.delete');
     // Move gallery image up/down
