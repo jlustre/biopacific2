@@ -169,6 +169,7 @@
                             @if($jobApplication->status === 'pending') bg-yellow-100 text-yellow-800
                             @elseif($jobApplication->status === 'reviewed') bg-blue-100 text-blue-800
                             @elseif($jobApplication->status === 'interview') bg-purple-100 text-purple-800
+                            @elseif($jobApplication->status === 'pre-employment') bg-teal-100 text-teal-800
                             @elseif($jobApplication->status === 'hired') bg-green-100 text-green-800
                             @else bg-red-100 text-red-800 @endif">
                             {{ ucfirst($jobApplication->status) }}
@@ -189,6 +190,9 @@
                                     }}>Reviewed</option>
                                 <option value="interview" {{ $jobApplication->status === 'interview' ? 'selected' : ''
                                     }}>Interview</option>
+                                <option value="pre-employment" {{ $jobApplication->status === 'pre-employment' ?
+                                    'selected' : ''
+                                    }}>Pre-employment</option>
                                 <option value="hired" {{ $jobApplication->status === 'hired' ? 'selected' : '' }}>Hired
                                 </option>
                                 <option value="rejected" {{ $jobApplication->status === 'rejected' ? 'selected' : ''
@@ -201,6 +205,109 @@
                         </div>
                     </form>
                 </div>
+            </div>
+
+            <!-- User Dashboard Access -->
+            @if($jobApplication->user_id)
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">User Account</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Registered User</label>
+                        <p class="text-sm text-gray-900">
+                            <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                            Account created
+                        </p>
+                    </div>
+                    <a href="{{ route('admin.users.dashboard', $jobApplication->user_id) }}"
+                        class="inline-block w-full text-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out">
+                        <i class="fas fa-tachometer-alt mr-2"></i>View User Dashboard
+                    </a>
+                    <p class="text-xs text-gray-500 text-center">Read-only access to user's dashboard</p>
+                </div>
+            </div>
+            @endif
+
+            <!-- Pre-Employment Checklist -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Pre-Employment Checklist</h3>
+                @if(!$applicantUser)
+                <p class="text-sm text-gray-600">No registered user found for this applicant yet.</p>
+                @elseif($checklistItems->isEmpty())
+                <p class="text-sm text-gray-600">Checklist has not been created yet.</p>
+                @else
+                @php
+                $statusLabels = [
+                'draft' => 'Draft',
+                'submitted' => 'Submitted',
+                'returned' => 'Returned',
+                'completed' => 'Completed',
+                ];
+                $statusClasses = [
+                'draft' => 'bg-gray-100 text-gray-700',
+                'submitted' => 'bg-blue-100 text-blue-700',
+                'returned' => 'bg-amber-100 text-amber-800',
+                'completed' => 'bg-green-100 text-green-700',
+                ];
+                @endphp
+                <div class="space-y-4">
+                    @foreach($checklistItems as $item)
+                    @php
+                    $status = $item->status ?? 'draft';
+                    $canReturn = in_array($status, ['submitted', 'completed'], true);
+                    $canApprove = $status === 'submitted';
+                    @endphp
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ $item->item_label }}</p>
+                                @if($item->submitted_at)
+                                <p class="text-xs text-gray-500 mt-1">Submitted {{ $item->submitted_at->format('M j, Y
+                                    g:i A') }}</p>
+                                @endif
+                                @if($item->returned_at)
+                                <p class="text-xs text-amber-700 mt-1">Returned {{ $item->returned_at->format('M j, Y
+                                    g:i A') }}</p>
+                                @endif
+                            </div>
+                            <span
+                                class="px-3 py-1 rounded-full text-xs font-semibold {{ $statusClasses[$status] ?? 'bg-gray-100 text-gray-700' }}">
+                                {{ $statusLabels[$status] ?? 'Draft' }}
+                            </span>
+                        </div>
+
+                        @if(!empty($item->notes))
+                        <p class="text-sm text-gray-600 mt-3">{{ $item->notes }}</p>
+                        @endif
+
+                        @if($canApprove)
+                        <form method="POST" action="{{ route('pre-employment.checklist.approve', $item) }}"
+                            class="mt-4">
+                            @csrf
+                            <button type="submit"
+                                class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 px-3 rounded-lg transition">
+                                Mark Completed
+                            </button>
+                        </form>
+                        @endif
+
+                        @if($canReturn)
+                        <form method="POST" action="{{ route('pre-employment.checklist.return', $item) }}" class="mt-4">
+                            @csrf
+                            <label class="block text-xs font-semibold text-gray-600 mb-2">Return note</label>
+                            <textarea name="notes" rows="2"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
+                                placeholder="Add instructions for the applicant"></textarea>
+                            <button type="submit"
+                                class="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition">
+                                Return for Edit
+                            </button>
+                        </form>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+                @endif
             </div>
 
             <!-- Consent Information -->

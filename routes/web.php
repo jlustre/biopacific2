@@ -24,6 +24,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
+use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\TermsOfServiceController;
@@ -33,9 +34,17 @@ use App\Http\Controllers\AdminMfaController;
 use App\Http\Controllers\AdminAuthenticatedSessionController;
 use App\Http\Controllers\TourRequestController;
 use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\PreEmploymentController;
+use App\Http\Controllers\HireApplicantController;
+use App\Http\Controllers\EmployeeApplicationController;
 use App\Models\Facility;
 use App\Models\Position;
 
+// Admin Livewire fallback route (for relative update URIs on admin-prefixed pages)
+Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdate'])
+    ->middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])
+    ->where('any', '.*')
+    ->name('livewire.update.admin');
 
 // Job Description Template AJAX/CRUD routes
 Route::middleware(['auth'])->prefix('admin')->group(function () {
@@ -86,10 +95,23 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::get('/admin/facility/{facility}/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'index'])->name('admin.facility.job_openings');
     Route::post('/admin/facility/{facility}/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'store'])->name('admin.facility.job_openings.store');
     Route::get('/admin/facility/{facility}/job-openings/{jobOpening}/edit', [\App\Http\Controllers\Admin\JobOpeningController::class, 'edit'])->name('admin.facility.job_openings.edit');
+    Route::get('/admin/facility/{facility}/job-openings/{jobOpening}/data', [\App\Http\Controllers\Admin\JobOpeningController::class, 'getEditData'])->name('admin.facility.job_openings.data');
     Route::get('/admin/facility/{facility}/job-openings/{jobOpening}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'show'])->name('admin.facility.job_openings.show');
     Route::put('/admin/facility/{facility}/job-openings/{jobOpening}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'update'])->name('admin.facility.job_openings.update');
+    Route::post('/admin/facility/{facility}/job-openings/{jobOpening}/update', [\App\Http\Controllers\Admin\JobOpeningController::class, 'updateViaForm'])->name('admin.facility.job_openings.update.form');
     Route::delete('/admin/facility/{facility}/job-openings/{jobOpening}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'destroy'])->name('admin.facility.job_openings.destroy');
+    Route::post('/admin/facility/{facility}/job-openings/toggle', [\App\Http\Controllers\Admin\JobOpeningController::class, 'toggleActive'])->name('admin.facility.job_openings.toggle');
+    Route::post('/admin/facility/{facility}/job-openings/status', [\App\Http\Controllers\Admin\JobOpeningController::class, 'changeStatus'])->name('admin.facility.job_openings.status');
+    Route::post('/admin/facility/{facility}/job-openings/delete', [\App\Http\Controllers\Admin\JobOpeningController::class, 'deleteJobOpening'])->name('admin.facility.job_openings.delete');
+    Route::post('/admin/facility/{facility}/job-openings/template/delete', [\App\Http\Controllers\Admin\JobOpeningController::class, 'deleteTemplateViaForm'])->name('admin.facility.job_openings.template.delete');
+    Route::post('/admin/facility/{facility}/job-openings/template/save', [\App\Http\Controllers\Admin\JobOpeningController::class, 'saveTemplateViaForm'])->name('admin.facility.job_openings.template.save');
+    Route::post('/admin/facility/{facility}/job-openings/template/update', [\App\Http\Controllers\Admin\JobOpeningController::class, 'updateTemplateViaForm'])->name('admin.facility.job_openings.template.update');
     Route::get('/admin/facility/{facility}/hiring', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'hiring'])->name('admin.facility.hiring');
+    Route::get('/admin/facility/{facility}/pre-employment/{application}', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reviewPreEmployment'])->name('admin.facility.pre-employment.review');
+    Route::get('/admin/facility/{facility}/pre-employment/{application}/pdf', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'createPreEmploymentPdf'])->name('admin.facility.pre-employment.pdf');
+    Route::post('/admin/facility/{facility}/pre-employment/{application}/status', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'updatePreEmploymentStatus'])->name('admin.facility.pre-employment.status');
+    Route::get('/admin/facility/{facility}/document/{document}/download', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'downloadDocument'])->name('admin.facility.document.download');
+    Route::delete('/admin/facility/{facility}/document/{document}', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'deleteDocument'])->name('admin.facility.document.delete');
     Route::get('/admin/facility/{facility}/termination', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'termination'])->name('admin.facility.termination');
     Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'employees'])->name('admin.facility.employees');
     Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
@@ -99,6 +121,19 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
 // Root route: show landing page (welcome)
 Route::get('/', function () {
     return redirect('/bio-pacific-corporate');
+});
+
+// Debug route - temporarily check URL generation
+Route::get('/test-urls', function () {
+    $code = 'TESTCODE';
+    return [
+        'login' => route('login'),
+        'login_with_code' => route('login', ['code' => $code]),
+        'register' => route('register'),
+        'register_with_code' => route('register', ['code' => $code]),
+        'pre_employment' => route('pre-employment.index'),
+        'pre_employment_with_code' => route('pre-employment.index', ['code' => $code]),
+    ];
 });
 
 // Services Management CRUD (Web Contents)
@@ -113,7 +148,7 @@ Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'ind
 
 
 // Admin Routes (auth + admin role)
-Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin|hrrd|facility-admin'])->name('admin.')->group(function () {
     // HR Portal Route removed from admin group; now only in HRRD-specific group above
     // Blog management (admin only, under web contents)
     Route::resource('blogs', BlogController::class)->names('blogs');
@@ -260,9 +295,17 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::resource('tour-requests', \App\Http\Controllers\Admin\TourRequestController::class)->names('tour-requests');
     Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'destroy']);
     Route::resource('job-applications', AdminJobApplicationController::class)->only(['index', 'show', 'destroy'])->names('job-applications');
+
+    // Ensure hrrd, facility-admin, facility-dsd, and admin roles have access to index route
+    Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->group(function () {
+       Route::get('/admin/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'index'])->name('job-openings.index');
+    });
     Route::patch('/job-applications/{jobApplication}/status', [AdminJobApplicationController::class, 'updateStatus'])->name('job-applications.update-status');
     Route::get('/job-applications/{jobApplication}/download-resume', [AdminJobApplicationController::class, 'downloadResume'])->name('job-applications.download-resume');
     Route::get('/job-applications/{jobApplication}/preview-resume', [AdminJobApplicationController::class, 'previewResume'])->name('job-applications.preview-resume');
+    
+    // View user dashboard (for authorized staff)
+    Route::get('/users/{user}/dashboard', [DashboardController::class, 'showUserDashboard'])->name('users.dashboard');
 
     // API endpoint for fetching a single testimonial (for edit modal)
     Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
@@ -290,6 +333,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     ->name('admin.')
     ->group(function () {
         Route::resource('email-templates', \App\Http\Controllers\Admin\EmailTemplateController::class)->names('email-templates');
+        Route::post('email-templates/{emailTemplate}/send-reply', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'sendReply'])
+            ->name('email-templates.send-reply');
     });
 
 // Facility-specific admin routes for facility-admin and facility-editor roles
@@ -365,6 +410,13 @@ Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->nam
 
 // List job applications for a facility
 Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
+
+// Livewire fallback for admin-prefixed pages (guards against relative update URIs)
+// This must be outside the admin-only middleware group so facility-dsd and other roles can access it
+Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdate'])
+    ->middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])
+    ->where('any', '.*')
+    ->name('livewire.update.admin');
 
 // Register admin webmaster contacts routes
 require __DIR__.'/admin_webmaster_contacts.php';
@@ -456,6 +508,39 @@ Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {
     }
     abort(403, 'Unauthorized');
 })->middleware(['auth'])->name('facility.admin.dashboard.redirect');
+
+// Pre-Employment Registration Route (must come before catch-all facility routes)
+Route::get('/pre-employment/{code?}', [PreEmploymentController::class, 'show'])->name('pre-employment.index');
+
+// Pre-Employment Portal (authenticated users)
+Route::get('/my-pre-employment', [PreEmploymentController::class, 'portal'])
+    ->middleware(['auth'])
+    ->name('pre-employment.portal');
+
+Route::post('/my-pre-employment/checklist/{employeeChecklist}', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'update'])
+    ->middleware(['auth'])
+    ->name('pre-employment.checklist.update');
+
+Route::post('/my-pre-employment/checklist/{employeeChecklist}/return', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'returnForEdit'])
+    ->middleware(['auth', 'role:admin|facility-admin|hrrd'])
+    ->name('pre-employment.checklist.return');
+
+Route::post('/my-pre-employment/checklist/{employeeChecklist}/approve', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'approve'])
+    ->middleware(['auth', 'role:admin|facility-admin|hrrd'])
+    ->name('pre-employment.checklist.approve');
+
+// Employee Application Form
+Route::post('/my-pre-employment/employee-application', [EmployeeApplicationController::class, 'store'])
+    ->middleware(['auth'])
+    ->name('employee-application.store');
+
+// Hiring Actions (Admin/HRRD only)
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/pre-employment/{preEmployment}/hire', [HireApplicantController::class, 'hire'])
+        ->name('pre-employment.hire');
+    Route::post('/pre-employment/{preEmployment}/reject', [HireApplicantController::class, 'reject'])
+        ->name('pre-employment.reject');
+});
 
 // Redirect /{facility}/dashboard to facility dashboard if user has access
 Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {

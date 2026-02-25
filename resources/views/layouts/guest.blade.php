@@ -23,6 +23,9 @@
     @endphp
     <meta name="description" content="{{ $metaDescription }}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/bplogo.png') }}">
+
 <body class="font-sans text-gray-900 antialiased"
     style="background: url('@secureAsset('images/auth_background.jpg')') center center / cover no-repeat;">
     <div

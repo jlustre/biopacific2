@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Mail;
 
 class EmailTemplateController extends Controller
 {
@@ -51,38 +53,41 @@ class EmailTemplateController extends Controller
 
     public function show(EmailTemplate $emailTemplate, Request $request)
     {
-        $filledSubject = $emailTemplate->subject;
-        $filledBody = $emailTemplate->body;
-        $jobApplication = null;
-        
-        // If in reply mode, fetch and use job application data to fill placeholders
-        if ($request->filled('job_application_id')) {
-            $jobApplication = JobApplication::find($request->input('job_application_id'));
-            
-            if ($jobApplication) {
-                $firstName = $jobApplication->first_name ?? '';
-                $lastName = $jobApplication->last_name ?? '';
-                $facilityName = $jobApplication->jobOpening?->facility?->name ?? '';
-                $jobTitle = $jobApplication->jobOpening?->title ?? '';
-                $applicationId = $jobApplication->id ?? '';
-                
-                // Replace placeholders in subject
-                $filledSubject = str_replace(
-                    ['{first_name}', '{last_name}', '{facility_name}', '{job_title}', '{application_id}'],
-                    [$firstName, $lastName, $facilityName, $jobTitle, $applicationId],
-                    $filledSubject
-                );
-                
-                // Replace placeholders in body
-                $filledBody = str_replace(
-                    ['{first_name}', '{last_name}', '{facility_name}', '{job_title}', '{application_id}'],
-                    [$firstName, $lastName, $facilityName, $jobTitle, $applicationId],
-                    $filledBody
-                );
-            }
-        }
-        
+        $jobApplication = $request->filled('job_application_id')
+            ? JobApplication::find($request->input('job_application_id'))
+            : null;
+
+        [$filledSubject, $filledBody] = $this->fillTemplate($emailTemplate, $jobApplication);
+
         return view('admin.email-templates.show', compact('emailTemplate', 'filledSubject', 'filledBody', 'jobApplication'));
+    }
+
+    public function sendReply(Request $request, EmailTemplate $emailTemplate): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reply_to' => ['required', 'email'],
+            'job_application_id' => ['nullable', 'integer', 'exists:job_applications,id'],
+        ]);
+
+        $jobApplication = !empty($validated['job_application_id'])
+            ? JobApplication::find($validated['job_application_id'])
+            : null;
+
+        [$filledSubject, $filledBody] = $this->fillTemplate($emailTemplate, $jobApplication);
+
+        Mail::html($filledBody, function ($message) use ($validated, $filledSubject) {
+            $message->to($validated['reply_to'])
+                ->subject($filledSubject);
+        });
+
+        return redirect()
+            ->route('admin.email-templates.show', [
+                'email_template' => $emailTemplate,
+                'reply_to' => $validated['reply_to'],
+                'job_application_id' => $validated['job_application_id'] ?? null,
+                'applicant_name' => $request->input('applicant_name'),
+            ])
+            ->with('success', 'Email sent successfully.');
     }
 
     public function edit(EmailTemplate $emailTemplate)
@@ -112,5 +117,31 @@ class EmailTemplateController extends Controller
         $emailTemplate->delete();
 
         return redirect()->route('admin.email-templates.index')->with('success', 'Email template deleted successfully.');
+    }
+
+    private function fillTemplate(EmailTemplate $emailTemplate, ?JobApplication $jobApplication): array
+    {
+        $filledSubject = $emailTemplate->subject;
+        $filledBody = $emailTemplate->body;
+
+        if (!$jobApplication) {
+            return [$filledSubject, $filledBody];
+        }
+
+        $firstName = $jobApplication->first_name ?? '';
+        $lastName = $jobApplication->last_name ?? '';
+        $facilityName = $jobApplication->jobOpening?->facility?->name ?? '';
+        $jobTitle = $jobApplication->jobOpening?->title ?? '';
+        $applicationId = $jobApplication->id ?? '';
+        $applicantCode = $jobApplication->applicant_code ?? '';
+        $preEmploymentLink = $applicantCode ? route('pre-employment.index', ['code' => $applicantCode]) : url('/pre-employment');
+
+        $placeholders = ['{first_name}', '{last_name}', '{facility_name}', '{job_title}', '{application_id}', '{applicant_code}', '{pre_employment_link}'];
+        $values = [$firstName, $lastName, $facilityName, $jobTitle, $applicationId, $applicantCode, $preEmploymentLink];
+
+        $filledSubject = str_replace($placeholders, $values, $filledSubject);
+        $filledBody = str_replace($placeholders, $values, $filledBody);
+
+        return [$filledSubject, $filledBody];
     }
 }

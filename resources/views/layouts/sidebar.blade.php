@@ -1,16 +1,24 @@
 @php
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 @endphp
 <div class="flex min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
     @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
     x-init="window.addEventListener('resize', () => { sidebarOpen = window.innerWidth >= 1024 })">
     <!-- Sidebar (Fixed) -->
-    <aside
+    <aside id="sidebar"
         class="bg-white border-r border-gray-200 w-64 space-y-6 py-7 px-2 fixed top-16 left-0 h-[calc(100vh-4rem)] transition duration-200 ease-in-out z-30 transform"
         :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
         <nav class="flex flex-col space-y-2">
             @php
             $user = auth()->user();
+            $showPreEmploymentLink = false;
+            
+            if ($user) {
+                $showPreEmploymentLink = \App\Models\JobApplication::where('user_id', $user->id)
+                    ->where('status', 'pre-employment')
+                    ->exists();
+            }
             @endphp
 
             <!-- Bio-Pacific Facility Public Web Page -->
@@ -24,6 +32,13 @@ use Illuminate\Support\Str;
                 class="flex items-center px-4 py-2 text-blue-700 hover:bg-blue-50 rounded {{ request()->routeIs('dashboard.index') ? 'bg-blue-100 font-bold' : '' }}">
                 <i class="fas fa-user mr-2"></i> My Dashboard
             </a>
+
+            @if($showPreEmploymentLink)
+            <a href="{{ route('pre-employment.portal') }}"
+                class="flex items-center px-4 py-2 text-teal-700 hover:bg-teal-50 rounded {{ request()->routeIs('pre-employment.*') ? 'bg-teal-100 font-bold' : '' }}">
+                <i class="fas fa-file-signature mr-2"></i> Pre-Employment
+            </a>
+            @endif
 
             <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
             @if($user && $user->hasRole('admin') && $user->roles->count() === 1)

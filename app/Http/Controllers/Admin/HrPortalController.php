@@ -23,10 +23,13 @@ class HrPortalController extends Controller
                     return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug ?? $facility->id]);
                 }
             }
-            // If no facility, show nothing or error
-            abort(403, 'No assigned facility.');
+            // If no facility assigned, show error with instructions
+            return view('admin.hr-portal.no-facility', [
+                'message' => 'No facility assigned yet. Please contact your administrator to assign a facility to your account.',
+                'userRole' => $user->getRoleNames()->first()
+            ]);
         } else {
-            abort(403);
+            abort(403, 'Unauthorized access to HR portal.');
         }
     }
 }

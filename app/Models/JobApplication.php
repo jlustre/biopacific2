@@ -10,7 +10,7 @@ class JobApplication extends Model
     use HasFactory, EncryptsEphi;
 
     protected $fillable = [
-        'job_opening_id', 'desired_position', 'department', 'employment_type', 'first_name', 'last_name', 'email', 'phone', 'cover_letter', 'resume_path', 'consent', 'status', 'access_token', 'expires_at', 'audit_log', 'viewed_at'
+        'user_id', 'job_opening_id', 'desired_position', 'department', 'employment_type', 'first_name', 'last_name', 'email', 'phone', 'cover_letter', 'resume_path', 'consent', 'status', 'applicant_code', 'access_token', 'expires_at', 'audit_log', 'viewed_at'
     ];
 
     // Define which fields contain ePHI and should be encrypted
@@ -26,6 +26,11 @@ class JobApplication extends Model
     public function jobOpening()
     {
         return $this->belongsTo(JobOpening::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

@@ -101,4 +101,28 @@ class User extends Authenticatable
 
         return collect();
     }
+
+    /**
+     * Get job applications associated with this user
+     */
+    public function jobApplications()
+    {
+        return $this->hasMany(JobApplication::class);
+    }
+
+    /**
+     * Get the employee checklist items for this user
+     */
+    public function employeeChecklists()
+    {
+        return $this->hasMany(EmployeeChecklist::class);
+    }
+
+    /**
+     * Get the employee record for this user
+     */
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
+    }
 }

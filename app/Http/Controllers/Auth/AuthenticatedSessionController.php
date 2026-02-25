@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\JobApplication;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,9 +15,19 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.login');
+        $prefillEmail = '';
+
+        if ($request->filled('c')) {
+            $jobApplication = JobApplication::where('applicant_code', $request->string('c')->trim())->first();
+
+            if ($jobApplication) {
+                $prefillEmail = (string) $jobApplication->email;
+            }
+        }
+
+        return view('auth.login', compact('prefillEmail'));
     }
 
     /**

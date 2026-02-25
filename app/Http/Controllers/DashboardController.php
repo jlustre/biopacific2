@@ -10,6 +10,9 @@ use App\Models\Faq;
 use App\Models\Service;
 use App\Models\News;
 use App\Models\ColorScheme;
+use App\Models\JobApplication;
+use App\Models\JobOpening;
+use App\Models\EmployeeChecklist;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -22,13 +25,13 @@ class DashboardController extends Controller
         $user = Auth::user();
         // Recent Activity Data
         $lastUpdated = $user->updated_at;
-        $newFacilitiesCount = Facility::where('created_at', '>=', now()->subWeek())->count();
-        $newFaqsCount = Faq::where('created_at', '>=', now()->subWeek())->count();
 
         // Determine which dashboard view to show
         $routeName = request()->route()->getName();
         if ($routeName === 'admin.dashboard.index' && $user->hasRole('admin')) {
             // Admin dashboard view (with admin sidebar and widgets)
+            $newFacilitiesCount = Facility::where('created_at', '>=', now()->subWeek())->count();
+            $newFaqsCount = Faq::where('created_at', '>=', now()->subWeek())->count();
             $facilities = Facility::all();
             $facilitiesByState = $facilities->groupBy('state');
             return view('admin.dashboard.index', [
@@ -39,11 +42,198 @@ class DashboardController extends Controller
                 'facilities' => $facilities,
             ]);
         }
+
+        $roleStats = null;
+        $roleFacility = null;
+        if ($user->hasRole(['hrrd', 'facility-admin', 'facility-dsd'])) {
+            $facilityId = null;
+            if ($user->hasRole(['facility-admin', 'facility-dsd'])) {
+                $facilityId = $user->facility_id;
+                $roleFacility = $user->facility;
+            }
+
+            $jobApplicationsQuery = JobApplication::query();
+            if ($facilityId) {
+                $jobApplicationsQuery->whereHas('jobOpening', function ($query) use ($facilityId) {
+                    $query->where('facility_id', $facilityId);
+                });
+            }
+
+            $applicantsTotal = (clone $jobApplicationsQuery)->count();
+            $applicantsToday = (clone $jobApplicationsQuery)
+                ->where('created_at', '>=', now()->startOfDay())
+                ->count();
+            $applicantsThisWeek = (clone $jobApplicationsQuery)
+                ->where('created_at', '>=', now()->subDays(7))
+                ->count();
+
+            $applicantUserIds = JobApplication::query()
+                ->select('user_id')
+                ->whereNotNull('user_id')
+                ->distinct();
+            if ($facilityId) {
+                $applicantUserIds->whereHas('jobOpening', function ($query) use ($facilityId) {
+                    $query->where('facility_id', $facilityId);
+                });
+            }
+
+            $checklistBaseQuery = EmployeeChecklist::query()
+                ->whereIn('user_id', $applicantUserIds);
+
+            $submittedForms = (clone $checklistBaseQuery)
+                ->whereNotNull('submitted_at')
+                ->count();
+            $pendingReviews = (clone $checklistBaseQuery)
+                ->where('status', 'submitted')
+                ->count();
+            $returnedForms = (clone $checklistBaseQuery)
+                ->where('status', 'returned')
+                ->count();
+            $completedForms = (clone $checklistBaseQuery)
+                ->where('status', 'completed')
+                ->count();
+
+            $jobOpeningsQuery = JobOpening::query()->where('active', true);
+            if ($facilityId) {
+                $jobOpeningsQuery->where('facility_id', $facilityId);
+            }
+            $openJobOpenings = $jobOpeningsQuery->count();
+
+            $roleStats = [
+                'applicants_total' => $applicantsTotal,
+                'applicants_today' => $applicantsToday,
+                'applicants_week' => $applicantsThisWeek,
+                'submitted_forms' => $submittedForms,
+                'pending_reviews' => $pendingReviews,
+                'returned_forms' => $returnedForms,
+                'completed_forms' => $completedForms,
+                'open_job_openings' => $openJobOpenings,
+            ];
+        }
+
+        // User-specific data
+        $jobApplication = $user->jobApplications()->where('status', 'pre-employment')->first();
+        $hasPreEmployment = $jobApplication !== null;
+        
+        // Pre-employment checklist stats
+        $checklistStats = null;
+        if ($hasPreEmployment) {
+            $checklistItems = $user->employeeChecklists;
+            $checklistStats = [
+                'total' => $checklistItems->count(),
+                'completed' => $checklistItems->where('status', 'completed')->count(),
+                'submitted' => $checklistItems->where('status', 'submitted')->count(),
+                'draft' => $checklistItems->where('status', 'draft')->count(),
+                'returned' => $checklistItems->where('status', 'returned')->count(),
+            ];
+        }
+
+        // Recent activity specific to this user
+        $recentActivity = [];
+        if ($hasPreEmployment) {
+            $recentActivity[] = [
+                'icon' => 'fa-clipboard-check',
+                'color' => 'green',
+                'message' => 'Pre-employment checklist in progress'
+            ];
+        }
+        if ($user->created_at->gt(now()->subDays(7))) {
+            $recentActivity[] = [
+                'icon' => 'fa-user-plus',
+                'color' => 'blue',
+                'message' => 'Account created ' . $user->created_at->diffForHumans()
+            ];
+        }
+        $recentActivity[] = [
+            'icon' => 'fa-clock',
+            'color' => 'gray',
+            'message' => 'Last login ' . ($user->updated_at ? $user->updated_at->diffForHumans() : 'recently')
+        ];
+
         // Default: user dashboard
         return view('dashboard', [
             'lastUpdated' => $lastUpdated,
-            'newFacilitiesCount' => $newFacilitiesCount,
-            'newFaqsCount' => $newFaqsCount,
+            'hasPreEmployment' => $hasPreEmployment,
+            'jobApplication' => $jobApplication,
+            'checklistStats' => $checklistStats,
+            'recentActivity' => $recentActivity,
+            'readOnly' => false,
+            'viewingUser' => $user,
+            'roleStats' => $roleStats,
+            'roleFacility' => $roleFacility,
+        ]);
+    }
+
+    /**
+     * View another user's dashboard (for authorized staff)
+     */
+    public function showUserDashboard($userId)
+    {
+        $currentUser = Auth::user();
+        
+        // Check if current user has permission to view employee/applicant information
+        if (!$currentUser->hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd'])) {
+            abort(403, 'Unauthorized to view user dashboards.');
+        }
+
+        $viewingUser = \App\Models\User::findOrFail($userId);
+        
+        // Facility admins can only view users from their facility
+        if ($currentUser->hasRole(['facility-admin', 'facility-dsd']) && 
+            $currentUser->facility_id !== $viewingUser->facility_id) {
+            abort(403, 'Unauthorized to view this user\'s dashboard.');
+        }
+
+        // Get user-specific data
+        $lastUpdated = $viewingUser->updated_at;
+        $jobApplication = $viewingUser->jobApplications()->where('status', 'pre-employment')->first();
+        $hasPreEmployment = $jobApplication !== null;
+        
+        // Pre-employment checklist stats
+        $checklistStats = null;
+        if ($hasPreEmployment) {
+            $checklistItems = $viewingUser->employeeChecklists;
+            $checklistStats = [
+                'total' => $checklistItems->count(),
+                'completed' => $checklistItems->where('status', 'completed')->count(),
+                'submitted' => $checklistItems->where('status', 'submitted')->count(),
+                'draft' => $checklistItems->where('status', 'draft')->count(),
+                'returned' => $checklistItems->where('status', 'returned')->count(),
+            ];
+        }
+
+        // Recent activity specific to this user
+        $recentActivity = [];
+        if ($hasPreEmployment) {
+            $recentActivity[] = [
+                'icon' => 'fa-clipboard-check',
+                'color' => 'green',
+                'message' => 'Pre-employment checklist in progress'
+            ];
+        }
+        if ($viewingUser->created_at->gt(now()->subDays(7))) {
+            $recentActivity[] = [
+                'icon' => 'fa-user-plus',
+                'color' => 'blue',
+                'message' => 'Account created ' . $viewingUser->created_at->diffForHumans()
+            ];
+        }
+        $recentActivity[] = [
+            'icon' => 'fa-clock',
+            'color' => 'gray',
+            'message' => 'Last login ' . ($viewingUser->updated_at ? $viewingUser->updated_at->diffForHumans() : 'recently')
+        ];
+
+        return view('dashboard', [
+            'lastUpdated' => $lastUpdated,
+            'hasPreEmployment' => $hasPreEmployment,
+            'jobApplication' => $jobApplication,
+            'checklistStats' => $checklistStats,
+            'recentActivity' => $recentActivity,
+            'readOnly' => true,
+            'viewingUser' => $viewingUser,
+            'roleStats' => null,
+            'roleFacility' => null,
         ]);
     }
 

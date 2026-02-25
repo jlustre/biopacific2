@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $facility->getMeta('title', $section) ?? (config('app.name', 'Facility')) }}</title>
-    <meta name="description" content="{{ $facility->getMeta('meta_description', $section) ?? '' }}">
+    <title>{{ $facility->getMeta('title', $section ?? null) ?? (config('app.name', 'Facility')) }}</title>
+    <meta name="description" content="{{ $facility->getMeta('meta_description', $section ?? null) ?? '' }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

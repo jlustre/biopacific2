@@ -36,6 +36,58 @@ class Facility extends Model
   {
     return (string) $this->name;
   }
+
+  public function getMeta(string $key, ?string $section = null): ?string
+  {
+    $sources = [];
+    $settings = $this->settings ?? null;
+
+    if (is_string($settings)) {
+      $decoded = json_decode($settings, true);
+      if (json_last_error() === JSON_ERROR_NONE) {
+        $settings = $decoded;
+      }
+    }
+
+    if (is_array($settings)) {
+      $sources[] = $settings['meta'] ?? $settings;
+    }
+
+    $sources[] = $this->getAttribute($key);
+
+    foreach ($sources as $source) {
+      if (is_string($source)) {
+        $decoded = json_decode($source, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $source = $decoded;
+        } else {
+          return $source;
+        }
+      }
+
+      if (!is_array($source)) {
+        continue;
+      }
+
+      if ($section !== null) {
+        if (isset($source[$section]) && is_array($source[$section]) && array_key_exists($key, $source[$section])) {
+          $value = $source[$section][$key];
+          return is_string($value) ? $value : null;
+        }
+
+        if (isset($source[$section]) && is_string($source[$section])) {
+          return $source[$section];
+        }
+      }
+
+      if (array_key_exists($key, $source)) {
+        $value = $source[$key];
+        return is_string($value) ? $value : null;
+      }
+    }
+
+    return null;
+  }
     protected $fillable = [
       'name','slug','tagline','logo_url','hero_image_url','headline','subheadline',
       'about_image_url','about_text','address','city','state','zip','beds', 'years',

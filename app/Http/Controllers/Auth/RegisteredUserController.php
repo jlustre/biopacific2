@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\JobApplication;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -17,9 +18,21 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.register');
+        $prefillName = '';
+        $prefillEmail = '';
+
+        if ($request->filled('c')) {
+            $jobApplication = JobApplication::where('applicant_code', $request->string('c')->trim())->first();
+
+            if ($jobApplication) {
+                $prefillName = trim($jobApplication->first_name . ' ' . $jobApplication->last_name);
+                $prefillEmail = (string) $jobApplication->email;
+            }
+        }
+
+        return view('auth.register', compact('prefillName', 'prefillEmail'));
     }
 
     /**

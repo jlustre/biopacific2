@@ -9,9 +9,19 @@
         </div>
         <div class="flex gap-2">
             @if(request('reply_to'))
-            <button onclick="openReplyComposer()"
-                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition">
-                <i class="fas fa-paper-plane mr-2"></i>Send as Reply
+            <form method="POST" action="{{ route('admin.email-templates.send-reply', $emailTemplate) }}">
+                @csrf
+                <input type="hidden" name="reply_to" value="{{ request('reply_to') }}">
+                <input type="hidden" name="job_application_id" value="{{ request('job_application_id') }}">
+                <input type="hidden" name="applicant_name" value="{{ request('applicant_name') }}">
+                <button type="submit"
+                    class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                    <i class="fas fa-paper-plane mr-2"></i>Send via App
+                </button>
+            </form>
+            <button type="button" onclick="openReplyComposer()"
+                class="bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                <i class="fas fa-envelope mr-2"></i>Open Mail Client
             </button>
             @endif
             <a href="{{ route('admin.email-templates.edit', $emailTemplate) }}"
@@ -37,7 +47,8 @@
                         request('reply_to') }}</strong>
                 </p>
                 <p class="text-xs text-blue-700 mt-1">
-                    Click "Send as Reply" to open your email client and send this template as a reply.
+                    Use "Send via App" to send through the server (shows in Mailpit), or "Open Mail Client" to use your
+                    local email app.
                 </p>
             </div>
         </div>
@@ -117,6 +128,15 @@
                 <div class="bg-gray-50 rounded p-3">
                     <span class="text-gray-600 font-medium">{application_id}</span>
                     <p class="text-gray-900 mt-1">{{ $jobApplication->id }}</p>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                    <span class="text-gray-600 font-medium">{applicant_code}</span>
+                    <p class="text-gray-900 mt-1">{{ $jobApplication->applicant_code ?? 'N/A' }}</p>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                    <span class="text-gray-600 font-medium">{pre_employment_link}</span>
+                    <p class="text-gray-900 mt-1">{{ url('/pre-employment') }}{{ $jobApplication->applicant_code ? '?c='
+                        . urlencode($jobApplication->applicant_code) : '' }}</p>
                 </div>
             </div>
         </div>

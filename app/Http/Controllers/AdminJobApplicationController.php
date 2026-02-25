@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\EmployeeChecklist;
 use App\Models\JobApplication;
+use App\Models\User;
 use App\Models\Facility;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use App\Mail\PreEmploymentMail;
 
 class AdminJobApplicationController extends Controller
 {
     public function index()
     {
-        $statuses = ['pending', 'reviewed', 'interview', 'hired', 'rejected'];
+        $statuses = ['pending', 'reviewed', 'interview', 'pre-employment', 'hired', 'rejected'];
         $facilities = Facility::orderBy('name')->get();
 
         $query = JobApplication::with(['jobOpening.facility'])->orderByDesc('created_at');
@@ -44,8 +49,16 @@ class AdminJobApplicationController extends Controller
 
     public function show(JobApplication $jobApplication)
     {
-        // Return a view for showing a job application
-        return view('admin.job-applications.show', compact('jobApplication'));
+        $applicantUser = User::where('email', $jobApplication->email)->first();
+        $checklistItems = collect();
+
+        if ($applicantUser) {
+            $checklistItems = EmployeeChecklist::where('user_id', $applicantUser->id)
+                ->orderBy('id')
+                ->get();
+        }
+
+        return view('admin.job-applications.show', compact('jobApplication', 'applicantUser', 'checklistItems'));
     }
 
     public function destroy(JobApplication $jobApplication)
@@ -58,12 +71,20 @@ class AdminJobApplicationController extends Controller
     public function updateStatus(Request $request, JobApplication $jobApplication)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,reviewed,interview,hired,rejected',
+            'status' => 'required|in:pending,reviewed,interview,pre-employment,hired,rejected',
         ]);
 
-        $jobApplication->update([
-            'status' => $validated['status'],
-        ]);
+        $updateData = ['status' => $validated['status']];
+
+        if ($validated['status'] === 'pre-employment' && empty($jobApplication->applicant_code)) {
+            $updateData['applicant_code'] = $this->generateApplicantCode();
+        }
+
+        $jobApplication->update($updateData);
+
+        if ($validated['status'] === 'pre-employment') {
+            Mail::to($jobApplication->email)->send(new PreEmploymentMail($jobApplication));
+        }
 
         return redirect()
             ->route('admin.job-applications.show', $jobApplication)
@@ -101,5 +122,14 @@ class AdminJobApplicationController extends Controller
         return response()->file($path, [
             'Content-Disposition' => 'inline; filename="' . basename($jobApplication->resume_path) . '"',
         ]);
+    }
+
+    private function generateApplicantCode(): string
+    {
+        do {
+            $code = Str::upper(Str::random(6));
+        } while (JobApplication::where('applicant_code', $code)->exists());
+
+        return $code;
     }
 }

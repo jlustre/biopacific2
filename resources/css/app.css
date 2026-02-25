@@ -39,6 +39,18 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    a.btn,
+    a.button,
+    .btn,
+    .button {
+        cursor: pointer;
+    }
 }
 
 [x-cloak] { display: none !important; }

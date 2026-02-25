@@ -20,6 +20,7 @@ class TestUsersSeeder extends Seeder
         ], [
             'name' => 'HR Regional Director',
             'password' => Hash::make('password'),
+            'facility_id' => 99,
         ]);
         $hrrd->syncRoles(['hrrd']);
 
@@ -40,6 +41,7 @@ class TestUsersSeeder extends Seeder
         ], [
             'name' => 'Facility DSD',
             'password' => Hash::make('password'),
+            'facility_id' => 1,
         ]);
         $facilityDsd->syncRoles(['facility-dsd']);
 
@@ -49,6 +51,7 @@ class TestUsersSeeder extends Seeder
         ], [
             'name' => 'Facility Editor',
             'password' => Hash::make('password'),
+            'facility_id' => 1,
         ]);
         $facilityEditor->syncRoles(['facility-editor']);
 
@@ -58,6 +61,7 @@ class TestUsersSeeder extends Seeder
         ], [
             'name' => 'Regular User',
             'password' => Hash::make('password'),
+            'facility_id' => 1,
         ]);
         $regularUser->syncRoles(['regular-user']);
     }
