@@ -25,6 +25,24 @@ use Illuminate\Support\Facades\Auth;
     </div>
     @endif
 
+    <!-- Pre-Employment Banner & Link -->
+    @if(isset($preEmployment) && $preEmployment->status === 'pre-employment' && !$readOnly)
+    <div class="bg-teal-50 border-l-4 border-teal-400 p-4 rounded-lg mb-4">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-briefcase text-teal-400 text-2xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-teal-800">Pre-Employment Process Active</h3>
+                <div class="mt-2 text-sm text-teal-700">
+                    <p>You are currently in the pre-employment process. <a href="{{ route('pre-employment.portal') }}"
+                            class="font-semibold underline hover:text-teal-900">Go to Pre-Employment Portal</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Notifications/Alerts -->
     @if($hasPreEmployment && $checklistStats && $checklistStats['returned'] > 0 && !$readOnly)
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">

@@ -54,6 +54,15 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // If applicant_code is present, link job application to user
+        if ($request->filled('c')) {
+            $jobApplication = JobApplication::where('applicant_code', $request->string('c')->trim())->first();
+            if ($jobApplication) {
+                $jobApplication->user_id = $user->id;
+                $jobApplication->save();
+            }
+        }
+
         event(new Registered($user));
 
         Auth::login($user);

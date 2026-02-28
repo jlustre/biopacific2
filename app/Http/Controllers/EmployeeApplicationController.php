@@ -11,7 +11,36 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class EmployeeApplicationController extends Controller
-{
+    /**
+     * Show the pre-employment application form, prefilled from job_applications if possible
+     */
+    public function showPreEmploymentForm(Request $request)
+    {
+        $user = Auth::user();
+        $preEmployment = \App\Models\PreEmploymentApplication::where('user_id', $user->id)->first();
+        $jobApplication = \App\Models\JobApplication::where('user_id', $user->id)->where('status', 'pre-employment')->first();
+
+        $prefill = [];
+        if (!$preEmployment && $jobApplication) {
+            $prefill = [
+                'first_name' => $jobApplication->first_name,
+                'middle_name' => $jobApplication->middle_name,
+                'last_name' => $jobApplication->last_name,
+                'email' => $jobApplication->email,
+                'phone_number' => $jobApplication->phone_number,
+                'current_address' => $jobApplication->current_address,
+                'city' => $jobApplication->city,
+                'state' => $jobApplication->state,
+                'zip_code' => $jobApplication->zip_code,
+                'county' => $jobApplication->county,
+                'position_applied_for' => $jobApplication->position_id,
+                // Add more fields as needed
+            ];
+        }
+
+        // Pass $prefill to the view for the form to use as default values
+        return view('pre-employment.application_form', compact('preEmployment', 'prefill'));
+    }
     /**
      * Store or update pre-employment application data
      */
@@ -40,8 +69,6 @@ class EmployeeApplicationController extends Controller
             'zip_code' => 'required|string|max:10',
             'county' => 'nullable|string|max:100',
             'position_applied_for' => 'required|exists:positions,id',
-            'employment_type' => 'nullable|in:full_time,part_time,temporary,other',
-            'employment_type_other' => 'nullable|string|max:255',
             'shift_preference' => 'nullable|string',
             'date_available' => 'nullable|date',
             'wage_salary_expected' => 'nullable|string|max:100',

@@ -96,8 +96,17 @@
                         <td class="px-6 py-4 text-sm font-medium">
                             <div class="flex items-center gap-3">
                                 @if(request('reply_to'))
+                                @php
+                                $jobAppStatus =
+                                optional(App\Models\JobApplication::find(request('job_application_id')))->status;
+                                @endphp
+                                @if($jobAppStatus === 'pre-employment')
                                 <a href="{{ route('admin.email-templates.show', ['email_template' => $template, 'reply_to' => request('reply_to'), 'job_application_id' => request('job_application_id'), 'applicant_name' => request('applicant_name')]) }}"
                                     class="text-green-600 hover:text-green-900 font-semibold">Use for Reply</a>
+                                @else
+                                <span class="text-gray-400 font-semibold cursor-not-allowed"
+                                    title="Status must be pre-employment">Use for Reply</span>
+                                @endif
                                 @else
                                 <a href="{{ route('admin.email-templates.show', $template) }}"
                                     class="text-indigo-600 hover:text-indigo-900">View</a>

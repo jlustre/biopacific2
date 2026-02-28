@@ -195,7 +195,7 @@ class JobOpeningController extends Controller
             return redirect()->back()->with('error', 'Only the template creator can update this template.');
         }
         $data = $request->validate([
-            'template_name' => 'required|string|max:255',
+            'template_name' => 'required|string|max:255|unique:job_description_templates,name,' . $templateId,
             'template_position_title' => 'required|string|max:255',
             'template_contents' => 'nullable|string',
         ]);
@@ -214,7 +214,7 @@ class JobOpeningController extends Controller
     public function saveTemplateViaForm(Request $request, Facility $facility)
     {
         $data = $request->validate([
-            'template_name' => 'required|string|max:255',
+            'template_name' => 'required|string|max:255|unique:job_description_templates,name',
             'template_position_title' => 'required|string|max:255',
             'template_contents' => 'nullable|string',
         ]);

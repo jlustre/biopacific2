@@ -13,30 +13,40 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class QuickActionsController extends Controller
 {
     protected function authorizeFacilityAccess(Facility $facility)
     {
         $user = Auth::user();
+        // ...existing code...
         if ($user->hasRole('admin') || $user->hasRole('hrrd')) {
+            // ...existing code...
             return true;
         }
-        // If user is facility-admin, facility-dsd, or facility-editor, check assignment
         if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
-            // Adjust this logic to match your actual assignment relationship
+            if (isset($user->facility_id) && $user->facility_id == $facility->id) {
+                // ...existing code...
+                return true;
+            }
             if (method_exists($user, 'facilities')) {
-                // Many-to-many
                 if ($user->facilities->contains('id', $facility->id)) {
-                    return true;
-                }
-            } elseif (isset($user->facility_id)) {
-                // Single facility assignment
-                if ($user->facility_id == $facility->id) {
+                    // ...existing code...
                     return true;
                 }
             }
         }
+        Log::warning('AUTH DENIED: aborting 403', [
+            'user_id' => $user->id,
+            'user_roles' => $user->getRoleNames()->toArray(),
+            'user_facility_id' => $user->facility_id ?? null,
+            'route_facility_id' => $facility->id,
+            'user_facilities' => method_exists($user, 'facilities') ? $user->facilities->pluck('id')->toArray() : null,
+            'facility_model_class' => get_class($facility),
+            'facility_exists' => $facility->exists,
+            'facility_name' => $facility->name ?? null,
+        ]);
         abort(403, 'Unauthorized facility access.');
     }
 
@@ -73,10 +83,50 @@ class QuickActionsController extends Controller
 
     public function reviewPreEmployment(Facility $facility, $application)
     {
-        $this->authorizeFacilityAccess($facility);
-        
-        $application = PreEmploymentApplication::findOrFail($application);
-        
+        // ...existing code...
+        try {
+            $this->authorizeFacilityAccess($facility);
+            // ...existing code...
+        } catch (\Exception $e) {
+            Log::error('REVIEW AUTHORIZE FACILITY ERROR', ['error' => $e->getMessage(), 'facility_id' => $facility->id, 'user_id' => Auth::id()]);
+            throw $e;
+        }
+        try {
+            $preApp = PreEmploymentApplication::find($application);
+            if (!$preApp) {
+                // ...existing code...
+                $jobApp = \App\Models\JobApplication::find($application);
+                if ($jobApp) {
+                    // Create PreEmploymentApplication from JobApplication
+                    $preApp = PreEmploymentApplication::create([
+                        'user_id' => $jobApp->user_id,
+                        'first_name' => $jobApp->first_name,
+                        'last_name' => $jobApp->last_name,
+                        'email' => $jobApp->email,
+                        'phone_number' => $jobApp->phone ?? '',
+                        'position_applied_for' => $jobApp->jobOpening ? $jobApp->jobOpening->title : null,
+                        'status' => 'draft',
+                        // Add more fields as needed
+                    ]);
+                    // ...existing code...
+                } else {
+                    throw new \Exception('No query results for model [App\\Models\\PreEmploymentApplication] or [App\\Models\\JobApplication] ' . $application);
+                }
+            }
+            $application = $preApp;
+            // ...existing code...
+        } catch (\Exception $e) {
+            Log::error('REVIEW FINDORFAIL ERROR', ['error' => $e->getMessage(), 'application_param' => $application, 'user_id' => Auth::id()]);
+            throw $e;
+        }
+        // ...existing code...
+        try {
+            \Illuminate\Support\Facades\Gate::authorize('view', $application);
+            // ...existing code...
+        } catch (\Exception $e) {
+            Log::error('REVIEW AUTHORIZE POLICY ERROR', ['error' => $e->getMessage(), 'application_id' => $application->id, 'user_id' => Auth::id()]);
+            throw $e;
+        }
         return view('admin.facilities.pre-employment-review', compact('facility', 'application'));
     }
 

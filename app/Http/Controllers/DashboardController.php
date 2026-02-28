@@ -151,10 +151,12 @@ class DashboardController extends Controller
         ];
 
         // Default: user dashboard
+        $preEmployment = $jobApplication; // Alias for clarity in view
         return view('dashboard', [
             'lastUpdated' => $lastUpdated,
             'hasPreEmployment' => $hasPreEmployment,
             'jobApplication' => $jobApplication,
+            'preEmployment' => $preEmployment,
             'checklistStats' => $checklistStats,
             'recentActivity' => $recentActivity,
             'readOnly' => false,

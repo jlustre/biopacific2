@@ -124,7 +124,7 @@
                                 A') }}</td>
                             <td class="px-6 py-4 text-sm font-medium">
                                 <div class="flex items-center space-x-3">
-                                    <a href="{{ route('admin.job-applications.show', $application) }}"
+                                    <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $application->jobOpening->facility->id ?? $application->facility_id, 'application' => $application->id]) }}"
                                         class="text-indigo-600 hover:text-indigo-900">
                                         <i class="fas fa-eye mr-1"></i>View
                                     </a>
@@ -188,7 +188,7 @@
                 </div>
 
                 <div class="flex items-center justify-end space-x-2">
-                    <a href="{{ route('admin.job-applications.show', $application) }}"
+                    <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $application->jobOpening->facility->id ?? $application->facility_id, 'application' => $application->id]) }}"
                         class="text-indigo-600 hover:text-indigo-900 text-sm">
                         <i class="fas fa-eye mr-1"></i>View
                     </a>

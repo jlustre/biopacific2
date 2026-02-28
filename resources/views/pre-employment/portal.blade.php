@@ -41,6 +41,18 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
     </div>
     @endif
 
+    @if(isset($preEmployment) && $preEmployment->status !== 'pre-employment')
+    <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-ban text-red-400 text-2xl mr-3"></i>
+            <div>
+                <h4 class="text-sm font-medium text-red-800">Pre-Employment Access Restricted</h4>
+                <p class="text-sm text-red-700 mt-1">You do not currently have access to the pre-employment portal.
+                    Please contact HR if you believe this is an error.</p>
+            </div>
+        </div>
+    </div>
+    @else
     <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl shadow-lg p-8">
         <div class="flex items-start justify-between">
             <div>
@@ -53,6 +65,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
             </div>
         </div>
     </div>
+    @endif
 
     <!-- Progress Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

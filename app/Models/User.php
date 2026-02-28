@@ -11,6 +11,13 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
+    /**
+     * Many-to-many relationship: User can belong to multiple facilities
+     */
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class, 'facility_user', 'user_id', 'facility_id');
+    }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
     /**
@@ -78,8 +85,8 @@ class User extends Authenticatable
             return true;
         }
 
-        // Facility admins and editors can only manage their assigned facility
-        if ($this->hasRole(['facility-admin', 'facility-editor'])) {
+        // Facility admins, editors, and DSDs can only manage their assigned facility
+        if ($this->hasRole(['facility-admin', 'facility-editor', 'facility-dsd'])) {
             return $this->facility_id == $facilityId;
         }
 

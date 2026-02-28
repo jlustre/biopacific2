@@ -10,10 +10,13 @@ use App\Models\Facility;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use App\Mail\PreEmploymentMail;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class AdminJobApplicationController extends Controller
 {
+    use AuthorizesRequests;
     public function index()
     {
         $statuses = ['pending', 'reviewed', 'interview', 'pre-employment', 'hired', 'rejected'];
@@ -34,11 +37,8 @@ class AdminJobApplicationController extends Controller
 
         if (request()->filled('search')) {
             $search = request('search');
-            $query->where(function ($builder) use ($search) {
-                $builder->where('desired_position', 'like', "%{$search}%")
-                    ->orWhereHas('jobOpening', function ($jobQuery) use ($search) {
-                        $jobQuery->where('title', 'like', "%{$search}%");
-                    });
+            $query->whereHas('jobOpening', function ($jobQuery) use ($search) {
+                $jobQuery->where('title', 'like', "%{$search}%");
             });
         }
 
@@ -49,6 +49,8 @@ class AdminJobApplicationController extends Controller
 
     public function show(JobApplication $jobApplication)
     {
+        $this->authorize('view', $jobApplication);
+
         $applicantUser = User::where('email', $jobApplication->email)->first();
         $checklistItems = collect();
 
@@ -74,15 +76,28 @@ class AdminJobApplicationController extends Controller
             'status' => 'required|in:pending,reviewed,interview,pre-employment,hired,rejected',
         ]);
 
+        $validated = $request->validate([
+            'status' => 'required|in:pending,reviewed,interview,pre-employment,hired,rejected',
+        ]);
+
         $updateData = ['status' => $validated['status']];
 
+        // Always ensure applicant_code is set for pre-employment
         if ($validated['status'] === 'pre-employment' && empty($jobApplication->applicant_code)) {
             $updateData['applicant_code'] = $this->generateApplicantCode();
         }
 
         $jobApplication->update($updateData);
 
+        // Reload the jobApplication to get the latest applicant_code
+        $jobApplication->refresh();
+
         if ($validated['status'] === 'pre-employment') {
+            // If applicant_code is still missing, generate and save it
+            if (empty($jobApplication->applicant_code)) {
+                $jobApplication->applicant_code = $this->generateApplicantCode();
+                $jobApplication->save();
+            }
             Mail::to($jobApplication->email)->send(new PreEmploymentMail($jobApplication));
         }
 

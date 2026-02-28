@@ -1,6 +1,8 @@
 @extends('layouts.dashboard')
 
 @section('content')
+@php use Illuminate\Support\Facades\Log; Log::info('BLADE DEBUG: hiring.blade.php rendered', ['user_id' =>
+auth()->id()]); @endphp
 <div class="container mx-auto py-8 px-4">
     <!-- Page Header -->
     <div class="mb-8">
@@ -88,11 +90,11 @@
                                     </span>
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
-                                    <a href="{{ route('admin.job-applications.show', $app) }}"
+                                    <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $facility->id, 'application' => $app->id]) }}"
                                         class="px-3 py-1.5 text-xs font-semibold bg-teal-600 text-white rounded hover:bg-teal-700 transition">
                                         Review
                                     </a>
-                                    <a href="{{ route('admin.job-applications.show', $app) }}"
+                                    <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $facility->id, 'application' => $app->id]) }}"
                                         class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                                         Change Status
                                     </a>

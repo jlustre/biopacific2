@@ -1,6 +1,6 @@
 <?php
-
 namespace App\Policies;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\PreEmploymentApplication;
 use App\Models\User;
@@ -13,7 +13,7 @@ class PreEmploymentApplicationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['admin', 'hrrd', 'facility-admin']);
+        return $user->hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
     }
 
     /**
@@ -21,7 +21,7 @@ class PreEmploymentApplicationPolicy
      */
     public function view(User $user, PreEmploymentApplication $preEmploymentApplication): bool
     {
-        return $user->hasRole(['admin', 'hrrd', 'facility-admin']);
+        return $user->hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
     }
 
     /**
