@@ -1,3 +1,8 @@
+@php
+use Illuminate\Support\Str;
+$defaultFileName = 'application_form_' . $application->id . '_' . Str::slug(trim(($application->last_name ??
+'applicant') . '-' . ($application->first_name ?? ''))) . '.pdf';
+@endphp
 @props([
 'facility',
 'application',
@@ -11,7 +16,7 @@ $latestReturnedActivity = \App\Models\HiringActivityLog::where('pre_employment_a
 $latestReturnedNotes = $latestReturnedActivity?->notes ?? '';
 $latestReturnedForm = $latestReturnedActivity?->form_type ?? '';
 $existingDocuments = \App\Models\EmployeeDocument::where('pre_employment_application_id', $application->id)
-->where('document_type', 'application_packet')
+->where('document_type', 'application_form')
 ->latest('created_at')
 ->get();
 @endphp
@@ -116,7 +121,7 @@ $existingDocuments = \App\Models\EmployeeDocument::where('pre_employment_applica
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                             @change="updateFormDescription">
                             <option value="">-- Select a Form Section --</option>
-                            <option value="application_packet">Application Packet</option>
+                            <option value="application_form">Application Form</option>
                             <option value="personal">Personal Information</option>
                             <option value="position">Position Desired</option>
                             <option value="drivers_license">Driver's License</option>
@@ -213,14 +218,36 @@ $existingDocuments = \App\Models\EmployeeDocument::where('pre_employment_applica
             <div class="mb-6">
                 <p class="text-gray-700 mb-4">Select a template to generate the PDF document for this application.</p>
                 <div class="space-y-2 mb-6">
-                    <a href="{{ route('admin.facility.pre-employment.pdf', ['facility' => $facility->id, 'application' => $application->id, 'template' => 'standard']) }}"
-                        target="_blank" rel="noopener noreferrer"
-                        class="block p-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 cursor-pointer transition">
+                    <div class="block p-4 border-2 border-gray-300 rounded-lg">
                         <div class="font-semibold text-gray-900 flex items-center gap-2">
-                            <i class="fas fa-file-pdf text-blue-600"></i> Standard Application Packet
+                            <i class="fas fa-file-pdf text-blue-600"></i> Standard Application Form
                         </div>
                         <p class="text-xs text-gray-600 mt-1">Complete application form with all sections</p>
-                    </a>
+                        <div class="flex gap-3 mt-4">
+                            <form method="POST"
+                                action="{{ route('admin.facility.pre-employment.pdf', ['facility' => $facility->id, 'application' => $application->id, 'template' => 'standard']) }}">
+                                @csrf
+                                <input type="hidden" name="mode" value="save">
+                                <div class="mb-2">
+                                    <label class="block text-xs font-semibold mb-1">File Name</label>
+                                    <input type="text" name="file_name" value="{{ old('file_name', $defaultFileName) }}"
+                                        class="form-input rounded border-gray-300 w-full" required>
+                                    @error('file_name')
+                                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <button type="submit"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold flex items-center gap-2">
+                                    <i class="fas fa-save"></i> Generate and Save
+                                </button>
+                            </form>
+                            <a href="{{ route('admin.facility.pre-employment.pdf', ['facility' => $facility->id, 'application' => $application->id, 'template' => 'standard', 'mode' => 'view']) }}"
+                                target="_blank" rel="noopener noreferrer"
+                                class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 font-semibold flex items-center gap-2">
+                                <i class="fas fa-eye"></i> View PDF Only
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-6">
@@ -329,7 +356,7 @@ $existingDocuments = \App\Models\EmployeeDocument::where('pre_employment_applica
             
             if (formTypeSelect && notesField && formTypeSelect.value) {
                 const formLabels = {
-                    'application_packet': 'Application Packet section',
+                    'application_form': 'Application Form section',
                     'personal': 'Personal Information section',
                     'position': 'Position Desired section',
                     'drivers_license': "Driver's License section",

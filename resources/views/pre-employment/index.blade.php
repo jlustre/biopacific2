@@ -327,8 +327,8 @@
                             2</div>
                     </div>
                     <div>
-                        <p class="font-semibold text-gray-900">Background Authorization</p>
-                        <p class="text-sm text-gray-600">Authorize our background check process</p>
+                        <p class="font-semibold text-gray-900">Confidential Reference Check</p>
+                        <p class="text-sm text-gray-600">Authorize our confidential reference check process</p>
                     </div>
                 </div>
                 <div class="flex items-start gap-4">

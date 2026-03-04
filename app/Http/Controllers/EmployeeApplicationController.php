@@ -7,8 +7,8 @@ use App\Models\EmployeeChecklist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+// use Illuminate\Support\Facades\Log;
 
 class EmployeeApplicationController extends Controller
 {
@@ -87,21 +87,7 @@ class EmployeeApplicationController extends Controller
      */
     public function store(Request $request)
     {
-        // Debug logging
-        Log::info('Employee Application Submission', [
-            'user_id' => Auth::id(),
-            'has_drivers_license' => $request->input('has_drivers_license'),
-            'drivers_license_number' => $request->input('drivers_license_number'),
-            'drivers_license_state' => $request->input('drivers_license_state'),
-            'drivers_license_expiration' => $request->input('drivers_license_expiration'),
-            'action' => $request->input('action'),
-        ]);
 
-        // DEBUG: Log all incoming education fields
-        \Log::info('Incoming education fields', [
-            'all_inputs' => $request->all(),
-            'education_inputs' => array_filter($request->all(), function($k) { return strpos($k, 'education_') === 0; }, ARRAY_FILTER_USE_KEY)
-        ]);
         try {
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
@@ -220,7 +206,6 @@ class EmployeeApplicationController extends Controller
                         'degree' => $request->input("education_{$index}_{$entry}_degree"),
                         'major' => $request->input("education_{$index}_{$entry}_major"),
                     ];
-                    \Log::info('Education entry built', ['eduEntry' => $eduEntry]);
                     if ($eduEntry['school'] || $eduEntry['degree']) {
                         $education[] = $eduEntry;
                     }
@@ -249,7 +234,6 @@ class EmployeeApplicationController extends Controller
             }
             
             // Prepare application data
-            \Log::info('Final education array to be saved', ['education' => $education]);
             $applicationData = array_merge($validated, [
                 'user_id' => Auth::id(),
                 'position_id' => $validated['position_applied_for'],
@@ -271,7 +255,7 @@ class EmployeeApplicationController extends Controller
             // Update the EmployeeChecklist status if form is being submitted
             if ($action === 'submit') {
                 EmployeeChecklist::where('user_id', Auth::id())
-                    ->where('item_key', 'application_packet')
+                    ->where('item_key', 'application_form')
                     ->update(['status' => 'submitted']);
             }
 
@@ -281,7 +265,7 @@ class EmployeeApplicationController extends Controller
             if ($action === 'submit') {
                 return redirect()->back()->with('success', 'Application successfully submitted to hiring manager!');
             } else {
-                return redirect()->back()->with('success', 'Application packet saved successfully!');
+                return redirect()->back()->with('success', 'Application form saved successfully!');
             }
         } catch (\Exception $e) {
             DB::rollBack();

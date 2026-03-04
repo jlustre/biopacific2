@@ -47,6 +47,7 @@
             font-size: 10px;
             margin-top: 8px;
             margin-bottom: 0;
+            text-align: center;
         }
 
         .form-table {
@@ -406,28 +407,6 @@
                 </div>
             </td>
         </tr>
-    </table>
-
-    <table class="form-table" style="margin-bottom: 8px;">
-        <tr>
-            <td style="width: 100%;">
-                <span class="field-label">May We Contact Your Current Employer?</span>
-                <div class="value">
-                    <span class="inline-item">
-                        <span class="checkbox">{{ $application->contact_current_employer ? 'X' : '' }}</span> Yes
-                    </span>
-                    <span class="inline-item">
-                        <span class="checkbox">{{ $application->contact_current_employer === false ? 'X' : '' }}</span>
-                        No
-                    </span>
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    <!-- EMPLOYMENT COMPLIANCE SECTION -->
-    <div class="section-header">EMPLOYMENT COMPLIANCE</div>
-    <table class="form-table" style="margin-bottom: 2px;">
         <tr>
             <td style="width: 100%; padding: 3px;">
                 <p style="font-size: 9px; line-height: 1.3; margin-bottom: 4px;">
@@ -522,7 +501,7 @@
         </table>
 
         <!-- Work history description section -->
-        <div style="font-size: 9px; margin-bottom: 8px;">
+        <div style="font-size: 9px; margin-bottom: 8px; padding-top: 12px;">
             Use this space to describe any previous work history and or/detail particular job responsibilities listed
             above that you believe are important or should be considered. Include any additional information that you
             feel may be relevant to the job for which you are applying.
@@ -532,7 +511,7 @@
             $application->work_history_details ?? 'N/A' }}</div>
 
         <!-- Additional references section -->
-        <div style="font-size: 9px; margin-bottom: 8px;">
+        <div style="font-size: 9px; margin-bottom: 8px; padding-top: 12px;">
             List additional references, including address and telephone
         </div>
         <div class="value pb-4"
@@ -595,140 +574,81 @@
         <table class="form-table" style="font-size: 8px; margin-bottom: 8px;">
             <tr>
                 <td rowspan="2" style="width: 22%; font-weight: bold; text-align: center; vertical-align: middle;">Name
-                    and Address of School(s)
-                </td>
+                    and Address of School(s)</td>
                 <td colspan="2" style="width: 14%; font-weight: bold; text-align: center;">Dates Attended</td>
                 <td colspan="2" style="width: 8%; font-weight: bold; text-align: center;">Graduated</td>
                 <td rowspan="2" style="width: 14%; font-weight: bold; text-align: center; vertical-align: middle;">Type
-                    of Degree/Diploma Received or Expected
-                </td>
+                    of Degree/Diploma Received or Expected</td>
                 <td rowspan="2" style="width: 22%; font-weight: bold; text-align: center; vertical-align: middle;">
-                    Major/Minor
-                    Fields of Study</td>
+                    Major/Minor Fields of Study</td>
             </tr>
             <tr>
                 <td style="width: 7%; font-weight: bold; text-align: center;">From<br>Mo./Yr.</td>
                 <td style="width: 7%; font-weight: bold; text-align: center;">To<br>Mo./Yr.</td>
                 <td style="width: 4%; font-weight: bold; text-align: center;">Yes</td>
                 <td style="width: 4%; font-weight: bold; text-align: center;">No</td>
-
             </tr>
-            <!-- High School (Last Attended) -->
+            @php
+            $educationLevels = [
+            'High School (Last Attended)' => 'High School (Last Attended)',
+            'Colleges/Universities' => 'Colleges/Universities',
+            'Graduate School' => 'Graduate School',
+            'Other' => 'Other (Business, Technical, Secretarial, etc.)',
+            ];
+            $educationData = is_array($application->education) ? $application->education : [];
+            @endphp
+            @foreach ($educationLevels as $levelKey => $levelLabel)
             <tr>
-                <td style="font-weight: bold;" colspan="7">High School (Last Attended)</td>
+                <td style="font-weight: bold;" colspan="7">{{ $levelLabel }}</td>
             </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <!-- Colleges/Universities -->
-            <tr>
-                <td style="font-weight: bold;" colspan="7">Colleges/Universities</td>
-            </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <!-- Graduate School -->
-            <tr>
-                <td style="font-weight: bold;" colspan="7">Graduate School</td>
-            </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <!-- Other (Business, Technical, Secretarial, etc.) -->
-            <tr>
-                <td style="font-weight: bold;" colspan="7">Other (Business, Technical, Secretarial, etc.)</td>
-            </tr>
-            <tr class="h-24">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
+            @php
+            $entries = collect($educationData)->where('level', $levelKey)->values();
+            @endphp
+            @for ($i = 0; $i < 2; $i++) @php $edu=$entries->get($i); @endphp
+                <tr class="h-24">
+                    <td>{{ $edu['school'] ?? '' }}</td>
+                    <td>{{ $edu['date_from'] ?? '' }}</td>
+                    <td>{{ $edu['date_to'] ?? '' }}</td>
+                    <td style="text-align: center;">@if(($edu['graduated'] ?? '') === 'yes') X @endif</td>
+                    <td style="text-align: center;">@if(($edu['graduated'] ?? '') === 'no') X @endif</td>
+                    <td>{{ $edu['degree'] ?? '' }}</td>
+                    <td>{{ $edu['major'] ?? '' }}</td>
+                </tr>
+                @endfor
+                @endforeach
         </table>
 
         <!-- PROFESSIONAL AFFILIATIONS & LICENSES SECTION -->
         <div style="font-size: 9px; margin-bottom: 6px; margin-top: 12px;">
             Please list any professional affiliations or accreditations that have a direct bearing upon your
-            qualification
-            for the job for which you are applying. Include all licenses and certifications.
+            qualification for the job for which you are applying. Include all licenses and certifications.
         </div>
-        <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 8px;"></div>
+        <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 8px;">
+            <span style="font-size: 10px;">{{ $application->professional_affiliations ?? '' }}</span>
+        </div>
         <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 12px;"></div>
 
         <div style="font-size: 9px; margin-bottom: 6px;">
             Have you ever had your profession license or certification suspended, revoked or restricted?
             <span style="margin-left: 12px;"> <span
-                    style="border: 1px solid #000; width: 10px; height: 10px; display: inline-block; text-align: center;">&nbsp;</span>
-                Yes</span>
+                    style="border: 1px solid #000; width: 10px; height: 10px; display: inline-block; text-align: center;">@if($application->license_suspended
+                    === true) X @endif</span> Yes</span>
             <span style="margin-left: 12px;"> <span
-                    style="border: 1px solid #000; width: 10px; height: 10px; display: inline-block; text-align: center;">&nbsp;</span>
-                No</span>
+                    style="border: 1px solid #000; width: 10px; height: 10px; display: inline-block; text-align: center;">@if($application->license_suspended
+                    === false) X @endif</span> No</span>
             <span style="margin-left: 12px;">If yes, please explain:</span>
         </div>
-        <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 8px;"></div>
+        <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 8px;">
+            <span style="font-size: 10px;">{{ $application->license_suspended_explanation ?? '' }}</span>
+        </div>
         <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 12px;"></div>
 
         <div style="font-size: 9px; margin-bottom: 6px;">
             Do you have any special skills or abilities that directly relate to the job for which you are applying?
         </div>
-        <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 8px;"></div>
+        <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 8px;">
+            <span style="font-size: 10px;">{{ $application->special_skills ?? '' }}</span>
+        </div>
         <div style="border-bottom: 1px solid #000; height: 18px; margin-bottom: 12px;"></div>
 
 </body>

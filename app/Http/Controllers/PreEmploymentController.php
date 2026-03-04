@@ -58,8 +58,8 @@ class PreEmploymentController extends Controller
         $user = Auth::user();
 
         $checklistDefaults = [
-            ['key' => 'application_packet', 'label' => 'Fill up Application Packet'],
-            ['key' => 'background_authorization', 'label' => 'Background Authorization'],
+            ['key' => 'application_form', 'label' => 'Application Form'],
+            ['key' => 'confidential_reference_check', 'label' => 'Confidential Reference Check'],
             ['key' => 'medical_exam', 'label' => 'Medical Examination'],
             ['key' => 'references', 'label' => 'Submit References'],
             ['key' => 'compliance_forms', 'label' => 'Compliance Forms'],

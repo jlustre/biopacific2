@@ -48,7 +48,7 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="border px-2 py-1">Application Packet</td>
+                            <td class="border px-2 py-1">Application Form</td>
                             <td class="border px-2 py-1"><input type="checkbox"></td>
                             <td class="border px-2 py-1"></td>
                             <td class="border px-2 py-1"></td>

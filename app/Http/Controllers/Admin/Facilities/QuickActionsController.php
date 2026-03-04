@@ -149,7 +149,7 @@ class QuickActionsController extends Controller
         }
 
         EmployeeChecklist::where('user_id', $application->user_id)
-            ->where('item_key', 'application_packet')
+            ->where('item_key', 'application_form')
             ->update($checklistUpdates);
 
         // Log the activity
@@ -175,7 +175,7 @@ class QuickActionsController extends Controller
             ->with('success', 'Application status updated to ' . ucfirst($status) . '.');
     }
 
-    public function createPreEmploymentPdf(Facility $facility, $application)
+    public function createPreEmploymentPdf(Request $request, Facility $facility, $application)
     {
         $this->authorizeFacilityAccess($facility);
 
@@ -183,9 +183,22 @@ class QuickActionsController extends Controller
         $applicantId = $application->user_id;
 
         $namePart = Str::slug(trim(($application->last_name ?? 'applicant') . '-' . ($application->first_name ?? '')));
-        $fileName = 'application_packet_' . $application->id . '_' . $namePart . '.pdf';
+        $defaultFileName = 'application_form_' . $application->id . '_' . $namePart . '.pdf';
+        $fileName = $request->input('file_name', $defaultFileName);
         $directory = 'documents/facility_' . $facility->id . '/applicant_' . ($applicantId ?? 'unknown');
         $filePath = $directory . '/' . $fileName;
+
+        $mode = $request->input('mode', 'view');
+
+        // Check for duplicate file name if saving
+        if ($mode === 'save') {
+            $existing = \App\Models\EmployeeDocument::where('facility_id', $facility->id)
+                ->where('file_name', $fileName)
+                ->first();
+            if ($existing) {
+                return back()->withErrors(['file_name' => 'A document with this file name already exists. Please update the file name or save as another version.'])->withInput();
+            }
+        }
 
         $pdf = Pdf::loadView('admin.facilities.application-form-pdf', [
             'facility' => $facility,
@@ -193,19 +206,21 @@ class QuickActionsController extends Controller
         ])->setPaper('letter');
 
         $content = $pdf->output();
-        Storage::disk('local')->put($filePath, $content);
 
-        EmployeeDocument::create([
-            'facility_id' => $facility->id,
-            'user_id' => $applicantId,
-            'pre_employment_application_id' => $application->id,
-            'document_type' => 'application_packet',
-            'file_name' => $fileName,
-            'file_path' => $filePath,
-            'mime_type' => 'application/pdf',
-            'file_size' => strlen($content),
-            'created_by' => Auth::id(),
-        ]);
+        if ($mode === 'save') {
+            Storage::disk('local')->put($filePath, $content);
+            \App\Models\EmployeeDocument::create([
+                'facility_id' => $facility->id,
+                'user_id' => $applicantId,
+                'pre_employment_application_id' => $application->id,
+                'document_type' => 'application_form',
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'mime_type' => 'application/pdf',
+                'file_size' => strlen($content),
+                'created_by' => Auth::id(),
+            ]);
+        }
 
         return response($content, 200)
             ->header('Content-Type', 'application/pdf')
@@ -215,7 +230,7 @@ class QuickActionsController extends Controller
     private function getFormLabel($formType): string
     {
         $labels = [
-            'application_packet' => 'Application Packet',
+            'application_form' => 'Application Form',
             'personal' => 'Personal Information',
             'position' => 'Position Desired',
             'drivers_license' => "Driver's License",
@@ -240,11 +255,11 @@ class QuickActionsController extends Controller
         return view('admin.facilities.employees', compact('facility'));
     }
 
-    public function attendance(Facility $facility)
-    {
-        $this->authorizeFacilityAccess($facility);
-        return view('admin.facilities.attendance', compact('facility'));
-    }
+    // public function attendance(Facility $facility)
+    // {
+    //     $this->authorizeFacilityAccess($facility);
+    //     return view('admin.facilities.attendance', compact('facility'));
+    // }
 
     public function documents(Facility $facility)
     {
@@ -252,10 +267,10 @@ class QuickActionsController extends Controller
         return view('admin.facilities.documents', compact('facility'));
     }
 
-    public function requests(Facility $facility)
+    public function reports(Facility $facility)
     {
         $this->authorizeFacilityAccess($facility);
-        return view('admin.facilities.requests', compact('facility'));
+        return view('admin.facilities.reports', compact('facility'));
     }
 
     public function downloadDocument(Facility $facility, EmployeeDocument $document)

@@ -39,7 +39,7 @@ echo "  Form Type: {$activity->form_type}\n";
 
 $activity->pre_employment_application_id = $preEmployment->id;
 if (empty($activity->form_type)) {
-    $activity->form_type = 'application_packet';
+    $activity->form_type = 'application_form';
 }
 $activity->save();
 

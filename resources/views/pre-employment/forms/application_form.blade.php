@@ -22,9 +22,19 @@
     </div>
 </div>
 
+@php
+$status = $status ?? 'draft';
+@endphp
+
 <form method="POST" action="{{ route('employee-application.store') }}" class="space-y-6" id="application-form"
     data-form-saved="true">
     @csrf
+
+    @if ($errors->has('education_from_to.invalid'))
+    <div class="alert alert-danger mb-3">
+        {{ $errors->first('education_from_to.invalid') }}
+    </div>
+    @endif
 
     <!-- PERSONAL INFORMATION -->
     <div id="personal-info">
@@ -1088,7 +1098,7 @@
                 Save Application Form
             </button>
 
-            <button type="submit" id="submit-btn" disabled
+            <button type="submit" id="submit-btn"
                 class="px-6 py-3 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 hover:disabled:bg-gray-400 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50 transition flex items-center gap-2">
                 <i class="fas fa-paper-plane"></i>
                 Submit to Hiring Manager
@@ -1119,13 +1129,24 @@
     const buttonContainer = document.getElementById('button-container');
     const submittedMessage = document.getElementById('submitted-message');
     const form = document.querySelector('form[action*="employee-application"]');
-    
-    console.log('Form elements found:', {
-        saveBtn: !!saveBtn,
-        submitBtn: !!submitBtn,
-        formAction: !!formAction,
-        form: !!form
-    });
+
+
+    // Disable submit button if there are validation errors
+    function checkForErrors() {
+        const errorAlerts = document.querySelectorAll('.alert-danger');
+        if (submitBtn) {
+            if (errorAlerts.length > 0) {
+                submitBtn.disabled = true;
+            } else {
+                submitBtn.disabled = false;
+            }
+        }
+    }
+    checkForErrors();
+
+    // Optionally, observe DOM changes to re-enable if errors are cleared
+    const observer = new MutationObserver(checkForErrors);
+    observer.observe(document.body, { childList: true, subtree: true });
 
     // ===== FORM STATE MANAGEMENT =====
     // Track if form has been saved at least once in this session

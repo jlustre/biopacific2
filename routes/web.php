@@ -51,6 +51,9 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/job-descriptions/by-position/{position}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'getJobDescriptionsByPosition']);
 });
 
+// Confidential Reference Check routes
+Route::resource('confidential-reference-checks', App\Http\Controllers\ConfidentialReferenceCheckController::class);
+
 // Allow public access for AJAX department/position select
 Route::get('/admin/positions/all', function() {
     return \App\Models\Position::join('departments', 'positions.department_id', '=', 'departments.id')
@@ -104,15 +107,15 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::post('/admin/facility/{facility}/job-openings/template/update', [\App\Http\Controllers\Admin\JobOpeningController::class, 'updateTemplateViaForm'])->name('admin.facility.job_openings.template.update');
     Route::get('/admin/facility/{facility}/hiring', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'hiring'])->name('admin.facility.hiring');
     Route::get('/admin/facility/{facility}/pre-employment/{application}', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reviewPreEmployment'])->name('admin.facility.pre-employment.review');
-    Route::get('/admin/facility/{facility}/pre-employment/{application}/pdf', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'createPreEmploymentPdf'])->name('admin.facility.pre-employment.pdf');
+    Route::match(['get', 'post'], '/admin/facility/{facility}/pre-employment/{application}/pdf', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'createPreEmploymentPdf'])->name('admin.facility.pre-employment.pdf');
     Route::post('/admin/facility/{facility}/pre-employment/{application}/status', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'updatePreEmploymentStatus'])->name('admin.facility.pre-employment.status');
     Route::get('/admin/facility/{facility}/document/{document}/download', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'downloadDocument'])->name('admin.facility.document.download');
     Route::delete('/admin/facility/{facility}/document/{document}', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'deleteDocument'])->name('admin.facility.document.delete');
     Route::get('/admin/facility/{facility}/termination', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'termination'])->name('admin.facility.termination');
     Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'employees'])->name('admin.facility.employees');
-    Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
+    // Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
-    Route::get('/admin/facility/{facility}/requests', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'requests'])->name('admin.facility.requests');
+    Route::get('/admin/facility/{facility}/reports', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reports'])->name('admin.facility.reports');
 });
 // Root route: show landing page (welcome)
 Route::get('/', function () {

@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="flex flex-col gap-8" x-data="{ 
-    activeItem: localStorage.getItem('pre_employment_active_item') || @if(session('success') || $errors->any()) 'application_packet' @else null @endif 
+    activeItem: localStorage.getItem('pre_employment_active_item') || @if(session('success') || $errors->any()) 'application_form' @else null @endif 
 }" x-init="$watch('activeItem', value => { 
     if (value) localStorage.setItem('pre_employment_active_item', value); 
     else localStorage.removeItem('pre_employment_active_item'); 
@@ -257,7 +257,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                                     <i class="fas fa-file-alt mr-1"></i>
                                     @php
                                     $formLabels = [
-                                    'application_packet' => 'Application Packet',
+                                    'application_form' => 'Application Form',
                                     'personal' => 'Personal Information',
                                     'position' => 'Position Desired',
                                     'drivers_license' => "Driver's License",
@@ -310,52 +310,98 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                 @endif
 
                 <!-- Form Content -->
-                @if($item->item_key === 'application_packet')
+                @if($item->item_key === 'application_form')
                 <!-- Employment Application Form -->
                 @php
                 $formStatus = $preEmployment?->status ?? $item->status ?? 'draft';
                 @endphp
-                @include('pre-employment.forms.application_packet', ['employee' => $employee, 'preEmployment' =>
-                $preEmployment, 'jobApplication' => $jobApplication, 'status' => $formStatus,
-                'positions' => $positions, 'selectedPositionId' => $selectedPositionId])
-                @else
-                <!-- Generic Notes Form -->
-                <form method="POST" action="{{ route('pre-employment.checklist.update', $item) }}">
-                    @csrf
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Notes / Documentation
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <textarea name="notes" rows="8"
-                                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500 transition"
-                                placeholder="Please provide any relevant information, documentation details, or upload confirmations here..."
-                                @if (!$isEditable) disabled @endif>{{ old('notes', $item->notes) }}</textarea>
-                            <p class="text-xs text-gray-500 mt-2">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Add detailed notes about this checklist item. Include any reference numbers, upload
-                                confirmations, or additional information.
-                            </p>
-                        </div>
+                @php
+                // Build $educationFields for the form
+                $educationLevels = [
+                0 => 'High School (Last Attended)',
+                1 => 'Colleges/Universities',
+                2 => 'Graduate School',
+                3 => 'Other (Business, Technical, Secretarial, etc.)',
+                ];
+                $educationFields = [];
+                if ($preEmployment && $preEmployment->education) {
+                $eduArr = is_array($preEmployment->education) ? $preEmployment->education : [];
+                foreach ($educationLevels as $key => $label) {
+                $normalizedLevel = ($label === 'Other (Business, Technical, Secretarial, etc.)') ? 'Other' : $label;
+                $entries = array_values(array_filter($eduArr, function($e) use ($normalizedLevel) {
+                return isset($e['level']) && $e['level'] === $normalizedLevel;
+                }));
+                for ($entry = 1; $entry <= 2; $entry++) { $educationFields[$key][$entry]=isset($entries[$entry-1]) ?
+                    $entries[$entry-1] : [ 'school'=> '',
+                    'date_from' => '',
+                    'date_to' => '',
+                    'graduated' => '',
+                    'degree' => '',
+                    'major' => '',
+                    ];
+                    }
+                    }
+                    } else {
+                    foreach ($educationLevels as $key => $label) {
+                    for ($entry = 1; $entry <= 2; $entry++) { $educationFields[$key][$entry]=[ 'school'=> '',
+                        'date_from' => '',
+                        'date_to' => '',
+                        'graduated' => '',
+                        'degree' => '',
+                        'major' => '',
+                        ];
+                        }
+                        }
+                        }
+                        @endphp
+                        @include('pre-employment.forms.application_form', [
+                        'employee' => $employee,
+                        'preEmployment' => $preEmployment,
+                        'jobApplication' => $jobApplication,
+                        'status' => $formStatus,
+                        'positions' => $positions,
+                        'selectedPositionId' => $selectedPositionId,
+                        'educationFields' => $educationFields
+                        ])
+                        @else
+                        <!-- Generic Notes Form -->
+                        <form method="POST" action="{{ route('pre-employment.checklist.update', $item) }}">
+                            @csrf
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Notes / Documentation
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <textarea name="notes" rows="8"
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500 transition"
+                                        placeholder="Please provide any relevant information, documentation details, or upload confirmations here..."
+                                        @if (!$isEditable) disabled @endif>{{ old('notes', $item->notes) }}</textarea>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Add detailed notes about this checklist item. Include any reference numbers,
+                                        upload
+                                        confirmations, or additional information.
+                                    </p>
+                                </div>
 
-                        @if ($isEditable)
-                        <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                            <button type="submit" name="action" value="save"
-                                class="px-6 py-3 rounded-lg text-sm font-semibold border-2 border-teal-600 text-teal-700 hover:bg-teal-50 transition flex items-center gap-2 cursor-pointer">
-                                <i class="fas fa-save"></i>
-                                Save Draft
-                            </button>
-                            <button type="submit" name="action" value="submit"
-                                class="px-6 py-3 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 transition flex items-center gap-2 cursor-pointer">
-                                <i class="fas fa-paper-plane"></i>
-                                Submit for Review
-                            </button>
-                        </div>
+                                @if ($isEditable)
+                                <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                                    <button type="submit" name="action" value="save"
+                                        class="px-6 py-3 rounded-lg text-sm font-semibold border-2 border-teal-600 text-teal-700 hover:bg-teal-50 transition flex items-center gap-2 cursor-pointer">
+                                        <i class="fas fa-save"></i>
+                                        Save Draft
+                                    </button>
+                                    <button type="submit" name="action" value="submit"
+                                        class="px-6 py-3 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 transition flex items-center gap-2 cursor-pointer">
+                                        <i class="fas fa-paper-plane"></i>
+                                        Submit for Review
+                                    </button>
+                                </div>
+                                @endif
+                            </div>
+                        </form>
                         @endif
-                    </div>
-                </form>
-                @endif
             </div>
             @endforeach
 

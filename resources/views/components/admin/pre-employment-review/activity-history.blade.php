@@ -9,7 +9,7 @@ $activities = \App\Models\HiringActivityLog::where('pre_employment_application_i
 ->get();
 
 $formLabels = [
-'application_packet' => 'Application Packet',
+'application_form' => 'Application Form',
 'personal' => 'Personal Information',
 'position' => 'Position Desired',
 'drivers_license' => "Driver's License",

@@ -37,20 +37,20 @@
             <i class="fas fa-users text-3xl text-green-600 mb-2"></i>
             <span class="font-semibold text-lg text-green-800">Employees</span>
         </a>
-        <a href="{{ route('admin.facility.attendance', ['facility' => $facility->id]) }}"
+        {{-- <a href="{{ route('admin.facility.attendance', ['facility' => $facility->id]) }}"
             class="flex flex-col items-center justify-center bg-yellow-50 hover:bg-yellow-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-calendar-check text-3xl text-yellow-600 mb-2"></i>
             <span class="font-semibold text-lg text-yellow-800">Attendance</span>
-        </a>
+        </a> --}}
         <a href="{{ route('admin.facility.documents', ['facility' => $facility->id]) }}"
             class="flex flex-col items-center justify-center bg-purple-50 hover:bg-purple-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-file-alt text-3xl text-purple-600 mb-2"></i>
             <span class="font-semibold text-lg text-purple-800">Documents</span>
         </a>
-        <a href="{{ route('admin.facility.requests', ['facility' => $facility->id]) }}"
+        <a href="{{ route('admin.facility.reports', ['facility' => $facility->id]) }}"
             class="flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-clipboard-list text-3xl text-pink-600 mb-2"></i>
-            <span class="font-semibold text-lg text-pink-800">Requests</span>
+            <span class="font-semibold text-lg text-pink-800">Reports</span>
         </a>
     </div>
 </div>

@@ -175,7 +175,7 @@
                                         2</div>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-900">Fill up Application Packet</p>
+                                    <p class="font-semibold text-gray-900">Application Form</p>
                                     <p class="text-sm text-gray-600">Complete your required application documents</p>
                                 </div>
                             </div>
@@ -186,7 +186,7 @@
                                         3</div>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-900">Background Authorization</p>
+                                    <p class="font-semibold text-gray-900">Confidential Reference Check</p>
                                     <p class="text-sm text-gray-600">Authorize our background check process</p>
                                 </div>
                             </div>

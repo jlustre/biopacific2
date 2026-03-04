@@ -2,7 +2,12 @@
 
 @section('content')
 @php
-$sections = [
+// Define collapsible forms and their sections
+$forms = [
+[
+'key' => 'application',
+'label' => 'Application Form',
+'sections' => [
 ['key' => 'personal', 'icon' => 'fas fa-user', 'label' => 'Personal Information'],
 ['key' => 'position', 'icon' => 'fas fa-briefcase', 'label' => 'Position Desired'],
 ['key' => 'drivers-license', 'icon' => 'fas fa-id-card', 'label' => "Driver's License"],
@@ -11,6 +16,39 @@ $sections = [
 ['key' => 'work-experience', 'icon' => 'fas fa-history', 'label' => 'Work Experience'],
 ['key' => 'education', 'icon' => 'fas fa-graduation-cap', 'label' => 'Education'],
 ['key' => 'addresses', 'icon' => 'fas fa-map-marker-alt', 'label' => 'Previous Addresses'],
+['key' => 'others', 'icon' => 'fas fa-ellipsis-h', 'label' => 'Others'],
+],
+],
+[
+'key' => 'confidential_reference',
+'label' => 'Confidential Reference Check',
+'sections' => [], // Add sections as needed
+],
+[
+'key' => 'license_verification',
+'label' => 'License or Certification Verification',
+'sections' => [],
+],
+[
+'key' => 'applicant_flow',
+'label' => 'Applicant Flow Data',
+'sections' => [],
+],
+[
+'key' => 'substance_abuse',
+'label' => 'Substance Abuse Policy',
+'sections' => [],
+],
+[
+'key' => 'applicant_disclosure',
+'label' => 'Applicant Disclosure',
+'sections' => [],
+],
+[
+'key' => 'notice_background',
+'label' => 'Notice For Background Checks',
+'sections' => [],
+],
 ];
 @endphp
 
@@ -20,15 +58,29 @@ $sections = [
     </x-slot:header>
 
     <x-slot:sidebar>
-        <h2 class="text-lg font-bold text-gray-900 mb-4">
-            <i class="fas fa-list mr-2"></i>Form Sections
-        </h2>
-        <nav class="space-y-2">
-            @foreach($sections as $section)
-            <x-admin.pre-employment-review.nav-item :section="$section['key']" :icon="$section['icon']"
-                :label="$section['label']" />
+        <div x-data="{ openForm: 'application' }">
+            @foreach($forms as $form)
+            <div class="mb-2">
+                <button type="button"
+                    @click="openForm === '{{ $form['key'] }}' ? openForm = null : openForm = '{{ $form['key'] }}'"
+                    class="w-full flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-gray-900 hover:bg-gray-100 transition"
+                    :class="{ 'bg-teal-50': openForm === '{{ $form['key'] }}' }">
+                    <i class="fas fa-folder mr-2"></i> {{ $form['label'] }}
+                    <i class="fas"
+                        :class="openForm === '{{ $form['key'] }}' ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                </button>
+                <div x-show="openForm === '{{ $form['key'] }}'" x-transition class="pl-4 mt-1">
+                    @foreach($form['sections'] as $section)
+                    <x-admin.pre-employment-review.nav-item :section="$section['key']" :icon="$section['icon']"
+                        :label="$section['label']" />
+                    @endforeach
+                    @if(empty($form['sections']))
+                    <div class="text-gray-500 text-xs italic px-2 py-1">No sections yet</div>
+                    @endif
+                </div>
+            </div>
             @endforeach
-        </nav>
+        </div>
     </x-slot:sidebar>
 
     <x-slot:actions>
@@ -58,6 +110,61 @@ $sections = [
             </div>
         </x-admin.pre-employment-review.section-card>
 
+        <x-admin.pre-employment-review.section-card section="others" icon="fas fa-ellipsis-h" title="Other Information">
+            @php
+            // Collect fields not shown in other sections
+            $shownKeys = [
+            'first_name','last_name','middle_name','phone_number','email','county','current_address','city','state','zip_code',
+            'position_applied_for','employment_type','shift_preference','date_available','wage_salary_expected','worked_here_before','worked_here_when_where','applied_here_before','applied_here_when_where','relatives_work_here','relatives_details',
+            'drivers_license_number','drivers_license_state','drivers_license_expiration','has_drivers_license',
+            'how_heard_about_us','how_heard_other',
+            'authorized_to_work_usa','contact_current_employer',
+            'work_experience','education','previous_addresses',
+            ];
+            @endphp
+            @php $otherFields = collect($application->getAttributes())->except($shownKeys)->filter(); @endphp
+            @if($otherFields->isNotEmpty())
+            @foreach($otherFields as $key => $value)
+            <div class="mb-2"><strong>{{ ucwords(str_replace('_', ' ', $key)) }}:</strong> {{ $value }}</div>
+            @endforeach
+            @else
+            <p class="text-gray-500">No other information found.</p>
+            @endif
+        </x-admin.pre-employment-review.section-card>
+        <x-admin.pre-employment-review.section-card section="addresses" icon="fas fa-map-marker-alt"
+            title="Previous Addresses">
+            @if($application->previous_addresses && !empty($application->previous_addresses))
+            <div class="space-y-4">
+                @foreach($application->previous_addresses as $address)
+                <x-admin.pre-employment-review.list-entry :title="$address['address'] ?? ($address['street'] ?? 'N/A')">
+                    @php
+                    $ordered = [
+                    'address' => 'Address',
+                    'city' => 'City',
+                    'state' => 'State',
+                    'zip' => 'Zip',
+                    'county' => 'County',
+                    'phone' => 'Phone',
+                    ];
+                    @endphp
+                    @foreach($ordered as $key => $label)
+                    @if(!empty($address[$key]))
+                    <div><strong>{{ $label }}:</strong> {{ $address[$key] }}</div>
+                    @endif
+                    @endforeach
+                    {{-- Display any additional fields not in the standard order --}}
+                    @foreach($address as $key => $value)
+                    @if(!array_key_exists($key, $ordered) && !empty($value))
+                    <div><strong>{{ ucwords(str_replace('_', ' ', $key)) }}:</strong> {{ $value }}</div>
+                    @endif
+                    @endforeach
+                </x-admin.pre-employment-review.list-entry>
+                @endforeach
+            </div>
+            @else
+            <p class="text-gray-500">No previous addresses found.</p>
+            @endif
+        </x-admin.pre-employment-review.section-card>
         <x-admin.pre-employment-review.section-card section="position" icon="fas fa-briefcase" title="Position Desired">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <x-admin.pre-employment-review.field label="Position Applied For"
@@ -176,8 +283,6 @@ $sections = [
         </x-admin.pre-employment-review.section-card>
 
         <x-admin.pre-employment-review.section-card section="education" icon="fas fa-graduation-cap" title="Education">
-            {{-- DEBUG: Dump the education array to diagnose why it is empty --}}
-            <pre class="bg-yellow-100 text-xs p-2 rounded mb-4">@php var_dump($application->education); @endphp</pre>
             @if($application->education && !empty($application->education))
             <div class="space-y-4">
                 @foreach($application->education as $education)
