@@ -100,12 +100,12 @@
                                 $jobAppStatus =
                                 optional(App\Models\JobApplication::find(request('job_application_id')))->status;
                                 @endphp
-                                @if($jobAppStatus === 'pre-employment')
+                                @if($jobAppStatus === 'pre-employment' || $jobAppStatus === 'reviewed')
                                 <a href="{{ route('admin.email-templates.show', ['email_template' => $template, 'reply_to' => request('reply_to'), 'job_application_id' => request('job_application_id'), 'applicant_name' => request('applicant_name')]) }}"
                                     class="text-green-600 hover:text-green-900 font-semibold">Use for Reply</a>
                                 @else
                                 <span class="text-gray-400 font-semibold cursor-not-allowed"
-                                    title="Status must be pre-employment">Use for Reply</span>
+                                    title="Status must be reviewed or pre-employment">Use for Reply</span>
                                 @endif
                                 @else
                                 <a href="{{ route('admin.email-templates.show', $template) }}"

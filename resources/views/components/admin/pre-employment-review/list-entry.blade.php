@@ -16,4 +16,9 @@
     @if(filled($line3))
     <p class="text-gray-600 text-sm">{{ $line3 }}</p>
     @endif
+    @if (isset($slot) && trim($slot))
+    <div class="mt-2">
+        {{ $slot }}
+    </div>
+    @endif
 </div>

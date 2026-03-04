@@ -109,6 +109,7 @@
                     <!-- Modal Header -->
                     <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-8 py-6 rounded-t-2xl">
                         <div class="flex items-center justify-between">
+
                             <div class="flex items-center space-x-3">
                                 <div
                                     class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -116,7 +117,8 @@
                                 </div>
                                 <div>
                                     <h3 class="text-xl font-bold">Add New Testimonial</h3>
-                                    <p class="text-teal-100 text-sm">Share a positive experience about our facility</p>
+                                    <p class="text-teal-100 text-sm">Share a positive experience about our facility
+                                    </p>
                                 </div>
                             </div>
                             <button id="closeModalBtn"
@@ -145,7 +147,7 @@
                                             class="text-red-500">*</span></label>
                                     <input type="text" id="authorName" name="name" required
                                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
-                                        placeholder="Enter the full name of the person giving the testimonial">
+                                        placeholder="Enter the full name of the person giving the testimonial" />
                                 </div>
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                                     <div>
@@ -219,7 +221,7 @@
                                         Title/Header</label>
                                     <input type="text" id="testimonialTitleHeader" name="title_header"
                                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
-                                        placeholder="e.g. A Journey of Healing, Exceptional Care Experience">
+                                        placeholder="e.g. A Journey of Healing, Exceptional Care Experience" />
                                     <p class="text-xs text-gray-500 mt-2">Optional: Short headline for this testimonial
                                     </p>
                                 </div>
@@ -254,8 +256,8 @@
                                 <textarea id="testimonialText" name="quote" rows="6" required
                                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-3 focus:ring-teal-200 focus:border-teal-500 transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none"
                                     placeholder="Write the testimonial content here. Share the positive experience and what made our facility special..."></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Minimum 20 characters recommended for a
-                                    meaningful testimonial</p>
+                                <p class="text-xs text-gray-500 mt-2">Minimum 20 characters recommended for a meaningful
+                                    testimonial</p>
                             </div>
                             <div>
                                 <label for="testimonialStory"
@@ -268,91 +270,90 @@
                                     testimonial experience</p>
                             </div>
                         </div>
-                </div>
-                <!-- Options Section -->
-                <div class="mb-8">
-                    <div class="flex items-center mb-4">
-                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                            <i class="fas fa-cog text-purple-600"></i>
-                        </div>
-                        <h4 class="text-lg font-semibold text-gray-800">Display Options</h4>
-                    </div>
-                    <div class="bg-gray-50 rounded-xl p-5">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label
-                                class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-teal-300 cursor-pointer transition-all duration-200">
-                                <input type="checkbox" id="isActive" name="is_active" checked
-                                    class="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500 focus:ring-2">
-                                <div class="ml-3">
-                                    <div class="text-sm font-semibold text-gray-700">Active</div>
-                                    <div class="text-xs text-gray-500">Visible on website</div>
+                        <!-- Options Section -->
+                        <div class="mb-8">
+                            <div class="flex items-center mb-4">
+                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-cog text-purple-600"></i>
                                 </div>
-                            </label>
-                            <label
-                                class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-yellow-300 cursor-pointer transition-all duration-200">
-                                <input type="checkbox" id="isFeatured" name="is_featured"
-                                    class="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 focus:ring-2">
-                                <div class="ml-3">
-                                    <div class="text-sm font-semibold text-gray-700">Featured</div>
-                                    <div class="text-xs text-gray-500">Highlighted testimonial</div>
+                                <h4 class="text-lg font-semibold text-gray-800">Display Options</h4>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-5">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <label
+                                        class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-teal-300 cursor-pointer transition-all duration-200">
+                                        <input type="checkbox" id="isActive" name="is_active" checked
+                                            class="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500 focus:ring-2">
+                                        <div class="ml-3">
+                                            <div class="text-sm font-semibold text-gray-700">Active</div>
+                                            <div class="text-xs text-gray-500">Visible on website</div>
+                                        </div>
+                                    </label>
+                                    <label
+                                        class="flex items-center p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-yellow-300 cursor-pointer transition-all duration-200">
+                                        <input type="checkbox" id="isFeatured" name="is_featured"
+                                            class="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 focus:ring-2">
+                                        <div class="ml-3">
+                                            <div class="text-sm font-semibold text-gray-700">Featured</div>
+                                            <div class="text-xs text-gray-500">Highlighted testimonial</div>
+                                        </div>
+                                    </label>
                                 </div>
-                            </label>
-                        </div>
-                    </div>
-                    <!-- Avatar Upload Section (moved below checkboxes) -->
-                    <div class="mt-6">
-                        <div class="flex items-center mb-4">
-                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-image text-blue-600"></i>
                             </div>
-                            <h4 class="text-lg font-semibold text-gray-800">Avatar Photo</h4>
-                        </div>
-                        <div class="flex items-center space-x-6">
-                            <div>
-                                <div id="defaultAvatar"
-                                    class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border">
-                                    <i class="fas fa-user text-gray-400 text-3xl"></i>
+                            <!-- Avatar Upload Section (moved below checkboxes) -->
+                            <div class="mt-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-image text-blue-600"></i>
+                                    </div>
+                                    <h4 class="text-lg font-semibold text-gray-800">Avatar Photo</h4>
                                 </div>
-                                <img id="photoPreview" src="" alt="Avatar Preview"
-                                    class="w-16 h-16 rounded-full object-cover border hidden">
+                                <div class="flex items-center space-x-6">
+                                    <div>
+                                        <div id="defaultAvatar"
+                                            class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border">
+                                            <i class="fas fa-user text-gray-400 text-3xl"></i>
+                                        </div>
+                                        <img id="photoPreview" src="" alt="Avatar Preview"
+                                            class="w-16 h-16 rounded-full object-cover border hidden">
+                                    </div>
+                                    <div>
+                                        <input type="file" id="photo" name="photo" accept="image/*"
+                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                        <input type="hidden" id="currentPhotoUrl" name="photo_url" value="">
+                                        <p class="text-xs text-gray-500 mt-2">Upload a square image for best results.
+                                            Max size: 2MB.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <input type="file" id="photo" name="photo" accept="image/*"
-                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                <input type="hidden" id="currentPhotoUrl" name="photo_url" value="">
-                                <p class="text-xs text-gray-500 mt-2">Upload a square image for best results.
-                                    Max size: 2MB.
-                                </p>
+                        </div>
+                        <!-- Modal Footer -->
+                        <div class="bg-gray-50 px-8 py-6 rounded-b-2xl border-t border-gray-200">
+                            <div class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    All fields marked with <span class="text-red-500">*</span> are required
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button type="button" id="cancelModalBtn"
+                                        class="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold transition-all duration-200 flex items-center space-x-2">
+                                        <i class="fas fa-times"></i>
+                                        <span>Cancel</span>
+                                    </button>
+                                    <button type="submit" form="testimonialForm" id="submitButton"
+                                        class="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2">
+                                        <i class="fas fa-plus" id="submitIcon"></i>
+                                        <span id="submitText">Add Testimonial</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
-                <!-- Modal Footer -->
-                <div class="bg-gray-50 px-8 py-6 rounded-b-2xl border-t border-gray-200">
-                    <div class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
-                        <div class="text-sm text-gray-500">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            All fields marked with <span class="text-red-500">*</span> are required
-                        </div>
-                        <div class="flex space-x-3">
-                            <button type="button" id="cancelModalBtn"
-                                class="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold transition-all duration-200 flex items-center space-x-2">
-                                <i class="fas fa-times"></i>
-                                <span>Cancel</span>
-                            </button>
-                            <button type="submit" form="testimonialForm" id="submitButton"
-                                class="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2">
-                                <i class="fas fa-plus" id="submitIcon"></i>
-                                <span id="submitText">Add Testimonial</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                </form>
             </div>
         </div>
     </div>
-</div>
 </div>
 @endsection
 

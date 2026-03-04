@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class EmployeeApplicationController extends Controller
+{
     /**
      * Show the pre-employment application form, prefilled from job_applications if possible
      */
@@ -38,8 +39,48 @@ class EmployeeApplicationController extends Controller
             ];
         }
 
-        // Pass $prefill to the view for the form to use as default values
-        return view('pre-employment.application_form', compact('preEmployment', 'prefill'));
+        // Build educationFields[$key][$entry] for easy Blade repopulation
+        $educationLevels = [
+            0 => 'High School (Last Attended)',
+            1 => 'Colleges/Universities',
+            2 => 'Graduate School',
+            3 => 'Other (Business, Technical, Secretarial, etc.)',
+        ];
+        $educationFields = [];
+        if ($preEmployment && $preEmployment->education) {
+            $eduArr = is_array($preEmployment->education) ? $preEmployment->education : [];
+            foreach ($educationLevels as $key => $label) {
+                $normalizedLevel = $label === 'Other (Business, Technical, Secretarial, etc.)' ? 'Other' : $label;
+                $entries = array_values(array_filter($eduArr, function($e) use ($normalizedLevel) {
+                    return isset($e['level']) && $e['level'] === $normalizedLevel;
+                }));
+                for ($entry = 1; $entry <= 2; $entry++) {
+                    $educationFields[$key][$entry] = isset($entries[$entry-1]) ? $entries[$entry-1] : [
+                        'school' => '',
+                        'date_from' => '',
+                        'date_to' => '',
+                        'graduated' => '',
+                        'degree' => '',
+                        'major' => '',
+                    ];
+                }
+            }
+        } else {
+            foreach ($educationLevels as $key => $label) {
+                for ($entry = 1; $entry <= 2; $entry++) {
+                    $educationFields[$key][$entry] = [
+                        'school' => '',
+                        'date_from' => '',
+                        'date_to' => '',
+                        'graduated' => '',
+                        'degree' => '',
+                        'major' => '',
+                    ];
+                }
+            }
+        }
+
+        return view('pre-employment.application_form', compact('preEmployment', 'prefill', 'educationFields'));
     }
     /**
      * Store or update pre-employment application data
@@ -56,51 +97,61 @@ class EmployeeApplicationController extends Controller
             'action' => $request->input('action'),
         ]);
 
+        // DEBUG: Log all incoming education fields
+        \Log::info('Incoming education fields', [
+            'all_inputs' => $request->all(),
+            'education_inputs' => array_filter($request->all(), function($k) { return strpos($k, 'education_') === 0; }, ARRAY_FILTER_USE_KEY)
+        ]);
         try {
             $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'current_address' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone_number' => 'required|string|max:20',
-            'city' => 'required|string|max:100',
-            'state' => 'required|string|max:2',
-            'zip_code' => 'required|string|max:10',
-            'county' => 'nullable|string|max:100',
-            'position_applied_for' => 'required|exists:positions,id',
-            'shift_preference' => 'nullable|string',
-            'date_available' => 'nullable|date',
-            'wage_salary_expected' => 'nullable|string|max:100',
-            'worked_here_before' => 'boolean',
-            'worked_here_when_where' => 'nullable|required_if:worked_here_before,1|string',
-            'applied_here_before' => 'boolean',
-            'applied_here_when_where' => 'nullable|required_if:applied_here_before,1|string',
-            'relatives_work_here' => 'boolean',
-            'relatives_details' => 'nullable|required_if:relatives_work_here,1|string',
-            'has_drivers_license' => 'required|boolean',
-            'drivers_license_number' => 'nullable|required_if:has_drivers_license,1|string|max:50',
-            'drivers_license_state' => 'nullable|required_if:has_drivers_license,1|string|max:50',
-            'drivers_license_expiration' => 'nullable|required_if:has_drivers_license,1|date',
-            'how_heard_about_us' => 'nullable|string|max:255',
-            'how_heard_other' => 'nullable|required_if:how_heard_about_us,other|string|max:255',
-            'authorized_to_work_usa' => 'boolean',
-            'contact_current_employer' => 'nullable|boolean',
-            'work_history_description' => 'nullable|string',
-            'additional_references' => 'nullable|string',
-            'professional_affiliations' => 'nullable|string',
-            'license_suspended' => 'nullable|boolean',
-            'license_suspended_explanation' => 'nullable|string',
-            'special_skills' => 'nullable|string',
-            'action' => 'nullable|in:save,submit', // Track which button was clicked
-        ], [
-            'worked_here_when_where.required_if' => 'Please provide when and where you worked here previously.',
-            'relatives_details.required_if' => 'Please specify the name and relationship of your relatives who work for the company.',
-            'drivers_license_number.required_if' => 'Driver\'s license number is required when you have a valid driver\'s license.',
-            'drivers_license_state.required_if' => 'Driver\'s license state is required when you have a valid driver\'s license.',
-            'drivers_license_expiration.required_if' => 'Driver\'s license expiration date is required when you have a valid driver\'s license.',
-            'how_heard_other.required_if' => 'Please specify how you heard about us if you selected Other.',
-        ]);
+                'first_name' => 'required|string|max:255',
+                'middle_name' => 'nullable|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'current_address' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'phone_number' => 'required|string|max:20',
+                'city' => 'required|string|max:100',
+                'state' => 'required|string|max:2',
+                'zip_code' => 'required|string|max:10',
+                'county' => 'nullable|string|max:100',
+                'position_applied_for' => 'required|exists:positions,id',
+                'employment_type' => 'required|string|in:full_time,part_time,temporary,other',
+                'employment_type_other' => 'nullable|string|max:100',
+                'shift_preference' => 'nullable|string',
+                'date_available' => 'nullable|date',
+                'wage_salary_expected' => 'nullable|string|max:100',
+                'worked_here_before' => 'boolean',
+                'worked_here_when_where' => 'nullable|required_if:worked_here_before,1|string',
+                'applied_here_before' => 'boolean',
+                'applied_here_when_where' => 'nullable|required_if:applied_here_before,1|string',
+                'relatives_work_here' => 'boolean',
+                'relatives_details' => 'nullable|required_if:relatives_work_here,1|string',
+                'has_drivers_license' => 'required|boolean',
+                'drivers_license_number' => 'nullable|required_if:has_drivers_license,1|string|max:50',
+                'drivers_license_state' => 'nullable|required_if:has_drivers_license,1|string|max:50',
+                'drivers_license_expiration' => 'nullable|required_if:has_drivers_license,1|date',
+                'how_heard_about_us' => 'nullable|string|max:255',
+                'how_heard_other' => 'nullable|required_if:how_heard_about_us,other|string|max:255',
+                'authorized_to_work_usa' => 'boolean',
+                'contact_current_employer' => 'nullable|boolean',
+                'work_history_description' => 'nullable|string',
+                'additional_references' => 'nullable|string',
+                'professional_affiliations' => 'nullable|string',
+                'license_suspended' => 'nullable|boolean',
+                'license_suspended_explanation' => 'nullable|string',
+                'special_skills' => 'nullable|string',
+                'action' => 'nullable|in:save,submit', // Track which button was clicked
+            ], [
+                'employment_type.required' => 'Please select an employment type.',
+                'employment_type.in' => 'Invalid employment type selected.',
+                'employment_type_other.max' => 'Other employment type must be less than 100 characters.',
+                'worked_here_when_where.required_if' => 'Please provide when and where you worked here previously.',
+                'relatives_details.required_if' => 'Please specify the name and relationship of your relatives who work for the company.',
+                'drivers_license_number.required_if' => 'Driver\'s license number is required when you have a valid driver\'s license.',
+                'drivers_license_state.required_if' => 'Driver\'s license state is required when you have a valid driver\'s license.',
+                'drivers_license_expiration.required_if' => 'Driver\'s license expiration date is required when you have a valid driver\'s license.',
+                'how_heard_other.required_if' => 'Please specify how you heard about us if you selected Other.',
+            ]);
         } catch (ValidationException $e) {
             Log::warning('Validation failed for employee application', [
                 'user_id' => Auth::id(),
@@ -150,11 +201,18 @@ class EmployeeApplicationController extends Controller
 
             // Collect education entries
             $education = [];
-            $educationLevels = ['High School (Last Attended)', 'Colleges/Universities', 'Graduate School', 'Other'];
+            $educationLevels = [
+                'High School (Last Attended)',
+                'Colleges/Universities',
+                'Graduate School',
+                'Other (Business, Technical, Secretarial, etc.)'
+            ];
             foreach ($educationLevels as $index => $level) {
+                // Normalize 'Other (Business, Technical, Secretarial, etc.)' to 'Other' for saving
+                $normalizedLevel = ($level === 'Other (Business, Technical, Secretarial, etc.)') ? 'Other' : $level;
                 for ($entry = 1; $entry <= 2; $entry++) {
                     $eduEntry = [
-                        'level' => $level,
+                        'level' => $normalizedLevel,
                         'school' => $request->input("education_{$index}_{$entry}_school"),
                         'date_from' => $request->input("education_{$index}_{$entry}_from"),
                         'date_to' => $request->input("education_{$index}_{$entry}_to"),
@@ -162,6 +220,7 @@ class EmployeeApplicationController extends Controller
                         'degree' => $request->input("education_{$index}_{$entry}_degree"),
                         'major' => $request->input("education_{$index}_{$entry}_major"),
                     ];
+                    \Log::info('Education entry built', ['eduEntry' => $eduEntry]);
                     if ($eduEntry['school'] || $eduEntry['degree']) {
                         $education[] = $eduEntry;
                     }
@@ -190,10 +249,13 @@ class EmployeeApplicationController extends Controller
             }
             
             // Prepare application data
+            \Log::info('Final education array to be saved', ['education' => $education]);
             $applicationData = array_merge($validated, [
                 'user_id' => Auth::id(),
                 'position_id' => $validated['position_applied_for'],
                 'position_applied_for' => $position ? $position->title : 'Unknown Position',
+                'employment_type' => $validated['employment_type'],
+                'employment_type_other' => $validated['employment_type_other'] ?? null,
                 'work_experience' => !empty($workExperience) ? $workExperience : null,
                 'previous_addresses' => !empty($previousAddresses) ? $previousAddresses : null,
                 'education' => !empty($education) ? $education : null,

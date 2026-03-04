@@ -1,4 +1,5 @@
 <?php
+use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\Password;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +12,7 @@ use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminPermissionController;
 use App\Http\Controllers\BaaRegistryController;
 use App\Http\Controllers\AdminRoleAssignmentController;
+
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventController;
@@ -24,7 +26,6 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\CareersApplicationsController;
-use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\NoticeOfPrivacyPracticesController;
 use App\Http\Controllers\TermsOfServiceController;
@@ -40,11 +41,6 @@ use App\Http\Controllers\EmployeeApplicationController;
 use App\Models\Facility;
 use App\Models\Position;
 
-// Admin Livewire fallback route (for relative update URIs on admin-prefixed pages)
-Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdate'])
-    ->middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])
-    ->where('any', '.*')
-    ->name('livewire.update.admin');
 
 // Job Description Template AJAX/CRUD routes
 Route::middleware(['auth'])->prefix('admin')->group(function () {
@@ -137,7 +133,7 @@ Route::get('/test-urls', function () {
 });
 
 // Services Management CRUD (Web Contents)
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('services', ServicesController::class);
 });
 
@@ -148,7 +144,7 @@ Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'ind
 
 
 // Admin Routes (auth + admin role)
-Route::prefix('admin')->middleware(['auth', 'role:admin|hrrd|facility-admin'])->name('admin.')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->name('admin.')->group(function () {
     // HR Portal Route removed from admin group; now only in HRRD-specific group above
     // Blog management (admin only, under web contents)
     Route::resource('blogs', BlogController::class)->names('blogs');
@@ -274,9 +270,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|hrrd|facility-admin'])->
     // Gallery image creation for a specific facility
     Route::get('/galleries/{facility}/create', [GalleryController::class, 'create'])->name('facilities.galleries.create');
 
-    // Gallery upload form and submission    Route::get('/gallery/upload', [GalleryController::class, 'showUploadForm'])->name('gallery.upload');
+    Route::get('/gallery/upload', [GalleryController::class, 'showUploadForm'])->name('gallery.upload');
     Route::post('/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload.submit');
-    Route::post('/facilities/{facility}/gallery/upload', [GalleryController::class, 'upload'])->name('admin.gallery.upload');
+    // Route::post('/facilities/{facility}/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
     Route::delete('/gallery/{image}', [GalleryController::class, 'delete'])->name('gallery.delete');
     // Move gallery image up/down
     Route::post('/gallery/{image}/move/{direction}', [GalleryController::class, 'move'])->name('gallery.move');
@@ -284,7 +280,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|hrrd|facility-admin'])->
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
 
     // Admin Facility Testimonials Management
-    Route::prefix('facilities')->group(function () {
+    Route::prefix('facilities')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->group(function () {
         Route::get('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'index'])->name('admin.facilities.testimonials.index');
         Route::get('/{facility}/testimonials/create', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'create'])->name('admin.facilities.testimonials.create');
         Route::post('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'store'])->name('admin.facilities.testimonials.store');
@@ -308,7 +304,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|hrrd|facility-admin'])->
     Route::get('/users/{user}/dashboard', [DashboardController::class, 'showUserDashboard'])->name('users.dashboard');
 
     // API endpoint for fetching a single testimonial (for edit modal)
-    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin'])->name('admin.facilities.testimonials.show');
+    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->name('admin.facilities.testimonials.show');
 
     // Security Monitoring Routes
     Route::prefix('security')->name('security.')->group(function () {
@@ -411,8 +407,12 @@ Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->nam
 // List job applications for a facility
 Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
 
-// Livewire fallback for admin-prefixed pages (guards against relative update URIs)
-// This must be outside the admin-only middleware group so facility-dsd and other roles can access it
+// ...existing code...
+
+// Place Livewire update routes at the very end to avoid being shadowed by catch-all routes
+Route::post('/livewire/update', [HandleRequests::class, 'handleUpdate'])
+    ->middleware(['web'])
+    ->name('livewire.update');
 Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdate'])
     ->middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])
     ->where('any', '.*')

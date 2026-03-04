@@ -15,6 +15,12 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{ session('error') }}
+    </div>
+    @endif
+
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
         <form id="filterForm" method="GET" action="{{ route('admin.job-applications.index') }}"
@@ -124,10 +130,17 @@
                                 A') }}</td>
                             <td class="px-6 py-4 text-sm font-medium">
                                 <div class="flex items-center space-x-3">
+                                    @if($application->status === 'pre-employment')
                                     <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $application->jobOpening->facility->id ?? $application->facility_id, 'application' => $application->id]) }}"
                                         class="text-indigo-600 hover:text-indigo-900">
                                         <i class="fas fa-eye mr-1"></i>View
                                     </a>
+                                    @else
+                                    <a href="{{ route('admin.job-applications.show', $application) }}"
+                                        class="text-indigo-600 hover:text-indigo-900">
+                                        <i class="fas fa-eye mr-1"></i>View
+                                    </a>
+                                    @endif
                                     <form action="{{ route('admin.job-applications.destroy', $application) }}"
                                         method="POST" class="inline">
                                         @csrf

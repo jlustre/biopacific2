@@ -41,7 +41,10 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
     </div>
     @endif
 
-    @if(isset($preEmployment) && $preEmployment->status !== 'pre-employment')
+    @php
+    $allowedStatuses = ['pre-employment', 'submitted', 'in-progress', 'completed', 'draft', 'returned'];
+    @endphp
+    @if(!session('success') && isset($preEmployment) && !in_array($preEmployment->status, $allowedStatuses))
     <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg mb-6">
         <div class="flex items-center">
             <i class="fas fa-ban text-red-400 text-2xl mr-3"></i>
@@ -68,6 +71,11 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
     @endif
 
     <!-- Progress Stats -->
+
+    @php
+    $draftCount = $checklistItems->where('status', 'draft')->count();
+    $returnedCount = $checklistItems->where('status', 'returned')->count();
+    @endphp
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between mb-2">
@@ -96,9 +104,10 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-300">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-bold text-gray-900">Draft / Returned</h3>
-                <span class="text-2xl font-bold text-gray-600">{{ $pendingCount }}</span>
+                <span class="text-2xl font-bold text-gray-600">{{ $draftCount }}<span class="mx-1">/</span>{{
+                    $returnedCount }}</span>
             </div>
-            <p class="text-sm text-gray-600">Items waiting for completion</p>
+            <p class="text-sm text-gray-600">Draft: {{ $draftCount }} | Returned: {{ $returnedCount }}</p>
         </div>
     </div>
 

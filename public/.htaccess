@@ -18,6 +18,15 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Deny access to .env and other sensitive files
+    RewriteRule \.env$ - [F,L]
+    RewriteRule ^(.*/)?\.git+ - [F,L]
+    RewriteRule ^(.*/)?\.env.* - [F,L]
+    RewriteRule ^(.*/)?\.ht(access|passwd) - [F,L]
+
+    # Deny access to composer files
+    RewriteRule ^composer\.(lock|json)$ - [F,L]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f

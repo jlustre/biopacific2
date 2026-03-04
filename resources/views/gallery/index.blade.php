@@ -4,15 +4,18 @@
 @php
 use Illuminate\Support\Facades\Auth;
 $user = Auth::user();
+
 $isAdmin = $isAdmin ?? ($user && $user->hasRole('admin'));
-$facilities = $facilities ?? ($isAdmin ? \App\Models\Facility::all() : ($user && $user->facility ?
+$isHrrd = $user && $user->hasRole('hrrd');
+$isFacilityAdmin = $user && ($user->hasRole('facility-admin') || $user->hasRole('facility-dsd'));
+$facilities = $facilities ?? ( ($isAdmin || $isHrrd) ? \App\Models\Facility::all() : ($user && $user->facility ?
 collect([$user->facility]) : collect()));
-$facilityId = $facilityId ?? ($isAdmin ? request('facility_id') : ($user && $user->facility ? $user->facility->id :
-null));
+$facilityId = $facilityId ?? ( ($isAdmin || $isHrrd) ? request('facility_id') : ($user && $user->facility ?
+$user->facility->id : null));
 @endphp
 <div class="container py-4">
     <h1 class="text-2xl font-bold mb-4">Gallery</h1>
-    @if($isAdmin)
+    @if($isAdmin || $isHrrd)
     <form method="GET" action="" class="mb-4">
         <label for="facility-select" class="block font-semibold mb-1">Select Facility</label>
         <select id="facility-select" name="facility_id" class="form-select w-full"
@@ -24,8 +27,13 @@ null));
             @endforeach
         </select>
     </form>
+    @elseif($isFacilityAdmin && $user && $user->facility)
+    <div class="mb-4">
+        <label class="block font-semibold mb-1">Facility</label>
+        <input type="text" class="form-input w-full bg-gray-100" value="{{ $user->facility->name }}" readonly>
+    </div>
     @endif
-    <a href="{{ route('gallery.upload') }}@if($facilityId)?facility_id={{ $facilityId }}@endif"
+    <a href="{{ route('admin.gallery.upload') }}@if($facilityId)?facility_id={{ $facilityId }}@endif"
         class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4 inline-block">Upload Image</a>
     @if(isset($images) && $images->count())
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

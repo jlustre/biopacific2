@@ -3,6 +3,11 @@
 @section('content')
 @php use Illuminate\Support\Facades\Log; Log::info('BLADE DEBUG: hiring.blade.php rendered', ['user_id' =>
 auth()->id()]); @endphp
+@if(session('error'))
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+    {{ session('error') }}
+</div>
+@endif
 <div class="container mx-auto py-8 px-4">
     <!-- Page Header -->
     <div class="mb-8">
@@ -90,6 +95,7 @@ auth()->id()]); @endphp
                                     </span>
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
+                                    @if($app->status === 'pre-employment')
                                     <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $facility->id, 'application' => $app->id]) }}"
                                         class="px-3 py-1.5 text-xs font-semibold bg-teal-600 text-white rounded hover:bg-teal-700 transition">
                                         Review
@@ -98,6 +104,16 @@ auth()->id()]); @endphp
                                         class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                                         Change Status
                                     </a>
+                                    @else
+                                    <a href="{{ route('admin.job-applications.show', $app->id) }}"
+                                        class="px-3 py-1.5 text-xs font-semibold bg-teal-600 text-white rounded hover:bg-teal-700 transition">
+                                        Review
+                                    </a>
+                                    <a href="{{ route('admin.job-applications.show', $app->id) }}"
+                                        class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                        Change Status
+                                    </a>
+                                    @endif
                                 </div>
                             </div>
                             @empty
@@ -186,7 +202,8 @@ auth()->id()]); @endphp
                                 <td class="px-6 py-4 text-sm text-gray-600">{{ $opening->posted_at?->format('M d, Y') ??
                                     'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm">
-                                    <a href="#" class="text-teal-600 hover:text-teal-700 font-semibold">View</a>
+                                    <a href="{{ route('admin.facility.job_openings.show', ['facility' => $facility->id, 'jobOpening' => $opening->id]) }}"
+                                        class="text-teal-600 hover:text-teal-700 font-semibold">View</a>
                                 </td>
                             </tr>
                             @empty

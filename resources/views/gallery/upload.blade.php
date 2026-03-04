@@ -28,7 +28,7 @@ $selectedFacility = $isAdmin ? null : ($user && $user->facility ? $user->facilit
     @if($isAdmin && !request('facility_id'))
     <div class="text-red-600 mb-4">Please select a facility to upload images.</div>
     @else
-    <form method="POST" action="{{ route('gallery.upload.submit') }}" enctype="multipart/form-data"
+    <form method="POST" action="{{ route('admin.gallery.upload.submit') }}" enctype="multipart/form-data"
         class="bg-white p-4 rounded shadow">
         @csrf
         <input type="hidden" name="facility_id" value="{{ $isAdmin ? request('facility_id') : $selectedFacility }}">

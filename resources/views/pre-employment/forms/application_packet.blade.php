@@ -64,28 +64,17 @@
                         Middle Name
                     </label>
                     <input type="text" name="middle_name"
-                        value="{{ old('middle_name', $preEmployment?->middle_name ?? '') }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        value="{{ old('middle_name', $preEmployment?->middle_name ?? $jobApplication?->middle_name ?? '') }}"
+                        class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('middle_name') border-red-500 @else border-gray-300 @enderror"
                         @if($status !=='draft' && $status !=='returned' ) disabled @endif>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 mt-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Phone Number <span class="text-red-500">*</span>
-                    </label>
-                    <input type="tel" name="phone_number"
-                        value="{{ old('phone_number', $preEmployment?->phone_number ?? $jobApplication?->phone ?? optional($employee?->currentPhone)->phone_number ?? '') }}"
-                        class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('phone_number') border-red-500 @else border-gray-300 @enderror"
-                        @if($status !=='draft' && $status !=='returned' ) disabled @endif>
-                    @error('phone_number')
+                    @error('middle_name')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-                <div>
+
+                <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Email Address <span class="text-red-500">*</span>
+                        Email <span class="text-red-500">*</span>
                     </label>
                     <input type="email" name="email"
                         value="{{ old('email', $preEmployment?->email ?? $jobApplication?->email ?? '') }}"
@@ -95,30 +84,48 @@
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 mt-4">
                 <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Phone Number <span class="text-red-500">*</span>
+                    </label>
+                    <input type="tel" name="phone_number"
+                        value="{{ old('phone_number', $preEmployment?->phone_number ?? $jobApplication?->phone_number ?? '') }}"
+                        class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('phone_number') border-red-500 @else border-gray-300 @enderror"
+                        @if($status !=='draft' && $status !=='returned' ) disabled @endif>
+                    @error('phone_number')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         Current Address <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="current_address"
-                        value="{{ old('current_address', $preEmployment?->current_address ?? optional($employee?->currentAddress)->current_address ?? '') }}"
+                        value="{{ old('current_address', $preEmployment?->current_address ?? $jobApplication?->current_address ?? '') }}"
                         class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('current_address') border-red-500 @else border-gray-300 @enderror"
                         @if($status !=='draft' && $status !=='returned' ) disabled @endif>
                     @error('current_address')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 mt-4 pb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        County <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="county"
+                        value="{{ old('county', $preEmployment?->county ?? $jobApplication?->county ?? '') }}"
+                        class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('county') border-red-500 @else border-gray-300 @enderror"
+                        @if($status !=='draft' && $status !=='returned' ) disabled @endif>
+                    @error('county')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         City <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="city"
-                        value="{{ old('city', $preEmployment?->city ?? optional($employee?->currentAddress)->city ?? '') }}"
+                        value="{{ old('city', $preEmployment?->city ?? $jobApplication?->city ?? '') }}"
                         class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('city') border-red-500 @else border-gray-300 @enderror"
                         @if($status !=='draft' && $status !=='returned' ) disabled @endif>
                     @error('city')
@@ -130,8 +137,7 @@
                         State <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="state"
-                        value="{{ old('state', $preEmployment?->state ?? optional($employee?->currentAddress)->state ?? '') }}"
-                        maxlength="2"
+                        value="{{ old('state', $preEmployment?->state ?? $jobApplication?->state ?? '') }}"
                         class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('state') border-red-500 @else border-gray-300 @enderror"
                         @if($status !=='draft' && $status !=='returned' ) disabled @endif>
                     @error('state')
@@ -143,21 +149,12 @@
                         Zip Code <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="zip_code"
-                        value="{{ old('zip_code', $preEmployment?->zip_code ?? optional($employee?->currentAddress)->zip_code ?? '') }}"
+                        value="{{ old('zip_code', $preEmployment?->zip_code ?? $jobApplication?->zip_code ?? '') }}"
                         class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 @error('zip_code') border-red-500 @else border-gray-300 @enderror"
                         @if($status !=='draft' && $status !=='returned' ) disabled @endif>
                     @error('zip_code')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        County
-                    </label>
-                    <input type="text" name="county"
-                        value="{{ old('county', $preEmployment?->county ?? optional($employee?->currentAddress)->county ?? '') }}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        @if($status !=='draft' && $status !=='returned' ) disabled @endif>
                 </div>
             </div>
         </div>
@@ -426,15 +423,6 @@
         </div>
     </div>
 
-    <!-- PREVIOUS EMPLOYMENT -->
-    {{-- <div id="previous-employment">
-        <button type="button" data-toggle-section="previous-employment"
-            class="w-full bg-gray-50 px-6 py-4 border-l-4 border-teal-600 mt-6 text-left hover:bg-gray-100 transition flex items-center justify-between cursor-pointer">
-            <h4 class="text-lg font-bold text-gray-900 uppercase">Previous Employment</h4>
-            <span class="section-toggle"><i class="fas fa-chevron-up"></i></span>
-        </button>
-
-    </div> --}}
 
     <!-- DRIVER'S LICENSE -->
     <div id="drivers-license">
@@ -904,6 +892,7 @@
     </div>
 
     <!-- RECORD OF EDUCATION -->
+
     <div id="record-education">
         <button type="button" data-toggle-section="record-education"
             class="w-full bg-gray-50 px-6 py-4 border-l-4 border-teal-600 mt-6 text-left hover:bg-gray-100 transition flex items-center justify-between cursor-pointer">
@@ -914,121 +903,111 @@
             <div class="px-6 py-4 space-y-6 pt-4">
                 @php
                 $educationLevels = [
-                'High School (Last Attended)',
-                'Colleges/Universities',
-                'Graduate School',
-                'Other (Business, Technical, Secretarial, etc.)',
+                0 => 'High School (Last Attended)',
+                1 => 'Colleges/Universities',
+                2 => 'Graduate School',
+                3 => 'Other (Business, Technical, Secretarial, etc.)',
                 ];
-
-                // Reorganize education data by level for easier form prefilling
-                $educationByLevel = [];
-                foreach ($educationLevels as $idx => $levelName) {
-                $educationByLevel[$idx] = [];
-                }
-
-                if ($preEmployment?->education) {
-                foreach ($preEmployment->education as $edu) {
-                $levelIndex = array_search($edu['level'], $educationLevels);
-                if ($levelIndex !== false) {
-                $educationByLevel[$levelIndex][] = $edu;
-                }
-                }
-                }
                 @endphp
-
-                @foreach($educationLevels as $index => $level)
-                <div class="border border-gray-300 rounded-md overflow-hidden">
-                    <div class="bg-gray-100 px-4 py-2 font-semibold text-sm text-gray-900 border-b border-gray-300">
-                        {{ $level }}
-                    </div>
-
-                    <div class="p-4 space-y-4">
-                        @for($entry = 1; $entry <= 2; $entry++) <div
-                            class="border-b border-gray-200 pb-4{{ $entry === 2 ? ' pb-0' : '' }}">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                                        Name and Address of School(s)
-                                    </label>
-                                    <textarea name="education_{{ $index }}_{{ $entry }}_school" rows="2"
-                                        class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
-                                        !=='draft' && $status !=='returned' ) disabled
-                                        @endif>{{ old("education_{$index}_{$entry}_school", $educationByLevel[$index][$entry-1]['school'] ?? '') }}</textarea>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                                        Dates Attended<br>From<br>Mo./Yr.
-                                    </label>
-                                    <input type="text" name="education_{{ $index }}_{{ $entry }}_from"
-                                        placeholder="Mo./Yr." value="{{ old(" education_{$index}_{$entry}_from",
-                                        $educationByLevel[$index][$entry-1]['date_from'] ?? '' ) }}"
-                                        class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
-                                        !=='draft' && $status !=='returned' ) disabled @endif>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                                        To<br>Mo./Yr.
-                                    </label>
-                                    <input type="text" name="education_{{ $index }}_{{ $entry }}_to"
-                                        placeholder="Mo./Yr." value="{{ old(" education_{$index}_{$entry}_to",
-                                        $educationByLevel[$index][$entry-1]['date_to'] ?? '' ) }}"
-                                        class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
-                                        !=='draft' && $status !=='returned' ) disabled @endif>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                                        Graduated<br><span class="text-xs">Yes / No</span>
-                                    </label>
-                                    <div class="flex gap-2 mt-2">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="education_{{ $index }}_{{ $entry }}_graduated"
-                                                value="yes" class="text-teal-600 focus:ring-teal-500" {{
-                                                old("education_{$index}_{$entry}_graduated",
-                                                $educationByLevel[$index][$entry-1]['graduated'] ?? '' )==='yes'
-                                                ? 'checked' : '' }} @if($status !=='draft' && $status !=='returned' )
-                                                disabled @endif>
-                                            <span class="ml-1 text-xs">Yes</span>
+                <div x-data="{ openAccordion: null }">
+                    @foreach($educationLevels as $key => $label)
+                    <div class="border border-gray-300 rounded-md overflow-hidden mb-2" x-data="{ open: false }">
+                        <button type="button"
+                            class="w-full bg-gray-100 px-4 py-2 font-semibold text-sm text-gray-900 border-b border-gray-300 flex items-center justify-between focus:outline-none"
+                            @click="open = !open">
+                            <span>{{ $label }}</span>
+                            <svg :class="{'rotate-180': open}" class="w-4 h-4 ml-2 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="p-4 space-y-4" x-show="open" x-transition>
+                            @for($entry = 1; $entry <= 2; $entry++) <div
+                                class="border-b border-gray-200 pb-4{{ $entry === 2 ? ' pb-0' : '' }}">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            Name and Address of School(s)
                                         </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="education_{{ $index }}_{{ $entry }}_graduated"
-                                                value="no" class="text-teal-600 focus:ring-teal-500" {{
-                                                old("education_{$index}_{$entry}_graduated",
-                                                $educationByLevel[$index][$entry-1]['graduated'] ?? '' )==='no'
-                                                ? 'checked' : '' }} @if($status !=='draft' && $status !=='returned' )
-                                                disabled @endif>
-                                            <span class="ml-1 text-xs">No</span>
+                                        <textarea name="education_{{ $key }}_{{ $entry }}_school" rows="2"
+                                            class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
+                                            !=='draft' && $status !=='returned' ) disabled
+                                            @endif>{{ old("education_{$key}_{$entry}_school", $educationFields[$key][$entry]['school'] ?? '') }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            Dates Attended<br>From<br>Mo./Yr.
                                         </label>
+                                        <input type="text" name="education_{{ $key }}_{{ $entry }}_from"
+                                            placeholder="Mo./Yr." value="{{ old(" education_{$key}_{$entry}_from",
+                                            $educationFields[$key][$entry]['date_from'] ?? '' ) }}"
+                                            class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
+                                            !=='draft' && $status !=='returned' ) disabled @endif>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            To<br>Mo./Yr.
+                                        </label>
+                                        <input type="text" name="education_{{ $key }}_{{ $entry }}_to"
+                                            placeholder="Mo./Yr." value="{{ old(" education_{$key}_{$entry}_to",
+                                            $educationFields[$key][$entry]['date_to'] ?? '' ) }}"
+                                            class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
+                                            !=='draft' && $status !=='returned' ) disabled @endif>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            Graduated<br><span class="text-xs">Yes / No</span>
+                                        </label>
+                                        <div class="flex gap-2 mt-2">
+                                            <label class="inline-flex items-center">
+                                                <input type="radio" name="education_{{ $key }}_{{ $entry }}_graduated"
+                                                    value="yes" class="text-teal-600 focus:ring-teal-500" {{
+                                                    old("education_{$key}_{$entry}_graduated",
+                                                    $educationFields[$key][$entry]['graduated'] ?? '' )==='yes'
+                                                    ? 'checked' : '' }} @if($status !=='draft' && $status !=='returned'
+                                                    ) disabled @endif>
+                                                <span class="ml-1 text-xs">Yes</span>
+                                            </label>
+                                            <label class="inline-flex items-center">
+                                                <input type="radio" name="education_{{ $key }}_{{ $entry }}_graduated"
+                                                    value="no" class="text-teal-600 focus:ring-teal-500" {{
+                                                    old("education_{$key}_{$entry}_graduated",
+                                                    $educationFields[$key][$entry]['graduated'] ?? '' )==='no'
+                                                    ? 'checked' : '' }} @if($status !=='draft' && $status !=='returned'
+                                                    ) disabled @endif>
+                                                <span class="ml-1 text-xs">No</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            Type of<br>Degree/Diploma<br>Received or<br>Expected
+                                        </label>
+                                        <input type="text" name="education_{{ $key }}_{{ $entry }}_degree"
+                                            value="{{ old(" education_{$key}_{$entry}_degree",
+                                            $educationFields[$key][$entry]['degree'] ?? '' ) }}"
+                                            class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
+                                            !=='draft' && $status !=='returned' ) disabled @endif>
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-700 mb-1">
-                                        Type of<br>Degree/Diploma<br>Received or<br>Expected
+                                        Major/Minor Fields of Study
                                     </label>
-                                    <input type="text" name="education_{{ $index }}_{{ $entry }}_degree" value="{{ old("
-                                        education_{$index}_{$entry}_degree",
-                                        $educationByLevel[$index][$entry-1]['degree'] ?? '' ) }}"
-                                        class="w-full px-2 py-2 border border-gray-300 rounded text-sm" @if($status
-                                        !=='draft' && $status !=='returned' ) disabled @endif>
+                                    <input type="text" name="education_{{ $key }}_{{ $entry }}_major" value="{{ old("
+                                        education_{$key}_{$entry}_major", $educationFields[$key][$entry]['major'] ?? ''
+                                        ) }}" class="w-full px-2 py-2 border border-gray-300 rounded text-sm"
+                                        @if($status !=='draft' && $status !=='returned' ) disabled @endif>
                                 </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">
-                                    Major/Minor Fields of Study
-                                </label>
-                                <input type="text" name="education_{{ $index }}_{{ $entry }}_major" value="{{ old("
-                                    education_{$index}_{$entry}_major", $educationByLevel[$index][$entry-1]['major']
-                                    ?? '' ) }}" class="w-full px-2 py-2 border border-gray-300 rounded text-sm"
-                                    @if($status !=='draft' && $status !=='returned' ) disabled @endif>
-                            </div>
+                        </div>
+                        @endfor
                     </div>
-                    @endfor
                 </div>
+                @endforeach
             </div>
-            @endforeach
         </div>
     </div>
     </div>

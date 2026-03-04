@@ -23,7 +23,7 @@ $formLabels = [
 
 <div class="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6" x-data="{
         sectionOpen: true,
-        sectionStorageKey: 'activity-history-section-{{ $application->id }}',
+        sectionStorageKey: '-section-{{ $application->id }}',
         openIndexes: [],
         storageKey: 'activity-history-{{ $application->id }}',
         init() {

@@ -93,27 +93,17 @@ class QuickActionsController extends Controller
         }
         try {
             $preApp = PreEmploymentApplication::find($application);
-            if (!$preApp) {
-                // ...existing code...
+            if ($preApp) {
+                $application = $preApp;
+            } else {
+                // If not a pre-employment record, treat as JobApplication for viewing only
                 $jobApp = \App\Models\JobApplication::find($application);
                 if ($jobApp) {
-                    // Create PreEmploymentApplication from JobApplication
-                    $preApp = PreEmploymentApplication::create([
-                        'user_id' => $jobApp->user_id,
-                        'first_name' => $jobApp->first_name,
-                        'last_name' => $jobApp->last_name,
-                        'email' => $jobApp->email,
-                        'phone_number' => $jobApp->phone ?? '',
-                        'position_applied_for' => $jobApp->jobOpening ? $jobApp->jobOpening->title : null,
-                        'status' => 'draft',
-                        // Add more fields as needed
-                    ]);
-                    // ...existing code...
+                    $application = $jobApp;
                 } else {
                     throw new \Exception('No query results for model [App\\Models\\PreEmploymentApplication] or [App\\Models\\JobApplication] ' . $application);
                 }
             }
-            $application = $preApp;
             // ...existing code...
         } catch (\Exception $e) {
             Log::error('REVIEW FINDORFAIL ERROR', ['error' => $e->getMessage(), 'application_param' => $application, 'user_id' => Auth::id()]);

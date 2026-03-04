@@ -8,7 +8,7 @@
         <div class="mb-2"><strong>Reporting To:</strong> {{ $jobOpening->reporting_to }}</div>
         <div class="mb-2"><strong>Status:</strong> {{ ucfirst($jobOpening->status) }}</div>
         <div class="mb-2"><strong>Description:</strong></div>
-        <div class="mb-2">{{ $jobOpening->description }}</div>
+        <div class="mb-2">{!! $jobOpening->description !!}</div>
         <div class="mb-2"><strong>Created By:</strong> {{ $jobOpening->created_by ? ($jobOpening->creator->name ??
             $jobOpening->created_by) : 'N/A' }}</div>
         <a href="{{ route('admin.facility.job_openings.edit', [$facility, $jobOpening]) }}"

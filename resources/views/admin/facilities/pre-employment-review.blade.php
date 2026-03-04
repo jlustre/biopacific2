@@ -6,6 +6,7 @@ $sections = [
 ['key' => 'personal', 'icon' => 'fas fa-user', 'label' => 'Personal Information'],
 ['key' => 'position', 'icon' => 'fas fa-briefcase', 'label' => 'Position Desired'],
 ['key' => 'drivers-license', 'icon' => 'fas fa-id-card', 'label' => "Driver's License"],
+['key' => 'referral-source', 'icon' => 'fas fa-bullhorn', 'label' => 'Referral Source'],
 ['key' => 'work-auth', 'icon' => 'fas fa-passport', 'label' => 'Work Authorization'],
 ['key' => 'work-experience', 'icon' => 'fas fa-history', 'label' => 'Work Experience'],
 ['key' => 'education', 'icon' => 'fas fa-graduation-cap', 'label' => 'Education'],
@@ -42,9 +43,13 @@ $sections = [
                 <x-admin.pre-employment-review.field label="Middle Name" :value="$application->middle_name" />
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <x-admin.pre-employment-review.field label="Email" :value="$application->email" />
                 <x-admin.pre-employment-review.field label="Phone Number" :value="$application->phone_number" />
-                <x-admin.pre-employment-review.field label="Current Address" :value="$application->current_address" />
+                <x-admin.pre-employment-review.field label="Email" :value="$application->email" class="md:col-span-2" />
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <x-admin.pre-employment-review.field label="County" :value="$application->county" />
+                <x-admin.pre-employment-review.field label="Current Address" :value="$application->current_address"
+                    class="md:col-span-2" />
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <x-admin.pre-employment-review.field label="City" :value="$application->city" />
@@ -100,6 +105,17 @@ $sections = [
             </div>
         </x-admin.pre-employment-review.section-card>
 
+        <x-admin.pre-employment-review.section-card section="referral-source" icon="fas fa-bullhorn"
+            title="Referral Source">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <x-admin.pre-employment-review.field label="How Did You Hear About Us?"
+                    :value="$application->how_heard_about_us" />
+                <x-admin.pre-employment-review.field label="If Other, please specify"
+                    :value="$application->how_heard_other" />
+            </div>
+        </x-admin.pre-employment-review.section-card>
+
+
         <x-admin.pre-employment-review.section-card section="work-auth" icon="fas fa-passport"
             title="Work Authorization">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -116,18 +132,42 @@ $sections = [
             <div class="space-y-4">
                 @foreach($application->work_experience as $experience)
                 @php
-                $title = $experience['position'] ?? $experience['start_position'] ?? null;
-                $line1 = $experience['company'] ?? $experience['employer'] ?? null;
-                $line2 = null;
-                if (!empty($experience['start_date']) || !empty($experience['end_date'])) {
-                $line2 = ($experience['start_date'] ?? 'N/A') . ' - ' . ($experience['end_date'] ?? 'Present');
-                } elseif (!empty($experience['dates'])) {
-                $line2 = $experience['dates'];
-                }
-                $line3 = $experience['end_position'] ?? null;
+                $startPosition = $experience['start_position'] ?? $experience['position'] ?? null;
+                $company = $experience['company'] ?? $experience['employer'] ?? null;
+                $from = $experience['start_date'] ?? null;
+                $to = $experience['end_date'] ?? null;
+                $dates = $from || $to ? (($from ?? 'N/A') . ' - ' . ($to ?? 'Present')) : ($experience['dates'] ??
+                null);
+                $endPosition = $experience['end_position'] ?? null;
+                $supervisor = $experience['supervisor'] ?? ($experience['supervisor_name_title'] ?? null);
+                $phone = $experience['phone'] ?? null;
+                $eligible = isset($experience['eligible_for_rehire']) ? ($experience['eligible_for_rehire'] ? 'Yes' :
+                'No') : null;
+                $reason = $experience['reason'] ?? ($experience['reason_for_leaving'] ?? null);
                 @endphp
-                <x-admin.pre-employment-review.list-entry :title="$title" :line1="$line1" :line2="$line2"
-                    :line3="$line3" />
+                <x-admin.pre-employment-review.list-entry :title="$company">
+                    @if($startPosition)
+                    <div><strong>Starting Position:</strong> {{ $startPosition }}</div>
+                    @endif
+                    @if($endPosition)
+                    <div><strong>Ending Position:</strong> {{ $endPosition }}</div>
+                    @endif
+                    @if($dates)
+                    <div><strong>From - To:</strong> {{ $dates }}</div>
+                    @endif
+                    @if($supervisor)
+                    <div><strong>Supervisor:</strong> {{ $supervisor }}</div>
+                    @endif
+                    @if($phone)
+                    <div><strong>Phone:</strong> {{ $phone }}</div>
+                    @endif
+                    @if($eligible !== null)
+                    <div><strong>Eligible for Rehire:</strong> {{ $eligible }}</div>
+                    @endif
+                    @if($reason)
+                    <div><strong>Reason for Leaving:</strong> {{ $reason }}</div>
+                    @endif
+                </x-admin.pre-employment-review.list-entry>
                 @endforeach
             </div>
             @else
@@ -136,30 +176,59 @@ $sections = [
         </x-admin.pre-employment-review.section-card>
 
         <x-admin.pre-employment-review.section-card section="education" icon="fas fa-graduation-cap" title="Education">
+            {{-- DEBUG: Dump the education array to diagnose why it is empty --}}
+            <pre class="bg-yellow-100 text-xs p-2 rounded mb-4">@php var_dump($application->education); @endphp</pre>
             @if($application->education && !empty($application->education))
             <div class="space-y-4">
                 @foreach($application->education as $education)
-                <x-admin.pre-employment-review.list-entry :title="$education['school'] ?? null"
-                    :line1="$education['level'] ?? null"
-                    :line2="($education['date_from'] ?? 'N/A') . ' - ' . ($education['date_to'] ?? 'N/A')" />
+                <x-admin.pre-employment-review.list-entry :title="$education['school'] ?? 'N/A'">
+                    @if(!empty($education['level']))
+                    <div><strong>Level:</strong> {{ $education['level'] }}</div>
+                    @endif
+                    @if(!empty($education['date_from']) || !empty($education['date_to']))
+                    <div><strong>From - To:</strong> {{ ($education['date_from'] ?? 'N/A') . ' - ' .
+                        ($education['date_to'] ?? 'N/A') }}</div>
+                    @endif
+                    @if(!empty($education['degree']))
+                    <div><strong>Degree:</strong> {{ $education['degree'] }}</div>
+                    @endif
+                    @if(!empty($education['major']))
+                    <div><strong>Major:</strong> {{ $education['major'] }}</div>
+                    @endif
+                    @if(!empty($education['honors']))
+                    <div><strong>Honors:</strong> {{ $education['honors'] }}</div>
+                    @endif
+                    @if(!empty($education['city']))
+                    <div><strong>City:</strong> {{ $education['city'] }}</div>
+                    @endif
+                    @if(!empty($education['state']))
+                    <div><strong>State:</strong> {{ $education['state'] }}</div>
+                    @endif
+                    @if(!empty($education['gpa']))
+                    <div><strong>GPA:</strong> {{ $education['gpa'] }}</div>
+                    @endif
+                    @if(!empty($education['notes']))
+                    <div><strong>Notes:</strong> {{ $education['notes'] }}</div>
+                    @endif
+                    @if(!empty($education['completed']))
+                    <div><strong>Completed:</strong> {{ $education['completed'] }}</div>
+                    @endif
+                    @if(!empty($education['country']))
+                    <div><strong>Country:</strong> {{ $education['country'] }}</div>
+                    @endif
+                    {{-- Display any additional fields dynamically --}}
+                    @foreach($education as $key => $value)
+                    @if(!in_array($key,
+                    ['school','level','date_from','date_to','degree','major','honors','city','state','gpa','notes','completed','country'])
+                    && !empty($value))
+                    <div><strong>{{ ucwords(str_replace('_', ' ', $key)) }}:</strong> {{ $value }}</div>
+                    @endif
+                    @endforeach
+                </x-admin.pre-employment-review.list-entry>
                 @endforeach
             </div>
             @else
             <p class="text-gray-500">No education entries found.</p>
-            @endif
-        </x-admin.pre-employment-review.section-card>
-
-        <x-admin.pre-employment-review.section-card section="addresses" icon="fas fa-map-marker-alt"
-            title="Previous Addresses">
-            @if($application->previous_addresses && !empty($application->previous_addresses))
-            <div class="space-y-4">
-                @foreach($application->previous_addresses as $address)
-                <x-admin.pre-employment-review.list-entry :title="$address['street'] ?? null"
-                    :line1="trim(($address['city'] ?? '') . ' ' . (($address['state'] ?? null) ? $address['state'] . ' ' : '') . ($address['zip_code'] ?? ''))" />
-                @endforeach
-            </div>
-            @else
-            <p class="text-gray-500">No previous addresses found.</p>
             @endif
         </x-admin.pre-employment-review.section-card>
 
