@@ -51,8 +51,15 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/job-descriptions/by-position/{position}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'getJobDescriptionsByPosition']);
 });
 
-// Confidential Reference Check routes
-Route::resource('confidential-reference-checks', App\Http\Controllers\ConfidentialReferenceCheckController::class);
+// // Confidential Reference Check routes
+// Route::resource('confidential-reference-checks', App\Http\Controllers\ConfidentialReferenceCheckController::class);
+// // Confidential Reference Check form submission
+// Route::post('/pre-employment/confidential-reference-check', [App\Http\Controllers\ConfidentialReferenceCheckController::class, 'storePublic'])->name('pre-employment.confidential-reference-check.submit');
+// // Confidential Reference Check public form (pre-employment)
+// Route::get('/pre-employment/confidential-reference-check', function() {
+//     return view('pre-employment.forms.reference_check');
+// })->name('pre-employment.confidential-reference-check');
+
 
 // Allow public access for AJAX department/position select
 Route::get('/admin/positions/all', function() {

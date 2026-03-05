@@ -44,6 +44,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
     @php
     $allowedStatuses = ['pre-employment', 'submitted', 'in-progress', 'completed', 'draft', 'returned'];
     @endphp
+
     @if(!session('success') && isset($preEmployment) && !in_array($preEmployment->status, $allowedStatuses))
     <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg mb-6">
         <div class="flex items-center">
@@ -314,8 +315,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                 <!-- Employment Application Form -->
                 @php
                 $formStatus = $preEmployment?->status ?? $item->status ?? 'draft';
-                @endphp
-                @php
+
                 // Build $educationFields for the form
                 $educationLevels = [
                 0 => 'High School (Last Attended)',
@@ -354,6 +354,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                         }
                         @endphp
+
                         @include('pre-employment.forms.application_form', [
                         'employee' => $employee,
                         'preEmployment' => $preEmployment,
@@ -363,6 +364,10 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                         'selectedPositionId' => $selectedPositionId,
                         'educationFields' => $educationFields
                         ])
+                        @elseif($item->item_key === 'reference_check')
+                        <!-- Confidential Reference Check Form -->
+                        @include('pre-employment.forms.reference_check', [])
+
                         @else
                         <!-- Generic Notes Form -->
                         <form method="POST" action="{{ route('pre-employment.checklist.update', $item) }}">

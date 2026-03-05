@@ -59,7 +59,7 @@ class PreEmploymentController extends Controller
 
         $checklistDefaults = [
             ['key' => 'application_form', 'label' => 'Application Form'],
-            ['key' => 'confidential_reference_check', 'label' => 'Confidential Reference Check'],
+            ['key' => 'reference_check', 'label' => 'Reference Check'],
             ['key' => 'medical_exam', 'label' => 'Medical Examination'],
             ['key' => 'references', 'label' => 'Submit References'],
             ['key' => 'compliance_forms', 'label' => 'Compliance Forms'],
