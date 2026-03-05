@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('confidential_reference_checks', function (Blueprint $table) {
+        Schema::create('reference_checks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
             $table->foreignId('facility_id')->nullable()->constrained();
@@ -19,6 +19,6 @@ return new class extends Migration {
 
     public function down()
     {
-        Schema::dropIfExists('confidential_reference_checks');
+        Schema::dropIfExists('reference_checks');
     }
 };

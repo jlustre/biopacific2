@@ -11,7 +11,65 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PreEmploymentController extends Controller
+
+    /**
+     * Save or update a Confidential Reference Check for the authenticated user.
+     */
+    public function saveReferenceCheck(Request $request, $id)
+    {
+        $user = Auth::user();
+        $referenceCheck = \App\Models\ConfidentialReferenceCheck::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'applicant_name' => 'required|string|max:255',
+            'position_applied_for' => 'required|string|max:255',
+            'employed_by' => 'nullable|string|max:255',
+            'supervisor' => 'required|string|max:255',
+            'reference_phone' => 'nullable|string|max:255',
+            'reference_email' => 'nullable|email|max:255',
+            'applicant_signature' => 'required|string|max:255',
+            'date' => 'required|date',
+            // Add other fields as needed
+        ]);
+
+        // Map validated fields to model
+        $referenceCheck->applicant_name = $validated['applicant_name'];
+        $referenceCheck->position_applied_for = $validated['position_applied_for'];
+        $referenceCheck->employed_by = $request->input('employed_by');
+        $referenceCheck->supervisor = $validated['supervisor'];
+        $referenceCheck->reference_phone = $request->input('reference_phone');
+        $referenceCheck->reference_email = $request->input('reference_email');
+        $referenceCheck->applicant_signature = $validated['applicant_signature'];
+        $referenceCheck->date = $validated['date'];
+        // Add other fields as needed
+
+        $referenceCheck->save();
+
+        return redirect()->route('pre-employment.portal')->with('success', 'Reference check saved.');
+    }
 {
+    /**
+     * Add a new blank Confidential Reference Check for the authenticated user.
+     */
+    public function addReferenceCheck(Request $request)
+    {
+        $user = $request->user();
+        // Optionally, you can limit the number of reference checks per user
+        $max = 5;
+        $count = \App\Models\ConfidentialReferenceCheck::where('user_id', $user->id)->count();
+        if ($count >= $max) {
+            return redirect()->route('pre-employment.portal')->with('error', 'Maximum number of reference checks reached.');
+        }
+        \App\Models\ConfidentialReferenceCheck::create([
+            'user_id' => $user->id,
+            'reference_name' => 'Reference Name',
+            'relationship' => 'Relationship',
+            'comments' => '',
+        ]);
+        return redirect()->route('pre-employment.portal');
+    }
     /**
      * Display the pre-employment registration page.
      * 
@@ -97,6 +155,9 @@ class PreEmploymentController extends Controller
             $selectedPositionId = $jobApplication->jobOpening->template->position_id;
         }
 
+        // Fetch all confidential reference checks for this user
+        $referenceChecks = \App\Models\ConfidentialReferenceCheck::where('user_id', $user->id)->get();
+
         return view('pre-employment.portal', [
             'user' => $user,
             'checklistItems' => $checklistItems,
@@ -108,6 +169,18 @@ class PreEmploymentController extends Controller
             'jobApplication' => $jobApplication,
             'positions' => $positions,
             'selectedPositionId' => $selectedPositionId,
+            'referenceChecks' => $referenceChecks,
         ]);
+    }
+
+        /**
+     * Delete a Confidential Reference Check for the authenticated user.
+     */
+    public function deleteReferenceCheck($id)
+    {
+        $user = Auth::user();
+        $referenceCheck = \App\Models\ConfidentialReferenceCheck::where('id', $id)->where('user_id', $user->id)->firstOrFail();
+        $referenceCheck->delete();
+        return redirect()->route('pre-employment.portal')->with('success', 'Reference check deleted.');
     }
 }

@@ -24,11 +24,14 @@
                 <td>{{ $check->relationship }}</td>
                 <td>
                     <a href="{{ route('confidential-reference-checks.show', $check) }}" class="text-blue-600">View</a> |
-                    <a href="{{ route('confidential-reference-checks.edit', $check) }}" class="text-yellow-600">Edit</a> |
-                    <form action="{{ route('confidential-reference-checks.destroy', $check) }}" method="POST" class="inline">
+                    <a href="{{ route('confidential-reference-checks.edit', $check) }}" class="text-yellow-600">Edit</a>
+                    |
+                    <form action="{{ route('confidential-reference-checks.destroy', $check) }}" method="POST"
+                        class="inline">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="text-red-600" onclick="return confirm('Delete this reference check?')">Delete</button>
+                        <button type="submit" class="text-red-600"
+                            onclick="return confirm('Delete this reference check?')">Delete</button>
                     </form>
                 </td>
             </tr>

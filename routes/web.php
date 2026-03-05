@@ -1,3 +1,7 @@
+// Save/Update a Confidential Reference Check
+Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\Controllers\PreEmploymentController::class, 'saveReferenceCheck'])
+    ->middleware(['auth'])
+    ->name('pre-employment.reference-checks.save');
 <?php
 use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Livewire\Settings\Appearance;
@@ -51,16 +55,6 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/job-descriptions/by-position/{position}', [\App\Http\Controllers\Admin\JobOpeningController::class, 'getJobDescriptionsByPosition']);
 });
 
-// // Confidential Reference Check routes
-// Route::resource('confidential-reference-checks', App\Http\Controllers\ConfidentialReferenceCheckController::class);
-// // Confidential Reference Check form submission
-// Route::post('/pre-employment/confidential-reference-check', [App\Http\Controllers\ConfidentialReferenceCheckController::class, 'storePublic'])->name('pre-employment.confidential-reference-check.submit');
-// // Confidential Reference Check public form (pre-employment)
-// Route::get('/pre-employment/confidential-reference-check', function() {
-//     return view('pre-employment.forms.reference_check');
-// })->name('pre-employment.confidential-reference-check');
-
-
 // Allow public access for AJAX department/position select
 Route::get('/admin/positions/all', function() {
     return \App\Models\Position::join('departments', 'positions.department_id', '=', 'departments.id')
@@ -68,6 +62,16 @@ Route::get('/admin/positions/all', function() {
         ->orderBy('positions.title')
         ->get();
 });
+
+// Add another Confidential Reference Check (AJAX or POST)
+Route::post('/my-pre-employment/reference-checks/add', [\App\Http\Controllers\PreEmploymentController::class, 'addReferenceCheck'])
+    ->middleware(['auth'])
+    ->name('pre-employment.reference-checks.add');
+
+// Delete a Confidential Reference Check
+Route::delete('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\Controllers\PreEmploymentController::class, 'deleteReferenceCheck'])
+    ->middleware(['auth'])
+    ->name('pre-employment.reference-checks.delete');
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 Route::middleware(['auth'])->group(function () {

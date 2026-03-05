@@ -11,8 +11,8 @@
         <div class="mb-2"><strong>Comments:</strong> {{ $confidentialReferenceCheck->comments }}</div>
     </div>
     <div class="mt-4">
-        <a href="{{ route('confidential-reference-checks.edit', $confidentialReferenceCheck) }}" class="btn btn-warning">Edit</a>
-        <a href="{{ route('confidential-reference-checks.index') }}" class="btn btn-secondary ml-2">Back</a>
+        <a href="{{ route('reference-checks.edit', $confidentialReferenceCheck) }}" class="btn btn-warning">Edit</a>
+        <a href="{{ route('reference-checks.index') }}" class="btn btn-secondary ml-2">Back</a>
     </div>
 </div>
 @endsection

@@ -365,9 +365,43 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                         'educationFields' => $educationFields
                         ])
                         @elseif($item->item_key === 'reference_check')
-                        <!-- Confidential Reference Check Form -->
-                        @include('pre-employment.forms.reference_check', [])
+                        <!-- Confidential Reference Check Forms -->
+                        @php
+                        $checks = $referenceChecks ?? collect();
+                        @endphp
 
+                        @foreach($checks as $i => $referenceCheck)
+                        @include('pre-employment.forms.reference_check', [
+                        'referenceCheckNumber' => $i + 1,
+                        'referenceCheck' => $referenceCheck,
+                        'preEmployment' => $preEmployment,
+                        'jobApplication' => $jobApplication,
+                        'positions' => $positions,
+                        'selectedPositionId' => $selectedPositionId,
+                        'isEditable' => $isEditable ?? true,
+                        'referenceCheckTotal' => $checks->count(),
+                        ])
+                        @endforeach
+                        <div class="flex flex-wrap gap-4 mt-8">
+                            <form method="POST" action="{{ route('pre-employment.reference-checks.add') }}">
+                                @csrf
+                                <button type="submit"
+                                    class="bg-gray-100 hover:bg-teal-100 text-teal-700 font-semibold py-2 px-6 rounded-lg shadow transition-colors duration-150 flex items-center gap-2 cursor-pointer">
+                                    <i class="fas fa-plus"></i>
+                                    Add Another Reference Check
+                                </button>
+                            </form>
+                            @if($checks->count())
+                            <form method="POST" action="#">
+                                @csrf
+                                <button type="submit" name="action" value="submit_all"
+                                    class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-8 rounded-lg shadow transition-colors duration-150 flex items-center gap-2 cursor-pointer">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Submit All Reference Checks
+                                </button>
+                            </form>
+                            @endif
+                        </div>
                         @else
                         <!-- Generic Notes Form -->
                         <form method="POST" action="{{ route('pre-employment.checklist.update', $item) }}">
