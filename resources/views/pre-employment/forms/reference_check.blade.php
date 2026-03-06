@@ -100,8 +100,7 @@
                     </div>
                     <div class="flex-1">
                         <label class="block font-semibold mb-1">Date</label>
-                        <input type="date" name="date"
-                            value="{{ old('date', $referenceCheck->date ?? '') }}"
+                        <input type="date" name="date" value="{{ old('date', $referenceCheck->date ?? '') }}"
                             class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
                             required>
                     </div>

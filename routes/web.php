@@ -1,7 +1,3 @@
-// Save/Update a Confidential Reference Check
-Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\Controllers\PreEmploymentController::class, 'saveReferenceCheck'])
-    ->middleware(['auth'])
-    ->name('pre-employment.reference-checks.save');
 <?php
 use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Livewire\Settings\Appearance;
@@ -72,6 +68,11 @@ Route::post('/my-pre-employment/reference-checks/add', [\App\Http\Controllers\Pr
 Route::delete('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\Controllers\PreEmploymentController::class, 'deleteReferenceCheck'])
     ->middleware(['auth'])
     ->name('pre-employment.reference-checks.delete');
+
+// Save/Update a Confidential Reference Check
+Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\Controllers\PreEmploymentController::class, 'saveReferenceCheck'])
+    ->middleware(['auth'])
+    ->name('pre-employment.reference-checks.save');
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 Route::middleware(['auth'])->group(function () {
@@ -427,6 +428,9 @@ Route::get('/facilities/{facility}/applications', [CareersApplicationsController
 Route::post('/livewire/update', [HandleRequests::class, 'handleUpdate'])
     ->middleware(['web'])
     ->name('livewire.update');
+Route::post('/livewire/update', [HandleRequests::class, 'handleUpdate'])
+    ->middleware(['web'])
+    ->name('default.livewire.update');
 Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdate'])
     ->middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])
     ->where('any', '.*')

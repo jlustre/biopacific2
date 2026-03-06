@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PreEmploymentController extends Controller
-
+{
     /**
      * Save or update a Confidential Reference Check for the authenticated user.
      */
@@ -49,7 +49,6 @@ class PreEmploymentController extends Controller
 
         return redirect()->route('pre-employment.portal')->with('success', 'Reference check saved.');
     }
-{
     /**
      * Add a new blank Confidential Reference Check for the authenticated user.
      */

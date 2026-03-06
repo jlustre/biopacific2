@@ -68,7 +68,7 @@
         @endphp
 
         @if($facility)
-        <livewire:job-openings-form :facility="$facility" />
+        @livewire('job-openings-manager', ['facilityId' => $facilityId])
         @endif
         @else
         <div class="text-center text-gray-500 py-12 bg-white rounded-lg shadow">
