@@ -54,6 +54,8 @@
                     <td class="px-3 py-2 border">
                         <a href="{{ route('admin.facility.document.download', ['facility' => $doc->facility_id, 'document' => $doc->id]) }}"
                             class="text-blue-600 hover:underline mr-2">Download</a>
+                        <a href="{{ route('admin.facility.document.view', ['facility' => $doc->facility_id, 'document' => $doc->id]) }}"
+                            class="text-purple-600 hover:underline mr-2" target="_blank">View</a>
                         <form
                             action="{{ route('admin.facility.document.delete', ['facility' => $doc->facility_id, 'document' => $doc->id]) }}"
                             method="POST" class="inline" onsubmit="return confirm('Delete this document?');">

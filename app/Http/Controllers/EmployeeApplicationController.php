@@ -139,10 +139,10 @@ class EmployeeApplicationController extends Controller
                 'how_heard_other.required_if' => 'Please specify how you heard about us if you selected Other.',
             ]);
         } catch (ValidationException $e) {
-            Log::warning('Validation failed for employee application', [
-                'user_id' => Auth::id(),
-                'errors' => $e->errors()
-            ]);
+            // Log::warning('Validation failed for employee application', [
+            //     'user_id' => Auth::id(),
+            //     'errors' => $e->errors()
+            // ]);
             throw $e; // Re-throw to show validation errors
         }
 

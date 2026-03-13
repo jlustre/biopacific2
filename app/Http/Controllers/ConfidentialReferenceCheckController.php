@@ -25,7 +25,13 @@ class ConfidentialReferenceCheckController extends Controller
             'reference_name' => 'required|string|max:255',
             'relationship' => 'required|string|max:255',
             'comments' => 'nullable|string',
+            'reference_phone' => 'nullable|string|max:255',
+            'reference_email' => 'nullable|email|max:255',
+            'company' => 'nullable|string|max:255',
+            'signed' => 'sometimes|boolean',
+            'signed_date' => 'nullable|date',
         ]);
+        $data['signed'] = $request->has('signed');
         ConfidentialReferenceCheck::create($data);
         return redirect()->route('confidential-reference-checks.index')->with('success', 'Reference check created.');
     }
@@ -46,7 +52,13 @@ class ConfidentialReferenceCheckController extends Controller
             'reference_name' => 'required|string|max:255',
             'relationship' => 'required|string|max:255',
             'comments' => 'nullable|string',
+            'reference_phone' => 'nullable|string|max:255',
+            'reference_email' => 'nullable|email|max:255',
+            'company' => 'nullable|string|max:255',
+            'signed' => 'sometimes|boolean',
+            'signed_date' => 'nullable|date',
         ]);
+        $data['signed'] = $request->has('signed');
         $confidentialReferenceCheck->update($data);
         return redirect()->route('confidential-reference-checks.index')->with('success', 'Reference check updated.');
     }

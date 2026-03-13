@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\Attributes\Locked;
+use Illuminate\Support\Facades\Auth;
 
 class JobListingManager extends Component
 {
@@ -35,7 +36,18 @@ class JobListingManager extends Component
 
     public function mount($facility)
     {
-        $this->facilityId = is_object($facility) ? $facility->id : $facility;
+        // Check for facility_id in GET request
+        $requestFacilityId = request()->query('facility_id');
+        if ($requestFacilityId) {
+            $this->facilityId = $requestFacilityId;
+            session(['facility_id' => $this->facilityId]);
+        } elseif (!$facility) {
+            $facilityId = session('facility_id');
+            $this->facilityId = $facilityId;
+        } else {
+            $this->facilityId = is_object($facility) ? $facility->id : $facility;
+            session(['facility_id' => $this->facilityId]);
+        }
         $this->posted_at = date('Y-m-d');
         
         // Load positions
@@ -56,46 +68,6 @@ class JobListingManager extends Component
         // Load templates
         $this->loadTemplates();
         
-        // Populate form fields from old() helper if validation error occurred
-        $oldTitle = old('title');
-        if ($oldTitle !== null) {
-            $this->title = $oldTitle;
-        }
-        
-        $oldEmploymentType = old('employment_type');
-        if ($oldEmploymentType !== null) {
-            $this->employment_type = $oldEmploymentType;
-        }
-        
-        $oldDepartment = old('department');
-        if ($oldDepartment !== null) {
-            $this->department = $oldDepartment;
-        }
-        
-        $oldReportingTo = old('reporting_to');
-        if ($oldReportingTo !== null) {
-            $this->reporting_to = $oldReportingTo;
-        }
-        
-        $oldPostedAt = old('posted_at');
-        if ($oldPostedAt !== null) {
-            $this->posted_at = $oldPostedAt;
-        }
-        
-        $oldStatus = old('status');
-        if ($oldStatus !== null) {
-            $this->status = $oldStatus;
-        }
-        
-        $oldDescription = old('description');
-        if ($oldDescription !== null) {
-            $this->description = $oldDescription;
-        }
-        
-        $oldActive = old('active');
-        if ($oldActive !== null) {
-            $this->active = $oldActive == '1' ? true : false;
-        }
         
         // Populate success and error messages from session flash data
         if (session()->has('success')) {
@@ -125,6 +97,7 @@ class JobListingManager extends Component
 
     public function addJob()
     {
+        $this->errorMessage = 'DEBUG: addJob called';
         $this->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -143,11 +116,12 @@ class JobListingManager extends Component
                 'posted_at' => $this->posted_at,
                 'status' => $this->status,
                 'active' => $this->active ? 1 : 0,
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
-            $this->successMessage = 'Job listing created successfully!';
-            $this->resetForm();
+            // Redirect to the correct facility job openings route to preserve context
+            return redirect()->route('admin.facility.job_openings', ['facility' => $this->facilityId])
+                ->with('success', 'Job listing created successfully!');
         } catch (\Exception $e) {
             $this->errorMessage = 'Error creating job: ' . $e->getMessage();
         }
@@ -192,13 +166,11 @@ class JobListingManager extends Component
                 'name' => $this->templateName,
                 'contents' => $this->description,
                 'position_id' => null,
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
-            $this->successMessage = 'Template saved successfully!';
-            $this->showSaveTemplateModal = false;
-            $this->templateName = '';
-            $this->loadTemplates();
+            return redirect()->route('admin.facility.job_openings', ['facility' => $this->facilityId])
+                ->with('success', 'Template saved successfully!');
         } catch (\Exception $e) {
             $this->errorMessage = 'Error saving template: ' . $e->getMessage();
         }
@@ -208,8 +180,8 @@ class JobListingManager extends Component
     {
         try {
             \App\Models\JobDescriptionTemplate::find($templateId)?->delete();
-            $this->successMessage = 'Template deleted';
-            $this->loadTemplates();
+            return redirect()->route('admin.facility.job_openings', ['facility' => $this->facilityId])
+                ->with('success', 'Template deleted');
         } catch (\Exception $e) {
             $this->errorMessage = 'Error deleting template: ' . $e->getMessage();
         }
@@ -245,7 +217,8 @@ class JobListingManager extends Component
         $job = \App\Models\JobOpening::find($jobId);
         if ($job) {
             $job->delete();
-            $this->successMessage = 'Job listing deleted';
+            return redirect()->route('admin.facility.job_openings', ['facility' => $this->facilityId])
+                ->with('success', 'Job listing deleted');
         }
     }
 
@@ -257,11 +230,15 @@ class JobListingManager extends Component
     public function render()
     {
         $facility = \App\Models\Facility::find($this->facilityId);
-        $jobs = $facility
-            ?->jobOpenings()
-            ->latest()
-            ->get() ?? collect();
-
+        if (!$facility) {
+            return view('livewire.job-listing-manager', [
+                'facility' => null,
+                'jobs' => collect(),
+                'templates' => $this->templates,
+                'errorMessage' => 'Facility not found. Please contact support.'
+            ]);
+        }
+        $jobs = $facility->jobOpenings()->latest()->get();
         return view('livewire.job-listing-manager', [
             'facility' => $facility,
             'jobs' => $jobs,

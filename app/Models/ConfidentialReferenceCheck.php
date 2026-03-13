@@ -8,12 +8,29 @@ class ConfidentialReferenceCheck extends Model
 {
     use HasFactory;
 
+    protected $table = 'reference_checks';
+
     protected $fillable = [
         'user_id',
-        'facility_id',
+        'reference_index',
         'reference_name',
-        'relationship',
+        'reference_title',
+        'company_address',
         'comments',
+        'reference_phone',
+        'reference_email',
+        'company',
+        'signed',
+        'signed_date',
+        'employment_from',
+        'employment_to',
+        'salary',
+        'salary_per',
+        'duties_description',
+        'performance_description',
+        'date_contacted',
+        'applicant_signature',
+        'signature_date',
     ];
 
     public function user()

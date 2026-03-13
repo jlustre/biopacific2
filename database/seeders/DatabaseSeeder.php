@@ -36,6 +36,17 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             PositionsSeeder::class,
             JobDescriptionsSeeder::class,
+            UsersTableSeeder::class,
+            BPDepartmentsTableSeeder::class,
+            BPPositionsTableSeeder::class,
+            BPBargainingUnitsTableSeeder::class,
+            BPEmpEmployeesTableSeeder::class,
+            BPEmpAssignmentsTableSeeder::class,
+            BPEmpCompensationTableSeeder::class,
+            BPEmpCredentialsTableSeeder::class,
+            BPEmpPhonesTableSeeder::class,
+            BPEmpAddressesTableSeeder::class,
+            BPEmpHealthScreeningsTableSeeder::class,
         ]);
 
     }

@@ -27,6 +27,11 @@
     # Deny access to composer files
     RewriteRule ^composer\.(lock|json)$ - [F,L]
 
+    # Allow access to Livewire assets in public/vendor/livewire
+    RewriteCond %{REQUEST_URI} ^/vendor/livewire/ [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f

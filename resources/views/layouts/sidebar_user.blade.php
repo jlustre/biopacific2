@@ -18,17 +18,21 @@
                 <i class="fas fa-user mr-2"></i> My Profile
             </a>
 
-            <!-- Pre-Employment Portal - Show if job_applications table has pre-employment status for this user -->
-            @php
-            $hasPreEmployment = \App\Models\JobApplication::where('user_id', auth()->id())
-            ->where('status', 'pre-employment')->exists();
-            @endphp
-            @if($hasPreEmployment)
+            <!-- Always show Pre-Employment Portal link -->
             <a href="{{ route('pre-employment.portal') }}"
-                class="flex items-center px-4 py-2 text-green-700 hover:bg-green-50 rounded {{ request()->routeIs('pre-employment.*') ? 'bg-green-100 font-bold' : '' }}">
+                class="flex items-center px-4 py-2 text-green-700 hover:bg-green-50 rounded {{ request()->routeIs('pre-employment.portal') ? 'bg-green-100 font-bold' : '' }}">
                 <i class="fas fa-clipboard-check mr-2"></i> Pre-Employment
             </a>
-            @endif
+
+            <a href="{{ route('pre-employment2.portal') }}"
+                class="flex items-center px-4 py-2 text-green-700 hover:bg-green-50 rounded {{ request()->routeIs('pre-employment2.portal') ? 'bg-green-100 font-bold' : '' }}">
+                <i class="fas fa-clipboard-check mr-2"></i> Pre-Employment 2
+            </a>
+
+            <a href="{{ route('employment.portal') }}"
+                class="flex items-center px-4 py-2 text-green-700 hover:bg-green-50 rounded {{ request()->routeIs('employment.portal') ? 'bg-green-100 font-bold' : '' }}">
+                <i class="fas fa-clipboard-check mr-2"></i> Employment Portal
+            </a>
 
             <!-- Show Admin Dashboard if user is admin -->
             @if(auth()->user() && auth()->user()->hasRole(['admin']))

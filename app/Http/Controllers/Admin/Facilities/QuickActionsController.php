@@ -9,6 +9,7 @@ use App\Models\Facility;
 use App\Models\PreEmploymentApplication;
 use App\Models\HiringActivityLog;
 use App\Models\EmployeeDocument;
+use App\Models\Document;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,26 @@ use Illuminate\Support\Facades\Log;
 
 class QuickActionsController extends Controller
 {
+    public function viewDocument(Facility $facility, EmployeeDocument $document)
+    {
+        $this->authorizeFacilityAccess($facility);
+
+        if ($document->facility_id !== $facility->id) {
+            abort(403);
+        }
+
+        $path = storage_path('app/' . $document->file_path);
+        if (!file_exists($path)) {
+            abort(404, 'File not found');
+        }
+
+        $mime = mime_content_type($path);
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
+        ]);
+    }
+
     protected function authorizeFacilityAccess(Facility $facility)
     {
         $user = Auth::user();
@@ -220,6 +241,21 @@ class QuickActionsController extends Controller
                 'file_size' => strlen($content),
                 'created_by' => Auth::id(),
             ]);
+            try {
+                $doc = \App\Models\Document::create([
+                    'facility_id' => $facility->id,
+                    'user_id' => $applicantId,
+                    'document_type' => 'application_form',
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                    'mime_type' => 'application/pdf',
+                    'file_size' => strlen($content),
+                    'created_by' => Auth::id(),
+                ]);
+                \Log::info('Document created', ['doc_id' => $doc->id, 'file_name' => $fileName, 'file_path' => $filePath]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create Document', ['error' => $e->getMessage(), 'file_name' => $fileName, 'file_path' => $filePath]);
+            }
         }
 
         return response($content, 200)

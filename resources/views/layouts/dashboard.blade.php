@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-scheme-dropdown.css">
     <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
-    <livewire:styles />
+    @livewireStyles
     <link rel="icon" href="{{ asset('images/bplogo.png') }}" type="image/png">
 
 </head>
@@ -24,13 +24,38 @@
 
     <!-- Top Navigation (Fixed) -->
     @include('layouts.topnav')
+    <div class="flex min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
+        @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+        x-init="window.addEventListener('resize', () => { sidebarOpen = window.innerWidth >= 1024 })">
 
-    <!-- Responsive Sidebar Layout -->
-    @include('layouts.sidebar')
+        <!-- Responsive Sidebar Layout -->
+        @include('layouts.sidebar')
 
-    {{-- @include('partials.screen-size-indicator') --}}
+        <!-- Main Content Area -->
+        <div class="flex-1">
+            <!-- Add left margin and top padding for fixed sidebar and navbar -->
+            <div :class="sidebarOpen ? 'pt-20 pl-64' : 'pt-20 pl-4'">
+                <!-- Page Header -->
+                @hasSection('header')
+                <div class="bg-white/60 shadow-sm border-b border-gray-200 rounded-xl">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        @yield('header')
+                    </div>
+                </div>
+                @endif
+
+                <!-- Main Content -->
+                <main class="bg-white/60 rounded-xl max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    @yield('content')
+                </main>
+            </div>
+        </div>
+    </div>
+
+    @include('partials.screen-size-indicator')
+
     @stack('scripts')
-    <livewire:scripts />
+    @livewireScripts
     <script src="/js/color-scheme-dropdown.js"></script>
 </body>
 

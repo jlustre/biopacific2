@@ -23,7 +23,7 @@ $existingDocuments = \App\Models\EmployeeDocument::where('pre_employment_applica
 
 <div x-data="statusModal()" @keydown.escape="showModal = false">
     <a href="{{ route('admin.facility.hiring', $facility) }}"
-        class="text-teal-600 hover:text-teal-700 font-semibold flex items-center gap-2">
+        class="text-teal-600 hover:text-teal-700 font-semibold flex items-center gap-2 pt-4">
         <i class="fas fa-arrow-left"></i> Back to Hiring
     </a>
 

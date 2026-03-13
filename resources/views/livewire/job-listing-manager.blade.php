@@ -1,6 +1,54 @@
+@if(!isset($facility) || !$facility)
+<div>
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+        <strong>Select a Facility:</strong>
+        <form method="GET" action="" id="facility-selector-form" style="display:inline">
+            <select name="facility_id" class="border rounded p-2 mr-2"
+                onchange="document.getElementById('facility-selector-form').action = this.value ? '/admin/facility/' + this.value + '/job-openings' : '';">
+                <option value="">-- Choose Facility --</option>
+                @foreach(\App\Models\Facility::orderBy('name')->get() as $fac)
+                <option value="{{ $fac->id }}" @if(request('facility_id', session('facility_id'))==$fac->id) selected
+                    @endif>{{ $fac->name }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Go</button>
+        </form>
+    </div>
+    <div class="bg-white p-6 rounded shadow text-gray-600 mb-6">
+        Please select a facility to view job openings.
+    </div>
+</div>
+@php return; @endphp
+@endif
 <!-- TinyMCE CDN with user API key -->
 <script src="https://cdn.tiny.cloud/1/hggcx7g2kfrgugocare6vapc39m9hxb4unvnk9nui4od2ftg/tinymce/6/tinymce.min.js"
     referrerpolicy="origin"></script>
+<script>
+    // Helper to get value from job form fields
+function getJobFormValue(fieldName, fallback = '') {
+    // Try to get from select/input by wire:model
+    var el = document.querySelector('[wire\\:model="' + fieldName + '"]');
+    if (el) return el.value;
+    // Try to get from select/input by id
+    el = document.getElementById(fieldName);
+    return el ? el.value : fallback;
+}
+
+// Global function for Save Template modal
+function submitTemplateForm(actionType) {
+    // Set template contents from TinyMCE
+    if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
+        document.getElementById('template-contents').value = tinymce.get('description-editor').getContent();
+        document.getElementById('template-description').value = tinymce.get('description-editor').getContent();
+    }
+    // Set required fields from job form
+    document.getElementById('template-title').value = getJobFormValue('title') || '';
+    document.getElementById('template-employment-type').value = getJobFormValue('employment_type') || '';
+    document.getElementById('template-reporting-to').value = getJobFormValue('reporting_to') || '';
+    // Optionally set action if needed (expand as needed)
+    document.getElementById('save-template-form').submit();
+}
+</script>
 <div class="space-y-6" x-data="{
   viewModalJobId: null,
   actionModalJobId: null,
@@ -101,42 +149,46 @@
         }
     </style>
 
-    {{-- Success Message --}}
-    @if($successMessage)
-    <div class="p-4 bg-green-100 text-green-800 rounded-lg flex justify-between items-center">
-        <span><i class="fas fa-check-circle mr-2"></i>{{ $successMessage }}</span>
-        <button type="button" wire:click="closeSucess" class="text-green-800 hover:text-green-900 cursor-pointer">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    @endif
-
-    {{-- Error Message --}}
-    @if($errorMessage)
-    <div class="p-4 bg-red-100 text-red-800 rounded-lg flex justify-between items-center">
-        <span><i class="fas fa-exclamation-circle mr-2"></i>{{ $errorMessage }}</span>
-        <button type="button" wire:click="$set('errorMessage', '')"
-            class="text-red-800 hover:text-red-900 cursor-pointer">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    @endif
-
-    {{-- Validation Errors --}}
-    @if($errors->any())
-    <div class="p-4 bg-red-100 text-red-800 rounded-lg border-2 border-red-500 mb-6">
-        <p class="font-bold text-lg mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Please fix these errors:</p>
-        <ul class="list-disc list-inside space-y-2">
-            @foreach($errors->all() as $error)
-            <li class="font-semibold">{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
 
     {{-- Add New Job Form --}}
+    @if(isset($facility) && $facility)
     <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-2xl font-bold mb-6">Add New Job Listing</h2>
+
+        {{-- @include('livewire.messages') --}}
+        {{-- Success Message --}}
+        @if($successMessage)
+        <div class="p-4 bg-green-100 text-green-800 rounded-lg flex justify-between items-center">
+            <span><i class="fas fa-check-circle mr-2"></i>{{ $successMessage }}</span>
+            <button type="button" wire:click="closeSucess" class="text-green-800 hover:text-green-900 cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        @endif
+
+        {{-- Error Message --}}
+        @if($errorMessage)
+        <div class="p-4 bg-red-100 text-red-800 rounded-lg flex justify-between items-center">
+            <span><i class="fas fa-exclamation-circle mr-2"></i>{{ $errorMessage }}</span>
+            <button type="button" wire:click="$set('errorMessage', '')"
+                class="text-red-800 hover:text-red-900 cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        @endif
+
+        {{-- Validation Errors --}}
+        @if($errors->any())
+        <div class="p-4 bg-red-100 text-red-800 rounded-lg border-2 border-red-500 mb-6">
+            <p class="font-bold text-lg mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Please fix these errors:
+            </p>
+            <ul class="list-disc list-inside space-y-2">
+                @foreach($errors->all() as $error)
+                <li class="font-semibold">{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
 
         <div class="mb-4">
             <label class="block font-semibold mb-2">Load Template</label>
@@ -146,7 +198,7 @@
                     @change="document.getElementById('selected-template-id-hidden').value = selectedTemplateId">
                     <option value="">-- Select Template --</option>
                     @foreach($templates as $template)
-                    <option value="{{ $template['id'] }}" @selected(old('selectedTemplateId')==$template['id'])>{{
+                    <option value="{{ $template['id'] }}" @selected(old('selectedTemplateId')==$template['id'])>{
                         $template['name'] }}</option>
                     @endforeach
                 </select>
@@ -160,432 +212,110 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <form wire:submit.prevent="addJob" id="add-job-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block font-semibold mb-2">Job Title *</label>
+                    <select wire:model="title"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('title') border-red-500 @enderror">
+                        <option value="">Select a position...</option>
+                        @foreach($positions as $id => $positionTitle)
+                        <option value="{{ $positionTitle }}" @if(old('title', $title ?? '' )==$positionTitle) selected
+                            @endif>{{ $positionTitle }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('title') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
 
-            <div>
-                <label class="block font-semibold mb-2">Job Title *</label>
-                <select wire:model="title"
-                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('title') border-red-500 @enderror">
-                    <option value="">Select a position...</option>
-                    @foreach($positions as $id => $positionTitle)
-                    <option value="{{ $positionTitle }}" @selected(old('title')==$positionTitle)>{{ $positionTitle }}
-                    </option>
-                    @endforeach
-                </select>
-                @error('title') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                <div>
+                    <label class="block font-semibold mb-2">Employment Type *</label>
+                    <select wire:model="employment_type"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('employment_type') border-red-500 @enderror">
+                        <option value="">Select...</option>
+                        <option value="Full-time" @if(old('employment_type', $employment_type ?? '' )=='Full-time' )
+                            selected @endif>Full-time</option>
+                        <option value="Part-time" @if(old('employment_type', $employment_type ?? '' )=='Part-time' )
+                            selected @endif>Part-time</option>
+                        <option value="Contract" @if(old('employment_type', $employment_type ?? '' )=='Contract' )
+                            selected @endif>Contract</option>
+                        <option value="Temporary" @if(old('employment_type', $employment_type ?? '' )=='Temporary' )
+                            selected @endif>Temporary</option>
+                    </select>
+                    @error('employment_type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="block font-semibold mb-2">Department</label>
+                    <select wire:model="department"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select...</option>
+                        @foreach($departments as $id => $dept)
+                        <option value="{{ $dept }}" @if(old('department', $department ?? '' )==$dept) selected @endif>{{
+                            $dept }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold mb-2">Reporting To *</label>
+                    <select wire:model="reporting_to"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('reporting_to') border-red-500 @enderror">
+                        <option value="">Select a supervisor...</option>
+                        @foreach($supervisors as $id => $supervisorTitle)
+                        <option value="{{ $supervisorTitle }}" @if(old('reporting_to', $reporting_to ?? ''
+                            )==$supervisorTitle) selected @endif>{{ $supervisorTitle }}</option>
+                        @endforeach
+                    </select>
+                    @error('reporting_to') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="block font-semibold mb-2">Posted Date *</label>
+                    <input type="date" wire:model="posted_at" value="{{ old('posted_at', $posted_at ?? '') }}"
+                        class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('posted_at') border-red-500 @enderror" />
+                    @error('posted_at') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="block font-semibold mb-2">Status</label>
+                    <select wire:model="status" class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
+                        <option value="open" @if(old('status', $status ?? '' )=='open' ) selected @endif>Open</option>
+                        <option value="closed" @if(old('status', $status ?? '' )=='closed' ) selected @endif>Closed
+                        </option>
+                        <option value="filled" @if(old('status', $status ?? '' )=='filled' ) selected @endif>Filled
+                        </option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <label class="block font-semibold mb-2">Employment Type *</label>
-                <select wire:model="employment_type"
-                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('employment_type') border-red-500 @enderror">
-                    <option value="">Select...</option>
-                    <option value="Full-time" @selected(old('employment_type')=='Full-time' )>Full-time</option>
-                    <option value="Part-time" @selected(old('employment_type')=='Part-time' )>Part-time</option>
-                    <option value="Contract" @selected(old('employment_type')=='Contract' )>Contract</option>
-                    <option value="Temporary" @selected(old('employment_type')=='Temporary' )>Temporary</option>
-                </select>
-                @error('employment_type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Description *</label>
+                <textarea id="description-editor" wire:model.defer="description"
+                    placeholder="Job responsibilities, requirements, etc." rows="6"
+                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
+                @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
-            <div>
-                <label class="block font-semibold mb-2">Department</label>
-                <select wire:model="department" class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select...</option>
-                    @foreach($departments as $id => $dept)
-                    <option value="{{ $dept }}" @selected(old('department')==$dept)>{{ $dept }}</option>
-                    @endforeach
-                </select>
+            <div class="flex items-center gap-4 mb-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model="active" class="w-4 h-4 rounded">
+                    <span>Active (visible to applicants)</span>
+                </label>
             </div>
 
-            <div>
-                <label class="block font-semibold mb-2">Reporting To *</label>
-                <select wire:model="reporting_to"
-                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('reporting_to') border-red-500 @enderror">
-                    <option value="">Select a supervisor...</option>
-                    @foreach($supervisors as $id => $supervisorTitle)
-                    <option value="{{ $supervisorTitle }}" @selected(old('reporting_to')==$supervisorTitle)>{{
-                        $supervisorTitle }}</option>
-                    @endforeach
-                </select>
-                @error('reporting_to') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            <div class="flex gap-3 mb-6">
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition cursor-pointer">
+                    <i class="fas fa-plus mr-2"></i>Create Job Listing
+                </button>
+                <button type="button"
+                    @click="showSaveTemplateModal = true; templateContentsOverride = null; templatePositionTitleOverride = null; editingTemplateId = null; editingTemplateName = null"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition cursor-pointer">
+                    <i class="fas fa-save mr-2"></i>Save This Template
+                </button>
             </div>
-
-            <div>
-                <label class="block font-semibold mb-2">Posted Date *</label>
-                <input type="date" wire:model="posted_at" value="{{ old('posted_at') }}"
-                    class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('posted_at') border-red-500 @enderror" />
-                @error('posted_at') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-
-            <div>
-                <label class="block font-semibold mb-2">Status</label>
-                <select wire:model="status" class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
-                    <option value="open" @selected(old('status')=='open' )>Open</option>
-                    <option value="closed" @selected(old('status')=='closed' )>Closed</option>
-                    <option value="filled" @selected(old('status')=='filled' )>Filled</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="mb-4">
-            <label class="block font-semibold mb-2">Description *</label>
-            <textarea id="description-editor" wire:model="description"
-                placeholder="Job responsibilities, requirements, etc." rows="6"
-                class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
-            @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-        </div>
-
-        <script>
-            tinymce.init({
-                selector: '#description-editor',
-                height: 250,
-                menubar: false,
-                plugins: 'lists link',
-                toolbar: 'undo redo | bold italic underline | bullist numlist | link | formatselect',
-                setup: function (editor) {
-                    editor.on('init', function () {
-                        const oldDescription = {!! json_encode(old('description') ?? '') !!};
-                        if (oldDescription) {
-                            editor.setContent(oldDescription);
-                        }
-                    });
-                    editor.on('change', function () {
-                        @this.set('description', editor.getContent());
-                    });
-                }
-            });
-
-            // Submit Add Job form (for Create Job Listing button)
-            window.submitJobForm = function() {
-                const form = document.getElementById('add-job-form');
-                if (!form) {
-                    alert('Job form not found');
-                    return;
-                }
-                // Optionally, set description from TinyMCE if present
-                if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
-                    const desc = tinymce.get('description-editor').getContent();
-                    const descInput = form.querySelector('input[name="description"]') || document.getElementById('hidden-description');
-                    if (descInput) descInput.value = desc;
-                }
-                form.submit();
-            };
-
-            // Define loadTemplate function for Alpine.js
-            window.loadTemplate = function() {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                
-                const data = mainDiv._x_dataStack[0];
-                if (!data.selectedTemplateId || !data.templates || data.templates.length === 0) {
-                    return;
-                }
-                
-                const selectedTemplate = data.templates.find(t => t.id == data.selectedTemplateId);
-                if (!selectedTemplate) {
-                    alert('Template not found');
-                    return;
-                }
-                
-                if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
-                    tinymce.get('description-editor').setContent(selectedTemplate.contents);
-                    data.selectedTemplateId = '';
-                }
-            };
-
-            // Save or update template
-            window.saveTemplate = function() {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-                
-                if (data.templateName.trim() === '') {
-                    alert('Please enter a template name');
-                    return;
-                }
-                if (data.templateContentsOverride !== null && data.templateContentsOverride !== undefined) {
-                    document.getElementById('template-contents').value = data.templateContentsOverride;
-                } else if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
-                    document.getElementById('template-contents').value = tinymce.get('description-editor').getContent();
-                }
-
-                const positionSelect = document.getElementById('template-position-select');
-                if (!data.templatePositionTitleOverride) {
-                    const titleSelect = document.querySelector('select[wire\\:model="title"]');
-                    const fallbackTitle = titleSelect ? titleSelect.value : '';
-                    data.templatePositionTitleOverride = fallbackTitle;
-                    if (positionSelect) {
-                        positionSelect.value = fallbackTitle;
-                    }
-                }
-                
-                // Determine if we're creating a new template or updating an existing one
-                if (data.editingTemplateId) {
-                    // Update existing template
-                    document.getElementById('save-template-form').action = '/admin/facility/{{ $facility->id }}/job-openings/template/update';
-                    document.getElementById('template-id').value = data.editingTemplateId;
-                } else {
-                    // Create new template
-                    document.getElementById('save-template-form').action = '/admin/facility/{{ $facility->id }}/job-openings/template/save';
-                }
-                
-                document.getElementById('save-template-form').submit();
-            };
-
-            // Save template from view modal
-            window.saveTemplateFromJob = function(contents, defaultName) {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-
-                data.templateContentsOverride = contents || '';
-                data.templatePositionTitleOverride = defaultName || '';
-                data.templateName = defaultName ? (defaultName + ' Template') : '';
-                data.editingTemplateId = null;
-                data.editingTemplateName = null;
-                data.viewModalJobId = null;
-                data.showSaveTemplateModal = true;
-            };
-
-            // Save template from edit modal
-            window.saveTemplateFromEdit = function() {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-
-                const editForm = document.getElementById('edit-job-form');
-                if (!editForm) return;
-
-                const titleValue = editForm.querySelector('[x-model="title"]')?.value || '';
-                let contents = '';
-                if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
-                    contents = tinymce.get('edit-description-editor').getContent();
-                }
-
-                data.templateContentsOverride = contents;
-                data.templatePositionTitleOverride = titleValue;
-                data.templateName = titleValue ? (titleValue + ' Template') : '';
-                data.editingTemplateId = null;
-                data.editingTemplateName = null;
-                data.showEditModal = false;
-                data.showSaveTemplateModal = true;
-            };
-
-            // Use template from saved templates
-            window.useTemplate = function(templateId) {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-                
-                const template = data.templates.find(t => t.id == templateId);
-                if (template) {
-                    if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
-                        tinymce.get('description-editor').setContent(template.contents);
-                    }
-                    // Persist selected template for update
-                    data.editingTemplateId = template.id;
-                    data.templateName = template.name;
-                    data.templateContentsOverride = template.contents;
-                    data.templatePositionTitleOverride = template.position_title || '';
-                }
-            };
-
-            // Delete template
-            window.deleteTemplate = function(templateId) {
-                if(!confirm('Delete this template?')) return;
-                
-                let form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/admin/facility/{{ $facility->id }}/job-openings/template/delete';
-                form.innerHTML = '@csrf<input type="hidden" name="template_id" value="' + templateId + '">';
-                document.body.appendChild(form);
-                form.submit();
-            };
-
-            // Update template
-            window.updateTemplate = function(templateId) {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-                const template = data.templates.find(t => t.id == templateId);
-                if (!template) return;
-                // Prefill modal fields for editing
-                data.templateName = template.name;
-                data.templateContentsOverride = template.contents;
-                data.templatePositionTitleOverride = template.position_title || '';
-                data.showSaveTemplateModal = true;
-                data.editingTemplateId = templateId;
-                data.editingTemplateName = template.name;
-            };
-
-            // Edit job
-            window.editJob = function(jobId) {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-                
-                // Fetch job data
-                fetch('/admin/facility/{{ $facility->id }}/job-openings/' + jobId + '/data')
-                    .then(response => response.json())
-                    .then(job => {
-                        data.editJobData = job;
-                        data.editingJobId = jobId;
-                        data.isCopyingJob = false;
-                        data.showEditModal = true;
-                        data.viewModalJobId = null; // Close view modal if open
-                        
-                        // Set Alpine edit* variables directly
-                        data.editTitle = job.title || '';
-                        data.editEmploymentType = job.employment_type || '';
-                        data.editDepartment = job.department || '';
-                        data.editReportingTo = job.reporting_to || '';
-                        data.editPostedAt = job.posted_at || '';
-                        data.editStatus = job.status || 'open';
-                        data.editActive = job.active == 1;
-                        data.editDescription = job.description || '';
-                        // Set TinyMCE content if present
-                        setTimeout(() => {
-                            if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
-                                tinymce.get('edit-description-editor').setContent(job.description || '');
-                            }
-                        }, 100);
-                    })
-                    .catch(error => {
-                        console.error('Error loading job:', error);
-                        alert('Error loading job details');
-                    });
-            };
-
-            // Copy job
-            window.copyJob = function(jobId) {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-                
-                // Fetch job data
-                fetch('/admin/facility/{{ $facility->id }}/job-openings/' + jobId + '/data')
-                    .then(response => response.json())
-                    .then(job => {
-                        data.editJobData = job;
-                        data.editingJobId = null; // Important: null means it's a copy, not an edit
-                        data.isCopyingJob = true;
-                        data.showEditModal = true;
-                        data.viewModalJobId = null; // Close view modal if open
-                        
-                        // Populate form fields after modal renders
-                        setTimeout(() => {
-                            const editForm = document.getElementById('edit-job-form');
-                            if (editForm) {
-                                editForm.querySelector('[x-model="title"]').value = job.title || '';
-                                editForm.querySelector('[x-model="employment_type"]').value = job.employment_type || '';
-                                editForm.querySelector('[x-model="department"]').value = job.department || '';
-                                editForm.querySelector('[x-model="reporting_to"]').value = job.reporting_to || '';
-                                editForm.querySelector('[x-model="posted_at"]').value = new Date().toISOString().split('T')[0]; // Reset date to today
-                                editForm.querySelector('[x-model="status"]').value = 'open'; // Reset status to open
-                                editForm.querySelector('input[type="checkbox"][x-model="active"]').checked = true; // Default to active
-                                
-                                if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
-                                    tinymce.get('edit-description-editor').setContent(job.description || '');
-                                }
-                            }
-                        }, 100);
-                    })
-                    .catch(error => {
-                        console.error('Error loading job:', error);
-                        alert('Error loading job details');
-                    });
-            };
-
-            // Submit edit form
-            window.submitEditForm = function() {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-
-                const form = document.getElementById('edit-job-form');
-                if (!form) {
-                    console.error('Edit form not found');
-                    return;
-                }
-
-                // Set form action based on edit or copy
-                if (data.editingJobId) {
-                    // Updating existing job
-                    form.action = '/admin/facility/{{ $facility->id }}/job-openings/' + data.editingJobId + '/update';
-                    form.method = 'POST';
-                } else {
-                    // Creating new job from copy
-                    form.action = '/admin/facility/{{ $facility->id }}/job-openings';
-                    form.method = 'POST';
-                }
-
-                // Get values from Alpine.js x-model fields and set hidden inputs
-                form.querySelector('input[name="title"]').value = data.editTitle || '';
-                form.querySelector('input[name="employment_type"]').value = data.editEmploymentType || '';
-                form.querySelector('input[name="department"]').value = data.editDepartment || '';
-                form.querySelector('input[name="reporting_to"]').value = data.editReportingTo || '';
-                form.querySelector('input[name="posted_at"]').value = data.editPostedAt || '';
-                form.querySelector('input[name="status"]').value = data.editStatus || '';
-
-                // Get TinyMCE content for description
-                if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
-                    form.querySelector('input[name="description"]').value = tinymce.get('edit-description-editor').getContent();
-                } else {
-                    form.querySelector('input[name="description"]').value = data.editDescription || '';
-                }
-
-                // Get active checkbox value
-                form.querySelector('input[name="active"]').value = data.editActive ? '1' : '0';
-
-                form.submit();
-            };
-
-            // Confirm action from modal
-            window.confirmAction = function() {
-                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
-                if (!mainDiv || !mainDiv._x_dataStack) return;
-                const data = mainDiv._x_dataStack[0];
-                
-                let form = document.getElementById('action-form');
-                form.action = data.actionType === 'toggle' ? '/admin/facility/{{ $facility->id }}/job-openings/toggle' : 
-                             data.actionType === 'status' ? '/admin/facility/{{ $facility->id }}/job-openings/status' :
-                             '/admin/facility/{{ $facility->id }}/job-openings/delete';
-                form.submit();
-                data.showActionModal = false;
-            };
-        </script>
-
-        <div class="flex items-center gap-4 mb-6">
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" wire:model="active" class="w-4 h-4 rounded">
-                <span>Active (visible to applicants)</span>
-            </label>
-        </div>
-
-        <form id="add-job-form" method="POST" action="/admin/facility/{{ $facility->id }}/job-openings">
-            @csrf
-            <input type="hidden" name="title" x-bind:value="@this.get('title')">
-            <input type="hidden" name="employment_type" x-bind:value="@this.get('employment_type')">
-            <input type="hidden" name="department" x-bind:value="@this.get('department')">
-            <input type="hidden" name="reporting_to" x-bind:value="@this.get('reporting_to')">
-            <input type="hidden" name="posted_at" x-bind:value="@this.get('posted_at')">
-            <input type="hidden" name="status" x-bind:value="@this.get('status')">
-            <input type="hidden" name="description" id="hidden-description" x-bind:value="@this.get('description')">
-            <input type="hidden" name="active" x-bind:value="@this.get('active') ? '1' : '0'">
         </form>
-
-        <div class="flex gap-3 mb-6">
-            <button type="button" @click="submitJobForm()"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition cursor-pointer">
-                <i class="fas fa-plus mr-2"></i>Create Job Listing
-            </button>
-            <button type="button"
-                @click="showSaveTemplateModal = true; templateContentsOverride = null; templatePositionTitleOverride = null; editingTemplateId = null; editingTemplateName = null"
-                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition cursor-pointer">
-                <i class="fas fa-save mr-2"></i>Save This Template
-            </button>
-        </div>
 
         {{-- Save Template Modal --}}
         <div x-show="showSaveTemplateModal"
@@ -598,7 +328,11 @@
                     You are updating a template you created.
                 </p>
 
-                <form id="save-template-form" @submit.prevent="submitTemplateForm()" x-ref="templateForm">
+                <form id="save-template-form" method="POST" @submit.prevent="submitTemplateForm()" x-ref="templateForm">
+                    <input type="hidden" name="title" id="template-title">
+                    <input type="hidden" name="employment_type" id="template-employment-type">
+                    <input type="hidden" name="reporting_to" id="template-reporting-to">
+                    <input type="hidden" name="description" id="template-description">
                     <input type="hidden" name="_token" :value="'{{ csrf_token() }}'">
                     <div class="mb-4">
                         <label class="block font-semibold mb-2">Template Name *</label>
@@ -676,6 +410,11 @@
         </div>
         @endif
     </div>
+    @else
+    <div class="bg-white rounded-lg shadow p-6 text-red-600 font-bold">
+        Facility context is missing. Please select a facility to add or edit job listings and templates.
+    </div>
+    @endif
 
     {{-- Job Listings Table --}}
     <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -884,6 +623,359 @@
 
     <script>
         tinymce.init({
+                selector: '#description-editor',
+                height: 250,
+                menubar: false,
+                plugins: 'lists link',
+                toolbar: 'undo redo | bold italic underline | bullist numlist | link | formatselect',
+                setup: function (editor) {
+                    editor.on('init', function () {
+                        const oldDescription = {!! json_encode(old('description') ?? '') !!};
+                        if (oldDescription) {
+                            editor.setContent(oldDescription);
+                        }
+                    });
+                    // Sync TinyMCE changes to Livewire
+                    editor.on('change keyup', function () {
+                        window.livewire && window.livewire.find(document.querySelector('[wire\\:model\\.defer=\'description\']').closest('[wire\\:id]').getAttribute('wire:id')).set('description', editor.getContent());
+                    });
+                }
+            });
+
+            // Submit Add Job form (for Create Job Listing button)
+            window.submitJobForm = function() {
+                const form = document.getElementById('add-job-form');
+                if (!form) {
+                    alert('Job form not found');
+                    return;
+                }
+                // Optionally, set description from TinyMCE if present
+                if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
+                    const desc = tinymce.get('description-editor').getContent();
+                    const descInput = form.querySelector('input[name="description"]') || document.getElementById('hidden-description');
+                    if (descInput) descInput.value = desc;
+                }
+                form.submit();
+            };
+
+            // Define loadTemplate function for Alpine.js
+            window.loadTemplate = function() {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                
+                const data = mainDiv._x_dataStack[0];
+                if (!data.selectedTemplateId || !data.templates || data.templates.length === 0) {
+                    return;
+                }
+                
+                const selectedTemplate = data.templates.find(t => t.id == data.selectedTemplateId);
+                if (!selectedTemplate) {
+                    alert('Template not found');
+                    return;
+                }
+                
+                if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
+                    tinymce.get('description-editor').setContent(selectedTemplate.contents);
+                    data.selectedTemplateId = '';
+                }
+            };
+
+            // Save or update template
+            window.saveTemplate = function() {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+                
+                if (data.templateName.trim() === '') {
+                    alert('Please enter a template name');
+                    return;
+                }
+                if (data.templateContentsOverride !== null && data.templateContentsOverride !== undefined) {
+                    document.getElementById('template-contents').value = data.templateContentsOverride;
+                } else if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
+                    document.getElementById('template-contents').value = tinymce.get('description-editor').getContent();
+                }
+
+                const positionSelect = document.getElementById('template-position-select');
+                if (!data.templatePositionTitleOverride) {
+                    const titleSelect = document.querySelector('select[wire\\:model="title"]');
+                    const fallbackTitle = titleSelect ? titleSelect.value : '';
+                    data.templatePositionTitleOverride = fallbackTitle;
+                    if (positionSelect) {
+                        positionSelect.value = fallbackTitle;
+                    }
+                }
+                
+                // Determine if we're creating a new template or updating an existing one
+                if (data.editingTemplateId) {
+                    // Update existing template
+                    @if(isset($facility) && $facility)
+                        document.getElementById('save-template-form').action = '/admin/facility/{{ $facility->id }}/job-openings/template/update';
+                    @else
+                        alert('Facility not found. Cannot update template.');
+                        return;
+                    @endif
+                    document.getElementById('template-id').value = data.editingTemplateId;
+                } else {
+                    // Create new template
+                    @if(isset($facility) && $facility)
+                        document.getElementById('save-template-form').action = '/admin/facility/{{ $facility->id }}/job-openings/template/save';
+                    @else
+                        alert('Facility not found. Cannot save template.');
+                        return;
+                    @endif
+                }
+                
+                document.getElementById('save-template-form').submit();
+            };
+
+            // Save template from view modal
+            window.saveTemplateFromJob = function(contents, defaultName) {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+
+                data.templateContentsOverride = contents || '';
+                data.templatePositionTitleOverride = defaultName || '';
+                data.templateName = defaultName ? (defaultName + ' Template') : '';
+                data.editingTemplateId = null;
+                data.editingTemplateName = null;
+                data.viewModalJobId = null;
+                data.showSaveTemplateModal = true;
+            };
+
+            // Save template from edit modal
+            window.saveTemplateFromEdit = function() {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+
+                const editForm = document.getElementById('edit-job-form');
+                if (!editForm) return;
+
+                const titleValue = editForm.querySelector('[x-model="title"]')?.value || '';
+                let contents = '';
+                if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
+                    contents = tinymce.get('edit-description-editor').getContent();
+                }
+
+                data.templateContentsOverride = contents;
+                data.templatePositionTitleOverride = titleValue;
+                data.templateName = titleValue ? (titleValue + ' Template') : '';
+                data.editingTemplateId = null;
+                data.editingTemplateName = null;
+                data.showEditModal = false;
+                data.showSaveTemplateModal = true;
+            };
+
+            // Use template from saved templates
+            window.useTemplate = function(templateId) {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+                
+                const template = data.templates.find(t => t.id == templateId);
+                if (template) {
+                    if (typeof tinymce !== 'undefined' && tinymce.get('description-editor')) {
+                        tinymce.get('description-editor').setContent(template.contents);
+                    }
+                    // Persist selected template for update
+                    data.editingTemplateId = template.id;
+                    data.templateName = template.name;
+                    data.templateContentsOverride = template.contents;
+                    data.templatePositionTitleOverride = template.position_title || '';
+                }
+            };
+
+            // Delete template
+            window.deleteTemplate = function(templateId) {
+                if(!confirm('Delete this template?')) return;
+                let form = document.createElement('form');
+                form.method = 'POST';
+                @if(isset($facility) && $facility)
+                    form.action = '/admin/facility/{{ $facility->id }}/job-openings/template/delete';
+                @else
+                    alert('Facility not found. Cannot delete template.');
+                    return;
+                @endif
+                form.innerHTML = '@csrf<input type="hidden" name="template_id" value="' + templateId + '">';
+                document.body.appendChild(form);
+                form.submit();
+            };
+
+            // Update template
+            window.updateTemplate = function(templateId) {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+                const template = data.templates.find(t => t.id == templateId);
+                if (!template) return;
+                // Prefill modal fields for editing
+                data.templateName = template.name;
+                data.templateContentsOverride = template.contents;
+                data.templatePositionTitleOverride = template.position_title || '';
+                data.showSaveTemplateModal = true;
+                data.editingTemplateId = templateId;
+                data.editingTemplateName = template.name;
+            };
+
+            // Edit job
+            window.editJob = function(jobId) {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+                
+                // Fetch job data
+                @if(isset($facility) && $facility)
+                    fetch('/admin/facility/{{ $facility->id }}/job-openings/' + jobId + '/data')
+                @else
+                    alert('Facility not found. Cannot fetch job data.');
+                    return;
+                @endif
+                    .then(response => response.json())
+                    .then(job => {
+                        data.editJobData = job;
+                        data.editingJobId = jobId;
+                        data.isCopyingJob = false;
+                        data.showEditModal = true;
+                        data.viewModalJobId = null; // Close view modal if open
+                        
+                        // Set Alpine edit* variables directly
+                        data.editTitle = job.title || '';
+                        data.editEmploymentType = job.employment_type || '';
+                        data.editDepartment = job.department || '';
+                        data.editReportingTo = job.reporting_to || '';
+                        data.editPostedAt = job.posted_at || '';
+                        data.editStatus = job.status || 'open';
+                        data.editActive = job.active == 1;
+                        data.editDescription = job.description || '';
+                        // Set TinyMCE content if present
+                        setTimeout(() => {
+                            if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
+                                tinymce.get('edit-description-editor').setContent(job.description || '');
+                            }
+                        }, 100);
+                    })
+                    .catch(error => {
+                        console.error('Error loading job:', error);
+                        alert('Error loading job details');
+                    });
+            };
+
+            // Copy job
+            window.copyJob = function(jobId) {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+                
+                // Fetch job data
+                @if(isset($facility) && $facility)
+                    fetch('/admin/facility/{{ $facility->id }}/job-openings/' + jobId + '/data')
+                @else
+                    alert('Facility not found. Cannot copy job.');
+                    return;
+                @endif
+                    .then(response => response.json())
+                    .then(job => {
+                        data.editJobData = job;
+                        data.editingJobId = null; // Important: null means it's a copy, not an edit
+                        data.isCopyingJob = true;
+                        data.showEditModal = true;
+                        data.viewModalJobId = null; // Close view modal if open
+                        
+                        // Populate form fields after modal renders
+                        setTimeout(() => {
+                            const editForm = document.getElementById('edit-job-form');
+                            if (editForm) {
+                                editForm.querySelector('[x-model="title"]').value = job.title || '';
+                                editForm.querySelector('[x-model="employment_type"]').value = job.employment_type || '';
+                                editForm.querySelector('[x-model="department"]').value = job.department || '';
+                                editForm.querySelector('[x-model="reporting_to"]').value = job.reporting_to || '';
+                                editForm.querySelector('[x-model="posted_at"]').value = new Date().toISOString().split('T')[0]; // Reset date to today
+                                editForm.querySelector('[x-model="status"]').value = 'open'; // Reset status to open
+                                editForm.querySelector('input[type="checkbox"][x-model="active"]').checked = true; // Default to active
+                                
+                                if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
+                                    tinymce.get('edit-description-editor').setContent(job.description || '');
+                                }
+                            }
+                        }, 100);
+                    })
+                    .catch(error => {
+                        console.error('Error loading job:', error);
+                        alert('Error loading job details');
+                    });
+            };
+
+            // Submit edit form
+            window.submitEditForm = function() {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+
+                const form = document.getElementById('edit-job-form');
+                if (!form) {
+                    console.error('Edit form not found');
+                    return;
+                }
+
+                // Set form action based on edit or copy
+                @if(isset($facility) && $facility)
+                    if (data.editingJobId) {
+                        // Updating existing job
+                        form.action = '/admin/facility/{{ $facility->id }}/job-openings/' + data.editingJobId + '/update';
+                        form.method = 'POST';
+                    } else {
+                        // Creating new job from copy
+                        form.action = '/admin/facility/{{ $facility->id }}/job-openings';
+                        form.method = 'POST';
+                    }
+                @else
+                    alert('Facility not found. Cannot submit job form.');
+                    return;
+                @endif
+
+                // Get values from Alpine.js x-model fields and set hidden inputs
+                form.querySelector('input[name="title"]').value = data.editTitle || '';
+                form.querySelector('input[name="employment_type"]').value = data.editEmploymentType || '';
+                form.querySelector('input[name="department"]').value = data.editDepartment || '';
+                form.querySelector('input[name="reporting_to"]').value = data.editReportingTo || '';
+                form.querySelector('input[name="posted_at"]').value = data.editPostedAt || '';
+                form.querySelector('input[name="status"]').value = data.editStatus || '';
+
+                // Get TinyMCE content for description
+                if (typeof tinymce !== 'undefined' && tinymce.get('edit-description-editor')) {
+                    form.querySelector('input[name="description"]').value = tinymce.get('edit-description-editor').getContent();
+                } else {
+                    form.querySelector('input[name="description"]').value = data.editDescription || '';
+                }
+
+                // Get active checkbox value
+                form.querySelector('input[name="active"]').value = data.editActive ? '1' : '0';
+
+                form.submit();
+            };
+
+            // Confirm action from modal
+            window.confirmAction = function() {
+                const mainDiv = document.querySelector('[x-data*="viewModalJobId"]');
+                if (!mainDiv || !mainDiv._x_dataStack) return;
+                const data = mainDiv._x_dataStack[0];
+                
+                let form = document.getElementById('action-form');
+                @if(isset($facility) && $facility)
+                    form.action = data.actionType === 'toggle' ? '/admin/facility/{{ $facility->id }}/job-openings/toggle' : 
+                                 data.actionType === 'status' ? '/admin/facility/{{ $facility->id }}/job-openings/status' :
+                                 '/admin/facility/{{ $facility->id }}/job-openings/delete';
+                    form.submit();
+                    data.showActionModal = false;
+                @else
+                    alert('Facility not found. Cannot perform action.');
+                    return;
+                @endif
+            };
+
+        tinymce.init({
             selector: '#edit-description-editor',
             height: 250,
             menubar: false,
@@ -950,23 +1042,32 @@
             </div>
 
             <div class="bg-gray-100 p-6 sticky bottom-0 flex gap-3">
+                @if(isset($job) && $job && isset($facility) && $facility)
                 <template x-if="showEditModal && editingJobId === {{ $job->id }}">
                     <div class="flex gap-3 w-full">
                         <form id="action-form-toggle" method="POST"
-                            action="/admin/facility/{{ $facility->id }}/job-openings/toggle" style="display: none;">
+                            action="@if(isset($facility) && $facility)/admin/facility/{{ $facility->id }}/job-openings/toggle @else # @endif"
+                            style="display: none;">
                             @csrf
                             <input type="hidden" name="job_id" id="form-job-id">
                         </form>
                         <form id="action-form-status" method="POST"
-                            action="/admin/facility/{{ $facility->id }}/job-openings/status" style="display: none;">
+                            action="@if(isset($facility) && $facility)/admin/facility/{{ $facility->id }}/job-openings/status @else # @endif"
+                            style="display: none;">
                             @csrf
                             <input type="hidden" name="job_id" id="form-job-id-status">
                         </form>
                         <form id="action-form-delete" method="POST"
-                            action="/admin/facility/{{ $facility->id }}/job-openings/delete" style="display: none;">
+                            action="@if(isset($facility) && $facility)/admin/facility/{{ $facility->id }}/job-openings/delete @else # @endif"
+                            style="display: none;">
                             @csrf
                             <input type="hidden" name="job_id" id="form-job-id-delete">
                         </form>
+                        @else
+                        <div class="flex gap-3 w-full">
+                            <span class="text-red-600 font-bold">Facility or Job not found. Actions disabled.</span>
+                        </div>
+                        @endif
                         {{-- <button type="button" @click="saveTemplateFromJob('{{ str_replace([" \r", "\n" ],
                             [' ', ' '], htmlentities($job->description, ENT_QUOTES)) }}'
                             , '{{ str_replace(["\r", "\n"], [' ', ' '], htmlentities($job->title, ENT_QUOTES)) }}' )"

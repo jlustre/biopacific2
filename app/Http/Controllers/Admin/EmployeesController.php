@@ -1,0 +1,365 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\BPEmployee;
+use App\Models\Facility;
+
+class EmployeesController extends Controller
+{
+    /**
+     * Update only the user's email from the modal form.
+     * Route: PUT admin/employees/{user}/update-email
+     */
+    public function updateEmail(Request $request, $userId)
+    {
+        $user = \App\Models\User::findOrFail($userId);
+        $validated = $request->validate([
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id),
+            ],
+        ]);
+
+        // Flash a warning that this will affect login credentials
+        session()->flash('warning', 'Changing the email will affect the user\'s login credentials. The user will need to use the new email to log in.');
+
+        $user->email = $validated['email'];
+        $user->save();
+        return redirect()->back()->with('success', 'Email updated successfully.');
+    }
+    public function index(Request $request)
+    {
+        $facilities = Facility::all();
+        $departments = \App\Models\BPDepartment::all();
+        $positions = \App\Models\BPPosition::all();
+        $query = BPEmployee::query();
+
+        // Filter by facility
+        if ($request->filled('facility')) {
+            $query->whereHas('assignments', function ($q) use ($request) {
+                $q->where('facility_id', $request->facility);
+            });
+        }
+
+        // Filter by department
+        if ($request->filled('department')) {
+            $query->whereHas('assignments', function ($q) use ($request) {
+                $q->where('dept_id', $request->department);
+            });
+        }
+
+        // Filter by position
+        if ($request->filled('position')) {
+            $query->whereHas('assignments', function ($q) use ($request) {
+                $q->where('job_code_id', $request->position);
+            });
+        }
+
+        // Filter by union status
+        if ($request->filled('union')) {
+            if ($request->union === 'union') {
+                $query->whereHas('assignments', function ($q) {
+                    $q->whereNotNull('bargaining_unit_id');
+                });
+            } elseif ($request->union === 'non-union') {
+                $query->whereHas('assignments', function ($q) {
+                    $q->whereNull('bargaining_unit_id');
+                });
+            }
+        }
+
+        // Search by name
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%$search%")
+                  ->orWhere('last_name', 'like', "%$search%")
+                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%$search%"]);
+            });
+        }
+
+        $perPage = $request->input('per_page', 10);
+        $employees = $query->with([
+            'currentAssignment',
+            'currentAssignment.facility',
+            'currentAssignment.department',
+            'currentAssignment.position',
+        ])->paginate($perPage)->appends($request->except('page'));
+
+        // dd($employees->toArray());
+
+        return view('admin.facilities.employees', compact('employees', 'facilities', 'departments', 'positions', 'perPage'));
+    }
+    /**
+     * Display the specified employee details for modal.
+     */
+    public function show($emp_id)
+    {
+        $employee = \App\Models\BPEmployee::with([
+            'currentAssignment',
+            'currentAssignment.facility',
+            'currentAssignment.department',
+            'currentAssignment.position',
+        ])->findOrFail($emp_id);
+        return view('admin.facilities.employee-details', compact('employee'));
+    }
+    /**
+     * Show the form for editing the specified employee.
+     */
+    public function edit($emp_id)
+    {
+        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user'])->findOrFail($emp_id);
+        $departments = \App\Models\BPDepartment::all();
+        $positions = \App\Models\BPPosition::all();
+        $facilities = \App\Models\Facility::all();
+        return view('admin.facilities.edit_employee', compact('employee', 'departments', 'positions', 'facilities'));
+    }
+
+    /**
+     * Update the specified employee's personal info (tabbed form).
+     */
+    public function updatePersonal(Request $request, $emp_id)
+    {
+        $employee = \App\Models\BPEmployee::with('user')->findOrFail($emp_id);
+        try {
+            $validated = $request->validate([
+                'user_id' => 'nullable|string|max:255',
+                'emp_id' => 'nullable|string|max:255',
+                'ssn' => 'nullable|string|max:255',
+                'original_hire_dt' => 'nullable|date',
+                'first_name' => 'required|string|max:255',
+                'middle_name' => 'nullable|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'dob' => 'nullable|date',
+                'gender' => 'required|in:M,F,O,N',
+                'email' => [
+                    'nullable',
+                    'string',
+                    'email',
+                    'max:255',
+                    \Illuminate\Validation\Rule::unique('users', 'email')->ignore($employee->user_id),
+                ],
+            ]);
+            $user = auth()->user();
+            $isHrrd = $user && method_exists($user, 'hasRole') && $user->hasRole('hrrd');
+            $isAdmin = $user && method_exists($user, 'hasRole') && $user->hasRole('admin');
+            $isSelf = $user && ($user->id == $employee->user_id);
+            // Only allow SSN update if the input is all digits (not masked)
+            $ssnInput = $validated['ssn'] ?? null;
+            $ssnIsAllDigits = $ssnInput && preg_match('/^\d+$/', $ssnInput);
+            $canUpdateSsn = ($isHrrd || $isAdmin || $isSelf) && $ssnIsAllDigits;
+            if (!$canUpdateSsn) {
+                unset($validated['ssn']); // Prevent masked or unauthorized SSN update
+            }
+            $employee->fill($validated);
+            $dirty = $employee->isDirty();
+            $employee->save();
+
+            // Update email in user table if provided
+            if (isset($validated['email']) && $employee->user) {
+                $employee->user->email = $validated['email'];
+                $employee->user->save();
+            }
+
+            $msg = $dirty ? 'Personal information updated successfully.' : 'No changes were made, but your profile is up to date.';
+            return redirect()->route('admin.employees.edit', $employee->emp_id)
+                ->with('success', $msg);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('admin.employees.edit', $employee->emp_id)
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            return redirect()->route('admin.employees.edit', $employee->emp_id)
+                ->with('error', 'Failed to update personal information: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+        /**
+         * Add a phone to an employee, ensuring only one primary phone.
+         */
+        public function addPhone(Request $request, $employee)
+        {
+            $validated = $request->validate([
+                'phone_type' => 'required|string|max:50',
+                'phone_number' => 'required|string|max:50',
+                'is_primary' => 'nullable', // Remove boolean rule
+            ]);
+
+            // Checkbox submits as 'on' if checked, so use has()
+            $isPrimary = $request->has('is_primary');
+
+            // If this phone is set as primary, unset all other primary phones for this employee
+            if ($isPrimary) {
+                \App\Models\BPEmpPhone::where('emp_id', $employee)
+                    ->where('is_primary', 1)
+                    ->update(['is_primary' => 0]);
+            }
+
+            $phone = new \App\Models\BPEmpPhone();
+            $phone->emp_id = $employee;
+            $phone->phone_type = $validated['phone_type'];
+            $phone->phone_number = $validated['phone_number'];
+            $phone->is_primary = $isPrimary ? 1 : 0;
+            $phone->save();
+
+            return back()->with('success', 'Phone added successfully.');
+        }
+
+        /**
+         * Update a phone for an employee.
+         */
+        public function updatePhone(Request $request, $employee, $phone)
+        {
+            $validated = $request->validate([
+                'phone_type' => 'required|string|max:50',
+                'phone_number' => 'required|string|max:50',
+                'is_primary' => 'nullable',
+            ]);
+
+            $phoneModel = \App\Models\BPEmpPhone::where('emp_id', $employee)->where('phone_id', $phone)->firstOrFail();
+
+            $isPrimary = $request->has('is_primary');
+            if ($isPrimary) {
+                \App\Models\BPEmpPhone::where('emp_id', $employee)
+                    ->where('is_primary', 1)
+                    ->update(['is_primary' => 0]);
+            }
+
+            $phoneModel->phone_type = $validated['phone_type'];
+            $phoneModel->phone_number = $validated['phone_number'];
+            $phoneModel->is_primary = $isPrimary ? 1 : 0;
+            $phoneModel->save();
+
+            return back()->with('success', 'Phone updated successfully.');
+        }
+    /**
+     * Add or update an address for an employee (tabbed form).
+     */
+    public function updateAddress(Request $request, $employee)
+    {
+        $validated = $request->validate([
+            'address1' => 'required|string|max:255',
+            'address2' => 'nullable|string|max:255',
+            'city' => 'required|string|max:100',
+            'state' => 'required|string|max:100',
+            'zip' => 'required|string|max:20',
+            'country' => 'required|string|max:100',
+            'is_primary' => 'required|in:0,1',
+            'address_type' => 'required|in:h,w,o',
+            'effdt' => 'required|date',
+            'effseq' => 'nullable|integer',
+        ]);
+
+        // If is_primary is set, unset all other primary addresses for this employee
+        if ($validated['is_primary'] == '1') {
+            \App\Models\BPEmpAddress::where('emp_id', $employee)
+                ->where('is_primary', 1)
+                ->update(['is_primary' => 0]);
+        }
+
+        // If effseq is present, update existing address; else, add new with correct effseq
+        if (isset($validated['effseq']) && $validated['effseq'] !== '') {
+            // Update existing address
+            $address = \App\Models\BPEmpAddress::where([
+                'emp_id' => $employee,
+                'effdt' => $validated['effdt'],
+                'effseq' => $validated['effseq'],
+                'address_type' => $validated['address_type'],
+            ])->first();
+            if ($address) {
+                $address->fill($validated);
+                $address->save();
+                $msg = 'Address updated successfully.';
+            } else {
+                // fallback: create new if not found
+                $validated['emp_id'] = $employee;
+                \App\Models\BPEmpAddress::create($validated);
+                $msg = 'Address added successfully.';
+            }
+        } else {
+            // Add new address, determine effseq
+            $latest = \App\Models\BPEmpAddress::where('emp_id', $employee)
+                ->where('address_type', $validated['address_type'])
+                ->orderByDesc('effdt')
+                ->orderByDesc('effseq')
+                ->first();
+            $effseq = 0;
+            if ($latest && $latest->effdt === $validated['effdt']) {
+                $effseq = $latest->effseq + 1;
+            }
+            $validated['effseq'] = $effseq;
+            $validated['emp_id'] = $employee;
+            \App\Models\BPEmpAddress::create($validated);
+            $msg = 'Address added successfully.';
+        }
+
+        return redirect()->route('admin.employees.edit', $employee)
+            ->with('success', $msg);
+    }
+    /**
+     * Add or update an assignment for an employee (tabbed form).
+     */
+    public function updateAssignment(Request $request, $employee)
+    {
+        $validated = $request->validate([
+            'facility_id' => 'required|integer',
+            'dept_id' => 'required|integer',
+            'job_code_id' => 'required|integer',
+            'reports_to_emp_id' => 'nullable|integer',
+            'reg_temp' => 'required|in:r,t',
+            'full_part_time' => 'required|in:ft,pt,pd',
+            'bargaining_unit_id' => 'nullable|integer',
+            'union_seniority_dt' => 'nullable|date',
+            'effdt' => 'required|date',
+            'effseq' => 'nullable|integer',
+        ]);
+        $userId = auth()->id();
+        $validated['created_by'] = $userId;
+        $validated['updated_by'] = $userId;
+
+        // If effseq is present, update existing assignment; else, add new with correct effseq
+        if (isset($validated['effseq']) && $validated['effseq'] !== '') {
+            // Update existing assignment
+            $assignment = \App\Models\BPEmpAssignment::where([
+                'emp_id' => $employee,
+                'effdt' => $validated['effdt'],
+                'effseq' => $validated['effseq'],
+            ])->first();
+            if ($assignment) {
+                $assignment->fill($validated);
+                $assignment->save();
+                $msg = 'Assignment updated successfully.';
+            } else {
+                // fallback: create new if not found
+                $validated['emp_id'] = $employee;
+                \App\Models\BPEmpAssignment::create($validated);
+                $msg = 'Assignment added successfully.';
+            }
+        } else {
+            // Add new assignment, determine effseq
+            $latest = \App\Models\BPEmpAssignment::where('emp_id', $employee)
+                ->where('facility_id', $validated['facility_id'])
+                ->orderByDesc('effdt')
+                ->orderByDesc('effseq')
+                ->first();
+            $effseq = 0;
+            if ($latest && $latest->effdt === $validated['effdt']) {
+                $effseq = $latest->effseq + 1;
+            }
+            $validated['effseq'] = $effseq;
+            $validated['emp_id'] = $employee;
+            \App\Models\BPEmpAssignment::create($validated);
+            $msg = 'Assignment added successfully.';
+        }
+
+        return redirect()->route('admin.employees.edit', $employee)
+            ->with('success', $msg);
+    }
+}

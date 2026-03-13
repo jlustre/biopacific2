@@ -18,36 +18,73 @@ class PreEmploymentController extends Controller
     public function saveReferenceCheck(Request $request, $id)
     {
         $user = Auth::user();
-        $referenceCheck = \App\Models\ConfidentialReferenceCheck::where('id', $id)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
+
+        // Prevent duplicate reference check for same user, reference_name, or company
+        $referenceIndex = $request->input('reference_index') ?? 1;
+        $referenceCheck = \App\Models\ConfidentialReferenceCheck::where('user_id', $user->id)
+            ->where('reference_index', $referenceIndex)
+            ->first();
+
+        if ($referenceCheck) {
+            $notification = 'Reference check updated.';
+        } else {
+            $referenceCheck = new \App\Models\ConfidentialReferenceCheck();
+            $referenceCheck->user_id = $user->id;
+            $referenceCheck->reference_index = $referenceIndex;
+            $notification = 'Reference check created.';
+        }
 
         $validated = $request->validate([
-            'applicant_name' => 'required|string|max:255',
-            'position_applied_for' => 'required|string|max:255',
-            'employed_by' => 'nullable|string|max:255',
-            'supervisor' => 'required|string|max:255',
+            'reference_index' => 'nullable|integer|min:1',
+            'reference_name' => 'nullable|string|max:255',
+            'reference_title' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string|max:255',
             'reference_phone' => 'nullable|string|max:255',
             'reference_email' => 'nullable|email|max:255',
-            'applicant_signature' => 'required|string|max:255',
-            'date' => 'required|date',
-            // Add other fields as needed
+            'company' => 'nullable|string|max:255',
+            'signed' => 'nullable|boolean',
+            'signed_date' => 'nullable|date',
+            'employment_from' => 'nullable|date',
+            'employment_to' => 'nullable|date',
+            'salary' => 'nullable|numeric',
+            'salary_per' => 'nullable|string|max:255',
+            'duties_description' => 'nullable|string',
+            'performance_description' => 'nullable|string',
+            'date_contacted' => 'nullable|date',
+            'applicant_signature' => 'nullable|string|max:255',
+            'signature_date' => 'nullable|date',
         ]);
 
-        // Map validated fields to model
-        $referenceCheck->applicant_name = $validated['applicant_name'];
-        $referenceCheck->position_applied_for = $validated['position_applied_for'];
-        $referenceCheck->employed_by = $request->input('employed_by');
-        $referenceCheck->supervisor = $validated['supervisor'];
-        $referenceCheck->reference_phone = $request->input('reference_phone');
-        $referenceCheck->reference_email = $request->input('reference_email');
-        $referenceCheck->applicant_signature = $validated['applicant_signature'];
-        $referenceCheck->date = $validated['date'];
-        // Add other fields as needed
+        $referenceCheck->user_id = $user->id;
+        $referenceCheck->reference_index = $validated['reference_index'] ?? $request->input('reference_index') ?? 1;
+        $referenceCheck->reference_name = $validated['reference_name'] ?? $request->input('reference_name') ?? null;
+        $referenceCheck->reference_title = $validated['reference_title'] ?? $request->input('reference_title') ?? null;
+        $referenceCheck->company_address = $validated['company_address'] ?? $request->input('company_address') ?? null;
+        $referenceCheck->reference_phone = $validated['reference_phone'] ?? null;
+        $referenceCheck->reference_email = $validated['reference_email'] ?? null;
+        $referenceCheck->company = $validated['company'] ?? null;
+        // Set signed to 1 if both applicant_signature and signature_date are filled
+        $applicantSignature = $validated['applicant_signature'] ?? $request->input('applicant_signature') ?? null;
+        $signatureDate = $validated['signature_date'] ?? $request->input('date') ?? null;
+        if (!empty($applicantSignature) && !empty($signatureDate)) {
+            $referenceCheck->signed = 1;
+        } else {
+            $referenceCheck->signed = $validated['signed'] ?? false;
+        }
+        $referenceCheck->signed_date = $validated['signed_date'] ?? null;
+        $referenceCheck->employment_from = $validated['employment_from'] ?? null;
+        $referenceCheck->employment_to = $validated['employment_to'] ?? null;
+        $referenceCheck->salary = $validated['salary'] ?? null;
+        $referenceCheck->salary_per = $validated['salary_per'] ?? null;
+        $referenceCheck->duties_description = $validated['duties_description'] ?? null;
+        $referenceCheck->performance_description = $validated['performance_description'] ?? null;
+        $referenceCheck->date_contacted = $validated['date_contacted'] ?? null;
+        $referenceCheck->applicant_signature = $validated['applicant_signature'] ?? $request->input('applicant_signature') ?? null;
+        $referenceCheck->signature_date = $validated['signature_date'] ?? $request->input('date') ?? null;
 
         $referenceCheck->save();
 
-        return redirect()->route('pre-employment.portal')->with('success', 'Reference check saved.');
+        return redirect()->route('pre-employment.portal')->with('success', $notification);
     }
     /**
      * Add a new blank Confidential Reference Check for the authenticated user.
@@ -61,10 +98,14 @@ class PreEmploymentController extends Controller
         if ($count >= $max) {
             return redirect()->route('pre-employment.portal')->with('error', 'Maximum number of reference checks reached.');
         }
+        // Find the max reference_index for this user and increment
+        $maxIndex = \App\Models\ConfidentialReferenceCheck::where('user_id', $user->id)->max('reference_index');
+        $nextIndex = $maxIndex ? $maxIndex + 1 : 1;
         \App\Models\ConfidentialReferenceCheck::create([
             'user_id' => $user->id,
-            'reference_name' => 'Reference Name',
-            'relationship' => 'Relationship',
+            'reference_index' => $nextIndex,
+            'reference_name' => '',
+            'relationship' => '',
             'comments' => '',
         ]);
         return redirect()->route('pre-employment.portal');

@@ -1,3 +1,10 @@
+<div class="flex-1">
+    <label class="block font-semibold mb-1">Applicant's Name</label>
+    <input type="text"
+        value="{{ $preEmployment?->first_name ?? $jobApplication?->first_name ?? '' }} {{ $preEmployment?->last_name ?? $jobApplication?->last_name ?? '' }}"
+        class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
+        readonly>
+</div>
 <div class="container mx-auto py-8 max-w-2xl" x-data="{ open: true }">
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl font-bold">
@@ -35,6 +42,8 @@
             @csrf
             <input type="hidden" name="reference_check_number" value="{{ $referenceCheckNumber ?? 1 }}">
             <input type="hidden" name="reference_check_id" value="{{ $referenceCheck->id ?? 0 }}">
+            <input type="hidden" name="reference_index"
+                value="{{ $referenceCheck->reference_index ?? $referenceCheckNumber ?? 1 }}">
             <div class="gap-y-6 flex flex-col">
                 <div class="flex flex-col md:flex-row gap-4">
                     <div class="flex-1">
@@ -54,17 +63,35 @@
                 </div>
                 <div class="flex flex-col md:flex-row gap-4 my-1">
                     <div class="flex-1">
-                        <label class="block font-semibold mb-1">Employed By</label>
-                        <input type="text" name="employed_by"
-                            value="{{ old('employed_by', $referenceCheck->employed_by ?? '') }}"
+                        <label class="block font-semibold mb-1">Company</label>
+                        <input type="text" name="company" value="{{ old('company', $referenceCheck->company ?? '') }}"
                             class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
                     </div>
                     <div class="flex-1">
-                        <label class="block font-semibold mb-1">Reference Name or Supevisor</label>
-                        <input type="text" name="supervisor"
-                            value="{{ old('supervisor', $referenceCheck->supervisor ?? '') }}"
+                        <label class="block font-semibold mb-1">Company Address</label>
+                        <input type="text" name="company_address"
+                            value="{{ old('company_address', $referenceCheck->company_address ?? '') }}"
                             class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
-                            required>
+                            id="supervisor_field"
+                            onchange="document.getElementById('contact_name_field').value = this.value;">
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 my-1">
+                    <div class="flex-1">
+                        <label class="block font-semibold mb-1">Reference Name</label>
+                        <input type="text" name="reference_name"
+                            value="{{ old('reference_name', $referenceCheck->reference_name ?? '') }}"
+                            class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
+                            id="supervisor_field"
+                            onchange="document.getElementById('contact_name_field').value = this.value;">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block font-semibold mb-1">Reference Title</label>
+                        <input type="text" name="reference_title"
+                            value="{{ old('reference_title', $referenceCheck->reference_title ?? '') }}"
+                            class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
+                            id="supervisor_field"
+                            onchange="document.getElementById('contact_name_field').value = this.value;">
                     </div>
                 </div>
                 <div class="flex flex-col md:flex-row gap-4 my-1">
@@ -100,7 +127,8 @@
                     </div>
                     <div class="flex-1">
                         <label class="block font-semibold mb-1">Date</label>
-                        <input type="date" name="date" value="{{ old('date', $referenceCheck->date ?? '') }}"
+                        <input type="date" name="signature_date"
+                            value="{{ old('signature_date', $referenceCheck->signature_date ?? '') }}"
                             class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
                             required>
                     </div>
@@ -110,88 +138,31 @@
                     <i class="fas fa-save"></i>
                     Save Reference Check
                 </button>
+        </form>
+        {{--
+        <hr class="my-6">
+        @include('pre-employment.forms.reference_check_department', [
+        'referenceCheck' => $referenceCheck,
+        'readonly' => $readonly ?? false
+        ]) --}}
 
-                <hr class="my-6">
-                <div x-data="{ openDept: false }" class="border rounded-lg">
-                    <div class="flex items-center justify-between px-4 py-3 cursor-pointer bg-gray-50"
-                        @click="openDept = !openDept">
-                        <h2 class="text-xl font-bold mb-0">To be completed by reference or head of department</h2>
-                        <button type="button"
-                            class="ml-2 px-2 py-1 rounded bg-teal-100 text-teal-800 font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer">
-                            <span x-show="openDept">Hide</span>
-                            <span x-show="!openDept">Show</span>
-                        </button>
-                    </div>
-                    <div x-show="openDept" x-transition class="p-4">
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">Name, Title, & Relationship of person
-                                    contacted</label>
-                                <input type="text" name="contact_name_title_relationship"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                        </div>
-                        <h2 class="block font-bold my-1">Employment Details</h2>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">From</label>
-                                <input type="text" name="employment_from"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">To</label>
-                                <input type="text" name="employment_to"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">Salary</label>
-                                <input type="text" name="salary"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">Per</label>
-                                <input type="text" name="salary_per"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block font-semibold mt-2">Position and description of duties</label>
-                            <input type="text" name="position_description"
-                                class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                        </div>
-                        <div>
-                            <label class="block font-semibold mt-2">Describe applicant's performance
-                                <span class="text-sm text-gray-500">(what are the applicant's strong/weak points in
-                                    comparison
-                                    with
-                                    the other people who are doing or have done the same job?)</span></label>
-                            <textarea name="performance" rows="3"
-                                class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"></textarea>
-                        </div>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">Signature</label>
-                                <input type="text" name="signature"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">Title</label>
-                                <input type="text" name="title"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2">
-                            </div>
-                        </div>
-                        <div class="flex flex-col md:flex-row gap-4 md:justify-between md:items-end">
-                            <div class="flex-1">
-                                <label class="block font-semibold mb-1">Date</label>
-                                <input type="date" name="date"
-                                    class="form-input w-full border-2 border-teal-500 focus:border-teal-700 focus:ring-teal-200 rounded-lg px-4 py-2"
-                                    required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-        </form>
-        </form>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                // Find the section containing the reference_contacted_date field
+                const section = document.querySelector('input[name="reference_contacted_date"]').closest('.flex-1');
+                const field = document.querySelector('input[name="reference_contacted_date"]');
+                // Only require if visible
+                if (field && section && section.offsetParent !== null) {
+                    field.required = true;
+                } else if (field) {
+                    field.required = false;
+                }
+            });
+        });
+        </script>
     </div>
     <!-- Add Another Reference Check button is now handled in portal.blade.php only -->
 </div>

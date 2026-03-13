@@ -27,21 +27,12 @@
             <i class="fas fa-user-plus text-3xl text-blue-600 mb-2"></i>
             <span class="font-semibold text-lg text-blue-800">Hiring</span>
         </a>
-        <a href="{{ route('admin.facility.termination', ['facility' => $facility->id]) }}"
-            class="flex flex-col items-center justify-center bg-red-50 hover:bg-red-100 rounded-xl p-6 shadow transition">
-            <i class="fas fa-user-minus text-3xl text-red-600 mb-2"></i>
-            <span class="font-semibold text-lg text-red-800">Termination</span>
-        </a>
+
         <a href="{{ route('admin.facility.employees', ['facility' => $facility->id]) }}"
             class="flex flex-col items-center justify-center bg-green-50 hover:bg-green-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-users text-3xl text-green-600 mb-2"></i>
             <span class="font-semibold text-lg text-green-800">Employees</span>
         </a>
-        {{-- <a href="{{ route('admin.facility.attendance', ['facility' => $facility->id]) }}"
-            class="flex flex-col items-center justify-center bg-yellow-50 hover:bg-yellow-100 rounded-xl p-6 shadow transition">
-            <i class="fas fa-calendar-check text-3xl text-yellow-600 mb-2"></i>
-            <span class="font-semibold text-lg text-yellow-800">Attendance</span>
-        </a> --}}
         <a href="{{ route('admin.facility.documents', ['facility' => $facility->id]) }}"
             class="flex flex-col items-center justify-center bg-purple-50 hover:bg-purple-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-file-alt text-3xl text-purple-600 mb-2"></i>
@@ -51,6 +42,11 @@
             class="flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-clipboard-list text-3xl text-pink-600 mb-2"></i>
             <span class="font-semibold text-lg text-pink-800">Reports</span>
+        </a>
+        <a href="{{ route('admin.facility.termination', ['facility' => $facility->id]) }}"
+            class="flex flex-col items-center justify-center bg-red-50 hover:bg-red-100 rounded-xl p-6 shadow transition">
+            <i class="fas fa-user-minus text-3xl text-red-600 mb-2"></i>
+            <span class="font-semibold text-lg text-red-800">Termination</span>
         </a>
     </div>
 </div>

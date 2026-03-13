@@ -339,6 +339,9 @@ $forms = [
 
         <!-- Activity History -->
         <x-admin.pre-employment-review.activity-history :application="$application" />
+
+        <!-- Button Blocks/Card (moved below Activity History) -->
+        <x-admin.pre-employment-review.status-actions :facility="$facility" :application="$application" />
     </div>
 </x-admin.pre-employment-review.layout>
 @endsection

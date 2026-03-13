@@ -74,6 +74,11 @@ Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\C
     ->middleware(['auth'])
     ->name('pre-employment.reference-checks.save');
 
+// Pre-Employment2 Portal (authenticated users)
+Route::get('/my-pre-employment2', [\App\Http\Controllers\PreEmployment2Controller::class, 'portal'])
+    ->middleware(['auth'])
+    ->name('pre-employment2.portal');
+
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 Route::middleware(['auth'])->group(function () {
     // Admin: access to all dashboards and HR portal
@@ -122,9 +127,10 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     Route::match(['get', 'post'], '/admin/facility/{facility}/pre-employment/{application}/pdf', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'createPreEmploymentPdf'])->name('admin.facility.pre-employment.pdf');
     Route::post('/admin/facility/{facility}/pre-employment/{application}/status', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'updatePreEmploymentStatus'])->name('admin.facility.pre-employment.status');
     Route::get('/admin/facility/{facility}/document/{document}/download', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'downloadDocument'])->name('admin.facility.document.download');
+    Route::get('/admin/facility/{facility}/document/{document}/view', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'viewDocument'])->name('admin.facility.document.view');
     Route::delete('/admin/facility/{facility}/document/{document}', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'deleteDocument'])->name('admin.facility.document.delete');
     Route::get('/admin/facility/{facility}/termination', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'termination'])->name('admin.facility.termination');
-    Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'employees'])->name('admin.facility.employees');
+    Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\EmployeesController::class, 'index'])->name('admin.facility.employees');
     // Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/reports', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reports'])->name('admin.facility.reports');
@@ -172,7 +178,25 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
-    
+
+    // Add resource route for employees (show, edit, update)
+    Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update']);
+    // Custom route for updating employee assignment (tabbed form)
+    Route::put('employees/{employee}/update-assignment', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAssignment'])->name('employees.update_assignment');
+    // Custom route for updating employee address (tabbed form)
+    Route::put('employees/{employee}/update-address', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAddress'])->name('employees.address.update');
+    // Custom route for updating employee personal profile (tabbed form)
+    Route::put('employees/{employee}/update-personal', [\App\Http\Controllers\Admin\EmployeesController::class, 'updatePersonal'])->name('employees.personal.update');
+
+    // Custom route for adding a phone to employee
+    Route::post('employees/{employee}/phones/add', [\App\Http\Controllers\Admin\EmployeesController::class, 'addPhone'])->name('employees.phones.add');
+    // Custom route for updating a phone for employee
+    Route::put('employees/{employee}/phones/{phone}/update', [\App\Http\Controllers\Admin\EmployeesController::class, 'updatePhone'])->name('employees.phones.update');
+
+    // Update only the user's email from modal
+    Route::put('employees/{user}/update-email', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateEmail'])
+    ->name('employees.email.update');
+
     // System Settings page
     Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
@@ -422,8 +446,6 @@ Route::get('/applications/{id}', [JobApplicationController::class, 'show'])->nam
 // List job applications for a facility
 Route::get('/facilities/{facility}/applications', [CareersApplicationsController::class, 'index'])->name('facilities.applications.index');
 
-// ...existing code...
-
 // Place Livewire update routes at the very end to avoid being shadowed by catch-all routes
 Route::post('/livewire/update', [HandleRequests::class, 'handleUpdate'])
     ->middleware(['web'])
@@ -530,10 +552,16 @@ Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {
 // Pre-Employment Registration Route (must come before catch-all facility routes)
 Route::get('/pre-employment/{code?}', [PreEmploymentController::class, 'show'])->name('pre-employment.index');
 
+
 // Pre-Employment Portal (authenticated users)
 Route::get('/my-pre-employment', [PreEmploymentController::class, 'portal'])
     ->middleware(['auth'])
     ->name('pre-employment.portal');
+
+// Employment Portal (authenticated users)
+Route::get('/my-employment', [\App\Http\Controllers\EmploymentController::class, 'portal'])
+    ->middleware(['auth'])
+    ->name('employment.portal');
 
 Route::post('/my-pre-employment/checklist/{employeeChecklist}', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'update'])
     ->middleware(['auth'])
@@ -574,3 +602,8 @@ Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
 
 // Facility public page by slug (e.g. /almaden-healthcare-and-rehabilitation-center)
 Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name('facility.public');
+
+// Minimal Livewire validation test route
+Route::get('/admin/facilities/test_livewire_validation', function() {
+    return view('admin.facilities.test_livewire_validation');
+});

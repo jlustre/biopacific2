@@ -370,34 +370,51 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
                         $checks = $referenceChecks ?? collect();
                         @endphp
 
-                        @foreach($checks as $i => $referenceCheck)
-                        @include('pre-employment.forms.reference_check', [
-                        'referenceCheckNumber' => $i + 1,
-                        'referenceCheck' => $referenceCheck,
-                        'preEmployment' => $preEmployment,
-                        'jobApplication' => $jobApplication,
-                        'positions' => $positions,
-                        'selectedPositionId' => $selectedPositionId,
-                        'isEditable' => $isEditable ?? true,
-                        'referenceCheckTotal' => $checks->count(),
-                        ])
-                        @endforeach
-                        <div class="flex flex-wrap gap-4 mt-8">
-                            <form method="POST" action="{{ route('pre-employment.reference-checks.add') }}">
+                        <div x-data="{ openReference: {{ $checks->count() ? $checks->first()->reference_index : 1 }} }">
+                            @foreach($checks as $i => $referenceCheck)
+                            <div class="mb-4 border rounded-lg">
+                                <button type="button"
+                                    class="w-full flex justify-between items-center px-4 py-3 bg-gray-50 hover:bg-teal-50 font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                    @click="openReference = openReference === {{ $referenceCheck->reference_index ?? ($i+1) }} ? null : {{ $referenceCheck->reference_index ?? ($i+1) }}">
+                                    <span>Reference Check #{{ $referenceCheck->reference_index ?? ($i+1) }}</span>
+                                    <span x-show="openReference !== {{ $referenceCheck->reference_index ?? ($i+1) }}"><i
+                                            class="fas fa-chevron-down"></i></span>
+                                    <span x-show="openReference === {{ $referenceCheck->reference_index ?? ($i+1) }}"><i
+                                            class="fas fa-chevron-up"></i></span>
+                                </button>
+                                <div x-show="openReference === {{ $referenceCheck->reference_index ?? ($i+1) }}"
+                                    x-transition class="p-0">
+                                    @include('pre-employment.forms.reference_check', [
+                                    'referenceCheckNumber' => $i + 1,
+                                    'referenceCheck' => $referenceCheck,
+                                    'preEmployment' => $preEmployment,
+                                    'jobApplication' => $jobApplication,
+                                    'positions' => $positions,
+                                    'selectedPositionId' => $selectedPositionId,
+                                    'isEditable' => $isEditable ?? true,
+                                    'referenceCheckTotal' => $checks->count(),
+                                    ])
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 mt-8 justify-between pb-2">
+                            <form method="POST" action="{{ route('pre-employment.reference-checks.add') }}"
+                                class="w-full md:w-auto">
                                 @csrf
                                 <button type="submit"
-                                    class="bg-gray-100 hover:bg-teal-100 text-teal-700 font-semibold py-2 px-6 rounded-lg shadow transition-colors duration-150 flex items-center gap-2 cursor-pointer">
+                                    class="bg-gray-100 hover:bg-teal-100 text-teal-700 font-semibold py-2 px-6 rounded-lg shadow transition-colors duration-150 flex items-center gap-2 cursor-pointer w-full md:w-auto">
                                     <i class="fas fa-plus"></i>
-                                    Add Another Reference Check
+                                    Add Another Reference
                                 </button>
                             </form>
                             @if($checks->count())
-                            <form method="POST" action="#">
+                            <form method="POST" action="#" class="w-full md:w-auto">
                                 @csrf
                                 <button type="submit" name="action" value="submit_all"
-                                    class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-8 rounded-lg shadow transition-colors duration-150 flex items-center gap-2 cursor-pointer">
+                                    class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-8 rounded-lg shadow transition-colors duration-150 flex items-center gap-2 cursor-pointer w-full md:w-auto">
                                     <i class="fas fa-paper-plane"></i>
-                                    Submit All Reference Checks
+                                    Submit All References
                                 </button>
                             </form>
                             @endif
