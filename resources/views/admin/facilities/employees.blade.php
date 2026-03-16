@@ -103,12 +103,8 @@
                         {{ $employee->current_union_status ? 'Yes' : 'No' }}
                     </td>
                     <td class="px-4 py-2 whitespace-nowrap">
-                        <button type="button" onclick="openEmployeeModal('{{ $employee->emp_id }}')"
-                            class="text-blue-600 hover:underline">View</button>
-                        {{-- @can('edit employees') --}}
-                        | <a href="{{ route('admin.employees.edit', $employee->emp_id) }}"
-                            class="text-yellow-600 hover:underline">Edit</a>
-                        {{-- @endcan --}}
+                        <a href="{{ route('admin.employees.edit', $employee->emp_id) }}"
+                            class="text-blue-600 hover:underline">View/Edit</a>
                     </td>
                 </tr>
                 @empty
@@ -122,6 +118,5 @@
             @include('admin.facilities.employee-pagination')
         </div>
     </div>
-    @include('admin.facilities.employee-modal')
 </div>
 @endsection

@@ -1389,8 +1389,7 @@
 </div>
 
 <script>
-    // Simple tab switching
-document.querySelectorAll('.tab-link').forEach(link => {
+    document.querySelectorAll('.tab-link').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
         document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));

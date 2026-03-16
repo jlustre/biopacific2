@@ -21,8 +21,6 @@ use Illuminate\Support\Facades\Auth;
             <svg class="ml-1 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
-            {{-- <img src="{{ asset('images/profile.png') }}" alt="Profile"
-                class="h-8 w-8 rounded-full border bg-gray-200" /> --}}
         </button>
         <div x-show="open" @click.away="open = false"
             class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50"

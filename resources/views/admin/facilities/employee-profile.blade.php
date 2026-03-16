@@ -1,4 +1,3 @@
-<!-- Tab Content -->
 <div x-data="{ showPhoneModal: false, showEmailModal: false, phoneAction: '', editPhone: null, addPhone: false, deletePhoneId: null }"
     x-show="tab === 'personal'">
     @php use Illuminate\Support\Facades\Auth; @endphp
