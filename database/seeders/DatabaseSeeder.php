@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
             JobDescriptionsSeeder::class,
             UsersTableSeeder::class,
             BPDepartmentsTableSeeder::class,
+            DocTypesTableSeeder::class,
             BPPositionsTableSeeder::class,
             BPBargainingUnitsTableSeeder::class,
             BPEmpEmployeesTableSeeder::class,
@@ -47,6 +48,9 @@ class DatabaseSeeder extends Seeder
             BPEmpPhonesTableSeeder::class,
             BPEmpAddressesTableSeeder::class,
             BPEmpHealthScreeningsTableSeeder::class,
+            EmployeeChecklistItemsSeeder::class,
+            ChecklistItemsSeeder::class,
+            BPEmpChecklistSeeder::class,
         ]);
 
     }

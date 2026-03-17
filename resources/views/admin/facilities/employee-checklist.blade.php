@@ -1,3 +1,4 @@
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <div x-show="tab === 'checklist'">
     <div class="bg-white p-4 rounded shadow">
         <!-- Tabs -->
@@ -40,57 +41,69 @@
                             <th class="border px-2 py-1">CHECK IF ON FILE</th>
                             <th class="border px-2 py-1">VERIFICATION DATE</th>
                             <th class="border px-2 py-1">EXPIRATION DATE</th>
+                            <th class="border px-2 py-1">VERIFIED BY</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="border px-2 py-1">Application Form</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
+                        @php
+                        $applicantItems = $checklistItems->where('section', 'PART A')->where('doc_type_id',
+                        1)->sortBy('order');
+                        $identificationItems = $checklistItems->where('section', 'PART A')->where('doc_type_id',
+                        2)->sortBy('order');
+                        $verificationItems = $checklistItems->where('section', 'PART A')->where('doc_type_id',
+                        3)->sortBy('order');
+                        $partBItems = $checklistItems->where('section', 'PART B')->sortBy('order');
+                        $partCItems = $checklistItems->where('section', 'PART C')->sortBy('order');
+                        $partDItems = $checklistItems->where('section', 'PART D')->sortBy('order');
+                        $partEItems = $checklistItems->where('section', 'PART E')->sortBy('order');
+                        @endphp
+                        @foreach ($applicantItems as $item)
+                        @php
+                        $empChecklist = null;
+                        if ($empChecklists && count($empChecklists)) {
+                        $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                        if ($empChecklistRow && isset($empChecklistRow->items[$item->name])) {
+                        $empChecklist = (object) $empChecklistRow->items[$item->name];
+                        }
+                        }
+                        @endphp
+                        <tr data-doc-type-id="{{ $item->doc_type_id }}">
+                            <td class="border px-2 py-1">{{ $item->name }}</td>
+                            <td class="border px-2 py-1"><input type="checkbox" {{ $empChecklist &&
+                                    $empChecklist->on_file ? 'checked' : '' }}>
+                                <a href="#" class="text-blue-600 underline ml-2 verify-link"
+                                    data-item-name="{{ $item->name }}" data-emp-id="{{ $employee->emp_id }}"
+                                    data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
+                                    data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
+                                    data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
+                                    data-comments="{{ $empChecklist->comments ?? '' }}"
+                                    data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                                    data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">Verify</a>
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
+                                {{ ($empChecklist->verified_dt === null || $empChecklist->verified_dt === '') ? 'N/A' :
+                                $empChecklist->verified_dt }}
+                                @else
+                                {{ $empChecklist->verified_dt ?? '' }}
+                                @endif
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
+                                {{ ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '') ? 'N/A' :
+                                $empChecklist->exp_dt }}
+                                @else
+                                {{ $empChecklist->exp_dt ?? '' }}
+                                @endif
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && $empChecklist->verified_by)
+                                {{ optional($users->firstWhere('id', $empChecklist->verified_by))->name ??
+                                $empChecklist->verified_by }}
+                                @endif
+                            </td>
                         </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Applicant Disclosure</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Reference Check #1</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Reference Check #2</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Offer Letter (if applicable)</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Job Data: Hire / Rehire</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Emergency Contact Information</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Job Description</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
+                        @endforeach
                     </tbody>
                 </table>
 
@@ -104,42 +117,57 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="border px-2 py-1">I - 9</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
+                        @php
+                        $identificationRows = [
+                        ['name' => 'I - 9', 'doc_type_id' => 2],
+                        ['name' => 'Social Security Card - Copy', 'doc_type_id' => 2],
+                        ['name' => "Driver's License - Copy", 'doc_type_id' => 2],
+                        ['name' => 'Green Card or Work Permit Autho. - Copy', 'doc_type_id' => 2],
+                        ['name' => 'Passport - Copy', 'doc_type_id' => 2],
+                        ['name' => 'Professional License - Copy', 'doc_type_id' => 2],
+                        ];
+                        @endphp
+                        @foreach ($identificationRows as $item)
+                        @php
+                        $empChecklist = null;
+                        if ($empChecklists && count($empChecklists)) {
+                        $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                        if ($empChecklistRow && isset($empChecklistRow->items[$item['name']])) {
+                        $empChecklist = (object) $empChecklistRow->items[$item['name']];
+                        }
+                        }
+                        @endphp
+                        <tr data-doc-type-id="{{ $item['doc_type_id'] }}">
+                            <td class="border px-2 py-1">{{ $item['name'] }}</td>
+                            <td class="border px-2 py-1"><input type="checkbox" {{ $empChecklist &&
+                                    $empChecklist->on_file ? 'checked' : '' }}><a href="#"
+                                    class="text-blue-600 underline ml-2 verify-link"
+                                    data-item-name="{{ $item['name'] }}" data-emp-id="{{ $employee->emp_id }}"
+                                    data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
+                                    data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
+                                    data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
+                                    data-comments="{{ $empChecklist->comments ?? '' }}"
+                                    data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                                    data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">Verify</a>
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
+                                {{ ($empChecklist->verified_dt === null || $empChecklist->verified_dt === '') ? 'N/A' :
+                                $empChecklist->verified_dt }}
+                                @else
+                                {{ $empChecklist->verified_dt ?? '' }}
+                                @endif
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
+                                {{ ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '') ? 'N/A' :
+                                $empChecklist->exp_dt }}
+                                @else
+                                {{ $empChecklist->exp_dt ?? '' }}
+                                @endif
+                            </td>
                         </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Social Security Card - Copy</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Driver's License - Copy</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Green Card or Work Permit Autho. - Copy</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Passport - Copy</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Professional License - Copy</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
+                        @endforeach
                     </tbody>
                 </table>
 
@@ -153,48 +181,58 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="border px-2 py-1">CPR Card (License Nurses)</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
+                        @php
+                        $verificationRows = [
+                        ['name' => 'CPR Card (License Nurses)', 'doc_type_id' => 3],
+                        ['name' => 'C.N.A. Certificate', 'doc_type_id' => 3],
+                        ['name' => 'Professional License', 'doc_type_id' => 3],
+                        ['name' => 'Background Check', 'doc_type_id' => 3],
+                        ['name' => 'OIG Verification', 'doc_type_id' => 3],
+                        ['name' => 'SAM Verification', 'doc_type_id' => 3],
+                        ['name' => 'Medical Exclusion/Ineligible Provider List', 'doc_type_id' => 3],
+                        ];
+                        @endphp
+                        @foreach ($verificationRows as $item)
+                        @php
+                        $empChecklist = null;
+                        if ($empChecklists && count($empChecklists)) {
+                        $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                        if ($empChecklistRow && isset($empChecklistRow->items[$item['name']])) {
+                        $empChecklist = (object) $empChecklistRow->items[$item['name']];
+                        }
+                        }
+                        @endphp
+                        <tr data-doc-type-id="{{ $item['doc_type_id'] }}">
+                            <td class="border px-2 py-1">{{ $item['name'] }}</td>
+                            <td class="border px-2 py-1"><input type="checkbox" {{ $empChecklist &&
+                                    $empChecklist->on_file ? 'checked' : '' }}><a href="#"
+                                    class="text-blue-600 underline ml-2 verify-link"
+                                    data-item-name="{{ $item['name'] }}" data-emp-id="{{ $employee->emp_id }}"
+                                    data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
+                                    data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
+                                    data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
+                                    data-comments="{{ $empChecklist->comments ?? '' }}"
+                                    data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                                    data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">Verify</a>
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
+                                {{ ($empChecklist->verified_dt === null || $empChecklist->verified_dt === '') ? 'N/A' :
+                                $empChecklist->verified_dt }}
+                                @else
+                                {{ $empChecklist->verified_dt ?? '' }}
+                                @endif
+                            </td>
+                            <td class="border px-2 py-1">
+                                @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
+                                {{ ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '') ? 'N/A' :
+                                $empChecklist->exp_dt }}
+                                @else
+                                {{ $empChecklist->exp_dt ?? '' }}
+                                @endif
+                            </td>
                         </tr>
-                        <tr>
-                            <td class="border px-2 py-1">C.N.A. Certificate</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Professional License</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Background Check</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">OIG Verification</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">SAM Verification</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
-                        <tr>
-                            <td class="border px-2 py-1">Medical Exclusion/Ineligible Provider List</td>
-                            <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
-                        </tr>
+                        @endforeach
                     </tbody>
                 </table>
             </div>
@@ -217,14 +255,14 @@
                         <tr>
                             <td class="border px-2 py-1">Abuse, Neglect and Exploitation</td>
                             <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
+                            <td class="border px-2 py-1">N/A</td>
+                            <td class="border px-2 py-1">N/A</td>
                         </tr>
                         <tr>
                             <td class="border px-2 py-1">Resident Rights</td>
                             <td class="border px-2 py-1"><input type="checkbox"></td>
-                            <td class="border px-2 py-1"></td>
-                            <td class="border px-2 py-1"></td>
+                            <td class="border px-2 py-1">N/A</td>
+                            <td class="border px-2 py-1">N/A</td>
                         </tr>
                         <tr>
                             <td class="border px-2 py-1">Employee Handbook</td>
@@ -1387,6 +1425,199 @@
         </div>
     </div>
 </div>
+
+<!-- Modal for Verify Checklist Item -->
+<div id="verifyModal" class="fixed inset-0 bg-black bg-opacity-40 items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+        <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            onclick="closeVerifyModal()">&times;</button>
+        <h3 class="text-lg font-bold mb-4">Verify Checklist Item</h3>
+        <form id="verifyForm">
+            <input type="hidden" name="emp_id" id="verifyEmpId">
+            <input type="hidden" name="doc_name" id="verifyDocName">
+            <div class="mb-3">
+                <label class="block font-semibold mb-1">On File</label>
+                <input type="checkbox" name="on_file" id="verifyOnFile">
+            </div>
+            <div class="mb-3">
+                <label class="block font-semibold mb-1">Verification Date</label>
+                <input type="date" name="verified_dt" id="verifyVerifiedDt" class="border rounded px-2 py-1 w-full"
+                    readonly>
+            </div>
+            <div class="mb-3">
+                <label class="block font-semibold mb-1">Expiration Date</label>
+                <div class="flex items-center space-x-2">
+                    <input type="date" name="exp_dt" id="verifyExpDt" class="border rounded px-2 py-1 w-full">
+                    <label class="inline-flex items-center text-xs ml-2">
+                        <input type="checkbox" id="expDtNotRequired" class="mr-1"> Not required
+                    </label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="block font-semibold mb-1">Verified By</label>
+                <input type="text" name="verified_by_name" id="verifyVerifiedBy" class="border rounded px-2 py-1 w-full"
+                    readonly>
+                <input type="hidden" name="verified_by" id="verifyVerifiedById">
+            </div>
+            <div class="mb-3">
+                <label class="block font-semibold mb-1">Comments</label>
+                <textarea name="comments" id="verifyComments" class="border rounded px-2 py-1 w-full"></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeVerifyModal()"
+                    class="mr-2 px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Set current user info for modal population (must be before any modal logic)
+    @if(auth()->check())
+        window.currentUserId = {{ auth()->user()->id }};
+        window.currentUserName = @json(auth()->user()->name);
+    @endif
+    // Modal logic for Verify Checklist Item
+    function openVerifyModal(itemName, empId) {
+        console.log('openVerifyModal called', { itemName, empId });
+        document.getElementById('verifyDocName').value = itemName;
+        document.getElementById('verifyEmpId').value = empId;
+        // Find doc_type_id for this item (from table row data attribute)
+        var link = Array.from(document.querySelectorAll('.verify-link')).find(l => l.getAttribute('data-item-name') === itemName && l.getAttribute('data-emp-id') == empId);
+        var row = link ? link.closest('tr') : null;
+        console.log('Row found for modal:', row);
+        var docTypeId = row ? row.getAttribute('data-doc-type-id') : '';
+        document.getElementById('verifyForm').setAttribute('data-doc-type-id', docTypeId);
+        // Auto-populate fields if data is present
+        document.getElementById('verifyOnFile').checked = link && link.getAttribute('data-on-file') == '1';
+        var verifiedDt = link && link.getAttribute('data-verified-dt') ? link.getAttribute('data-verified-dt') : '';
+        var expDt = link && link.getAttribute('data-exp-dt') ? link.getAttribute('data-exp-dt') : '';
+        var comments = link && link.getAttribute('data-comments') ? link.getAttribute('data-comments') : '';
+        var verifiedBy = link && link.getAttribute('data-verified-by') ? link.getAttribute('data-verified-by') : '';
+        var expDtNotRequired = link && link.getAttribute('data-exp-dt-not-required') == '1';
+        document.getElementById('verifyVerifiedDt').value = verifiedDt || (function(){
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            return yyyy + '-' + mm + '-' + dd;
+        })();
+        document.getElementById('verifyExpDt').value = expDt;
+        document.getElementById('verifyComments').value = comments;
+        // Set Verified By to current user name (from window.currentUserName) and id (window.currentUserId) if not present
+        if (window.currentUserName && !verifiedBy) {
+            document.getElementById('verifyVerifiedBy').value = window.currentUserName;
+        } else if (verifiedBy) {
+            document.getElementById('verifyVerifiedBy').value = verifiedBy;
+        }
+        if (window.currentUserId && !verifiedBy) {
+            document.getElementById('verifyVerifiedById').value = window.currentUserId;
+        } else if (verifiedBy) {
+            document.getElementById('verifyVerifiedById').value = verifiedBy;
+        }
+        // Expiration Date Not Required checkbox and input
+        document.getElementById('expDtNotRequired').checked = expDtNotRequired;
+        document.getElementById('verifyExpDt').disabled = expDtNotRequired;
+        var modal = document.getElementById('verifyModal');
+        console.log('Modal element:', modal);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            console.log('Modal classes after open:', modal.className);
+        }, 100);
+    }
+    function closeVerifyModal() {
+        var modal = document.getElementById('verifyModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Expiration Date Not Required checkbox logic
+        var expDtNotRequired = document.getElementById('expDtNotRequired');
+        var expDtInput = document.getElementById('verifyExpDt');
+        if (expDtNotRequired && expDtInput) {
+            expDtNotRequired.addEventListener('change', function() {
+                if (this.checked) {
+                    expDtInput.value = '';
+                    expDtInput.disabled = true;
+                } else {
+                    expDtInput.disabled = false;
+                }
+            });
+        }
+        console.log('DOMContentLoaded: binding verify-link click events');
+        document.querySelectorAll('.verify-link').forEach(function(link) {
+            console.log('Binding click for', link);
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Verify link clicked', this);
+                openVerifyModal(this.getAttribute('data-item-name'), this.getAttribute('data-emp-id'));
+            });
+        });
+        document.getElementById('verifyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var empId = document.getElementById('verifyEmpId').value;
+            var docName = document.getElementById('verifyDocName').value;
+            var docTypeId = document.getElementById('verifyForm').getAttribute('data-doc-type-id') || 1;
+            var onFile = document.getElementById('verifyOnFile').checked ? 1 : 0;
+            var verifiedDt = document.getElementById('verifyVerifiedDt').value;
+            var expDtNotRequiredChecked = document.getElementById('expDtNotRequired').checked;
+            var expDt = expDtNotRequiredChecked ? null : document.getElementById('verifyExpDt').value;
+            var comments = document.getElementById('verifyComments').value;
+            var verifiedById = document.getElementById('verifyVerifiedById').value;
+            var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            fetch(`/admin/employees/${empId}/checklist/verify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    doc_name: docName,
+                    doc_type_id: docTypeId,
+                    on_file: onFile,
+                    verified_dt: verifiedDt,
+                    exp_dt: expDt,
+                    comments: comments,
+                    verified_by: verifiedById,
+                    exp_dt_not_required: expDtNotRequiredChecked ? 1 : 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Optionally update the row UI with new data
+                    // Find the row and update columns
+                    var row = Array.from(document.querySelectorAll('.verify-link')).find(l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId)?.closest('tr');
+                    if (row) {
+                        row.querySelector('input[type="checkbox"]').checked = !!data.data.on_file;
+                        row.children[2].textContent = data.data.verified_dt || '';
+                        if (data.data.exp_dt === null || data.data.exp_dt === '' || data.data.exp_dt === undefined) {
+                            row.children[3].textContent = 'N/A';
+                        } else {
+                            row.children[3].textContent = data.data.exp_dt;
+                        }
+                        row.children[4].textContent = data.data.verified_by || '';
+                    }
+                } else {
+                    let msg = 'Failed to save checklist verification.';
+                    if (data.message) {
+                        msg += '\n' + data.message;
+                    }
+                    alert(msg);
+                }
+                closeVerifyModal();
+            })
+            .catch(() => {
+                alert('Error saving checklist verification.');
+                closeVerifyModal();
+            });
+        });
+    });
+</script>
 
 <script>
     document.querySelectorAll('.tab-link').forEach(link => {

@@ -183,6 +183,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update']);
     // Custom route for updating employee assignment (tabbed form)
     Route::put('employees/{employee}/update-assignment', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAssignment'])->name('employees.update_assignment');
+
+    // AJAX: Save checklist verification (modal)
+    Route::post('employees/{employee}/checklist/verify', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveChecklistVerification'])->name('employees.checklist.verify');
     // Custom route for updating employee address (tabbed form)
     Route::put('employees/{employee}/update-address', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAddress'])->name('employees.address.update');
     // Custom route for updating employee personal profile (tabbed form)

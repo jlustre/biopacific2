@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BPEmployee;
 use App\Models\Facility;
+use Illuminate\Support\Facades\Log;
 
 class EmployeesController extends Controller
 {
@@ -118,7 +119,10 @@ class EmployeesController extends Controller
         $departments = \App\Models\BPDepartment::all();
         $positions = \App\Models\BPPosition::all();
         $facilities = \App\Models\Facility::all();
-        return view('admin.facilities.edit_employee', compact('employee', 'departments', 'positions', 'facilities'));
+        $checklistItems = \App\Models\ChecklistItem::all();
+        $empChecklists = \App\Models\BPEmpChecklist::where('emp_id', $emp_id)->get();
+        $users = \App\Models\User::all();
+        return view('admin.facilities.edit_employee', compact('employee', 'departments', 'positions', 'facilities', 'checklistItems', 'empChecklists', 'users'));
     }
 
     /**
@@ -361,5 +365,57 @@ class EmployeesController extends Controller
 
         return redirect()->route('admin.employees.edit', $employee)
             ->with('success', $msg);
+    }
+
+    /**
+     * Save checklist verification from modal (AJAX).
+     */
+    public function saveChecklistVerification(Request $request, $employee)
+    {
+        try {
+            $validated = $request->validate([
+                'doc_name' => 'required|string|max:255',
+                'doc_type_id' => 'required|integer',
+                'on_file' => 'required|boolean',
+                'verified_dt' => 'nullable|date',
+                'exp_dt' => 'nullable|date',
+                'comments' => 'nullable|string|max:1000',
+                'exp_dt_not_required' => 'nullable|boolean',
+            ]);
+
+            $userId = auth()->id();
+            $checklist = \App\Models\BPEmpChecklist::firstOrNew(['emp_id' => $employee]);
+            $items = $checklist->items ?? [];
+            $docName = $validated['doc_name'];
+            $items[$docName] = [
+                'doc_type_id' => $validated['doc_type_id'],
+                'on_file' => $validated['on_file'],
+                'verified_dt' => $validated['verified_dt'] ?? now()->toDateString(),
+                'exp_dt' => !empty($validated['exp_dt_not_required']) ? null : ($validated['exp_dt'] ?? null),
+                'comments' => $validated['comments'] ?? null,
+                'verified_by' => $userId,
+                'exp_dt_not_required' => !empty($validated['exp_dt_not_required']) ? 1 : 0,
+            ];
+            $checklist->items = $items;
+            $checklist->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist verification saved.',
+                'data' => [
+                    'doc_name' => $docName,
+                    'item' => $items[$docName],
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Checklist verification save error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 }
