@@ -186,6 +186,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
 
     // AJAX: Save checklist verification (modal)
     Route::post('employees/{employee}/checklist/verify', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveChecklistVerification'])->name('employees.checklist.verify');
+    // AJAX: Revoke checklist item (delete verification)
+    Route::post('employees/{employee}/checklist/unverify', [\App\Http\Controllers\Admin\EmployeesController::class, 'revokeChecklistItem'])->name('employees.checklist.unverify');
     // Custom route for updating employee address (tabbed form)
     Route::put('employees/{employee}/update-address', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAddress'])->name('employees.address.update');
     // Custom route for updating employee personal profile (tabbed form)

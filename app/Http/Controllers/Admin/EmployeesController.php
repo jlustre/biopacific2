@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\BPEmployee;
 use App\Models\Facility;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class EmployeesController extends Controller
 {
@@ -150,7 +151,7 @@ class EmployeesController extends Controller
                     \Illuminate\Validation\Rule::unique('users', 'email')->ignore($employee->user_id),
                 ],
             ]);
-            $user = auth()->user();
+            $user = Auth::user();
             $isHrrd = $user && method_exists($user, 'hasRole') && $user->hasRole('hrrd');
             $isAdmin = $user && method_exists($user, 'hasRole') && $user->hasRole('admin');
             $isSelf = $user && ($user->id == $employee->user_id);
@@ -324,7 +325,7 @@ class EmployeesController extends Controller
             'effdt' => 'required|date',
             'effseq' => 'nullable|integer',
         ]);
-        $userId = auth()->id();
+        $userId = Auth::id();
         $validated['created_by'] = $userId;
         $validated['updated_by'] = $userId;
 
@@ -373,6 +374,10 @@ class EmployeesController extends Controller
     public function saveChecklistVerification(Request $request, $employee)
     {
         try {
+            Log::debug('Checklist verification request received', [
+                'employee' => $employee,
+                'request' => $request->all(),
+            ]);
             $validated = $request->validate([
                 'doc_name' => 'required|string|max:255',
                 'doc_type_id' => 'required|integer',
@@ -383,7 +388,7 @@ class EmployeesController extends Controller
                 'exp_dt_not_required' => 'nullable|boolean',
             ]);
 
-            $userId = auth()->id();
+            $userId = Auth::id();
             $checklist = \App\Models\BPEmpChecklist::firstOrNew(['emp_id' => $employee]);
             $items = $checklist->items ?? [];
             $docName = $validated['doc_name'];
@@ -399,16 +404,34 @@ class EmployeesController extends Controller
             $checklist->items = $items;
             $checklist->save();
 
+            Log::debug('Checklist verification saved successfully', [
+                'emp_id' => $employee,
+                'doc_name' => $docName,
+                'item' => $items[$docName],
+            ]);
+
+            // Lookup user name for verified_by
+            $verifiedByName = null;
+            if ($userId) {
+                $user = \App\Models\User::find($userId);
+                if ($user) {
+                    $verifiedByName = $user->name;
+                }
+            }
+            $itemWithName = $items[$docName];
+            $itemWithName['verified_by_name'] = $verifiedByName;
             return response()->json([
                 'success' => true,
                 'message' => 'Checklist verification saved.',
                 'data' => [
                     'doc_name' => $docName,
-                    'item' => $items[$docName],
+                    'item' => $itemWithName,
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Checklist verification save error: ' . $e->getMessage(), [
+            Log::error('Checklist verification save error', [
+                'error' => $e->getMessage(),
+                'employee' => $employee,
                 'request' => $request->all(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -416,6 +439,54 @@ class EmployeesController extends Controller
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),
             ], 422);
+        }
+    }
+
+    /**
+     * Revoke (delete) a checklist item for an employee (AJAX).
+     */
+    public function revokeChecklistItem(Request $request, $employee)
+    {
+        try {
+            $validated = $request->validate([
+                'doc_name' => 'required|string|max:255',
+            ]);
+            $docName = $validated['doc_name'];
+            $checklist = \App\Models\BPEmpChecklist::where('emp_id', $employee)->first();
+            $itemData = null;
+            if ($checklist && is_array($checklist->items) && array_key_exists($docName, $checklist->items)) {
+                $items = $checklist->items;
+                unset($items[$docName]);
+                $checklist->items = $items;
+                // If no items left, delete the row, else save
+                if (empty($items)) {
+                    $checklist->delete();
+                } else {
+                    $checklist->save();
+                }
+            }
+            // After revoke, return default/empty item for UI update
+            $itemData = [
+                'on_file' => false,
+                'verified_dt' => null,
+                'exp_dt' => null,
+                'comments' => '',
+                'verified_by' => null,
+                'verified_by_name' => '',
+                'exp_dt_not_required' => 0
+            ];
+            return response()->json(['success' => true, 'data' => ['item' => $itemData], 'message' => 'Checklist item revoked.']);
+        } catch (\Exception $e) {
+            \Log::error('Checklist revoke error', [
+                'error' => $e->getMessage(),
+                'employee' => $employee,
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }
