@@ -39,13 +39,13 @@
             class="px-4 py-2 rounded">Assignment</button>
     </div>
 
-    @include('admin.facilities.employee-checklist')
+    @include('admin.facilities.checklist.employee-checklist')
 
-    @include('admin.facilities.employee-profile')
+    @include('admin.facilities.employee.employee-profile')
 
-    @include('admin.facilities.employee-address')
+    @include('admin.facilities.employee.employee-address')
 
-    @include('admin.facilities.employee-assignment')
+    @include('admin.facilities.employee.employee-assignment')
 
 </div>
 @endsection
@@ -56,6 +56,7 @@ if ($assignmentLatest) {
 $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ?? '';
 }
 @endphp
+
 <script>
     const assignmentLatest = @json($assignmentLatest);
     function assignmentForm() {

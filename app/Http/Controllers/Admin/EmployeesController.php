@@ -123,7 +123,36 @@ class EmployeesController extends Controller
         $checklistItems = \App\Models\ChecklistItem::all();
         $empChecklists = \App\Models\BPEmpChecklist::where('emp_id', $emp_id)->get();
         $users = \App\Models\User::all();
-        return view('admin.facilities.edit_employee', compact('employee', 'departments', 'positions', 'facilities', 'checklistItems', 'empChecklists', 'users'));
+
+        // PART F: Load all assessment periods for this employee
+        $assessmentPeriods = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
+            ->orderBy('eff_date', 'desc')
+            ->get(['eff_date']);
+        $selectedEffDate = request('eff_date') ?: ($assessmentPeriods->first()->eff_date ?? null);
+
+        // PART F: Load performance assessment items for this employee and selected period
+        $empPerformanceChecklist = [];
+        if ($selectedEffDate) {
+            $assessment = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
+                ->where('eff_date', $selectedEffDate)
+                ->first();
+            if ($assessment && $assessment->items) {
+                $empPerformanceChecklist = json_decode($assessment->items, true);
+            }
+        }
+
+        return view('admin.facilities.employee.edit_employee', compact(
+            'employee',
+            'departments',
+            'positions',
+            'facilities',
+            'checklistItems',
+            'empChecklists',
+            'users',
+            'empPerformanceChecklist',
+            'assessmentPeriods',
+            'selectedEffDate'
+        ));
     }
 
     /**

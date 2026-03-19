@@ -612,3 +612,10 @@ Route::get('/{facility:slug}', [FacilityController::class, 'publicView'])->name(
 Route::get('/admin/facilities/test_livewire_validation', function() {
     return view('admin.facilities.test_livewire_validation');
 });
+
+// Save employee performance assessment
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::post('/employees/performance-assessment', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'store'])->name('admin.employees.performance-assessment.store');
+    Route::post('/employees/performance-assessment/revoke', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'revoke'])->name('admin.employees.performance-assessment.revoke');
+    Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
+});

@@ -115,7 +115,7 @@
             </tbody>
         </table>
         <div class="p-4 my-4 text-center">
-            @include('admin.facilities.employee-pagination')
+            @include('admin.facilities.employee.employee-pagination')
         </div>
     </div>
 </div>

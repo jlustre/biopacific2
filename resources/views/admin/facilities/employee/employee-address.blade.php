@@ -95,7 +95,7 @@
             </div>
         </form>
         <!-- Address History Table -->
-        @include('admin.facilities.employee-address-table')
+        @include('admin.facilities.employee.employee-address-table')
         <script>
             function addressForm() {
                     return {

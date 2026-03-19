@@ -118,5 +118,5 @@ $latestEffseq = $latest->effseq ?? '';
         </div>
     </form>
     <!-- Assignment Info Table -->
-    @include('admin.facilities.employee-assignment-table')
+    @include('admin.facilities.employee.employee-assignment-table')
 </div>

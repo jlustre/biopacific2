@@ -14,7 +14,7 @@
                 <span class="text-red-500 text-xs">{{ $message }}</span>
                 @enderror
             </div>
-            <div class="flex items-center justify-end mt-4">
+            <div class="flex items-center justify-end mt-4" title="Verify Item">
                 <button type="submit" class="btn btn-primary">Verify</button>
             </div>
         </form>

@@ -1,5 +1,6 @@
 <div id="partA" class="tab-content">
-    <h2 class="text-xl font-bold mb-4">Part A - APPLICANT, IDENTIFICATIONS, VERIFICATIONS</h2>
+    <h2 class="text-xl font-bold mb-4">Part A - APPLICANT, admin.facilities.employee.employee-pagination, VERIFICATIONS
+    </h2>
     <div class="overflow-x-auto">
         <table class="min-w-full border text-xs md:text-sm">
             <thead>
@@ -50,15 +51,15 @@
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}">Revoke</a>
                         <span>|</span>
-                        <a href="#" class="text-teal-600 underline ml-1 view-link"
+                        <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}">View</a>
                         @else
-                        <a href="#" class="text-teal-600 underline ml-2 verify-link"
+                        <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
@@ -142,15 +143,15 @@
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}">Revoke</a>
                         <span>|</span>
-                        <a href="#" class="text-teal-600 underline ml-1 view-link"
+                        <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}">View</a>
                         @else
-                        <a href="#" class="text-teal-600 underline ml-2 verify-link"
+                        <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
@@ -239,15 +240,15 @@
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}">Revoke</a>
                         <span>|</span>
-                        <a href="#" class="text-teal-600 underline ml-1 view-link"
+                        <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}">View</a>
                         @else
-                        <a href="#" class="text-teal-600 underline ml-2 verify-link"
+                        <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-emp-id="{{ $employee->emp_id }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
