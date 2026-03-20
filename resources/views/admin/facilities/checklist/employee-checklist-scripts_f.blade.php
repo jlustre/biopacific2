@@ -241,24 +241,32 @@
             else if (item.rating == 3 || item.rating === '3') ratingText = 'Exceeds';
         }
         row.children[2].textContent = ratingText;
-        // Update Assessed Date
-        row.children[3].textContent = item && item.verified_dt ? item.verified_dt : (assessmentDate || '');
-        // Update Assessed By (try to get name from global user list if available)
-        var assessedByCell = row.children[4];
-        if (!assessedByCell) {
-            console.error('updatePartFRow: assessedByCell missing', row, row.children);
-            return;
-        }
-        while (assessedByCell.firstChild) { assessedByCell.removeChild(assessedByCell.firstChild); }
-        var assessedByName = '';
-        if (window.users && window.users[assessedById]) {
-            assessedByName = window.users[assessedById];
-        } else if (window.currentUserName && window.currentUserId == assessedById) {
-            assessedByName = window.currentUserName;
+        // Update Assessed Date and Assessed By
+        if (item && item.rating) {
+            row.children[3].textContent = item.verified_dt ? item.verified_dt : (assessmentDate || '');
+            var assessedByCell = row.children[4];
+            if (!assessedByCell) {
+                console.error('updatePartFRow: assessedByCell missing', row, row.children);
+                return;
+            }
+            while (assessedByCell.firstChild) { assessedByCell.removeChild(assessedByCell.firstChild); }
+            var assessedByName = '';
+            if (window.users && window.users[assessedById]) {
+                assessedByName = window.users[assessedById];
+            } else if (window.currentUserName && window.currentUserId == assessedById) {
+                assessedByName = window.currentUserName;
+            } else {
+                assessedByName = assessedById;
+            }
+            assessedByCell.appendChild(document.createTextNode(assessedByName));
         } else {
-            assessedByName = assessedById;
+            // Clear Assessed Date and Assessed By columns if revoked
+            row.children[3].textContent = '';
+            var assessedByCell = row.children[4];
+            if (assessedByCell) {
+                while (assessedByCell.firstChild) { assessedByCell.removeChild(assessedByCell.firstChild); }
+            }
         }
-        assessedByCell.appendChild(document.createTextNode(assessedByName));
         // Update Actions: show Revoke & View if assessed, else Assess
         var actionCell = row.children[5];
         if (!actionCell) {
@@ -324,27 +332,30 @@
         };
     }
 
-    // For each 'Revoke' link in PART F, bind click to revoke the assessment
-    document.querySelectorAll('.unverify-link[data-item-key]').forEach(function(link) {
-        link.onclick = function(e) {
+
+    // Use event delegation for 'Revoke' link in PART F
+    var partFTable = document.querySelector('#partFTableContainer') || document;
+    partFTable.addEventListener('click', function(e) {
+        var target = e.target;
+        if (target.classList.contains('unverify-link') && target.hasAttribute('data-item-key')) {
             e.preventDefault();
-            var itemKey = this.getAttribute('data-item-key');
-            var empId = this.getAttribute('data-emp-id');
+            var itemKey = target.getAttribute('data-item-key');
+            var empId = target.getAttribute('data-emp-id');
             var assessmentPeriodId = (window.selectedAssessmentPeriodId || '');
             if (!confirm('Are you sure you want to revoke this assessment?')) return;
             // Disable the link and show loading text
-            var originalText = this.textContent;
-            this.textContent = 'Revoking...';
-            this.style.pointerEvents = 'none';
-            this.style.opacity = '0.6';
+            var originalText = target.textContent;
+            target.textContent = 'Revoking...';
+            target.style.pointerEvents = 'none';
+            target.style.opacity = '0.6';
             // Get CSRF token
             var tokenMeta = document.querySelector('meta[name="csrf-token"]');
             if (!tokenMeta) {
                 alert('CSRF token missing.');
                 // Restore link state
-                this.textContent = originalText;
-                this.style.pointerEvents = '';
-                this.style.opacity = '';
+                target.textContent = originalText;
+                target.style.pointerEvents = '';
+                target.style.opacity = '';
                 return;
             }
             var token = tokenMeta.getAttribute('content');
@@ -369,9 +380,9 @@
                 } catch (err) {
                     alert('Revoke failed.1');
                     // Restore link state
-                    link.textContent = originalText;
-                    link.style.pointerEvents = '';
-                    link.style.opacity = '';
+                    target.textContent = originalText;
+                    target.style.pointerEvents = '';
+                    target.style.opacity = '';
                     return;
                 }
                 if (data.success && data.data && data.data.items) {
@@ -380,20 +391,20 @@
                 } else {
                     alert('Revoke failed.2');
                     // Restore link state
-                    link.textContent = originalText;
-                    link.style.pointerEvents = '';
-                    link.style.opacity = '';
+                    target.textContent = originalText;
+                    target.style.pointerEvents = '';
+                    target.style.opacity = '';
                 }
             })
             .catch(err => {
                 alert('Revoke failed.3: ' + (err && err.message ? err.message : err));
                 console.error('PART F revoke error:', err);
                 // Restore link state
-                link.textContent = originalText;
-                link.style.pointerEvents = '';
-                link.style.opacity = '';
+                target.textContent = originalText;
+                target.style.pointerEvents = '';
+                target.style.opacity = '';
             });
-        };
+        }
     });
 
     // For each 'Verify' link in PART F, bind click to open the modal in edit mode

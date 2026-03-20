@@ -1,14 +1,3 @@
-// PART F: Section Comments (AJAX endpoints)
-use App\Http\Controllers\EmployeePerformanceSectionCommentController;
-Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-        Route::post('employees/performance-section-comment', [EmployeePerformanceSectionCommentController::class, 'store'])
-            ->name('employees.performance_section_comment.store');
-        Route::get('employees/performance-section-comment', [EmployeePerformanceSectionCommentController::class, 'show'])
-            ->name('employees.performance_section_comment.show');
-    });
 <?php
 use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Livewire\Settings\Appearance;
@@ -69,6 +58,18 @@ Route::get('/admin/positions/all', function() {
         ->orderBy('positions.title')
         ->get();
 });
+
+// PART F: Section Comments (AJAX endpoints)
+use App\Http\Controllers\EmployeePerformanceSectionCommentController;
+Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::post('employees/performance-section-comment', [EmployeePerformanceSectionCommentController::class, 'store'])
+            ->name('employees.performance_section_comment.store');
+        Route::get('employees/performance-section-comment', [EmployeePerformanceSectionCommentController::class, 'show'])
+            ->name('employees.performance_section_comment.show');
+    });
 
 // Add another Confidential Reference Check (AJAX or POST)
 Route::post('/my-pre-employment/reference-checks/add', [\App\Http\Controllers\PreEmploymentController::class, 'addReferenceCheck'])

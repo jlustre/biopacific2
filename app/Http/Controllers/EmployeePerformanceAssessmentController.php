@@ -140,34 +140,48 @@ class EmployeePerformanceAssessmentController extends Controller
 
     public function revoke(Request $request)
     {
-        $validated = $request->validate([
-            'emp_id' => 'required',
-            'item_key' => 'required',
-            'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'emp_id' => 'required',
+                'item_key' => 'required',
+                'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
+            ]);
 
-        $assessment = EmployeePerformanceAssessment::where('emp_id', $validated['emp_id'])
-            ->where('assessment_period_id', $validated['assessment_period_id'])
-            ->first();
-        if (!$assessment) {
-            return response()->json(['success' => false, 'message' => 'Assessment not found.'], 404);
+            Log::debug('Revoke request', $validated);
+
+            $assessment = EmployeePerformanceAssessment::where('emp_id', $validated['emp_id'])
+                ->where('assessment_period_id', $validated['assessment_period_id'])
+                ->first();
+            if (!$assessment) {
+                Log::warning('Assessment not found for revoke', $validated);
+                return response()->json(['success' => false, 'message' => 'Assessment not found for emp_id: ' . $validated['emp_id'] . ', assessment_period_id: ' . $validated['assessment_period_id']], 404);
+            }
+
+            $items = $assessment->items ? json_decode($assessment->items, true) : [];
+            if (!array_key_exists($validated['item_key'], $items)) {
+                Log::warning('Item key not found in assessment items', ['item_key' => $validated['item_key'], 'items' => $items]);
+            }
+            unset($items[$validated['item_key']]);
+            $assessment->items = json_encode($items);
+            $assessment->save();
+
+            $itemsArr = $assessment->items ? json_decode($assessment->items, true) : [];
+            $assessedBy = $assessment->assessed_by;
+            $assessmentDate = $assessment->assessment_date;
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'items' => $itemsArr,
+                    'assessed_by' => $assessedBy,
+                    'assessment_date' => $assessmentDate,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in revoke: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Exception: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $items = $assessment->items ? json_decode($assessment->items, true) : [];
-        unset($items[$validated['item_key']]);
-        $assessment->items = json_encode($items);
-        $assessment->save();
-
-        $itemsArr = $assessment->items ? json_decode($assessment->items, true) : [];
-        $assessedBy = $assessment->assessed_by;
-        $assessmentDate = $assessment->assessment_date;
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'items' => $itemsArr,
-                'assessed_by' => $assessedBy,
-                'assessment_date' => $assessmentDate,
-            ]
-        ]);
     }
 }
