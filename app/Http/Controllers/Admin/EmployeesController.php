@@ -1,12 +1,13 @@
 <?php
 
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BPEmployee;
 use App\Models\Facility;
-use Illuminate\Support\Facades\Log;
+// use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
 class EmployeesController extends Controller
@@ -42,9 +43,9 @@ class EmployeesController extends Controller
         $positions = \App\Models\BPPosition::all();
         $query = BPEmployee::query();
 
-        // Filter by facility
+        // Filter by facility (current assignment only)
         if ($request->filled('facility')) {
-            $query->whereHas('assignments', function ($q) use ($request) {
+            $query->whereHas('currentAssignment', function ($q) use ($request) {
                 $q->where('facility_id', $request->facility);
             });
         }
@@ -124,17 +125,27 @@ class EmployeesController extends Controller
         $empChecklists = \App\Models\BPEmpChecklist::where('emp_id', $emp_id)->get();
         $users = \App\Models\User::all();
 
-        // PART F: Load all assessment periods for this employee
-        $assessmentPeriods = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
-            ->orderBy('eff_date', 'desc')
-            ->get(['eff_date']);
-        $selectedEffDate = request('eff_date') ?: ($assessmentPeriods->first()->eff_date ?? null);
+        // // Debug: Log checklist comments for troubleshooting
+        // Log::debug('Checklist debug: loaded empChecklists', [
+        //     'emp_id' => $emp_id,
+        //     'empChecklists' => $empChecklists->map(function($c) {
+        //         return [
+        //             'emp_id' => $c->emp_id,
+        //             'items' => $c->items,
+        //         ];
+        //     }),
+        // ]);
 
-        // PART F: Load performance assessment items for this employee and selected period
+        // PART F: Load all assessment periods for this employee
+        // New: Load all assessment periods for this employee from employee_assessment_periods
+        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
+        $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
+
+        // Load performance assessment items for this employee and selected assessment period
         $empPerformanceChecklist = [];
-        if ($selectedEffDate) {
+        if ($selectedAssessmentPeriodId) {
             $assessment = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
-                ->where('eff_date', $selectedEffDate)
+                ->where('assessment_period_id', $selectedAssessmentPeriodId)
                 ->first();
             if ($assessment && $assessment->items) {
                 $empPerformanceChecklist = json_decode($assessment->items, true);
@@ -151,7 +162,7 @@ class EmployeesController extends Controller
             'users',
             'empPerformanceChecklist',
             'assessmentPeriods',
-            'selectedEffDate'
+            'selectedAssessmentPeriodId'
         ));
     }
 
@@ -403,10 +414,10 @@ class EmployeesController extends Controller
     public function saveChecklistVerification(Request $request, $employee)
     {
         try {
-            Log::debug('Checklist verification request received', [
-                'employee' => $employee,
-                'request' => $request->all(),
-            ]);
+            // Log::debug('Checklist verification request received', [
+            //     'employee' => $employee,
+            //     'request' => $request->all(),
+            // ]);
             $validated = $request->validate([
                 'doc_name' => 'required|string|max:255',
                 'doc_type_id' => 'required|integer',
@@ -433,11 +444,11 @@ class EmployeesController extends Controller
             $checklist->items = $items;
             $checklist->save();
 
-            Log::debug('Checklist verification saved successfully', [
-                'emp_id' => $employee,
-                'doc_name' => $docName,
-                'item' => $items[$docName],
-            ]);
+            // Log::debug('Checklist verification saved successfully', [
+            //     'emp_id' => $employee,
+            //     'doc_name' => $docName,
+            //     'item' => $items[$docName],
+            // ]);
 
             // Lookup user name for verified_by
             $verifiedByName = null;
@@ -458,12 +469,12 @@ class EmployeesController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Checklist verification save error', [
-                'error' => $e->getMessage(),
-                'employee' => $employee,
-                'request' => $request->all(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            // Log::error('Checklist verification save error', [
+            //     'error' => $e->getMessage(),
+            //     'employee' => $employee,
+            //     'request' => $request->all(),
+            //     'trace' => $e->getTraceAsString(),
+            // ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),
@@ -506,12 +517,12 @@ class EmployeesController extends Controller
             ];
             return response()->json(['success' => true, 'data' => ['item' => $itemData], 'message' => 'Checklist item revoked.']);
         } catch (\Exception $e) {
-            \Log::error('Checklist revoke error', [
-                'error' => $e->getMessage(),
-                'employee' => $employee,
-                'request' => $request->all(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            // Log::error('Checklist revoke error', [
+            //     'error' => $e->getMessage(),
+            //     'employee' => $employee,
+            //     'request' => $request->all(),
+            //     'trace' => $e->getTraceAsString(),
+            // ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),

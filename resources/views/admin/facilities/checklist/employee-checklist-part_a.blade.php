@@ -1,5 +1,5 @@
 <div id="partA" class="tab-content">
-    <h2 class="text-xl font-bold mb-4">Part A - APPLICANT, admin.facilities.employee.employee-pagination, VERIFICATIONS
+    <h2 class="text-xl font-bold mb-4">Part A - APPLICANT INFO, IDENTIFICATIONS, VERIFICATIONS
     </h2>
     <div class="overflow-x-auto">
         <table class="min-w-full border text-xs md:text-sm">
@@ -57,7 +57,13 @@
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}">View</a>
+                            data-emp-id="{{ $employee->emp_id }}"
+                            data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
+                            data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
+                            data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
+                            data-comments="{{ $empChecklist->comments ?? '' }}"
+                            data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                            data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
@@ -291,3 +297,10 @@
         </table>
     </div>
 </div>
+
+<script>
+    window.checklistItemsByName = {};
+@foreach($checklistItems as $item)
+window.checklistItemsByName[@json($item->name)] = { isExpiring: {{ $item->isExpiring ? 1 : 0 }} };
+@endforeach
+</script>

@@ -34,6 +34,28 @@
         var commentsField = document.getElementById('verifyComments');
         var verifiedByField = document.getElementById('verifyVerifiedBy');
         var verifiedByIdField = document.getElementById('verifyVerifiedById');
+        var expDtRequiredMsg = document.getElementById('expDtRequiredMsg');
+
+        // Find isExpiring for this item (assumes a global JS object window.checklistItemsByName)
+        var isExpiring = 0;
+        if (window.checklistItemsByName && window.checklistItemsByName[itemName]) {
+            isExpiring = window.checklistItemsByName[itemName].isExpiring ? 1 : 0;
+        }
+        // Show/hide Expiration Date field and required message
+        if (expDtField && expDtRequiredMsg) {
+            if (isExpiring) {
+                expDtField.disabled = false;
+                expDtField.parentElement.classList.remove('hidden');
+                expDtField.required = true;
+                expDtRequiredMsg.classList.add('hidden');
+            } else {
+                expDtField.value = '';
+                expDtField.disabled = true;
+                expDtField.required = false;
+                expDtField.parentElement.classList.add('hidden');
+                expDtRequiredMsg.classList.add('hidden');
+            }
+        }
         
         // Find the row for this itemName/empId to get any existing data
         var link = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
@@ -66,26 +88,89 @@
         if (window.currentUserId && verifiedByIdField) verifiedByIdField.value = window.currentUserId;
         
         // Set fields to readonly if viewOnly is true
+        var editBtn = document.getElementById('editBtn');
+        var saveBtn = document.getElementById('saveBtn');
         if (viewOnly) {
-        if (onFileField) onFileField.disabled = true;
-        if (verifiedDtField) verifiedDtField.readOnly = true;
-        if (expDtField) expDtField.readOnly = true;
-        if (commentsField) commentsField.readOnly = true;
+            if (onFileField) onFileField.disabled = true;
+            if (verifiedDtField) verifiedDtField.readOnly = true;
+            if (expDtField) expDtField.readOnly = true;
+            if (commentsField) commentsField.readOnly = true;
+            if (editBtn) editBtn.classList.remove('hidden');
+            if (saveBtn) saveBtn.classList.add('hidden');
         } else {
-        if (onFileField) onFileField.disabled = false;
-        if (verifiedDtField) verifiedDtField.readOnly = false;
-        if (expDtField) expDtField.readOnly = false;
-        if (commentsField) commentsField.readOnly = false;
+            if (onFileField) onFileField.disabled = false;
+            if (verifiedDtField) verifiedDtField.readOnly = false;
+            if (expDtField) expDtField.readOnly = false;
+            if (commentsField) commentsField.readOnly = false;
+            if (editBtn) editBtn.classList.add('hidden');
+            if (saveBtn) saveBtn.classList.remove('hidden');
         }
-        
+        // Store initial values for change detection
+        if (!viewOnly) {
+            window._verifyModalInitial = {
+                comments: commentsField ? commentsField.value : '',
+                verifiedDt: verifiedDtField ? verifiedDtField.value : ''
+            };
+        }
         // Show the modal
         if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
     }
+    
+    // Edit button logic for modal (global, always attaches)
+    document.addEventListener('DOMContentLoaded', function() {
+        var editBtn = document.getElementById('editBtn');
+        var saveBtn = document.getElementById('saveBtn');
+        if (editBtn && saveBtn) {
+            editBtn.addEventListener('click', function() {
+                // Always re-query modal fields in case modal was re-rendered
+                var commentsField = document.getElementById('verifyComments');
+                var verifiedDtField = document.getElementById('verifyVerifiedDt');
+                var expDtField = document.getElementById('verifyExpDt');
+                if (commentsField) commentsField.readOnly = false;
+                if (verifiedDtField) verifiedDtField.readOnly = false;
+                if (expDtField) expDtField.readOnly = false;
+                editBtn.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+                // Store initial values for change detection
+                window._verifyModalInitial = {
+                    comments: commentsField ? commentsField.value : '',
+                    verifiedDt: verifiedDtField ? verifiedDtField.value : '',
+                    expDt: expDtField ? expDtField.value : ''
+                };
+            });
+            // Change detection to show Save only if changed
+            function checkForChanges() {
+                var commentsField = document.getElementById('verifyComments');
+                var verifiedDtField = document.getElementById('verifyVerifiedDt');
+                var expDtField = document.getElementById('verifyExpDt');
+                var changed = false;
+                if (window._verifyModalInitial) {
+                    if (
+                        (commentsField && commentsField.value !== window._verifyModalInitial.comments) ||
+                        (verifiedDtField && verifiedDtField.value !== window._verifyModalInitial.verifiedDt) ||
+                        (expDtField && expDtField.value !== window._verifyModalInitial.expDt)
+                    ) {
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    saveBtn.classList.remove('hidden');
+                } else {
+                    saveBtn.classList.add('hidden');
+                }
+            }
+            // Attach listeners for change detection
+            document.addEventListener('input', function(e) {
+                if (['verifyComments','verifyVerifiedDt','verifyExpDt'].includes(e.target.id)) {
+                    checkForChanges();
+                }
+            });
+        }
+    });
  
-
     // This block initializes the tab navigation for the employee checklist UI.
     // It sets up click handlers for each tab, manages the active tab's styling,
     // shows/hides the correct content, and remembers the last active tab in localStorage.
@@ -200,76 +285,81 @@
         });
     }
 
-
-// Handles the form submission for PART A-E checklist verification modal
-function handleChecklistFormSubmit(e) {
-    e.preventDefault();
-    var empId = document.getElementById('verifyEmpId').value;
-    var docName = document.getElementById('verifyDocName').value;
-    var docTypeId = parseInt(document.getElementById('verifyForm').getAttribute('data-doc-type-id') || '1', 10);
-    var onFile = true; // Always true when verified
-    var verifiedDt = document.getElementById('verifyVerifiedDt').value;
-    var row = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
-        l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId
-    )?.closest('tr');
-    var expDtNotRequired = document.getElementById('expDtNotRequired').checked;
-    if (!expDtNotRequired && row && row.querySelector('.verify-link') && row.querySelector('.verify-link').hasAttribute('data-exp-dt-not-required')) {
-        var vattr = row.querySelector('.verify-link').getAttribute('data-exp-dt-not-required');
-        expDtNotRequired = (vattr === '1' || vattr === 1 || vattr === true || vattr === 'true');
-    }
-    document.getElementById('expDtNotRequired').checked = expDtNotRequired;
-    document.getElementById('verifyExpDt').disabled = expDtNotRequired;
-    var expDtRaw = document.getElementById('verifyExpDt').value;
-    var expDt = expDtNotRequired ? null : (expDtRaw === '' ? null : expDtRaw);
-    var comments = document.getElementById('verifyComments').value;
-    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    var verifiedById = document.getElementById('verifyVerifiedById').value;
-    var payload = {
-        doc_name: docName,
-        doc_type_id: docTypeId,
-        on_file: onFile,
-        verified_dt: verifiedDt,
-        exp_dt: expDt,
-        comments: comments,
-        verified_by: verifiedById,
-        exp_dt_not_required: expDtNotRequired ? 1 : 0
-    };
-    fetch(`/admin/employees/${empId}/checklist/verify`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': token,
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(async response => {
-        let data;
-        let rawText = await response.text();
-        try {
-            data = JSON.parse(rawText);
-        } catch (err) {
-            console.error('Checklist save: JSON parse error', rawText);
-            alert('Save failed.');
-                closeVerifyModalAE();
+    // Handles the form submission for PART A-E checklist verification modal
+    function handleChecklistFormSubmit(e) {
+        e.preventDefault();
+        var empId = document.getElementById('verifyEmpId').value;
+        var docName = document.getElementById('verifyDocName').value;
+        var docTypeId = parseInt(document.getElementById('verifyForm').getAttribute('data-doc-type-id') || '1', 10);
+        var onFile = true; // Always true when verified
+        var verifiedDt = document.getElementById('verifyVerifiedDt').value;
+        var row = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
+            l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId
+        )?.closest('tr');
+        var expDtField = document.getElementById('verifyExpDt');
+        var expDtRequiredMsg = document.getElementById('expDtRequiredMsg');
+        var isExpiring = 0;
+        if (window.checklistItemsByName && window.checklistItemsByName[docName]) {
+            isExpiring = window.checklistItemsByName[docName].isExpiring ? 1 : 0;
+        }
+        // If item is expiring, require Expiration Date
+        if (isExpiring && (!expDtField.value || expDtField.value === '')) {
+            expDtRequiredMsg.classList.remove('hidden');
+            expDtField.focus();
             return;
-        }
-        if (data.success && data.data && data.data.item) {
-            var row = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId)?.closest('tr');
-            updateChecklistRow(row, data.data.item, docName, empId);
-                closeVerifyModalAE();
         } else {
+            expDtRequiredMsg.classList.add('hidden');
+        }
+        document.getElementById('verifyExpDt').disabled = true;
+        var expDtRaw = document.getElementById('verifyExpDt').value;
+        var expDt = expDtRaw === '' ? null : expDtRaw;
+        var comments = document.getElementById('verifyComments').value;
+        var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        var verifiedById = document.getElementById('verifyVerifiedById').value;
+        var payload = {
+            doc_name: docName,
+            doc_type_id: docTypeId,
+            on_file: onFile,
+            verified_dt: verifiedDt,
+            exp_dt: expDt,
+            comments: comments,
+            verified_by: verifiedById,
+        };
+        fetch(`/admin/employees/${empId}/checklist/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async response => {
+            let data;
+            let rawText = await response.text();
+            try {
+                data = JSON.parse(rawText);
+            } catch (err) {
+                console.error('Checklist save: JSON parse error', rawText);
+                alert('Save failed.');
+                    closeVerifyModalAE();
+                return;
+            }
+            if (data.success && data.data && data.data.item) {
+                var row = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId)?.closest('tr');
+                updateChecklistRow(row, data.data.item, docName, empId);
+                    closeVerifyModalAE();
+            } else {
+                alert('Save failed.');
+                    closeVerifyModalAE();
+            }
+        })
+        .catch(async err => {
+            console.error('Checklist save: AJAX error', err);
             alert('Save failed.');
                 closeVerifyModalAE();
-        }
-    })
-    .catch(async err => {
-        console.error('Checklist save: AJAX error', err);
-        alert('Save failed.');
-            closeVerifyModalAE();
-    });
-}
-
+        });
+    }
 
     // Updates the PART A-E checklist table row after verification save
     function updateChecklistRow(row, item, docName, empId) {
@@ -310,7 +400,7 @@ function handleChecklistFormSubmit(e) {
         } else {
             // If not verified, show Verify link with tooltip and all relevant data attributes
             actionLinks =
-                `<a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item" data-item-name="${itemNameAttr}" data-emp-id="${empId}" title="Verify Item"` +
+                `<a href="#" class="text-teal-600 underline ml-3 verify-link" title="Verify Item" data-item-name="${itemNameAttr}" data-emp-id="${empId}" title="Verify Item"` +
                 ` data-on-file="${item.on_file ? 1 : 0}"` +
                 ` data-verified-dt="${item.verified_dt || ''}"` +
                 ` data-exp-dt="${item.exp_dt || ''}"` +
@@ -334,7 +424,6 @@ function handleChecklistFormSubmit(e) {
         bindChecklistLinks();
     }
 
-
     // Legacy/fallback tab navigation logic for checklist tabs (may be redundant with Alpine.js or other tab logic)
     document.querySelectorAll('.tab-link').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -351,8 +440,60 @@ function handleChecklistFormSubmit(e) {
         });
     });
 
-// Alias for legacy compatibility: allow code expecting bindChecklistLinks() to work
-function bindChecklistLinks() {
-    bindChecklistLinksAE();
-}
+    // Alias for legacy compatibility: allow code expecting bindChecklistLinks() to work
+    function bindChecklistLinks() {
+        bindChecklistLinksAE();
+    }
+
+    // Edit button logic for modal (global, always attaches)
+    document.addEventListener('DOMContentLoaded', function() {
+        var editBtn = document.getElementById('editBtn');
+        var saveBtn = document.getElementById('saveBtn');
+        if (editBtn && saveBtn) {
+        editBtn.addEventListener('click', function() {
+        // Always re-query modal fields in case modal was re-rendered
+        var commentsField = document.getElementById('verifyComments');
+        var verifiedDtField = document.getElementById('verifyVerifiedDt');
+        var expDtField = document.getElementById('verifyExpDt');
+        if (commentsField) commentsField.readOnly = false;
+        if (verifiedDtField) verifiedDtField.readOnly = false;
+        if (expDtField) expDtField.readOnly = false;
+        editBtn.classList.add('hidden');
+        saveBtn.classList.remove('hidden');
+        // Store initial values for change detection
+        window._verifyModalInitial = {
+        comments: commentsField ? commentsField.value : '',
+        verifiedDt: verifiedDtField ? verifiedDtField.value : '',
+        expDt: expDtField ? expDtField.value : ''
+        };
+        });
+        // Change detection to show Save only if changed
+        function checkForChanges() {
+        var commentsField = document.getElementById('verifyComments');
+        var verifiedDtField = document.getElementById('verifyVerifiedDt');
+        var expDtField = document.getElementById('verifyExpDt');
+        var changed = false;
+        if (window._verifyModalInitial) {
+        if (
+        (commentsField && commentsField.value !== window._verifyModalInitial.comments) ||
+        (verifiedDtField && verifiedDtField.value !== window._verifyModalInitial.verifiedDt) ||
+        (expDtField && expDtField.value !== window._verifyModalInitial.expDt)
+        ) {
+        changed = true;
+        }
+        }
+        if (changed) {
+        saveBtn.classList.remove('hidden');
+        } else {
+        saveBtn.classList.add('hidden');
+        }
+        }
+        // Attach listeners for change detection
+        document.addEventListener('input', function(e) {
+        if (['verifyComments','verifyVerifiedDt','verifyExpDt'].includes(e.target.id)) {
+        checkForChanges();
+        }
+        });
+        }
+    });    
 </script>

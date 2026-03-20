@@ -6,6 +6,7 @@
         <form id="verifyFormF">
             <input type="hidden" name="emp_id" id="verifyEmpIdF">
             <input type="hidden" name="item_key" id="verifyItemKeyF">
+            <input type="hidden" name="eff_date" id="verifyEffDateF">
             <div class="mb-3">
                 <label class="block font-semibold mb-1">Rating <span class="text-red-600">*</span></label>
                 <select name="rating" id="verifyRatingF" class="border rounded px-2 py-1 w-full" required>

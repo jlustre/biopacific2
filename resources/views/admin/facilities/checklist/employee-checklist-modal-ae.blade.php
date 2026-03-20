@@ -15,9 +15,8 @@
             <div class="mb-3">
                 <label class="block font-semibold mb-1">Expiration Date</label>
                 <input type="date" id="verifyExpDt" class="border rounded px-2 py-1 w-full">
-                <label class="inline-flex items-center ml-2 text-xs">
-                    <input type="checkbox" id="expDtNotRequired"> Not Required
-                </label>
+                <span id="expDtRequiredMsg" class="text-red-600 text-xs hidden">Expiration Date is required for expiring
+                    items.</span>
             </div>
             <div class="mb-3">
                 <label class="block font-semibold mb-1">Verified By</label>
@@ -31,7 +30,9 @@
             <div class="flex justify-end">
                 <button type="button" onclick="closeVerifyModalAE()"
                     class="mr-2 px-4 py-2 bg-gray-300 rounded">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+                <button type="button" id="editBtn"
+                    class="px-4 py-2 bg-yellow-500 text-white rounded hidden">Edit</button>
+                <button type="submit" id="saveBtn" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
             </div>
         </form>
     </div>

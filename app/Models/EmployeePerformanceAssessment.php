@@ -9,10 +9,15 @@ class EmployeePerformanceAssessment extends Model
     protected $table = 'employee_performance_assessments';
     protected $fillable = [
         'emp_id',
+        'assessment_period_id',
         'items',
         'assessment_date',
         'assessed_by',
         'comments',
-        'eff_date', // Effective date for assessment period/history
     ];
+
+    public function period()
+    {
+        return $this->belongsTo(EmployeeAssessmentPeriod::class, 'assessment_period_id');
+    }
 }

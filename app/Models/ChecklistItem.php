@@ -14,6 +14,7 @@ class ChecklistItem extends Model
         'section',
         'doc_type_id',
         'order',
+        'isExpiring',
     ];
 
     public function docType()

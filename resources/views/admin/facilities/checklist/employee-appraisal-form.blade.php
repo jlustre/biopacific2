@@ -8,14 +8,16 @@
         </div>
         <div class="ml-2">
             <label for="assessmentPeriodSelect" class="font-semibold mr-2">Assessment Period:</label>
-            <select id="assessmentPeriodSelect" name="eff_date" class="border rounded px-2 py-1">
+            <select id="assessmentPeriodSelect" name="assessment_period_id" class="border rounded px-2 py-1"
+                style="background-color: #fffbe6; border: 2px solid #f59e42; font-weight: bold;">
                 @foreach($assessmentPeriods as $period)
-                <option value="{{ $period->eff_date }}" @if($selectedEffDate==$period->eff_date) selected @endif>
-                    {{ $period->eff_date }}
+                <option value="{{ $period->id }}" @if($selectedAssessmentPeriodId==$period->id) selected @endif>
+                    {{ $period->date_from }} to {{ $period->date_to }}
                 </option>
                 @endforeach
             </select>
-            <button type="button" id="addNewPeriodBtn" class="ml-2 px-2 py-1 bg-green-600 text-white rounded text-xs"
+            <button type="button" id="addNewPeriodBtn"
+                class="ml-2 px-2 py-1 bg-green-600 text-white rounded text-xs cursor-pointer"
                 title="Create new assessment period">New Period</button>
         </div>
 
@@ -116,17 +118,43 @@
 </div>
 <!-- Modal for creating new assessment period -->
 <div id="newPeriodModal" class="fixed inset-0 bg-black bg-opacity-40 items-center justify-center z-50 hidden">
+    @php
+    // Group assessment periods by year for JS
+    $periodsByYear = [];
+    if (!empty($assessmentPeriods)) {
+    foreach ($assessmentPeriods as $p) {
+    $y = isset($p->period_year) ? $p->period_year : (\Carbon\Carbon::parse($p->eff_date)->year ?? null);
+    if ($y !== null) {
+    $periodsByYear[$y][] = [
+    'period_sequence' => $p->period_sequence ?? 0,
+    'eff_date' => $p->eff_date,
+    ];
+    }
+    }
+    }
+    @endphp
+    <script>
+        window.assessmentPeriodsByYear = @json($periodsByYear);
+    </script>
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs relative">
         <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             onclick="closeNewPeriodModal()">&times;</button>
         <h3 class="text-lg font-bold mb-4">Create Assessment Period</h3>
         <form id="newPeriodForm">
+            <!-- PART F Modal hidden field for assessment_period_id -->
+            <input type="hidden" id="verifyAssessmentPeriodIdF" name="assessment_period_id" value="">
             <div class="mb-3">
-                <label class="block font-semibold mb-1">Assessment Period Date <span
+                <label class="block font-semibold mb-1">Assessment Period From <span
                         class="text-red-600">*</span></label>
-                <input type="date" name="new_eff_date" id="newEffDateInput" class="border rounded px-2 py-1 w-full"
+                <input type="date" name="date_from" id="newPeriodDateFromInput" class="border rounded px-2 py-1 w-full"
                     required>
-                <span id="newEffDateError" class="text-red-600 text-sm hidden">Date is required.</span>
+                <span id="newPeriodDateFromError" class="text-red-600 text-sm hidden">Start date is required.</span>
+            </div>
+            <div class="mb-3">
+                <label class="block font-semibold mb-1">Assessment Period To <span class="text-red-600">*</span></label>
+                <input type="date" name="date_to" id="newPeriodDateToInput" class="border rounded px-2 py-1 w-full"
+                    required>
+                <span id="newPeriodDateToError" class="text-red-600 text-sm hidden">End date is required.</span>
             </div>
             <div class="flex justify-end">
                 <button type="button" onclick="closeNewPeriodModal()"

@@ -8,12 +8,24 @@
             localStorage.setItem('employeeTab', newTab);
         }
     }">
-    <div class="mb-4">
-        <a href="{{ route('admin.facility.employees', ['facility' => $employee->currentAssignment->facility->slug ?? $employee->currentAssignment->facility_id]) }}"
+    <div class="mb-4 flex justify-between items-center">
+        <a href="{{ route('admin.facility.employees', ['facility' => $employee->currentAssignment->facility->slug ?? $employee->currentAssignment->facility_id]) }}@if(request('facility'))?facility={{ request('facility') }}@endif"
             class="inline-flex items-center px-4 py-2 bg-teal-400 text-white hover:bg-teal-500"
             style="background: teal; hover:bg-teal-300; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem;">
             &larr; Back to Employee List
         </a>
+        <span class="text-lg font-semibold text-gray-700">
+            @php
+            $selectedFacility = null;
+            if(request('facility')) {
+            $selectedFacility = $facilities->firstWhere('id', request('facility'));
+            }
+            if(!$selectedFacility && isset($employee->currentAssignment->facility)) {
+            $selectedFacility = $employee->currentAssignment->facility;
+            }
+            @endphp
+            {{ $selectedFacility ? $selectedFacility->name : '' }}
+        </span>
     </div>
     <h1 class="text-2xl font-bold mb-1 text-center">View/Edit Employee</h1>
     <div class="text-lg font-semibold text-gray-800 mb-4 text-center">

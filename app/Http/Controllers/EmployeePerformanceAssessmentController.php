@@ -5,67 +5,103 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\EmployeePerformanceAssessment;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class EmployeePerformanceAssessmentController extends Controller
 {
     /**
      * Create a new assessment period for an employee (if not exists).
-     * Expects: emp_id, eff_date (YYYY-MM-DD)
+     * Expects: emp_id, assessment_period_id
      * Returns: success, message
      */
     public function createPeriod(Request $request)
     {
-        $validated = $request->validate([
-            'emp_id' => 'required',
-            'eff_date' => 'required|date',
-        ]);
+        try {
+            $validated = $request->validate([
+                'date_from' => 'required|date',
+                'date_to' => 'required|date|after_or_equal:date_from',
+            ]);
 
-        // Check if period already exists
-        $exists = EmployeePerformanceAssessment::where('emp_id', $validated['emp_id'])
-            ->where('eff_date', $validated['eff_date'])
-            ->exists();
-        if ($exists) {
+            $force = $request->input('force', false);
+
+            // Check for overlapping periods
+            $overlap = \App\Models\EmployeeAssessmentPeriod::where(function($q) use ($validated) {
+                $q->where('date_from', '<=', $validated['date_to'])
+                  ->where('date_to', '>=', $validated['date_from']);
+            })->first();
+            if ($overlap && !$force) {
+                return response()->json([
+                    'success' => false,
+                    'warning' => true,
+                    'message' => 'The selected date range overlaps with an existing assessment period (ID: ' . $overlap->id . ', ' . $overlap->date_from . ' to ' . $overlap->date_to . '). Proceed anyway?',
+                ], 200);
+            }
+
+            // Check if period already exists for this exact date range
+            $period = \App\Models\EmployeeAssessmentPeriod::where('date_from', $validated['date_from'])
+                ->where('date_to', $validated['date_to'])
+                ->first();
+            if ($period) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Assessment period already exists.'
+                ], 409);
+            }
+
+            // Create new assessment period (global)
+            $period = \App\Models\EmployeeAssessmentPeriod::create([
+                'date_from' => $validated['date_from'],
+                'date_to' => $validated['date_to'],
+                'created_by' => Auth::id(),
+                'period_year' => date('Y', strtotime($validated['date_from'])),
+                'period_sequence' => 1, // You may want to implement sequence logic if needed
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assessment period created.',
+                'data' => [
+                    'assessment_period_id' => $period->id,
+                    'date_from' => $period->date_from,
+                    'date_to' => $period->date_to,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create assessment period: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
-                'message' => 'Assessment period already exists.'
-            ], 409);
+                'message' => 'Failed to create assessment period: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Create new period (empty items)
-        $assessment = EmployeePerformanceAssessment::create([
-            'emp_id' => $validated['emp_id'],
-            'eff_date' => $validated['eff_date'],
-            'items' => json_encode([]),
-            'assessment_date' => null,
-            'assessed_by' => null,
-            'comments' => null,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Assessment period created.',
-            'data' => [
-                'id' => $assessment->id,
-                'eff_date' => $assessment->eff_date,
-            ]
-        ]);
     }
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'emp_id' => 'required',
-            'item_key' => 'required',
-            'rating' => 'required',
-            'assessment_date' => 'required|date',
-            'comments' => 'nullable|string',
-            'eff_date' => 'required|date',
-        ]);
+        try {
+            $validated = $request->validate([
+                'emp_id' => 'required',
+                'item_key' => 'required',
+                'rating' => 'required',
+                'assessment_date' => 'required|date',
+                'comments' => 'nullable|string',
+                'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson() || $request->isJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $e->errors(),
+                    'message' => 'Validation failed.'
+                ], 422);
+            }
+            throw $e;
+        }
 
-        // Find or create the assessment record for this employee and period
+        // Find or create the assessment record for this employee and assessment period
         $assessment = EmployeePerformanceAssessment::firstOrCreate(
             [
                 'emp_id' => $validated['emp_id'],
-                'eff_date' => $validated['eff_date'],
+                'assessment_period_id' => $validated['assessment_period_id'],
             ],
             [
                 'items' => json_encode([]),
@@ -107,11 +143,11 @@ class EmployeePerformanceAssessmentController extends Controller
         $validated = $request->validate([
             'emp_id' => 'required',
             'item_key' => 'required',
-            'eff_date' => 'required|date',
+            'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
         ]);
 
         $assessment = EmployeePerformanceAssessment::where('emp_id', $validated['emp_id'])
-            ->where('eff_date', $validated['eff_date'])
+            ->where('assessment_period_id', $validated['assessment_period_id'])
             ->first();
         if (!$assessment) {
             return response()->json(['success' => false, 'message' => 'Assessment not found.'], 404);

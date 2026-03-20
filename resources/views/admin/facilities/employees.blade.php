@@ -120,3 +120,21 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var facilitySelect = document.getElementById('facility');
+        var form = document.getElementById('employee-filter-form');
+        if (facilitySelect && form) {
+            var urlParams = new URLSearchParams(window.location.search);
+            var facilityVal = facilitySelect.value;
+            if (facilityVal && !urlParams.has('facility')) {
+                // Add facility param and submit
+                urlParams.set('facility', facilityVal);
+                window.location.search = urlParams.toString();
+            }
+        }
+    });
+</script>
+@endpush
