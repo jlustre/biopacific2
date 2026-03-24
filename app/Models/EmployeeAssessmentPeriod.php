@@ -13,6 +13,7 @@ class EmployeeAssessmentPeriod extends Model
         'date_from',
         'date_to',
         'created_by',
+        'review_type',
     ];
 
     public function assessments()

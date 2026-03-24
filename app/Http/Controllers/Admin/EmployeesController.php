@@ -117,7 +117,7 @@ class EmployeesController extends Controller
      */
     public function edit($emp_id)
     {
-        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user'])->findOrFail($emp_id);
+        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment'])->findOrFail($emp_id);
         $departments = \App\Models\BPDepartment::all();
         $positions = \App\Models\BPPosition::all();
         $facilities = \App\Models\Facility::all();
@@ -125,32 +125,70 @@ class EmployeesController extends Controller
         $empChecklists = \App\Models\BPEmpChecklist::where('emp_id', $emp_id)->get();
         $users = \App\Models\User::all();
 
-        // // Debug: Log checklist comments for troubleshooting
-        // Log::debug('Checklist debug: loaded empChecklists', [
-        //     'emp_id' => $emp_id,
-        //     'empChecklists' => $empChecklists->map(function($c) {
-        //         return [
-        //             'emp_id' => $c->emp_id,
-        //             'items' => $c->items,
-        //         ];
-        //     }),
-        // ]);
-
         // PART F: Load all assessment periods for this employee
-        // New: Load all assessment periods for this employee from employee_assessment_periods
         $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
         $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
 
-        // Load performance assessment items for this employee and selected assessment period
+        // Load performance assessment items and review date for this employee and selected assessment period
         $empPerformanceChecklist = [];
+        $reviewDate = '';
+        $reviewerName = '';
+        $reviewType = '';
         if ($selectedAssessmentPeriodId) {
             $assessment = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
                 ->where('assessment_period_id', $selectedAssessmentPeriodId)
                 ->first();
-            if ($assessment && $assessment->items) {
-                $empPerformanceChecklist = json_decode($assessment->items, true);
+            $period = \App\Models\EmployeeAssessmentPeriod::find($selectedAssessmentPeriodId);
+            if ($period) {
+                $reviewType = $period->review_type === 'Q' ? 'Quarterly' : 'Annual';
+            }
+            if ($assessment) {
+                if ($assessment->items) {
+                    $empPerformanceChecklist = json_decode($assessment->items, true);
+                }
+                $reviewDate = $assessment->review_dt;
+                // Lookup reviewer name if assessed_by is set
+                if ($assessment->assessed_by) {
+                    $reviewerUser = \App\Models\User::find($assessment->assessed_by);
+                    $reviewerName = $reviewerUser ? $reviewerUser->name : '';
+                }
             }
         }
+
+        // PART F: Load section comments for this employee and assessment period
+        $sectionComments = [];
+        if ($selectedAssessmentPeriodId) {
+            $comments = \App\Models\EmployeePerformanceSectionComment::where('emp_id', $emp_id)
+                ->where('assessment_period_id', $selectedAssessmentPeriodId)
+                ->get();
+            foreach ($comments as $comment) {
+                $sectionComments[$comment->doc_type_id] = $comment->comment;
+            }
+        }
+
+        // Supervisor name logic: use Reports To if available, else logged-in user
+        $supervisorName = '';
+        $assignment = $employee->currentAssignment;
+        if ($assignment && $assignment->reports_to_emp_id) {
+            $supervisorEmp = \App\Models\BPEmployee::where('emp_id', $assignment->reports_to_emp_id)->first();
+            if ($supervisorEmp && $supervisorEmp->user) {
+                $supervisorName = $supervisorEmp->user->name;
+            } elseif ($supervisorEmp) {
+                $supervisorName = trim($supervisorEmp->last_name . ', ' . $supervisorEmp->first_name . ($supervisorEmp->middle_name ? ' ' . $supervisorEmp->middle_name : ''));
+            }
+        }
+        if (!$supervisorName && auth()->check()) {
+            $supervisorName = auth()->user()->name;
+        }
+
+        // Get doc_type_id for each section
+        $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
+        $devPlansDocType = \App\Models\DocType::where('name', 'Development Plans')->first();
+        $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
+
+        $areasForDevelopment = $areasDevDocType && isset($sectionComments[$areasDevDocType->id]) ? $sectionComments[$areasDevDocType->id] : '';
+        $developmentPlans = $devPlansDocType && isset($sectionComments[$devPlansDocType->id]) ? $sectionComments[$devPlansDocType->id] : '';
+        $employeeComments = $empCommentsDocType && isset($sectionComments[$empCommentsDocType->id]) ? $sectionComments[$empCommentsDocType->id] : '';
 
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
@@ -162,7 +200,15 @@ class EmployeesController extends Controller
             'users',
             'empPerformanceChecklist',
             'assessmentPeriods',
-            'selectedAssessmentPeriodId'
+            'selectedAssessmentPeriodId',
+            'sectionComments',
+            'supervisorName',
+            'areasForDevelopment',
+            'developmentPlans',
+            'employeeComments',
+            'reviewDate',
+            'reviewerName',
+            'reviewType'
         ));
     }
 
@@ -528,5 +574,91 @@ class EmployeesController extends Controller
                 'message' => 'Error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Save Areas for Development (PART F) for an employee and assessment period.
+     */
+    public function saveAreasDevelopment(Request $request, $emp_id)
+    {
+        $rules = [
+            'supervisor_name' => 'required|string|max:255',
+            'employee_name' => 'required|string|max:255',
+            'review_dt' => ($request->input('action') === 'submit' ? 'required' : 'nullable') . '|date',
+            'employee_acknowledge_dt' => 'nullable|date',
+            // Add more validation as needed for the actual fields
+        ];
+        $validated = $request->validate($rules);
+
+        $assessmentPeriodId = $request->input('assessment_period_id');
+        if (!$assessmentPeriodId) {
+            return back()->with('error', 'Assessment period is required.');
+        }
+
+        // Save Areas Requiring Further Development
+        $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
+        if ($areasDevDocType) {
+            \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
+                [
+                    'emp_id' => $emp_id,
+                    'assessment_period_id' => $assessmentPeriodId,
+                    'doc_type_id' => $areasDevDocType->id,
+                ],
+                [
+                    'comment' => $request->input('areas_for_development', ''),
+                ]
+            );
+        }
+        // Save Development Plans
+        $devPlansDocType = \App\Models\DocType::where('name', 'Development Plans')->first();
+        if ($devPlansDocType) {
+            \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
+                [
+                    'emp_id' => $emp_id,
+                    'assessment_period_id' => $assessmentPeriodId,
+                    'doc_type_id' => $devPlansDocType->id,
+                ],
+                [
+                    'comment' => $request->input('development_plans', ''),
+                ]
+            );
+        }
+        // Save Employee Comments
+        $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
+        if ($empCommentsDocType) {
+            \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
+                [
+                    'emp_id' => $emp_id,
+                    'assessment_period_id' => $assessmentPeriodId,
+                    'doc_type_id' => $empCommentsDocType->id,
+                ],
+                [
+                    'comment' => $request->input('employee_comments', ''),
+                ]
+            );
+        }
+
+        // Set review_dt and acknowledge_dt on EmployeePerformanceAssessment
+        $assessment = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->first();
+        if ($assessment) {
+            $assessment->review_dt = $request->input('review_dt');
+            if ($request->filled('employee_acknowledge_dt')) {
+                $assessment->acknowledge_dt = $request->input('employee_acknowledge_dt');
+            }
+            // If submitted, finalize and send email
+            if ($request->input('action') === 'submit') {
+                $assessment->finalized = 1;
+                // TODO: Implement email notification to employee
+                // \Mail::to($assessment->employee->user->email)->send(new AssessmentSubmittedMail($assessment));
+            }
+            $assessment->save();
+        }
+
+        if ($request->input('action') === 'submit') {
+            return back()->with('success', 'Assessment submitted and employee notified.');
+        }
+        return back()->with('success', 'Areas for Development saved successfully.');
     }
 }

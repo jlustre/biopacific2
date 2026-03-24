@@ -9,44 +9,45 @@ class EmployeePerformanceItemsSeeder extends Seeder
 {
     public function run()
     {
+        // Use plain section names for DB, Roman numerals for display only
         $sections = [
-            'I. JOB SKILLS AND KNOWLEDGE' => [
+            'Job Skills and Knowledge' => [
                 'Understands the job role and duties.',
                 'Initiates work projects without prompting, once briefed.',
                 'Demonstrates proficiency in all phases of the job.',
                 'Produces complete and accurate work.',
             ],
-            'II. DEPENDABILITY' => [
+            'Dependability' => [
                 'Starts work promptly and can be depended upon to be available for work.',
                 'Remains at work area as required.',
                 'Maintains confidentiality.',
                 'Takes appropriate actions and follows instructions as directed.',
             ],
-            'III. INTERPERSONAL SKILLS' => [
+            'Interpersonal Skills' => [
                 'Adapts to changing situations.',
                 'Willing to assist others in accomplishing additional work.',
                 'Considers viewpoints of others and accepts constructive feedback.',
                 'Cooperates with other employees in a positive, supportive, and courteous manner.',
             ],
-            'IV. ORGANIZATIONAL SKILLS' => [
+            'Organizational Skills' => [
                 'Coordinates and maintains current work flow.',
                 'Recognizes priorities and meets deadlines.',
                 'Pays attention to detail.',
                 'Works well under pressure.',
             ],
-            'V. COMMUNICATION SKILLS' => [
+            'Communication Skills' => [
                 'Listens effectively and expresses understanding.',
                 'Consistently fosters respect in the workplace and demonstrates Company\'s Guiding Principles and Values.',
                 'Promotes understanding and acceptance of individual and cultural differences in the workplace.',
                 'Provides clear, concise, and accurate verbal and written information in an appropriate and timely manner.',
             ],
-            'VI. PROBLEM SOLVING' => [
+            'Problem-Solving Skills' => [
                 'Identifies existing problems.',
                 'Anticipates and identifies potential problems.',
                 'Knows how and where to obtain necessary information.',
                 'Considers possible alternatives and makes thoughtful recommendations.',
             ],
-            'VII. SAFETY & HEALTH' => [
+            'Safety & Health' => [
                 'Follows best practices for workstation ergonomics as guided by management',
                 'Maintains good housekeeping in and around work area (clear aisles and cooridors, under desk clearance, etc.)',
                 'Participates is safety and health initiatives as needed and/or requested',

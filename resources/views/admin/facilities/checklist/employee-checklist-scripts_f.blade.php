@@ -1,7 +1,56 @@
 <script>
+    // Opens the modal for creating or editing an assessment period
+    function openNewPeriodModal(period = null) {
+        var newPeriodModal = document.getElementById('newPeriodModal');
+        var newPeriodForm = document.getElementById('newPeriodForm');
+        var dateFromInput = document.getElementById('newPeriodDateFromInput');
+        var dateToInput = document.getElementById('newPeriodDateToInput');
+        var reviewTypeInput = document.getElementById('newPeriodReviewTypeInput');
+        var periodIdInput = document.getElementById('newPeriodIdInput');
+        var title = document.getElementById('periodModalTitle');
+        var submitBtn = document.getElementById('periodModalSubmitBtn');
+        if (!newPeriodModal || !newPeriodForm || !dateFromInput || !dateToInput || !reviewTypeInput || !periodIdInput || !title || !submitBtn) {
+            alert('Modal elements missing.');
+            return;
+        }
+        // Reset form fields
+        newPeriodForm.reset();
+        periodIdInput.value = '';
+        dateFromInput.value = '';
+        dateToInput.value = '';
+        reviewTypeInput.value = 'A';
+        // Hide error messages
+        var dateFromError = document.getElementById('newPeriodDateFromError');
+        var dateToError = document.getElementById('newPeriodDateToError');
+        if (dateFromError) dateFromError.classList.add('hidden');
+        if (dateToError) dateToError.classList.add('hidden');
+        // If editing, populate fields
+        if (period) {
+            periodIdInput.value = period.id || '';
+            dateFromInput.value = period.date_from || '';
+            dateToInput.value = period.date_to || '';
+            reviewTypeInput.value = period.review_type || 'A';
+            if (title) title.textContent = 'Edit Assessment Period';
+            if (submitBtn) submitBtn.textContent = 'Update';
+        } else {
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            var todayStr = yyyy + '-' + mm + '-' + dd;
+            if (dateFromInput) dateFromInput.value = todayStr;
+            if (dateToInput) dateToInput.value = todayStr;
+            if (reviewTypeInput) reviewTypeInput.value = 'A';
+            if (title) title.textContent = 'Create Assessment Period';
+            if (submitBtn) submitBtn.textContent = 'Create';
+        }
+        // Show the modal
+        newPeriodModal.classList.remove('hidden');
+        newPeriodModal.classList.add('flex');
+    }
     // Binds click events for PART F checklist action links (Verify/View)
     function bindChecklistLinksF() {
-                // No longer disables PART F links globally; handled in event delegation
+        // No longer disables PART F links globally; handled in event delegation
         // Sync assessment period dropdown with window.selectedAssessmentPeriodId and hidden input
         var periodSelect = document.getElementById('assessmentPeriodSelect');
         if (periodSelect) {
@@ -19,39 +68,68 @@
                 openNewPeriodModal();
             };
         }
-        // New Period modal logic (date range)
-        var newPeriodModal = document.getElementById('newPeriodModal');
+        // Edit Period button logic
+        var editPeriodBtn = document.getElementById('editPeriodBtn');
+        if (editPeriodBtn) {
+            editPeriodBtn.onclick = function() {
+                var periodSelect = document.getElementById('assessmentPeriodSelect');
+                if (!periodSelect) return;
+                var selectedId = periodSelect.value;
+                var selectedOption = periodSelect.options[periodSelect.selectedIndex];
+                // Find the selected period's data from window.assessmentPeriods (to be injected)
+                var periods = window.assessmentPeriods || [];
+                var period = periods.find(function(p) { return p.id == selectedId; });
+                openNewPeriodModal(period);
+            };
+        }
+
+        // Modal submit logic for creating/updating assessment periods
         var newPeriodForm = document.getElementById('newPeriodForm');
         if (newPeriodForm) {
             newPeriodForm.onsubmit = function(e) {
                 e.preventDefault();
-                var dateFromInput = document.getElementById('newPeriodDateFromInput');
-                var dateToInput = document.getElementById('newPeriodDateToInput');
+                var id = document.getElementById('newPeriodIdInput').value;
+                var dateFrom = document.getElementById('newPeriodDateFromInput').value;
+                var dateTo = document.getElementById('newPeriodDateToInput').value;
+                var reviewType = document.getElementById('newPeriodReviewTypeInput').value;
                 var dateFromError = document.getElementById('newPeriodDateFromError');
                 var dateToError = document.getElementById('newPeriodDateToError');
-                var valid = true;
-                if (!dateFromInput.value) {
-                    dateFromError.classList.remove('hidden');
-                    valid = false;
+                var submitBtn = document.getElementById('periodModalSubmitBtn');
+                // Basic validation
+                var hasError = false;
+                if (!dateFrom) {
+                    if (dateFromError) dateFromError.classList.remove('hidden');
+                    hasError = true;
                 } else {
-                    dateFromError.classList.add('hidden');
+                    if (dateFromError) dateFromError.classList.add('hidden');
                 }
-                if (!dateToInput.value) {
-                    dateToError.classList.remove('hidden');
-                    valid = false;
+                if (!dateTo) {
+                    if (dateToError) dateToError.classList.remove('hidden');
+                    hasError = true;
                 } else {
-                    dateToError.classList.add('hidden');
+                    if (dateToError) dateToError.classList.add('hidden');
                 }
-                if (valid && dateFromInput.value > dateToInput.value) {
-                    dateToError.textContent = 'End date must be after start date.';
-                    dateToError.classList.remove('hidden');
-                    valid = false;
-                } else {
-                    dateToError.textContent = 'End date is required.';
-                }
-                if (!valid) return;
+                if (hasError) return;
+                // CSRF token
                 var tokenMeta = document.querySelector('meta[name="csrf-token"]');
-                var token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+                if (!tokenMeta) {
+                    alert('CSRF token missing.');
+                    return;
+                }
+                var token = tokenMeta.getAttribute('content');
+                // Disable submit button
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = id ? 'Updating...' : 'Creating...';
+                }
+                // Prepare payload
+                var payload = {
+                    date_from: dateFrom,
+                    date_to: dateTo,
+                    review_type: reviewType
+                };
+                if (id) payload.id = id;
+                // Use the correct backend route for assessment period create/update
                 fetch('/admin/employees/performance-assessment/period', {
                     method: 'POST',
                     headers: {
@@ -59,10 +137,7 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        date_from: dateFromInput.value,
-                        date_to: dateToInput.value
-                    })
+                    body: JSON.stringify(payload)
                 })
                 .then(async response => {
                     let data;
@@ -70,14 +145,22 @@
                     try {
                         data = JSON.parse(rawText);
                     } catch (err) {
-                        alert('Failed to create assessment period.');
+                        alert('Save failed.1');
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = id ? 'Update' : 'Create';
+                        }
                         return;
                     }
-                    if (data.success) {
-                        window.location.reload();
-                    } else if (data.warning) {
-                        if (confirm(data.message || 'The selected date range overlaps with an existing assessment period. Proceed anyway?')) {
-                            // Retry with force flag
+                    // Handle warning (overlap or in-use)
+                    if (data.warning && data.message) {
+                        if (confirm(data.message)) {
+                            // Add force or force_edit flag and re-submit
+                            if (data.message.includes('overlaps')) {
+                                payload.force = true;
+                            } else if (data.message.includes('using this assessment period')) {
+                                payload.force_edit = true;
+                            }
                             fetch('/admin/employees/performance-assessment/period', {
                                 method: 'POST',
                                 headers: {
@@ -85,53 +168,69 @@
                                     'X-CSRF-TOKEN': token,
                                     'Accept': 'application/json'
                                 },
-                                body: JSON.stringify({
-                                    date_from: dateFromInput.value,
-                                    date_to: dateToInput.value,
-                                    force: true
-                                })
+                                body: JSON.stringify(payload)
                             })
                             .then(async response2 => {
                                 let data2;
                                 let rawText2 = await response2.text();
                                 try {
                                     data2 = JSON.parse(rawText2);
-                                } catch (err2) {
-                                    alert('Failed to create assessment period.');
+                                } catch (err) {
+                                    alert('Save failed.1');
+                                    if (submitBtn) {
+                                        submitBtn.disabled = false;
+                                        submitBtn.textContent = id ? 'Update' : 'Create';
+                                    }
                                     return;
                                 }
                                 if (data2.success) {
+                                    closeNewPeriodModal();
                                     window.location.reload();
                                 } else {
-                                    alert(data2.message || 'Failed to create assessment period.');
+                                    alert(data2.message || 'Save failed.2');
+                                    if (submitBtn) {
+                                        submitBtn.disabled = false;
+                                        submitBtn.textContent = id ? 'Update' : 'Create';
+                                    }
                                 }
                             })
-                            .catch(() => alert('Failed to create assessment period.'));
+                            .catch(err => {
+                                alert('Save failed.3: ' + (err && err.message ? err.message : err));
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = id ? 'Update' : 'Create';
+                                }
+                            });
+                            return;
+                        } else {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = id ? 'Update' : 'Create';
+                            }
+                            return;
                         }
+                    }
+                    if (data.success) {
+                        closeNewPeriodModal();
+                        window.location.reload();
                     } else {
-                        alert(data.message || 'Failed to create assessment period.');
+                        alert(data.message || 'Save failed.2');
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = id ? 'Update' : 'Create';
+                        }
                     }
                 })
-                .catch(() => {
-                    alert('Failed to create assessment period.');
+                .catch(err => {
+                    alert('Save failed.3: ' + (err && err.message ? err.message : err));
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = id ? 'Update' : 'Create';
+                    }
                 });
             };
         }
-    }
-
-    // Modal open/close helpers for new period
-    function openNewPeriodModal() {
-        var modal = document.getElementById('newPeriodModal');
-        if (modal) modal.classList.remove('hidden');
-        var today = new Date();
-        var yyyy = today.getFullYear();
-        var mm = String(today.getMonth() + 1).padStart(2, '0');
-        var dd = String(today.getDate()).padStart(2, '0');
-        var todayStr = yyyy + '-' + mm + '-' + dd;
-        var dateFromInput = document.getElementById('newPeriodDateFromInput');
-        var dateToInput = document.getElementById('newPeriodDateToInput');
-        if (dateFromInput) dateFromInput.value = todayStr;
-        if (dateToInput) dateToInput.value = todayStr;
+        // No modal logic here. All modal open/submit logic is handled by openNewPeriodModal().
     }
 
     function closeNewPeriodModal() {
@@ -192,8 +291,41 @@
                 apidField.readOnly = false;
             }
         }
-        // Populate comments if available
-        commentsField.value = link && link.getAttribute('data-comments') ? link.getAttribute('data-comments') : '';
+        // Populate comments if available, else fetch from backend if in view mode
+        var docTypeId = null;
+        if (link && link.getAttribute('data-doc-type-id')) {
+            docTypeId = link.getAttribute('data-doc-type-id');
+        } else if (row) {
+            // Fallback: Try to get docTypeId from a textarea in the same section
+            var sectionRow = row.closest('table');
+            if (sectionRow) {
+                var textarea = sectionRow.parentElement.querySelector('textarea.section-comment-textarea');
+                if (textarea && textarea.dataset.docTypeId) {
+                    docTypeId = textarea.dataset.docTypeId;
+                }
+            }
+        }
+        var assessmentPeriodId = apidField ? apidField.value : (window.selectedAssessmentPeriodId || '');
+        if (viewOnly && docTypeId && empId && assessmentPeriodId && itemKey) {
+            // Fetch comment from backend
+            commentsField.value = '';
+            fetch('/admin/employees/performance-section-comment?emp_id=' + encodeURIComponent(empId) + '&assessment_period_id=' + encodeURIComponent(assessmentPeriodId) + '&doc_type_id=' + encodeURIComponent(docTypeId) + '&item_key=' + encodeURIComponent(itemKey), {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data && data.success && data.data && data.data.comment) {
+                    commentsField.value = data.data.comment;
+                } else {
+                    commentsField.value = '';
+                }
+            })
+            .catch(() => { 
+                commentsField.value = ''; 
+            });
+        } else {
+            commentsField.value = link && link.getAttribute('data-comments') ? link.getAttribute('data-comments') : '';
+        }
         // Set assessed by fields to current user
         if (window.currentUserName) {
             assessedByField.value = window.currentUserName;
@@ -504,6 +636,7 @@
         });
     };
 
+
     document.addEventListener('DOMContentLoaded', function() {
         // Expiration Date Not Required checkbox logic (for A-E compatibility, safe to leave)
         var expDtNotRequired = document.getElementById('expDtNotRequired');
@@ -520,6 +653,95 @@
         }
         // Always bind PART F links on load
         bindChecklistLinksF();
+
+        // PART F: Section comment save logic
+        document.querySelectorAll('.section-comment-save-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var docTypeId = btn.getAttribute('data-doc-type-id');
+                var empId = btn.getAttribute('data-emp-id');
+                var assessmentPeriodId = btn.getAttribute('data-assessment-period-id');
+                var textarea = document.querySelector('.section-comment-textarea[data-doc-type-id="' + docTypeId + '"]');
+                // Find the status span in the same .mb-2 container as the button
+                var mb2Container = btn.closest('.mb-2');
+                var statusSpan = mb2Container ? mb2Container.querySelector('.section-comment-status') : null;
+                if (!docTypeId || !empId || !assessmentPeriodId) {
+                    var debugMsg = 'Missing required data. ';
+                    if (!docTypeId) debugMsg += '[docTypeId missing] ';
+                    if (!empId) debugMsg += '[empId missing] ';
+                    if (!assessmentPeriodId) debugMsg += '[assessmentPeriodId missing] ';
+                    if (statusSpan) {
+                        statusSpan.textContent = debugMsg;
+                        statusSpan.style.color = 'red';
+                    }
+                    // Also log to console for developer
+                    console.warn(debugMsg, {docTypeId, empId, assessmentPeriodId});
+                    return;
+                }
+                var comment = textarea ? textarea.value : '';
+                // Get CSRF token
+                var tokenMeta = document.querySelector('meta[name="csrf-token"]');
+                if (!tokenMeta) {
+                    if (statusSpan) {
+                        statusSpan.textContent = 'CSRF token missing.';
+                        statusSpan.style.color = 'red';
+                    }
+                    return;
+                }
+                var token = tokenMeta.getAttribute('content');
+                // Show saving status
+                if (statusSpan) {
+                    statusSpan.textContent = 'Saving...';
+                    statusSpan.style.color = '#666';
+                }
+                fetch('/admin/employees/performance-section-comment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emp_id: empId,
+                        assessment_period_id: assessmentPeriodId,
+                        doc_type_id: docTypeId,
+                        comment: comment
+                    })
+                })
+                .then(async response => {
+                    let data;
+                    let rawText = await response.text();
+                    try {
+                        data = JSON.parse(rawText);
+                    } catch (err) {
+                        if (statusSpan) {
+                            statusSpan.textContent = 'Save failed.';
+                            statusSpan.style.color = 'red';
+                        }
+                        return;
+                    }
+                    if (data.success) {
+                        if (statusSpan) {
+                            statusSpan.textContent = 'Saved!';
+                            statusSpan.style.color = 'green';
+                        }
+                        setTimeout(function() {
+                            statusSpan.textContent = '';
+                        }, 2000);
+                    } else {
+                        if (statusSpan) {
+                            statusSpan.textContent = data.message || 'Save failed.';
+                            statusSpan.style.color = 'red';
+                        }
+                    }
+                })
+                .catch(() => {
+                    if (statusSpan) {
+                        statusSpan.textContent = 'Save failed.';
+                        statusSpan.style.color = 'red';
+                    }
+                });
+            });
+        });
     });
 
 

@@ -28,7 +28,7 @@
             <span class="font-semibold text-lg text-blue-800">Hiring</span>
         </a>
 
-        <a href="{{ route('admin.facility.employees', ['facility' => $facility->id]) }}@if(request('facility'))?facility={{ request('facility') }}@endif"
+        <a href="{{ route('admin.facility.employees', ['facility' => $facility->id]) }}?facility={{ $facility->id }}"
             class="flex flex-col items-center justify-center bg-green-50 hover:bg-green-100 rounded-xl p-6 shadow transition">
             <i class="fas fa-users text-3xl text-green-600 mb-2"></i>
             <span class="font-semibold text-lg text-green-800">Employees</span>

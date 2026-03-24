@@ -12,7 +12,6 @@ use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminPermissionController;
 use App\Http\Controllers\BaaRegistryController;
 use App\Http\Controllers\AdminRoleAssignmentController;
-
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventController;
@@ -38,6 +37,7 @@ use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\PreEmploymentController;
 use App\Http\Controllers\HireApplicantController;
 use App\Http\Controllers\EmployeeApplicationController;
+use App\Http\Controllers\EmployeePerformanceSectionCommentController;
 use App\Models\Facility;
 use App\Models\Position;
 
@@ -59,8 +59,19 @@ Route::get('/admin/positions/all', function() {
         ->get();
 });
 
+// PART F: Areas for Development (save)
+Route::post('admin/employees/{emp_id}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
+
+// PART F: List reviewed employees for selected period and facility (AJAX)
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('employees/performance-assessment/reviewed-employees', [App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'getReviewedEmployees'])->name('admin.employees.performance-assessment.reviewed-employees');
+});
+// Delete assessment period (PART F)
+Route::delete('/admin/employees/performance-assessment/period/{id}', [App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'destroyPeriod'])->name('admin.employees.performance-assessment.period.destroy');
+
+
 // PART F: Section Comments (AJAX endpoints)
-use App\Http\Controllers\EmployeePerformanceSectionCommentController;
+
 Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])
     ->prefix('admin')
     ->name('admin.')

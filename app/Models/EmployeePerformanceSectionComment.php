@@ -10,7 +10,7 @@ class EmployeePerformanceSectionComment extends Model
     protected $fillable = [
         'emp_id',
         'assessment_period_id',
-        'section_label',
+        'doc_type_id',
         'comment',
     ];
 }

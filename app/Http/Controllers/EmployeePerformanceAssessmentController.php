@@ -8,72 +8,78 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
-class EmployeePerformanceAssessmentController extends Controller
-{
+
+class EmployeePerformanceAssessmentController extends Controller {
+
     /**
-     * Create a new assessment period for an employee (if not exists).
-     * Expects: emp_id, assessment_period_id
-     * Returns: success, message
+     * Return all employees reviewed for a given assessment period and facility (AJAX for PART F modal)
+     * GET params: assessment_period_id, facility_id
      */
-    public function createPeriod(Request $request)
+    public function getReviewedEmployees(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'date_from' => 'required|date',
-                'date_to' => 'required|date|after_or_equal:date_from',
-            ]);
-
-            $force = $request->input('force', false);
-
-            // Check for overlapping periods
-            $overlap = \App\Models\EmployeeAssessmentPeriod::where(function($q) use ($validated) {
-                $q->where('date_from', '<=', $validated['date_to'])
-                  ->where('date_to', '>=', $validated['date_from']);
-            })->first();
-            if ($overlap && !$force) {
-                return response()->json([
-                    'success' => false,
-                    'warning' => true,
-                    'message' => 'The selected date range overlaps with an existing assessment period (ID: ' . $overlap->id . ', ' . $overlap->date_from . ' to ' . $overlap->date_to . '). Proceed anyway?',
-                ], 200);
-            }
-
-            // Check if period already exists for this exact date range
-            $period = \App\Models\EmployeeAssessmentPeriod::where('date_from', $validated['date_from'])
-                ->where('date_to', $validated['date_to'])
-                ->first();
-            if ($period) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Assessment period already exists.'
-                ], 409);
-            }
-
-            // Create new assessment period (global)
-            $period = \App\Models\EmployeeAssessmentPeriod::create([
-                'date_from' => $validated['date_from'],
-                'date_to' => $validated['date_to'],
-                'created_by' => Auth::id(),
-                'period_year' => date('Y', strtotime($validated['date_from'])),
-                'period_sequence' => 1, // You may want to implement sequence logic if needed
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Assessment period created.',
-                'data' => [
-                    'assessment_period_id' => $period->id,
-                    'date_from' => $period->date_from,
-                    'date_to' => $period->date_to,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to create assessment period: ' . $e->getMessage(), ['exception' => $e]);
+        $assessmentPeriodId = $request->query('assessment_period_id');
+        $facilityId = $request->query('facility_id');
+        Log::debug('getReviewedEmployees input', ['assessment_period_id' => $assessmentPeriodId, 'facility_id' => $facilityId]);
+        if (!$assessmentPeriodId || !$facilityId) {
+            return response()->json(['success' => false, 'message' => 'Missing assessment_period_id or facility_id.'], 400);
+        }
+        $assessments = \App\Models\EmployeePerformanceAssessment::where('assessment_period_id', $assessmentPeriodId)
+            ->get();
+        $empIds = $assessments->pluck('emp_id')->unique()->values();
+        $employees = \App\Models\BPEmployee::whereIn('emp_id', $empIds)
+            ->whereHas('currentAssignment', function($q) use ($facilityId) {
+                $q->where('facility_id', $facilityId);
+            })
+            ->with(['currentAssignment.facility', 'currentAssignment.position', 'currentAssignment.department'])
+            ->get();
+        Log::debug('getReviewedEmployees found employees', ['count' => $employees->count(), 'emp_ids' => $employees->pluck('emp_id')]);
+        $result = $employees->map(function($emp) use ($assessments, $assessmentPeriodId) {
+            $assessment = $assessments->firstWhere('emp_id', $emp->emp_id);
+            return [
+                'emp_id' => $emp->emp_id,
+                'name' => trim($emp->last_name . ', ' . $emp->first_name . ($emp->middle_name ? ' ' . $emp->middle_name : '')),
+                'position' => $emp->currentAssignment && $emp->currentAssignment->position ? $emp->currentAssignment->position->position_title : '',
+                'department' => $emp->currentAssignment && $emp->currentAssignment->department ? $emp->currentAssignment->department->dept_name : '',
+                'assessment_date' => $assessment ? $assessment->assessment_date : null,
+                'reviewed_by' => $assessment && $assessment->assessed_by ? (\App\Models\User::find($assessment->assessed_by)->name ?? null) : null,
+            ];
+        })->values();
+        Log::debug('getReviewedEmployees result', ['result' => $result]);
+        return response()->json(['success' => true, 'employees' => $result]);
+    }
+    /**
+     * Delete an assessment period. If assessments exist, return affected records unless force=1 is set.
+     */
+    public function destroyPeriod(Request $request, $id)
+    {
+        $force = $request->query('force', false);
+        $period = \App\Models\EmployeeAssessmentPeriod::find($id);
+        if (!$period) {
+            return response()->json(['success' => false, 'message' => 'Assessment period not found.'], 404);
+        }
+        $affected = $period->assessments()->get();
+        if ($affected->count() > 0 && !$force) {
+            // Return affected records for modal display
+            $affectedList = $affected->map(function($a) {
+                $emp = $a->employee ?? null;
+                return [
+                    'emp_id' => $a->emp_id,
+                    'employee_name' => $emp ? ($emp->last_name . ', ' . $emp->first_name . ($emp->middle_name ? ' ' . $emp->middle_name : '')) : null,
+                    'assessment_date' => $a->assessment_date,
+                ];
+            })->toArray();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create assessment period: ' . $e->getMessage(),
-            ], 500);
+                'affected' => $affectedList,
+                'message' => 'There are employee assessments linked to this period. Deleting will remove them. Continue?',
+            ], 200);
         }
+        // Delete all related assessments if force
+        foreach ($affected as $a) {
+            $a->delete();
+        }
+        $period->delete();
+        return response()->json(['success' => true, 'message' => 'Assessment period deleted.']);
     }
     public function store(Request $request)
     {

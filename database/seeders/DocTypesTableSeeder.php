@@ -14,6 +14,16 @@ class DocTypesTableSeeder extends Seeder
             'Verifications',
             'Acknowledgement of Receipts',
             'Skills Assessment',
+            'Job Skills and Knowledge',
+            'Dependability',
+            'Interpersonal Skills',
+            'Organizational Skills',
+            'Communication Skills',
+            'Problem-Solving Skills',
+            'Safety & Health',
+            'Areas Requiring Further Development',
+            'Development Plans',
+            'Employee Comments',
         ];
         foreach ($types as $name) {
             DocType::firstOrCreate(['name' => $name]);

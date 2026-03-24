@@ -16,6 +16,10 @@
     @else
     <div id="partFTableContainer">
         @foreach ($partFSections as $sectionLabel => $items)
+        @php
+        $docType = \App\Models\DocType::where('name', $sectionLabel)->first();
+        $docTypeId = $docType ? $docType->id : null;
+        @endphp
         <table class="min-w-full border text-xs md:text-sm mb-2">
             <thead>
                 <tr class="bg-gray-100">
@@ -59,23 +63,39 @@
                         @if(!empty($empChecklist['verified_by']))
                         <a href="#" class="text-red-600 underline mr-1 unverify-link cursor-pointer text-sm"
                             title="Revoke Assessment" data-item-key="{{ $itemKey }}"
-                            data-emp-id="{{ $employee->emp_id }}">Revoke</a>
+                            data-emp-id="{{ $employee->emp_id }}" data-doc-type-id="{{ $docTypeId }}">Revoke</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link cursor-pointer text-sm"
                             title="View Assessment Details" data-item-key="{{ $itemKey }}"
-                            data-emp-id="{{ $employee->emp_id }}">View</a>
+                            data-emp-id="{{ $employee->emp_id }}" data-doc-type-id="{{ $docTypeId }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline verify-link cursor-pointer" title="Assess Item"
-                            data-item-key="{{ $itemKey }}" data-emp-id="{{ $employee->emp_id }}">Assess</a>
+                            data-item-key="{{ $itemKey }}" data-emp-id="{{ $employee->emp_id }}"
+                            data-doc-type-id="{{ $docTypeId }}">Assess</a>
                         @endif
                     </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
-        <div class="mb-2"><label class="font-semibold">Comments:</label><textarea
-                class="border rounded w-full min-h-[40px] mt-1"
-                rows="2">{{ $empChecklist['comments'] ?? '' }}</textarea>
+        <div class="mb-2 flex flex-col md:flex-row items-center gap-2">
+            <div class="flex flex-col flex-1 w-full">
+                <label class="font-semibold mb-1 ml-2 md:mb-0 w-full">Comments:</label>
+                <textarea class="border rounded w-full min-h-[40px] mt-1 md:mt-0 section-comment-textarea px-2 py-1"
+                    rows="2" data-doc-type-id="{{ $docTypeId }}" data-section-label="{{ $sectionLabel }}"
+                    data-emp-id="{{ $employee->emp_id }}" data-assessment-period-id="{{ $selectedAssessmentPeriodId }}"
+                    placeholder="Enter comments for this section...">{{ $sectionComments[$docTypeId] ?? '' }}</textarea>
+            </div>
+            <div class="flex flex-col">
+                <div class="flex flex-col">
+                    <button type="button"
+                        class="ml-0 md:ml-2 px-3 py-1 bg-teal-600 text-white rounded section-comment-save-btn cursor-pointer"
+                        data-doc-type-id="{{ $docTypeId }}" data-section-label="{{ $sectionLabel }}"
+                        data-emp-id="{{ $employee->emp_id }}"
+                        data-assessment-period-id="{{ $selectedAssessmentPeriodId }}">Save</button>
+                    <span class="section-comment-status text-xs ml-2"></span>
+                </div>
+            </div>
         </div>
         @endforeach
     </div>

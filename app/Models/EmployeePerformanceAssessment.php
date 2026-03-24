@@ -12,6 +12,8 @@ class EmployeePerformanceAssessment extends Model
         'assessment_period_id',
         'items',
         'assessment_date',
+        'review_dt',
+        'acknowledge_dt',
         'assessed_by',
         'comments',
     ];
