@@ -31,8 +31,8 @@
                                     class="text-red-500">*</span>:</label>
                             <input type="date" name="review_dt" class="border rounded px-2 py-1 w-auto"
                                 value="{{ old('review_dt', isset($reviewDt) ? $reviewDt : '') }}" required
-                                @if(!(auth()->check() && isset($employee->user_id) && auth()->id() !=
-                            $employee->user_id)) @else readonly @endif>
+                                @if(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id)
+                            readonly @endif>
                         </td>
                     </tr>
                     <tr>
@@ -52,11 +52,63 @@
             </table>
             <div class="flex justify-end space-x-2">
                 <button type="submit" name="action" value="save"
-                    class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 cursor-pointer">Save</button>
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">Save</button>
                 <button type="submit" name="action" value="submit"
                     class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 cursor-pointer">Submit This
                     Assessment</button>
             </div>
     </form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('areasDevelopmentForm');
+    var submitBtn = form.querySelector('button[type="submit"][name="action"][value="submit"]');
+    if (!form || !submitBtn) return;
+
+    // Disable submit by default
+    submitBtn.disabled = true;
+
+    // Track if form is dirty
+    let isDirty = false;
+    let lastSavedData = new FormData(form);
+
+    // Helper to compare form data
+    function isFormChanged() {
+        let current = new FormData(form);
+        for (let [key, value] of current.entries()) {
+            if (lastSavedData.get(key) !== value) return true;
+        }
+        for (let [key, value] of lastSavedData.entries()) {
+            if (current.get(key) !== value) return true;
+        }
+        return false;
+    }
+
+    // Listen for changes
+    form.addEventListener('input', function() {
+        isDirty = isFormChanged();
+        submitBtn.disabled = isDirty;
+    });
+    form.addEventListener('change', function() {
+        isDirty = isFormChanged();
+        submitBtn.disabled = isDirty;
+    });
+
+    // On save, update lastSavedData and enable submit
+    form.addEventListener('submit', function(e) {
+        var clickedBtn = document.activeElement;
+        if (clickedBtn && clickedBtn.name === 'action' && clickedBtn.value === 'save') {
+            // Wait for backend to respond before enabling submit
+            setTimeout(function() {
+                lastSavedData = new FormData(form);
+                isDirty = false;
+                submitBtn.disabled = false;
+            }, 500); // Adjust if needed for AJAX
+        } else if (clickedBtn && clickedBtn.name === 'action' && clickedBtn.value === 'submit') {
+            // Optionally, disable submit to prevent double submit
+            submitBtn.disabled = true;
+        }
+    });
+});
+    </script>
 </div>
 </div>

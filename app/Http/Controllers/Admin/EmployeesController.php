@@ -190,6 +190,7 @@ class EmployeesController extends Controller
         $developmentPlans = $devPlansDocType && isset($sectionComments[$devPlansDocType->id]) ? $sectionComments[$devPlansDocType->id] : '';
         $employeeComments = $empCommentsDocType && isset($sectionComments[$empCommentsDocType->id]) ? $sectionComments[$empCommentsDocType->id] : '';
 
+        $reviewDt = $reviewDate; // For PART F form field
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
             'departments',
@@ -208,7 +209,8 @@ class EmployeesController extends Controller
             'employeeComments',
             'reviewDate',
             'reviewerName',
-            'reviewType'
+            'reviewType',
+            'reviewDt'
         ));
     }
 

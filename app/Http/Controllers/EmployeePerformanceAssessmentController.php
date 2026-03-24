@@ -190,4 +190,37 @@ class EmployeePerformanceAssessmentController extends Controller {
             ], 500);
         }
     }
+
+    /**
+     * Create a new assessment period (for New Period modal)
+     */
+    public function createPeriod(Request $request)
+    {
+        // Support JSON requests
+        if (0 === strpos($request->header('Content-Type'), 'application/json')) {
+            $request->merge(json_decode($request->getContent(), true) ?? []);
+        }
+        $validated = $request->validate([
+            'date_from' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
+            'review_type' => 'required|string|max:2',
+        ]);
+
+        $period = new \App\Models\EmployeeAssessmentPeriod();
+        $period->date_from = $validated['date_from'];
+        $period->date_to = $validated['date_to'];
+        $period->review_type = $validated['review_type'];
+        $period->created_by = Auth::id();
+        // Set period_year from date_from
+        $period->period_year = date('Y', strtotime($validated['date_from']));
+        // Optionally set period_sequence to 0 (or calculate as needed)
+        $period->period_sequence = 0;
+        $period->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Assessment period created.',
+            'data' => $period,
+        ]);
+    }
 }
