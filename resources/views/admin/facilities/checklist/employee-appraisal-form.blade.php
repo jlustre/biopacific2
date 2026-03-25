@@ -14,7 +14,8 @@
         <div class="ml-2">
             <label for="assessmentPeriodSelect" class="font-semibold mr-2">Assessment Period:</label>
             <div class="flex flex-row items-center justify-between">
-                <select id="assessmentYearSelect" class="border rounded px-2 py-1 mr-2" style="font-weight: bold;">
+                <select id="assessmentYearSelect" class="border border-teal-600 border-2 rounded px-2 py-1 mr-2"
+                    style="font-weight: bold;">
                     @php
                     $years = collect($assessmentPeriods)->pluck('period_year')->unique()->sort()->values();
                     $currentYear = date('Y');
@@ -89,11 +90,11 @@
                         var selectedPeriodOption = periodSelect ? periodSelect.selectedOptions[0] : null;
                         periodSpan.textContent = 'Assessment Period: ' + (selectedPeriodOption ? selectedPeriodOption.textContent : '');
                     }
-                    console.log('DEBUG facilityInput:', facilityInput);
-                    console.log('DEBUG facilityInput.value:', facilityInput ? facilityInput.value : null);
-                    console.log('DEBUG window.currentFacilityId:', window.currentFacilityId);
-                    console.log('DEBUG assessmentPeriodId:', assessmentPeriodId);
-                    console.log('DEBUG facilityId (used):', facilityId);
+                    // console.log('DEBUG facilityInput:', facilityInput);
+                    // console.log('DEBUG facilityInput.value:', facilityInput ? facilityInput.value : null);
+                    // console.log('DEBUG window.currentFacilityId:', window.currentFacilityId);
+                    // console.log('DEBUG assessmentPeriodId:', assessmentPeriodId);
+                    // console.log('DEBUG facilityId (used):', facilityId);
                     if (!assessmentPeriodId || !facilityId) {
                         listDiv.innerHTML = '<div class="text-red-600">Missing assessment period or facility.</div>';
                         modal.classList.remove('hidden');
@@ -325,6 +326,27 @@
         </div>
 
     </div>
+    @if (!empty($reviewDate))
+    <div id="review-date-warning"
+        class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 flex items-center"
+        style="display:none;">
+        <svg class="h-6 w-6 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+        </svg>
+        <span><strong>Warning:</strong> This assessment has already been submitted (Review Date: <strong>{{ $reviewDate
+                }}</strong>). Further changes may not be allowed or may require special permission.</span>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+                if (!sessionStorage.getItem('reviewDateWarned')) {
+                    var warnDiv = document.getElementById('review-date-warning');
+                    if (warnDiv) warnDiv.style.display = 'flex';
+                    sessionStorage.setItem('reviewDateWarned', '1');
+                }
+            });
+    </script>
+    @endif
     <table class="min-w-full border text-xs md:text-sm mb-4">
         <tr>
             <td class="border px-2 py-1 font-semibold" width="20%">Name</td>

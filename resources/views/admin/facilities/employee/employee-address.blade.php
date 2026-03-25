@@ -44,8 +44,16 @@
                     </div>
                     <div class="mb-2">
                         <label class="block text-sm font-medium mb-1">State</label>
-                        <input type="text" name="state" x-model="currentAddress.state"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        <select name="state" x-model="currentAddress.state"
+                            class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
+                            <option value="">Select State</option>
+                            @foreach($states as $state)
+                            <option value="{{ $state->abbreviation }}" @if((old('state', $latestAddr->state ?? 'CA') ==
+                                $state->abbreviation)) selected @endif>
+                                {{ $state->name }}
+                            </option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label class="block text-sm font-medium mb-1">ZIP</label>
@@ -105,7 +113,7 @@
                             address1: @json(old('address1', $latestAddr->address1 ?? '')),
                             address2: @json(old('address2', $latestAddr->address2 ?? '')),
                             city: @json(old('city', $latestAddr->city ?? '')),
-                            state: @json(old('state', $latestAddr->state ?? '')),
+                            state: @json(old('state', $latestAddr->state ?? 'CA')),
                             zip: @json(old('zip', $latestAddr->zip ?? '')),
                             country: @json(old('country', $latestAddr->country ?? '')),
                             is_primary: @json(old('is_primary', isset($latestAddr) ? ($latestAddr->is_primary ? '1' : '0') : '0')),

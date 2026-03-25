@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BPEmployee;
 use App\Models\Facility;
+use App\Models\State;
 // use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
@@ -125,6 +126,9 @@ class EmployeesController extends Controller
         $empChecklists = \App\Models\BPEmpChecklist::where('emp_id', $emp_id)->get();
         $users = \App\Models\User::all();
 
+        // Load all states for address select dropdown
+        $states = State::orderBy('name')->get();
+
         // PART F: Load all assessment periods for this employee
         $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
         $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
@@ -210,7 +214,8 @@ class EmployeesController extends Controller
             'reviewDate',
             'reviewerName',
             'reviewType',
-            'reviewDt'
+            'reviewDt',
+            'states'
         ));
     }
 
@@ -588,8 +593,11 @@ class EmployeesController extends Controller
             'employee_name' => 'required|string|max:255',
             'review_dt' => ($request->input('action') === 'submit' ? 'required' : 'nullable') . '|date',
             'employee_acknowledge_dt' => 'nullable|date',
-            // Add more validation as needed for the actual fields
         ];
+        // Make areas_for_development required if submitting
+        if ($request->input('action') === 'submit') {
+            $rules['areas_for_development'] = 'required|string|min:2';
+        }
         $validated = $request->validate($rules);
 
         $assessmentPeriodId = $request->input('assessment_period_id');

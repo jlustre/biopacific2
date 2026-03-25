@@ -8,6 +8,27 @@
             localStorage.setItem('employeeTab', newTab);
         }
     }">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var partF = document.getElementById('partF');
+            var hasChecklistMessages = false;
+            if (partF && (
+                partF.querySelector('.bg-green-100') ||
+                partF.querySelector('.bg-red-100') ||
+                partF.querySelector('.border-red-500')
+            )) {
+                hasChecklistMessages = true;
+            }
+            if (hasChecklistMessages) {
+                // Show checklist tab and PART F
+                if (window.Alpine) {
+                    window.Alpine.store('tab', 'checklist');
+                }
+                localStorage.setItem('employeeTab', 'checklist');
+                if (partF) partF.classList.remove('hidden');
+            }
+        });
+    </script>
     <div class="mb-4 flex justify-between items-center">
         <a href="{{ route('admin.facility.employees', ['facility' => $employee->currentAssignment->facility->slug ?? $employee->currentAssignment->facility_id]) }}@if(request('facility'))?facility={{ request('facility') }}@endif"
             class="inline-flex items-center px-4 py-2 bg-teal-400 text-white hover:bg-teal-500"

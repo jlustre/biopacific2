@@ -1,10 +1,49 @@
 <div id="partF" class="tab-content hidden">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var partF = document.getElementById('partF');
+            var hasMessages = false;
+            if (partF && (
+                partF.querySelector('.bg-green-100') ||
+                partF.querySelector('.bg-red-100') ||
+                partF.querySelector('.border-red-500')
+            )) {
+                hasMessages = true;
+            }
+            if (hasMessages) {
+                // Show checklist tab and PART F
+                localStorage.setItem('employeeTab', 'checklist');
+                if (partF) partF.classList.remove('hidden');
+                // Optionally scroll to the message
+                var msg = partF.querySelector('.bg-green-100, .bg-red-100, .border-red-500');
+                if (msg) msg.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }
+        });
+    </script>
     <h2 class="text-xl font-bold mb-4">PART F - EMPLOYEE PERFORMANCE APPRAISAL</h2>
     @include('admin.facilities.checklist.employee-appraisal-form')
 
     <!-- PERFORMANCE AREAS (Dynamic from DB) -->
     @include('admin.facilities.checklist.employee-performance-areas')
 
+    <div id="partF-messages">
+        @if(session('success'))
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">{{ session('error') }}</div>
+        @endif
+        @if($errors->any())
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+            <ul class="list-disc pl-5 mb-0">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+    </div>
+    @if(empty($assessment) || empty($assessment->finalized))
     <form id="areasDevelopmentForm" method="POST"
         action="{{ route('admin.employees.areas_development.save', ['emp_id' => $employee->emp_id]) }}">
         <input type="hidden" name="assessment_period_id" value="{{ $selectedAssessmentPeriodId }}">
@@ -58,6 +97,7 @@
                     Assessment</button>
             </div>
     </form>
+    @endif
     <script>
         document.addEventListener('DOMContentLoaded', function() {
     var form = document.getElementById('areasDevelopmentForm');
