@@ -523,14 +523,21 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('admin.secure-tour-requests.index');
     Route::post('/admin/secure-tour-requests/{tourRequest}/regenerate-token', [App\Http\Controllers\SecureTourRequestController::class, 'regenerateToken'])
         ->name('admin.secure-tour-requests.regenerate-token');
+    // Arbitration Templates Management
+    Route::resource('/admin/arbitration-templates', App\Http\Controllers\Admin\ArbitrationTemplateController::class)->names('admin.arbitration-templates');
+
+    // Arbitration Template Download (preserve original name)
+    Route::get('/admin/arbitration-templates/{id}/download', [App\Http\Controllers\Admin\ArbitrationTemplateController::class, 'download'])->name('admin.arbitration-templates.download');
+    Route::get('/admin/arbitration-templates/{id}/view', [App\Http\Controllers\Admin\ArbitrationTemplateController::class, 'view'])->name('admin.arbitration-templates.view');
+
 });
 
 // MFA routes for admin
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/mfa', [AdminMfaController::class, 'showMfaForm'])->name('admin.mfa.form');
     Route::post('/admin/mfa', [AdminMfaController::class, 'verifyMfa'])->name('admin.mfa.verify');
-});
-
+    });
+    
 // MFA setup routes for admin (web guard)
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/mfa/setup', [App\Http\Controllers\Auth\AdminMfaSetupController::class, 'showSetupForm'])->name('admin.mfa.setup.form');
@@ -642,3 +649,4 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/performance-assessment/revoke', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'revoke'])->name('admin.employees.performance-assessment.revoke');
     Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
 });
+

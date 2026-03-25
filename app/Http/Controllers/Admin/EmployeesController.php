@@ -342,7 +342,9 @@ class EmployeesController extends Controller
      */
     public function updateAddress(Request $request, $employee)
     {
-        $validated = $request->validate([
+        // If effseq is present, it's an update; otherwise, it's an add
+        $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
+        $rules = [
             'address1' => 'required|string|max:255',
             'address2' => 'nullable|string|max:255',
             'city' => 'required|string|max:100',
@@ -351,15 +353,43 @@ class EmployeesController extends Controller
             'country' => 'required|string|max:100',
             'is_primary' => 'required|in:0,1',
             'address_type' => 'required|in:h,w,o',
-            'effdt' => 'required|date',
+            'effdt' => ['required', 'date'],
             'effseq' => 'nullable|integer',
-        ]);
+        ];
+        if (!$isUpdate) {
+            // Only require effdt to be today or later when adding
+            $rules['effdt'][] = 'after_or_equal:' . now()->toDateString();
+        }
+        $validated = $request->validate($rules);
 
-        // If is_primary is set, unset all other primary addresses for this employee
+        // Enforce only one default address per employee
         if ($validated['is_primary'] == '1') {
-            \App\Models\BPEmpAddress::where('emp_id', $employee)
-                ->where('is_primary', 1)
-                ->update(['is_primary' => 0]);
+            // If updating, allow this address to remain primary, but unset all others
+            $query = \App\Models\BPEmpAddress::where('emp_id', $employee)
+                ->where('is_primary', 1);
+            if (isset($validated['effseq']) && $validated['effseq'] !== '') {
+                $query->where(function($q) use ($validated) {
+                    $q->where('effdt', '!=', $validated['effdt'])
+                      ->orWhere('effseq', '!=', $validated['effseq'])
+                      ->orWhere('address_type', '!=', $validated['address_type']);
+                });
+            }
+            $query->update(['is_primary' => 0]);
+        } else {
+            // If trying to set is_primary=0, but there is no other primary, prevent unsetting the last default
+            $otherPrimary = \App\Models\BPEmpAddress::where('emp_id', $employee)
+                ->where('is_primary', 1);
+            if (isset($validated['effseq']) && $validated['effseq'] !== '') {
+                $otherPrimary->where(function($q) use ($validated) {
+                    $q->where('effdt', '!=', $validated['effdt'])
+                      ->orWhere('effseq', '!=', $validated['effseq'])
+                      ->orWhere('address_type', '!=', $validated['address_type']);
+                });
+            }
+            if ($otherPrimary->count() === 0) {
+                return redirect()->route('admin.employees.edit', $employee)
+                    ->with('error', 'At least one address must be set as default.');
+            }
         }
 
         // If effseq is present, update existing address; else, add new with correct effseq
@@ -406,7 +436,9 @@ class EmployeesController extends Controller
      */
     public function updateAssignment(Request $request, $employee)
     {
-        $validated = $request->validate([
+        // If effseq is present, it's an update; otherwise, it's an add
+        $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
+        $rules = [
             'facility_id' => 'required|integer',
             'dept_id' => 'required|integer',
             'job_code_id' => 'required|integer',
@@ -415,9 +447,14 @@ class EmployeesController extends Controller
             'full_part_time' => 'required|in:ft,pt,pd',
             'bargaining_unit_id' => 'nullable|integer',
             'union_seniority_dt' => 'nullable|date',
-            'effdt' => 'required|date',
+            'effdt' => ['required', 'date'],
             'effseq' => 'nullable|integer',
-        ]);
+        ];
+        if (!$isUpdate) {
+            // Only require effdt to be today or later when adding
+            $rules['effdt'][] = 'after_or_equal:' . now()->toDateString();
+        }
+        $validated = $request->validate($rules);
         $userId = Auth::id();
         $validated['created_by'] = $userId;
         $validated['updated_by'] = $userId;

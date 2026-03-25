@@ -99,7 +99,6 @@ $latestEffseq = $latest->effseq ?? '';
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Effective Date</label>
                     <input type="date" name="effdt" x-model="currentAssignment.effdt"
-                        :min="(new Date()).toISOString().split('T')[0]"
                         class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
                 </div>
                 <div class="mb-2">

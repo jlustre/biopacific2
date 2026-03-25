@@ -2,9 +2,10 @@
 
 @section('content')
 <div class="container py-8 max-w-4xl mx-auto" x-data="{
-        tab: localStorage.getItem('employeeTab') || 'personal',
+        tab: (sessionStorage.getItem('employeeTab') || localStorage.getItem('employeeTab') || 'personal'),
         setTab(newTab) {
             this.tab = newTab;
+            sessionStorage.setItem('employeeTab', newTab);
             localStorage.setItem('employeeTab', newTab);
         }
     }">
@@ -91,7 +92,16 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
 @endphp
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // If a tab was set in sessionStorage (from a form submit), restore it
+        var tab = sessionStorage.getItem('employeeTab');
+        if (tab) {
+            localStorage.setItem('employeeTab', tab);
+        }
+    });
+
     const assignmentLatest = @json($assignmentLatest);
+    
     function assignmentForm() {
         return {
             currentAssignment: {

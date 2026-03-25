@@ -70,6 +70,10 @@ use Illuminate\Support\Facades\Log;
                 x-transition:leave-start="transform opacity-100 scale-100"
                 x-transition:leave-end="transform opacity-0 scale-95">
                 <!-- Facilities Menu -->
+                <a href="{{ route('admin.arbitration-templates.index') }}"
+                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.arbitration-templates.*') ? 'bg-gray-100 font-bold' : '' }}">
+                    <i class="fas fa-file-contract mr-2"></i> Arbitration Templates
+                </a>
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
                         class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-100 font-bold' : '' }}">

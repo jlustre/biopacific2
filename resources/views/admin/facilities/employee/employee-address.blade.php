@@ -68,10 +68,13 @@
                     <div class="mb-2">
                         <label class="block text-sm font-medium mb-1">Is Primary</label>
                         <select name="is_primary" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
-                            x-model="currentAddress.is_primary">
+                            x-model="currentAddress.is_primary" @change="handlePrimaryChange">
                             <option value="1">Yes</option>
-                            <option value="0">No</option>
+                            <option value="0" :disabled="onlyOnePrimary && currentAddress.is_primary == '1'">No</option>
                         </select>
+                        <template x-if="showPrimaryWarning">
+                            <div class="text-red-600 text-xs mt-1">At least one address must be set as default.</div>
+                        </template>
                     </div>
                     <div class="mb-2">
                         <label class="block text-sm font-medium mb-1">Type</label>
@@ -86,7 +89,6 @@
                     <div class="mb-2">
                         <label class="block text-sm font-medium mb-1">Effective Date</label>
                         <input type="date" name="effdt" x-model="currentAddress.effdt"
-                            :min="(new Date()).toISOString().split('T')[0]"
                             class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
                     </div>
                     <div class="mb-2">
@@ -106,38 +108,50 @@
         @include('admin.facilities.employee.employee-address-table')
         <script>
             function addressForm() {
-                    return {
-                        tab: 'address',
-                        showAddAddress: false,
-                        currentAddress: {
-                            address1: @json(old('address1', $latestAddr->address1 ?? '')),
-                            address2: @json(old('address2', $latestAddr->address2 ?? '')),
-                            city: @json(old('city', $latestAddr->city ?? '')),
-                            state: @json(old('state', $latestAddr->state ?? 'CA')),
-                            zip: @json(old('zip', $latestAddr->zip ?? '')),
-                            country: @json(old('country', $latestAddr->country ?? '')),
-                            is_primary: @json(old('is_primary', isset($latestAddr) ? ($latestAddr->is_primary ? '1' : '0') : '0')),
-                            address_type: @json(old('address_type', $latestAddr->address_type ?? 'h')),
-                            effdt: @json(old('effdt', $latestAddr->effdt ?? '')),
-                            effseq: @json(old('effseq', $latestAddr->effseq ?? '')),
-                        },
-                        latestEffdt: @json($latestAddrEffdt),
-                        latestEffseq: @json($latestAddrEffseq),
-                        setAddress(addr) {
-                            this.currentAddress = Object.assign({address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: '0', address_type: 'h', effdt: '', effseq: ''}, addr);
-                            this.showAddAddress = false;
-                        },
-                        clearAddress() {
-                            this.currentAddress = {address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: '0', address_type: 'h', effdt: '', effseq: ''};
-                            this.showAddAddress = true;
-                        },
-                        isLatestRecord() {
-                            return this.currentAddress.effdt == this.latestEffdt && String(this.currentAddress.effseq) == String(this.latestEffseq);
-                        },
-                        initAddress() {
-                            // Optionally set initial address if needed
+                // Get all addresses and count how many are primary
+                const allAddresses = @json($employee->addresses ? $employee->addresses->toArray() : []);
+                return {
+                    tab: 'address',
+                    showAddAddress: false,
+                    currentAddress: {
+                        address1: @json(old('address1', $latestAddr->address1 ?? '')),
+                        address2: @json(old('address2', $latestAddr->address2 ?? '')),
+                        city: @json(old('city', $latestAddr->city ?? '')),
+                        state: @json(old('state', $latestAddr->state ?? 'CA')),
+                        zip: @json(old('zip', $latestAddr->zip ?? '')),
+                        country: @json(old('country', $latestAddr->country ?? '')),
+                        is_primary: @json(old('is_primary', isset($latestAddr) ? ($latestAddr->is_primary ? '1' : '0') : '0')),
+                        address_type: @json(old('address_type', $latestAddr->address_type ?? 'h')),
+                        effdt: @json(old('effdt', $latestAddr->effdt ?? '')),
+                        effseq: @json(old('effseq', $latestAddr->effseq ?? '')),
+                    },
+                    latestEffdt: @json($latestAddrEffdt),
+                    latestEffseq: @json($latestAddrEffseq),
+                    onlyOnePrimary: (allAddresses.filter(a => a.is_primary == 1).length === 1),
+                    showPrimaryWarning: false,
+                    setAddress(addr) {
+                        this.currentAddress = Object.assign({address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: '0', address_type: 'h', effdt: '', effseq: ''}, addr);
+                        this.showAddAddress = false;
+                    },
+                    clearAddress() {
+                        this.currentAddress = {address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: '0', address_type: 'h', effdt: '', effseq: ''};
+                        this.showAddAddress = true;
+                    },
+                    isLatestRecord() {
+                        return this.currentAddress.effdt == this.latestEffdt && String(this.currentAddress.effseq) == String(this.latestEffseq);
+                    },
+                    handlePrimaryChange(e) {
+                        // If user tries to unset the last default, show warning and revert
+                        if (this.onlyOnePrimary && this.currentAddress.is_primary == '0') {
+                            this.showPrimaryWarning = true;
+                            this.currentAddress.is_primary = '1';
+                            setTimeout(() => { this.showPrimaryWarning = false; }, 2500);
                         }
+                    },
+                    initAddress() {
+                        // Optionally set initial address if needed
                     }
+                }
                 }
         </script>
     </div>
