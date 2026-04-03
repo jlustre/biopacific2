@@ -43,7 +43,7 @@
         </div>
         @endif
     </div>
-    @if(empty($assessment) || empty($assessment->finalized))
+    @if((empty($assessment) || empty($assessment->finalized)) && !empty($employee->emp_id))
     <form id="areasDevelopmentForm" method="POST"
         action="{{ route('admin.employees.areas_development.save', ['emp_id' => $employee->emp_id]) }}">
         <input type="hidden" name="assessment_period_id" value="{{ $selectedAssessmentPeriodId }}">
@@ -96,6 +96,7 @@
                     class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 cursor-pointer">Submit This
                     Assessment</button>
             </div>
+        </div>
     </form>
     @endif
     <script>
@@ -150,5 +151,4 @@
     });
 });
     </script>
-</div>
 </div>

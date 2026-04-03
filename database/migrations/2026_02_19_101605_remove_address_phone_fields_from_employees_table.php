@@ -11,16 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn([
-                'current_address',
-                'phone_number',
-                'city',
-                'state',
-                'zip_code',
-                'county'
-            ]);
-        });
+        // Migration obsolete after employees table removal
     }
 
     /**

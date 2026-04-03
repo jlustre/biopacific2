@@ -38,9 +38,29 @@ use App\Http\Controllers\PreEmploymentController;
 use App\Http\Controllers\HireApplicantController;
 use App\Http\Controllers\EmployeeApplicationController;
 use App\Http\Controllers\EmployeePerformanceSectionCommentController;
+use App\Http\Controllers\Admin\Facilities\UploadController;
+
 use App\Models\Facility;
 use App\Models\Position;
 
+// Download route for facility uploads (inside admin group)
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
+    Route::get('/admin/facility/{facility}/uploads/{upload}/download', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'download'])
+        ->name('admin.facility.uploads.download');
+});
+
+// AJAX endpoints for Alpine.js demo
+Route::get('/admin/facilities/all', function () {
+    return \App\Models\Facility::orderBy('name')->get(['id','name']);
+});
+Route::get('/admin/facility/{facility}/employees/all', function ($facility) {
+    return \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
+        $q->where('facility_id', $facility);
+    })->orderBy('last_name')->get(['emp_id as id','first_name','last_name']);
+});
+Route::get('/admin/upload-types/all', function () {
+    return \App\Models\UploadType::orderBy('name')->get(['id','name','requires_expiry']);
+});
 
 // Job Description Template AJAX/CRUD routes
 Route::middleware(['auth'])->prefix('admin')->group(function () {
@@ -157,6 +177,17 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     // Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/reports', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reports'])->name('admin.facility.reports');
+    Route::resource('admin/facility/{facility}/uploads', UploadController::class)
+        ->parameters(['uploads' => 'upload'])
+        ->names([
+            'index' => 'admin.facility.uploads.index',
+            'create' => 'admin.facility.uploads.create',
+            'store' => 'admin.facility.uploads.store',
+            'show' => 'admin.facility.uploads.show',
+            'edit' => 'admin.facility.uploads.edit',
+            'update' => 'admin.facility.uploads.update',
+            'destroy' => 'admin.facility.uploads.destroy',
+    ]);
 });
 // Root route: show landing page (welcome)
 Route::get('/', function () {
@@ -202,8 +233,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
 
-    // Add resource route for employees (show, edit, update)
-    Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update']);
+    // Add resource route for employees (show, edit, update, create)
+    Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update', 'create', 'store']);
     // Custom route for updating employee assignment (tabbed form)
     Route::put('employees/{employee}/update-assignment', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAssignment'])->name('employees.update_assignment');
 
@@ -650,3 +681,21 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
 });
 
+
+// Alpine.js Facility Uploads Demo
+Route::get('/test-facility-uploads-alpine', function () {
+    return view('test-facility-uploads-alpine');
+});
+Route::post('/test-facility-uploads-alpine', function (\Illuminate\Http\Request $request) {
+    // Handle file upload logic here (validate, store, etc.)
+    // For demo, just redirect back with success
+    return back()->with('success', 'File uploaded (demo, not saved).');
+});
+
+// AJAX endpoints for Alpine.js demo
+Route::get('/admin/facilities/all', function () {
+    return \App\Models\Facility::orderBy('name')->get(['id','name']);
+});
+Route::get('/admin/facility/{facility}/employees/all', function ($facility) {
+    return \App\Models\Employee::where('facility_id', $facility)->orderBy('last_name')->get(['id','first_name','last_name']);
+});

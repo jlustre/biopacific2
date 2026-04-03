@@ -34,12 +34,26 @@ class JobOpeningController extends Controller
         // If 'Other' is selected, use the value from title_other
         if ($data['title'] === 'Other' && !empty($data['title_other'])) {
             $data['title'] = $data['title_other'];
+            // Add to positions table if not exists
+            $existing = \App\Models\Position::where('title', $data['title_other'])->first();
+            if (!$existing) {
+                \App\Models\Position::create(['title' => $data['title_other']]);
+                $positionAdded = true;
+            } else {
+                $positionAdded = false;
+            }
+        } else {
+            $positionAdded = false;
         }
         unset($data['title_other']);
         $data['active'] = $request->input('active', 0) == '1';
         $data['created_by'] = $request->user() ? $request->user()->id : null;
         $facility->jobOpenings()->create($data);
-        return redirect()->back()->with('success', 'Job opening created successfully.');
+        $msg = 'Job opening created successfully.';
+        if (isset($positionAdded) && $positionAdded) {
+            $msg .= ' New position "' . $data['title'] . '" added to positions list.';
+        }
+        return redirect()->back()->with('success', $msg);
     }
 
     public function update(Request $request, Facility $facility, JobOpening $jobOpening)

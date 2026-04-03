@@ -416,9 +416,11 @@
             }
             var tempDiv = document.createElement('span');
             tempDiv.innerHTML = actionLinks;
-            Array.from(tempDiv.childNodes).forEach(function(node) {
-                actionCell.appendChild(node);
-            });
+            if (tempDiv && actionCell) {
+                Array.from(tempDiv.childNodes).forEach(function(node) {
+                    actionCell.appendChild(node);
+                });
+            }
         }
         // Re-bind events for new links (Verify/View/Revoke)
         bindChecklistLinks();

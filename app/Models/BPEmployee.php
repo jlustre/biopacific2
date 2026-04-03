@@ -21,11 +21,21 @@ class BPEmployee extends Model
         'first_name',
         'middle_name',
         'last_name',
-        'dob',
-        'original_hire_dt',
         'gender',
-        'is_active',
+        'assignment_id',
     ];
+
+    // Relationship: Employee has one phone (primary)
+    public function phone()
+    {
+        return $this->belongsTo(\App\Models\BPEmpPhone::class, 'phone_id', 'phone_id');
+    }
+
+    // Relationship: Employee has one address (current/primary)
+    public function address()
+    {
+        return $this->belongsTo(\App\Models\BPEmpAddress::class, 'address_id', 'address_id');
+    }
 
     // Relationship: Employee has many assignments
     public function assignments()

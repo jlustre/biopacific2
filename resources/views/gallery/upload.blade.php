@@ -19,8 +19,7 @@ $selectedFacility = $isAdmin ? null : ($user && $user->facility ? $user->facilit
             onchange="window.location='?facility_id='+this.value">
             <option value="">-- Choose Facility --</option>
             @foreach($facilities as $facility)
-            <option value="{{ $facility->id }}" @if(request('facility_id')==$facility->id) selected @endif>{{
-                $facility->name }}</option>
+            <option value="{{ $facility->id }}" @if(request('facility_id')==$facility->id) selected @endif>{{ $facility->name }}</option>
             @endforeach
         </select>
     </form>

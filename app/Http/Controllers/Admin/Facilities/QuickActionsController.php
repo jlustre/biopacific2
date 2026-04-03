@@ -77,18 +77,18 @@ class QuickActionsController extends Controller
         
         // Get all job openings for this facility
         $jobOpenings = $facility->jobOpenings()->get();
-        
+
         // Get all job applications for this facility's job openings
         $applications = \App\Models\JobApplication::whereIn('job_opening_id', $jobOpenings->pluck('id'))
             ->with(['jobOpening', 'user'])
             ->orderByDesc('created_at')
             ->get();
-        
+
         // Get all pre-employment applications related to this facility
         $preEmploymentApplications = \App\Models\PreEmploymentApplication::with(['user'])
             ->orderByDesc('created_at')
             ->get();
-        
+
         // Count statistics
         $stats = [
             'total_openings' => $jobOpenings->count(),
@@ -98,8 +98,16 @@ class QuickActionsController extends Controller
             'submitted_preemployment' => $preEmploymentApplications->where('status', 'submitted')->count(),
             'completed_preemployment' => $preEmploymentApplications->where('status', 'completed')->count(),
         ];
-        
-        return view('admin.facilities.hiring', compact('facility', 'jobOpenings', 'applications', 'preEmploymentApplications', 'stats'));
+
+        // Provide select list data for modal
+
+        $positions = \App\Models\Position::orderBy('title')->pluck('title');
+        $departments = \App\Models\Department::orderBy('name')->pluck('name');
+        $employmentTypes = ['Full Time', 'Part Time', 'Per Diem', 'Temporary', 'Contractor', 'Internship'];
+        // For reportingTo, use only positions with supervisor_role = 1
+        $reportingTo = \App\Models\Position::where('supervisor_role', 1)->orderBy('title')->pluck('title');
+
+        return view('admin.facilities.hiring', compact('facility', 'jobOpenings', 'applications', 'preEmploymentApplications', 'stats', 'positions', 'departments', 'employmentTypes', 'reportingTo'));
     }
 
     public function reviewPreEmployment(Facility $facility, $application)
@@ -300,7 +308,9 @@ class QuickActionsController extends Controller
     public function documents(Facility $facility)
     {
         $this->authorizeFacilityAccess($facility);
-        return view('admin.facilities.documents', compact('facility'));
+        // Get employees for this facility from employees table
+        $employees = \App\Models\Employee::where('facility_id', $facility->id)->orderBy('last_name')->get();
+        return view('admin.facilities.documents', compact('facility', 'employees'));
     }
 
     public function reports(Facility $facility)

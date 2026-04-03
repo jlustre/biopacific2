@@ -22,6 +22,7 @@
                     Record</span>
             </template>
         </div>
+        @if(!empty($employee->emp_id))
         <form method="POST" action="{{ route('admin.employees.address.update', $employee->emp_id) }}">
             @csrf
             @method('PUT')
@@ -104,6 +105,14 @@
                 </div>
             </div>
         </form>
+        @else
+        <div class="mb-4">
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
+                <strong class="font-bold">Notice:</strong>
+                <span class="block sm:inline">Please complete and save the Personal tab first before adding addresses.</span>
+            </div>
+        </div>
+        @endif
         <!-- Address History Table -->
         @include('admin.facilities.employee.employee-address-table')
         <script>

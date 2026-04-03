@@ -152,8 +152,8 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($employeeMappings as $mapping)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4">
+                        <tr class="hover:bg-gray-50 text-sm">
+                            <td class="px-6 py-4 text-sm">
                                 <div class="flex items-center">
                                     <div>
                                         <div class="flex items-center">
@@ -192,7 +192,9 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $mapping->facility->name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {{ \Illuminate\Support\Str::limit($mapping->facility->name, 16, '...') }}
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                     @if($mapping->category === 'book-a-tour') bg-green-100 text-green-800
@@ -317,7 +319,7 @@
         <!-- Mobile Card View (visible on mobile and tablet) -->
         <div class="block lg:hidden">
             @forelse($employeeMappings as $mapping)
-            <div class="border-b border-gray-200 p-4 hover:bg-gray-50">
+            <div class="border-b border-gray-200 p-4 hover:bg-gray-50 text-sm">
                 <!-- Employee Name and Primary Status -->
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center">
@@ -391,7 +393,7 @@
                 <!-- Facility and Category -->
                 <div class="flex flex-wrap items-center gap-2 mb-3">
                     <span class="text-sm text-gray-600">
-                        <span class="font-medium">Facility:</span> {{ $mapping->facility->name }}
+                        <span class="font-medium">Facility:</span> {{ \Illuminate\Support\Str::limit($mapping->facility->name, 16, '...') }}
                     </span>
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                             @if($mapping->category === 'book-a-tour') bg-green-100 text-green-800

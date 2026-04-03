@@ -9,9 +9,11 @@ class BPEmpCredentialsTableSeeder extends Seeder
 {
     public function run(): void
     {
+        // Get the first employee's numeric id
+        $empId = DB::table('bp_employees')->orderBy('id')->value('id');
         DB::table('bp_emp_credentials')->insert([
             [
-                'emp_id' => 'EMP001',
+                'emp_id' => $empId,
                 'credential_type' => 'rn',
                 'credential_number' => 'RN123456',
                 'issue_date' => '2022-01-01',

@@ -1,6 +1,15 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <div x-show="tab === 'checklist'">
     <div class="bg-white p-4 rounded shadow">
+        @if(isset($isAddMode) && $isAddMode)
+        <div class="mb-4">
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
+                <strong class="font-bold">Notice:</strong>
+                <span class="block sm:inline">Please complete and save the Personal tab form before continuing with the checklist.</span>
+            </div>
+        </div>
+        @endif
+        
         <!-- Tabs -->
         <ul class="flex border-b mb-6" id="employeeFileTabs">
             <li class="-mb-px mr-1">

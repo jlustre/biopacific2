@@ -9,9 +9,11 @@ class BPEmpCompensationTableSeeder extends Seeder
 {
     public function run(): void
     {
+        // Get the first employee's numeric id
+        $empId = DB::table('bp_employees')->orderBy('id')->value('id');
         DB::table('bp_emp_compensation')->insert([
             [
-                'emp_id' => 'EMP001',
+                'emp_id' => $empId,
                 'effdt' => '2023-01-01',
                 'effseq' => 0,
                 'base_rate' => 45.00,

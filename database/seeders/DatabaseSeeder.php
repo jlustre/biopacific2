@@ -53,6 +53,7 @@ class DatabaseSeeder extends Seeder
             BPEmpChecklistSeeder::class,
             EmployeePerformanceItemsSeeder::class,
             StatesTableSeeder::class,
+            UploadTypesTableSeeder::class,
         ]);
 
     }

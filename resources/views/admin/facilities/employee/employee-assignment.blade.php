@@ -5,6 +5,16 @@ $latestEffdt = $latest->effdt ?? '';
 $latestEffseq = $latest->effseq ?? '';
 @endphp
 <div x-show="tab === 'assignment'" x-data="assignmentForm()" x-init="initAssignment()">
+    @if(empty($employee->emp_id))
+    <div class="mb-4">
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
+            <strong class="font-bold">Notice:</strong>
+            <span class="block sm:inline">Please complete and save the Personal tab form before adding assignments.</span>
+        </div>
+    </div>
+    @endif
+
+     @if(!empty($employee->emp_id))
     <div class="flex justify-end items-center mb-4 space-x-4">
         <button type="button" @click="clearAssignment()"
             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
@@ -116,6 +126,7 @@ $latestEffseq = $latest->effseq ?? '';
             </div>
         </div>
     </form>
+    @endif
     <!-- Assignment Info Table -->
     @include('admin.facilities.employee.employee-assignment-table')
 </div>

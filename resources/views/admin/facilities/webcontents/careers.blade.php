@@ -69,6 +69,11 @@
 
         @if($facility)
         @livewire('job-openings-manager', ['facilityId' => $facilityId])
+        @else
+        <div class="text-center text-red-500 py-12 bg-white rounded-lg shadow">
+            <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
+            <p class="text-xl">Facility not found. Please select a valid facility.</p>
+        </div>
         @endif
         @else
         <div class="text-center text-gray-500 py-12 bg-white rounded-lg shadow">

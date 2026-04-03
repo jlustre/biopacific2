@@ -67,12 +67,12 @@ class GalleryController extends Controller
         $facilityId = $request->input('facility_id');
         $selectedFacility = $facilityId;
         $facilities = $isAdmin ? Facility::all() : ($user && $user->facility ? collect([$user->facility]) : collect());
-        
+
         // If no facility selected and user is not admin, use their facility
         if (!$facilityId && !$isAdmin && $user && $user->facility_id) {
             $selectedFacility = $user->facility_id;
         }
-        
+
         return view('gallery.upload', compact('facilities', 'selectedFacility', 'isAdmin'));
     }
 

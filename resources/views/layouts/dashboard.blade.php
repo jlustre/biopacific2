@@ -55,7 +55,7 @@
     @include('partials.screen-size-indicator')
 
     @stack('scripts')
-    @livewireScripts
+    @livewireScripts(['vite' => true])
     <script src="/js/color-scheme-dropdown.js"></script>
 </body>
 

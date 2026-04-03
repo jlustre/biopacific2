@@ -8,8 +8,9 @@ use Illuminate\Http\Request;
 use App\Models\BPEmployee;
 use App\Models\Facility;
 use App\Models\State;
-// use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+// use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class EmployeesController extends Controller
 {
@@ -195,6 +196,7 @@ class EmployeesController extends Controller
         $employeeComments = $empCommentsDocType && isset($sectionComments[$empCommentsDocType->id]) ? $sectionComments[$empCommentsDocType->id] : '';
 
         $reviewDt = $reviewDate; // For PART F form field
+        $isAddMode = false;
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
             'departments',
@@ -215,7 +217,8 @@ class EmployeesController extends Controller
             'reviewerName',
             'reviewType',
             'reviewDt',
-            'states'
+            'states',
+            'isAddMode'
         ));
     }
 
@@ -707,5 +710,112 @@ class EmployeesController extends Controller
             return back()->with('success', 'Assessment submitted and employee notified.');
         }
         return back()->with('success', 'Areas for Development saved successfully.');
+    }
+    /**
+     * Show the form for creating a new employee.
+     */
+    public function create()
+    {
+        $employee = new \App\Models\BPEmployee();
+        $departments = \App\Models\BPDepartment::all();
+        $positions = \App\Models\BPPosition::all();
+        $facilities = \App\Models\Facility::all();
+        $checklistItems = \App\Models\ChecklistItem::all();
+        $empChecklists = collect();
+        $users = \App\Models\User::all();
+        $states = \App\Models\State::orderBy('name')->get();
+        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
+        $selectedAssessmentPeriodId = null;
+        $empPerformanceChecklist = [];
+        $reviewDate = '';
+        $reviewerName = '';
+        $reviewType = '';
+        $reviewDt = '';
+        $sectionComments = [];
+        $supervisorName = '';
+        $areasForDevelopment = '';
+        $developmentPlans = '';
+        $employeeComments = '';
+        $isAddMode = true;
+        return view('admin.facilities.employee.edit_employee', compact(
+            'employee',
+            'departments',
+            'positions',
+            'facilities',
+            'checklistItems',
+            'empChecklists',
+            'users',
+            'empPerformanceChecklist',
+            'assessmentPeriods',
+            'selectedAssessmentPeriodId',
+            'sectionComments',
+            'supervisorName',
+            'areasForDevelopment',
+            'developmentPlans',
+            'employeeComments',
+            'reviewDate',
+            'reviewerName',
+            'reviewType',
+            'reviewDt',
+            'states',
+            'isAddMode'
+        ));
+    }
+
+        /**
+     * Store a newly created employee and user (with email) in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'nullable|string|max:255',
+            'emp_id' => 'nullable|string|max:255',
+            'ssn' => 'nullable|string|max:255',
+            'original_hire_dt' => 'nullable|date',
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'dob' => 'nullable|date',
+            'gender' => 'required|in:M,F,O,N',
+            'email' => [
+                'nullable',
+                'string',
+                'email',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('users', 'email'),
+            ],
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $user = null;
+            if (!empty($validated['email'])) {
+                // Create a new user if email is provided
+                $user = new \App\Models\User();
+                $user->name = $validated['first_name'] . ' ' . $validated['last_name'];
+                $user->email = $validated['email'];
+                $user->password = bcrypt(str_random(12)); // Set a random password, force reset later
+                $user->save();
+            }
+
+            $employee = new \App\Models\BPEmployee();
+            $employee->user_id = $user ? $user->id : null;
+            $employee->emp_id = $validated['emp_id'] ?? null;
+            $employee->ssn = $validated['ssn'] ?? null;
+            $employee->original_hire_dt = $validated['original_hire_dt'] ?? null;
+            $employee->first_name = $validated['first_name'];
+            $employee->middle_name = $validated['middle_name'] ?? null;
+            $employee->last_name = $validated['last_name'];
+            $employee->dob = $validated['dob'] ?? null;
+            $employee->gender = $validated['gender'];
+            $employee->save();
+
+            DB::commit();
+            return redirect()->route('admin.employees.edit', $employee->emp_id)
+                ->with('success', 'Employee created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->withErrors(['error' => 'Failed to create employee: ' . $e->getMessage()]);
+        }
     }
 }
