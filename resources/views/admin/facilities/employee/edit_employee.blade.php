@@ -53,7 +53,7 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
 
     @include('admin.facilities.employee.tab-navigation')
 
-    {{-- @include('admin.facilities.checklist.employee-checklist') --}}
+    @include('admin.facilities.checklist.employee-checklist')
     
     @include('admin.facilities.employee.employee-profile')
     
