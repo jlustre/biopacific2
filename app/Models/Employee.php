@@ -7,17 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Employee extends Model
 {
+    protected $table = 'bp_employees';
     use HasFactory;
 
     protected $fillable = [
         'user_id',
         'emp_id',
         // Employee model removed after merge with BPEmployee
-    {
-        return $this->hasMany(EmployeePhone::class)
-            ->orderBy('effective_date', 'desc')
-            ->orderBy('effective_sequence', 'desc');
-    }
+    ];
 
     /**
      * Get the current (most recent) address

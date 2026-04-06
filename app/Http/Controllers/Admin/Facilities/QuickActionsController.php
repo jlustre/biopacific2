@@ -308,8 +308,10 @@ class QuickActionsController extends Controller
     public function documents(Facility $facility)
     {
         $this->authorizeFacilityAccess($facility);
-        // Get employees for this facility from employees table
-        $employees = \App\Models\Employee::where('facility_id', $facility->id)->orderBy('last_name')->get();
+        // Get employees for this facility from bp_employees via assignments
+        $employees = \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
+            $q->where('facility_id', $facility->id);
+        })->orderBy('last_name')->get();
         return view('admin.facilities.documents', compact('facility', 'employees'));
     }
 

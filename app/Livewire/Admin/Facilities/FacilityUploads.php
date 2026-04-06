@@ -65,7 +65,9 @@ class FacilityUploads extends Component
         ]);
         session()->flash('success', 'File uploaded successfully.');
         $this->reset(['employee_id','upload_type_id','file','effective_start_date','effective_end_date','expires_at','comments']);
-        $this->employees = $this->facility_id ? Employee::where('facility_id', $this->facility_id)->orderBy('last_name')->get() : collect();
+        $this->employees = $this->facility_id ? BPEmployee::whereHas('assignments', function($q) {
+            $q->where('facility_id', $this->facility_id);
+        })->orderBy('last_name')->get() : collect();
     }
 
     public function render()

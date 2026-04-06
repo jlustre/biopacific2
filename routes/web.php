@@ -47,16 +47,30 @@ use App\Models\Position;
 Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
     Route::get('/admin/facility/{facility}/uploads/{upload}/download', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'download'])
         ->name('admin.facility.uploads.download');
+
+    // Facility Files Import (Excel)
+    Route::post('/admin/facility/{facility}/files/import', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'import'])
+        ->name('admin.facility.files.import');
+
+    // AJAX: Get columns for a bp_emp_ table
+    Route::get('/admin/facility/files/table-columns', [\App\Http\Controllers\Admin\Facilities\TableInfoController::class, 'columns'])
+        ->name('admin.facility.files.table_columns');
 });
 
-// AJAX endpoints for Alpine.js demo
+// Import Mapping Presets
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->prefix('admin/facility/files')->group(function () {
+    Route::get('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'index']);
+    Route::post('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'store']);
+    Route::put('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'update']);
+    Route::delete('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'destroy']);
+});
 Route::get('/admin/facilities/all', function () {
     return \App\Models\Facility::orderBy('name')->get(['id','name']);
 });
 Route::get('/admin/facility/{facility}/employees/all', function ($facility) {
     return \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
         $q->where('facility_id', $facility);
-    })->orderBy('last_name')->get(['emp_id as id','first_name','last_name']);
+    })->orderBy('last_name')->get(['emp_id','first_name','last_name']);
 });
 Route::get('/admin/upload-types/all', function () {
     return \App\Models\UploadType::orderBy('name')->get(['id','name','requires_expiry']);

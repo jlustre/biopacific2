@@ -32,6 +32,7 @@
             @csrf
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div>
+                    <div class="mb-2 text-xs text-blue-700">Employees found: <span x-text="employees.length"></span></div>
                     <label class="block mb-1 text-xs font-semibold">Select Facility <span class="text-red-600">*</span></label>
                     <select x-model="facility_id" @change="fetchEmployees()" name="facility_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600" required>
                         <option value="">-- Choose Facility --</option>
@@ -127,7 +128,10 @@
                 if (!this.facility_id) { this.employees = []; return; }
                 fetch(`/admin/facility/${this.facility_id}/employees/all`)
                     .then(res => res.json())
-                    .then(data => { this.employees = data; });
+                    .then(data => {
+                        console.log('Employees fetched for facility', this.facility_id, data);
+                        this.employees = data;
+                    });
             }
         }
     }
