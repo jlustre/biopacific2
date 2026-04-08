@@ -318,7 +318,43 @@ class QuickActionsController extends Controller
     public function reports(Facility $facility)
     {
         $this->authorizeFacilityAccess($facility);
-        return view('admin.facilities.reports', compact('facility'));
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+        $isHrrd = $user->hasRole('hrrd');
+        $roles = $user->getRoleNames()->toArray();
+        $userFacilityIds = collect();
+        if (method_exists($user, 'facilities')) {
+            $userFacilityIds = $user->facilities->pluck('id');
+        } elseif (isset($user->facility_id)) {
+            $userFacilityIds = collect([$user->facility_id]);
+        }
+
+        // Admins see all reports
+        if ($isAdmin) {
+            $reports = \App\Models\Report::where('is_active', true)->get();
+        } else {
+            $reports = \App\Models\Report::where('is_active', true)
+                ->where(function($q) use ($roles, $userFacilityIds, $isHrrd, $facility) {
+                    $q->where('visibility', 'all');
+                    $q->orWhere(function($q2) use ($roles) {
+                        $q2->where('visibility', 'roles')
+                            ->whereJsonContains('visible_roles', $roles);
+                    });
+                    $q->orWhere(function($q2) use ($userFacilityIds, $facility) {
+                        $q2->where('visibility', 'facilities')
+                            ->whereJsonContains('visible_facilities', $facility->id);
+                    });
+                    if ($isHrrd) {
+                        $q->orWhere('visibility', 'admin'); // HRRD can see admin reports
+                    }
+                })
+                ->get();
+        }
+        return view('admin.facilities.reports', [
+            'facility' => $facility,
+            'reports' => $reports,
+            'isAdmin' => $isAdmin,
+        ]);
     }
 
     public function downloadDocument(Facility $facility, EmployeeDocument $document)

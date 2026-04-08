@@ -32,6 +32,14 @@
             `;
             tbody.appendChild(tr);
         });
+        // Auto-select worksheet in dropdown if mappings exist
+        if (mappings.length > 0) {
+            const wsSelect = document.getElementById('worksheetSelect');
+            if (wsSelect) {
+                wsSelect.value = mappings[0].worksheet;
+                updateWorksheetColumnSelect();
+            }
+        }
     }
     
     async function saveMappingPreset() {
@@ -227,9 +235,13 @@
                 data.worksheets.forEach(ws => {
                     wsSelect.innerHTML += `<option value="${ws.name}">${ws.name}</option>`;
                 });
-                // Store worksheet columns for mapping
+                // Store worksheet columns and data for mapping
                 window._excelWorksheets = data.worksheets.reduce((acc, ws) => {
                     acc[ws.name] = ws.columns;
+                    return acc;
+                }, {});
+                window._excelWorksheetData = data.worksheets.reduce((acc, ws) => {
+                    acc[ws.name] = ws.data;
                     return acc;
                 }, {});
                 form.classList.add('hidden');
@@ -279,10 +291,118 @@
             });
     }
 
-    // Step 3: Submit mapping (placeholder)
-    function submitMapping() {
-        // TODO: Submit mapping selections to backend for processing
-        alert('Mapping submitted! (Implement backend logic)');
+
+    // Step 3: Submit mapping and handle duplicates/confirmation
+    async function submitMapping() {
+        const mappings = getCurrentMappings();
+        if (!mappings.length) {
+            alert('No mappings defined.');
+            return;
+        }
+        // Use selected worksheet for data extraction
+        const ws = document.getElementById('worksheetSelect').value;
+        if (!ws || !window._excelWorksheetData || !window._excelWorksheetData[ws]) {
+            alert('Please select a worksheet with data.');
+            return;
+        }
+        // Use all rows from the selected worksheet
+        let dataRows = window._excelWorksheetData[ws];
+        if (!Array.isArray(dataRows) || !dataRows.length) {
+            alert('No data rows found in selected worksheet.');
+            return;
+        }
+        // Send all worksheet data for cross-worksheet mapping
+        const worksheets = Object.keys(window._excelWorksheetData).map(name => ({
+            name,
+            data: window._excelWorksheetData[name]
+        }));
+        await doImportMapping(mappings, dataRows, false, worksheets);
+    }
+
+    async function doImportMapping(mappings, dataRows, confirmOverwrite, worksheets) {
+        const facilityId = document.querySelector('[name=facility_id]')?.value || window._facilityId;
+        const url = `/admin/facility/${facilityId}/files/import-data`;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('[name=_token]').value
+                },
+                body: JSON.stringify({ mappings, data: dataRows, confirm_overwrite: confirmOverwrite, worksheets })
+            });
+            let result;
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.indexOf('application/json') !== -1) {
+                result = await res.json();
+            } else {
+                const text = await res.text();
+                alert('Import failed: Server returned invalid response.');
+                console.error('Non-JSON response:', text);
+                return;
+            }
+            if (res.status === 409 && result.duplicates) {
+                showDuplicateModal(result.duplicates);
+                window._pendingImport = { mappings, dataRows };
+                return;
+            }
+            if (res.status === 422 && result.invalid_rows) {
+                showInvalidRowsModal(result.invalid_rows, result.message);
+                return;
+            }
+            if (result.success) {
+                showImportSuccessModal();
+                window._importDataRows = null;
+                return;
+            }
+            alert(result.message || 'Import failed.');
+        } catch (e) {
+            alert('Import failed: ' + (e && e.message ? e.message : ''));
+        }
+    }
+
+    // Show modal for invalid rows (gender validation)
+    function showInvalidRowsModal(invalidRows, message) {
+        let html = `<div><strong>${message || 'Invalid data found.'}</strong></div>`;
+        html += '<table class="border mt-2"><thead><tr><th>Row</th><th>Employee ID</th><th>Gender Value</th></tr></thead><tbody>';
+        invalidRows.forEach(row => {
+            html += `<tr><td>${row.row}</td><td>${row.emp_id}</td><td>${row.gender}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        // Use a modal if you have one, otherwise alert
+        if (window.showCustomModal) {
+            window.showCustomModal(html);
+        } else {
+            alert(message + '\n' + invalidRows.map(r => `Row ${r.row}: ${r.emp_id} (Gender: ${r.gender})`).join('\n'));
+        }
+    }
+
+    function showDuplicateModal(duplicates) {
+        const modal = document.getElementById('duplicateConfirmModal');
+        const list = document.getElementById('duplicateList');
+        list.innerHTML = '';
+        duplicates.forEach(id => {
+            const li = document.createElement('li');
+            li.textContent = id;
+            list.appendChild(li);
+        });
+        modal.classList.remove('hidden');
+    }
+    function hideDuplicateModal() {
+        document.getElementById('duplicateConfirmModal').classList.add('hidden');
+    }
+    async function confirmDuplicateOverwrite() {
+        hideDuplicateModal();
+        if (window._pendingImport) {
+            await doImportMapping(window._pendingImport.mappings, window._pendingImport.dataRows, true);
+            window._pendingImport = null;
+        }
+    }
+    function showImportSuccessModal() {
+        document.getElementById('importSuccessModal').classList.remove('hidden');
+    }
+    function hideImportSuccessModal() {
+        document.getElementById('importSuccessModal').classList.add('hidden');
         document.getElementById('importModal').classList.add('hidden');
     }
 

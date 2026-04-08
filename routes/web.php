@@ -47,14 +47,37 @@ use App\Models\Position;
 Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
     Route::get('/admin/facility/{facility}/uploads/{upload}/download', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'download'])
         ->name('admin.facility.uploads.download');
+    Route::get('/admin/facility/{facility}/uploads/{upload}/view', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'view'])
+        ->name('admin.facility.uploads.view');
 
     // Facility Files Import (Excel)
     Route::post('/admin/facility/{facility}/files/import', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'import'])
         ->name('admin.facility.files.import');
+    // Import mapped data to bp_employees (with duplicate check and confirmation)
+    Route::post('/admin/facility/{facility}/files/import-data', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'importData'])
+        ->name('admin.facility.files.import_data');
 
     // AJAX: Get columns for a bp_emp_ table
     Route::get('/admin/facility/files/table-columns', [\App\Http\Controllers\Admin\Facilities\TableInfoController::class, 'columns'])
         ->name('admin.facility.files.table_columns');
+});
+
+// Admin Reports Management (CRUD)
+Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\ReportController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\ReportController::class, 'store'])->name('store');
+    Route::get('/{report}/edit', [\App\Http\Controllers\Admin\ReportController::class, 'edit'])->name('edit');
+    Route::put('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('update');
+    Route::delete('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'destroy'])->name('destroy');
+    // Existing show/run actions for running reports
+    Route::get('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'show'])->name('show');
+    Route::post('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'run'])->name('run');
+});
+
+// HR Portal Reports page for allowed users
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->group(function () {
+    Route::get('/admin/hr-portal/reports', [\App\Http\Controllers\Admin\HrPortalReportsController::class, 'index'])->name('admin.hr-portal.reports');
 });
 
 // Import Mapping Presets
@@ -709,7 +732,4 @@ Route::post('/test-facility-uploads-alpine', function (\Illuminate\Http\Request 
 // AJAX endpoints for Alpine.js demo
 Route::get('/admin/facilities/all', function () {
     return \App\Models\Facility::orderBy('name')->get(['id','name']);
-});
-Route::get('/admin/facility/{facility}/employees/all', function ($facility) {
-    return \App\Models\Employee::where('facility_id', $facility)->orderBy('last_name')->get(['id','first_name','last_name']);
 });

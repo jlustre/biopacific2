@@ -61,9 +61,18 @@ class UploadController extends Controller
         return redirect()->back()->with('success', 'File uploaded successfully.');
     }
 
-    public function download(Upload $upload)
+
+    public function download($upload)
     {
+        $upload = Upload::findOrFail($upload);
         return Storage::download($upload->file_path, $upload->original_filename);
+    }
+
+    public function view($upload)
+    {
+        $upload = Upload::findOrFail($upload);
+        $mime = Storage::mimeType($upload->file_path);
+        return Storage::response($upload->file_path, $upload->original_filename, ['Content-Type' => $mime]);
     }
 
     public function destroy($upload)

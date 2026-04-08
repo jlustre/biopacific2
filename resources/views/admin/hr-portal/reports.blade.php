@@ -1,16 +1,15 @@
 @extends('layouts.dashboard')
-
 @section('content')
 <div class="container py-8">
-    <h1 class="text-2xl font-bold mb-4">Reports for {{ $facility->name }}</h1>
+    <h1 class="mb-4 text-2xl font-bold">Available Reports</h1>
     @if($isAdmin)
         <div class="mb-4">
-            <a href="{{ route('admin.reports.index') }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Go to Reports Management</a>
+            <a href="{{ route('admin.reports.index') }}" class="px-4 py-2 bg-teal-600 text-white rounded">Go to Reports Management</a>
         </div>
     @endif
-    <div class="bg-white p-6 rounded shadow">
+    <div class="p-6 bg-white rounded shadow">
         @if($reports->isEmpty())
-            <div class="text-gray-600">No reports available for this facility.</div>
+            <div class="text-gray-600">No reports available for your account.</div>
         @else
         <table class="min-w-full border border-gray-200 table-auto">
             <thead>
@@ -26,7 +25,7 @@
                     <td class="px-3 py-2 border">{{ $report->name }}</td>
                     <td class="px-3 py-2 border">{{ $report->description }}</td>
                     <td class="px-3 py-2 border">
-                        <a href="{{ route('admin.reports.show', $report->id) }}" class="px-3 py-1 bg-blue-600 text-white rounded">Run</a>
+                        <a href="#" class="px-3 py-1 bg-blue-600 text-white rounded run-report-btn" data-id="{{ $report->id }}">Run</a>
                     </td>
                 </tr>
                 @endforeach
@@ -34,5 +33,6 @@
         </table>
         @endif
     </div>
+    <!-- Modal for running reports can be added here if needed -->
 </div>
 @endsection

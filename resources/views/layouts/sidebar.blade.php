@@ -98,7 +98,10 @@ use Illuminate\Support\Facades\Log;
                         <hr class="my-1">
                         <div style="max-height: 400px; overflow-y: auto;">
                             @php
-                            $facilityList = isset($facilities) ? $facilities->sortBy('name') : [];
+                            $facilityList = [];
+                            if (isset($facilities)) {
+                                $facilityList = is_array($facilities) ? collect($facilities)->sortBy('name') : $facilities->sortBy('name');
+                            }
                             @endphp
                             <div style="overflow: visible; position: relative;">
                                 @foreach($facilityList as $facility)

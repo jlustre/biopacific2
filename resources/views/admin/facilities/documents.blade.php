@@ -28,11 +28,24 @@
         </div>
     @endif
     <div class="p-6 mb-6 bg-white rounded shadow">
-        <form id="facility-upload-form" x-data="facilityUploadForm({{ $facility->id ?? 'null' }})" x-init="init()" method="POST" action="{{ route('admin.facility.uploads.store', ['facility' => $facility->id]) }}" enctype="multipart/form-data">
+        <form id="facility-upload-form"
+              x-data="facilityUploadForm({
+                  facilityId: '{{ old('facility_id', $facility->id ?? '') }}',
+                  oldEmployeeId: '{{ old('employee_id') }}',
+                  oldUploadTypeId: '{{ old('upload_type_id') }}',
+                  oldEffectiveStartDate: '{{ old('effective_start_date') }}',
+                  oldEffectiveEndDate: '{{ old('effective_end_date') }}',
+                  oldExpiresAt: '{{ old('expires_at') }}',
+                  oldComments: @json(old('comments', '')),
+              })"
+              x-init="init()"
+              method="POST"
+              action="{{ route('admin.facility.uploads.store', ['facility' => $facility->id]) }}"
+              enctype="multipart/form-data">
             @csrf
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                    <div class="mb-2 text-xs text-blue-700">Employees found: <span x-text="employees.length"></span></div>
+                    {{-- <div class="mb-2 text-xs text-blue-700">Employees found: <span x-text="employees.length"></span></div> --}}
                     <label class="block mb-1 text-xs font-semibold">Select Facility <span class="text-red-600">*</span></label>
                     <select x-model="facility_id" @change="fetchEmployees()" name="facility_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600" required>
                         <option value="">-- Choose Facility --</option>
@@ -94,18 +107,18 @@
         </form>
     </div>
     <script>
-    function facilityUploadForm(preselectedFacilityId) {
+    function facilityUploadForm(opts) {
         return {
             facilities: [],
             employees: [],
             uploadTypes: [],
-            facility_id: preselectedFacilityId || '',
-            employee_id: '',
-            upload_type_id: '',
-            effective_start_date: '',
-            effective_end_date: '',
-            expires_at: '',
-            comments: '',
+            facility_id: opts.facilityId || '',
+            employee_id: opts.oldEmployeeId || '',
+            upload_type_id: opts.oldUploadTypeId || '',
+            effective_start_date: opts.oldEffectiveStartDate || '',
+            effective_end_date: opts.oldEffectiveEndDate || '',
+            expires_at: opts.oldExpiresAt || '',
+            comments: opts.oldComments || '',
             get selectedUploadType() {
                 return this.uploadTypes.find(t => t.id == this.upload_type_id) || null;
             },
@@ -114,7 +127,6 @@
                     .then(res => res.json())
                     .then(data => {
                         this.facilities = data;
-                        // Re-set facility_id after options are loaded to trigger select update
                         if (this.facility_id) {
                             this.facility_id = String(this.facility_id);
                             this.fetchEmployees();
@@ -129,7 +141,6 @@
                 fetch(`/admin/facility/${this.facility_id}/employees/all`)
                     .then(res => res.json())
                     .then(data => {
-                        console.log('Employees fetched for facility', this.facility_id, data);
                         this.employees = data;
                     });
             }
@@ -156,15 +167,15 @@
         <table class="min-w-full border border-gray-200 table-auto">
             <thead>
                 <tr class="bg-gray-100">
-                    <th class="px-3 py-2 border">File Name</th>
-                    <th class="px-3 py-2 border">Type</th>
-                    <th class="px-3 py-2 border">Facility</th>
-                    <th class="px-3 py-2 border">Uploaded By</th>
-                    <th class="px-3 py-2 border">Size</th>
-                    <th class="px-3 py-2 border">Effective Dates</th>
-                    <th class="px-3 py-2 border">Expires</th>
-                    <th class="px-3 py-2 border">Uploaded</th>
-                    <th class="px-3 py-2 border">Actions</th>
+                    <th class="px-3 py-2 border text-sm">File Name</th>
+                    <th class="px-3 py-2 border text-sm">Type</th>
+                    <th class="px-3 py-2 border text-sm">Facility</th>
+                    <th class="px-3 py-2 border text-sm">Uploaded By</th>
+                    <th class="px-3 py-2 border text-sm">Size</th>
+                    <th class="px-3 py-2 border text-sm">Effective Dates</th>
+                    <th class="px-3 py-2 border text-sm">Expires</th>
+                    <th class="px-3 py-2 border text-sm">Uploaded</th>
+                    <th class="px-3 py-2 border text-sm">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -176,16 +187,17 @@
                 @endphp
                 @forelse($uploads as $upload)
                 <tr>
-                    <td class="px-3 py-2 border">{{ $upload->original_filename }}</td>
-                    <td class="px-3 py-2 border">{{ $upload->uploadType->name ?? '-' }}</td>
-                    <td class="px-3 py-2 border">{{ $upload->facility->name ?? '-' }}</td>
-                    <td class="px-3 py-2 border">{{ $upload->user->name ?? '-' }}</td>
-                    <td class="px-3 py-2 border">{{ number_format($upload->file_size / 1024, 2) }} KB</td>
-                    <td class="px-3 py-2 border">{{ $upload->effective_start_date }} - {{ $upload->effective_end_date ?? 'Current' }}</td>
-                    <td class="px-3 py-2 border">{{ $upload->expires_at ?? '-' }}</td>
-                    <td class="px-3 py-2 border">{{ $upload->uploaded_at ? \Carbon\Carbon::parse($upload->uploaded_at)->format('M d, Y g:i A') : '-' }}</td>
-                    <td class="px-3 py-2 border">
-                        <a href="{{ route('admin.facility.uploads.download', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}" class="mr-2 text-blue-600 hover:underline">Download</a>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->original_filename }}</td>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->uploadType->name ?? '-' }}</td>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->facility->name ?? '-' }}</td>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->user->name ?? '-' }}</td>
+                    <td class="px-3 py-2 border text-sm">{{ number_format($upload->file_size / 1024, 2) }} KB</td>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->effective_start_date }} - {{ $upload->effective_end_date ?? 'Current' }}</td>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->expires_at ?? '-' }}</td>
+                    <td class="px-3 py-2 border text-sm">{{ $upload->uploaded_at ? \Carbon\Carbon::parse($upload->uploaded_at)->format('M d, Y g:i A') : '-' }}</td>
+                    <td class="px-3 py-2 border text-sm">
+                        <a href="{{ route('admin.facility.uploads.download', ['facility' => $upload->facility_id, 'upload' => $upload]) }}" class="mr-2 text-blue-600 hover:underline">Download</a>
+                        <a href="{{ route('admin.facility.uploads.view', ['facility' => $upload->facility_id, 'upload' => $upload]) }}" target="_blank" class="mr-2 text-green-600 hover:underline">View</a>
                         <form action="{{ route('admin.facility.uploads.destroy', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this upload?');">
                             @csrf
                             @method('DELETE')

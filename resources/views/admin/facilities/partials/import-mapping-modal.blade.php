@@ -19,6 +19,7 @@
 
         <!-- Upload Section -->
         <form id="excelUploadForm" method="POST" action="{{ route('admin.facility.files.import', ['facility' => $facility->id]) }}" enctype="multipart/form-data" onsubmit="showMappingStep(event)" class="px-8 pt-6 pb-2">
+            <input type="hidden" name="facility_id" value="{{ $facility->id }}">
             @csrf
             <div class="mb-4">
                 <label class="block text-gray-700 font-semibold mb-2" for="importFile">
@@ -36,5 +37,29 @@
             @include('admin.facilities.partials.import-mapping')
         </div>
         @include('admin.facilities.partials.import-mapping-scripts')
+
+        <!-- Duplicate Confirmation Modal -->
+        <div id="duplicateConfirmModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-60 hidden">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
+                <h3 class="text-xl font-semibold mb-2 text-red-700">Duplicate Employee IDs Detected</h3>
+                <div class="mb-4 text-gray-700">The following Employee IDs already exist. Do you want to overwrite them?</div>
+                <ul id="duplicateList" class="mb-4 text-sm text-gray-800 list-disc list-inside"></ul>
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded" onclick="hideDuplicateModal()">Cancel</button>
+                    <button type="button" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded" onclick="confirmDuplicateOverwrite()">Overwrite</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message Modal -->
+        <div id="importSuccessModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-60 hidden">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+                <h3 class="text-xl font-semibold mb-2 text-green-700">Import Successful</h3>
+                <div class="mb-4 text-gray-700">Employee data was imported successfully.</div>
+                <div class="flex justify-end">
+                    <button type="button" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded" onclick="hideImportSuccessModal()">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
