@@ -70,6 +70,7 @@
         </div>
         <div class="divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($recentActivities ?? [] as $activity)
+                @if(is_object($activity) && isset($activity->description, $activity->created_at))
                 <div class="py-3 flex items-center gap-3">
                     <flux:icon name="clock" class="w-5 h-5 text-gray-400" />
                     <div class="flex-1">
@@ -77,6 +78,7 @@
                         <div class="text-xs text-gray-500">{{ $activity->created_at->diffForHumans() }}</div>
                     </div>
                 </div>
+                @endif
             @empty
                 <div class="py-8 text-center text-gray-400">No recent activity to display.</div>
             @endforelse

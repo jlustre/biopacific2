@@ -22,25 +22,35 @@ class DashboardController extends Controller
 {
     public function index()
     {
+
         $user = Auth::user();
         $routeName = request()->route()->getName();
 
+        // Helper fallback for hasRole
+        $hasRole = function($role) use ($user) {
+            return method_exists($user, 'hasRole') ? $user->hasRole($role) : false;
+        };
+
         // Admin dashboard main view
-        if ($routeName === 'admin.dashboard.index' && $user->hasRole('admin')) {
-            // You may want to fetch $facilities, $facilitiesByState, $recentActivities here
+        if ($routeName === 'admin.dashboard.index' && $hasRole('admin')) {
             $facilities = \App\Models\Facility::all();
             $facilitiesByState = $facilities->groupBy('state');
-            $recentActivities = []; // TODO: Replace with real activity data if available
+            $recentActivities = [];
             return view('admin.dashboard.index', compact('facilities', 'facilitiesByState', 'recentActivities'));
         }
 
+        // HR Portal dashboard for hrrd, facility-admin, facility-dsd
+        if ($routeName === 'admin.dashboard.index' && $hasRole(['hrrd', 'facility-admin', 'facility-dsd'])) {
+            return view('dashboard.hr-portal-dashboard');
+        }
+
         // Member dashboard placeholder (for basic users)
-        if ($routeName === 'user.dashboard' && $user->hasRole('user')) {
+        if ($routeName === 'user.dashboard' && $hasRole('user')) {
             return view('dashboard.member-placeholder');
         }
 
-        // Fallback to original dashboards for other roles (hrrd, facility-admin, etc.)
-        // ...existing code...
+        // Fallback for any other roles/routes
+        return view('dashboard.member-placeholder')->with('message', 'No dashboard available for your role.');
     }
 
     /**

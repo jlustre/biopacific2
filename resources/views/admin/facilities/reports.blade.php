@@ -2,12 +2,13 @@
 
 @section('content')
 <div class="container py-8">
+    <div class="flex items-center justify-between mb-2">
+        <div></div>
+        @if($isAdmin)
+            <a href="{{ route('admin.reports.index') }}" class="inline-block px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Go to Reports Management2</a>
+        @endif
+    </div>
     <h1 class="text-2xl font-bold mb-4">Reports for {{ $facility->name }}</h1>
-    @if($isAdmin)
-        <div class="mb-4">
-            <a href="{{ route('admin.reports.index') }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Go to Reports Management</a>
-        </div>
-    @endif
     <div class="bg-white p-6 rounded shadow">
         @if($reports->isEmpty())
             <div class="text-gray-600">No reports available for this facility.</div>

@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -16,12 +17,12 @@ return new class extends Migration
             $table->string('emp_id');
             $table->date('effdt'); // Effective Date
             $table->integer('effseq')->default(0); // Sequence for same-day changes
-            $table->unsignedBigInteger('facility_id');
-            $table->unsignedBigInteger('dept_id');
-            $table->unsignedBigInteger('job_code_id');
+            $table->unsignedBigInteger('facility_id')->nullable();
+            $table->unsignedBigInteger('dept_id')->nullable();
+            $table->unsignedBigInteger('job_code_id')->nullable();
             $table->unsignedBigInteger('reports_to_emp_id')->nullable();
-            $table->enum('reg_temp', ['r', 't']); // Regular, Temporary
-            $table->enum('full_part_time', ['ft', 'pt', 'pd']); // Full-time, Part-time, Per Diem
+            $table->enum('reg_temp', ['r', 't'])->default('r'); // Regular, Temporary
+            $table->enum('full_part_time', ['ft', 'pt', 'pd'])->default('ft'); // Full-time, Part-time, Per Diem
             // Standard Audit
             $table->unsignedBigInteger('created_by');
             $table->unsignedBigInteger('updated_by');

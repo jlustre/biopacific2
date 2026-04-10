@@ -22,7 +22,13 @@
             @foreach($results as $row)
                 <tr>
                     @foreach($row as $cell)
-                        <td>{{ $cell }}</td>
+                        <td>
+                            @if(is_array($cell) || is_object($cell))
+                                {{ json_encode($cell) }}
+                            @else
+                                {{ $cell }}
+                            @endif
+                        </td>
                     @endforeach
                 </tr>
             @endforeach

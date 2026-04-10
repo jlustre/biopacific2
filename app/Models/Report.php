@@ -15,7 +15,12 @@ class Report extends Model
         'visibility',
         'visible_roles',
         'visible_facilities',
+        'category_id',
     ];
+    public function category()
+    {
+        return $this->belongsTo(ReportCategory::class, 'category_id');
+    }
 
     protected $casts = [
         'parameters' => 'array',

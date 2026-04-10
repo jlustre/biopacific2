@@ -72,8 +72,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.
     Route::delete('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'destroy'])->name('destroy');
     // Existing show/run actions for running reports
     Route::get('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'show'])->name('show');
+    Route::get('/{report}/json', [\App\Http\Controllers\Admin\ReportController::class, 'json'])->name('json');
     Route::post('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'run'])->name('run');
+    // GET for downloads (PDF/CSV/JSON)
+    Route::get('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'download'])->name('download');
 });
+
+// SQL validation for report form
+Route::post('/admin/reports/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('admin.reports.validate-sql');
+
+// Route for non-admin report requisition requests
+// Route::post('/admin/reports/request', [\App\Http\Controllers\Admin\ReportController::class, 'requestReport'])->name('admin.reports.request');
 
 // HR Portal Reports page for allowed users
 Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->group(function () {

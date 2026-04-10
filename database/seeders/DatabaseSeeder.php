@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         $this->call([
+            \Database\Seeders\ReportCategoriesTableSeeder::class,
             ColorSchemesTableSeeder::class,
             FacilitySeeder::class,
             BioPacificCorporateSeeder::class,
@@ -54,6 +55,7 @@ class DatabaseSeeder extends Seeder
             EmployeePerformanceItemsSeeder::class,
             StatesTableSeeder::class,
             UploadTypesTableSeeder::class,
+            ReportSeeder::class,
         ]);
 
     }
