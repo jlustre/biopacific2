@@ -81,6 +81,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.
 // SQL validation for report form
 Route::post('/admin/reports/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('admin.reports.validate-sql');
 
+// Scheduled Report Runs Management (Admin)
+Route::middleware(['auth', 'role:admin'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'index'])->name('index');
+    Route::get('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'show'])->name('show');
+    Route::get('/{run}/report', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'showReport'])->name('show-report');
+    Route::post('/{run}/archive', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'archive'])->name('archive');
+    Route::delete('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'destroy'])->name('destroy');
+});
 // Route for non-admin report requisition requests
 // Route::post('/admin/reports/request', [\App\Http\Controllers\Admin\ReportController::class, 'requestReport'])->name('admin.reports.request');
 
@@ -169,6 +177,19 @@ Route::get('/my-pre-employment2', [\App\Http\Controllers\PreEmployment2Controlle
     ->name('pre-employment2.portal');
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
+// Scheduled Reports Management (CRUD)
+Route::middleware(['auth', 'role:admin'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
+        Route::get('/{scheduledReport}/history', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'history'])->name('history');
+        Route::get('/{scheduledReport}/download/{run}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'download'])->name('download');
+    Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'store'])->name('store');
+    Route::get('/{scheduledReport}/edit', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'edit'])->name('edit');
+    Route::put('/{scheduledReport}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'update'])->name('update');
+    Route::delete('/{scheduledReport}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'destroy'])->name('destroy');
+    Route::post('/{scheduledReport}/run', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'runNow'])->name('run');
+});
+
 Route::middleware(['auth'])->group(function () {
     // Admin: access to all dashboards and HR portal
         Route::middleware('role:admin|hrrd|facility-admin|facility-dsd')->group(function () {

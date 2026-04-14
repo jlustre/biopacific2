@@ -2,8 +2,13 @@
 @section('content')
 <div class="container py-8">
     <h1 class="mb-4 text-2xl font-bold">Reports</h1>
-    <div class="flex justify-end mb-4">
-        <a href="{{ route('admin.reports.create') }}" class="px-4 py-2 bg-green-600 text-white rounded">Create Report</a>
+    <div class="flex flex-col md:flex-row md:justify-end gap-2 mb-4">
+        <a href="{{ route('admin.scheduled-reports.index') }}" class="px-4 py-2 bg-blue-600 text-white rounded flex items-center">
+            <i class="fas fa-clock mr-2"></i> Scheduled Reports
+        </a>
+        <a href="{{ route('admin.reports.create') }}" class="px-4 py-2 bg-green-600 text-white rounded flex items-center">
+            <i class="fas fa-plus mr-2"></i> Create Report
+        </a>
     </div>
     <form method="GET" class="mb-4 flex flex-wrap gap-2 items-end">
         <div>

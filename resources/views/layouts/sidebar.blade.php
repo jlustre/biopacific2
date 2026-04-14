@@ -74,6 +74,10 @@ use Illuminate\Support\Facades\Log;
                     class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.arbitration-templates.*') ? 'bg-gray-100 font-bold' : '' }}">
                     <i class="fas fa-file-contract mr-2"></i> Arbitration Templates
                 </a>
+                <a href="{{ route('admin.scheduled-report-runs.index') }}"
+                   class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.scheduled-report-runs.*') ? 'bg-gray-100 font-bold' : '' }}">
+                   <i class="fas fa-file-alt mr-2"></i> Scheduled Report Runs
+                </a>
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
                         class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-100 font-bold' : '' }}">
@@ -356,6 +360,10 @@ use Illuminate\Support\Facades\Log;
                     class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                     <i class="fas fa-envelope-open-text mr-2"></i> Email Templates
                 </a>
+                    <a href="{{ route('admin.scheduled-reports.index') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-clock mr-2"></i> Scheduled Reports
+                    </a>
                 <a href="{{ route('admin.communications.employee-email-mappings') }}"
                     class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                     <i class="fas fa-user-tie mr-2"></i> Employee Email Mappings
