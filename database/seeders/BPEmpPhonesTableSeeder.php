@@ -11,7 +11,7 @@ class BPEmpPhonesTableSeeder extends Seeder
     {
         DB::table('bp_emp_phones')->insert([
             [
-                'emp_id' => 'EMP001',
+                'employee_num' => 'EMP001',
                 'phone_type' => 'M',
                 'phone_number' => '555-123-4567',
                 'is_primary' => true,
@@ -19,7 +19,7 @@ class BPEmpPhonesTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'emp_id' => 'EMP001',
+                'employee_num' => 'EMP001',
                 'phone_type' => 'H',
                 'phone_number' => '509-516-6142',
                 'is_primary' => false,

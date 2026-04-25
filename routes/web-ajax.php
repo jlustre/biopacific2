@@ -11,7 +11,7 @@ Route::get('/admin/facility/{facility}/employees', function ($facilityId, Reques
         $q->where('facility_id', $facilityId);
     })
     ->orderBy('last_name')
-    ->get(['emp_id as id', 'emp_id', 'first_name', 'middle_name', 'last_name']);
+    ->get(['employee_num as id', 'employee_num', 'first_name', 'middle_name', 'last_name']);
     return response()->json($employees);
 })->name('admin.facility.employees.ajax');
 
@@ -21,6 +21,6 @@ Route::get('/admin/facility/{facility}/employees/all', function ($facilityId, Re
         $q->where('facility_id', $facilityId);
     })
     ->orderBy('last_name')
-    ->get(['emp_id as id', 'emp_id', 'first_name', 'middle_name', 'last_name']);
+    ->get(['employee_num as id', 'employee_num', 'first_name', 'middle_name', 'last_name']);
     return response()->json($employees);
 });

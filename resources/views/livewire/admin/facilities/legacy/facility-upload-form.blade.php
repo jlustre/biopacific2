@@ -24,13 +24,13 @@
             <div style="background: #007; color: #fff; padding: 4px; font-size: 12px; margin-bottom: 4px;">
                 Employees loaded: {{ count($employees) }}
                 @if(count($employees) > 0)
-                    [IDs: @foreach($employees as $e){{ $e->emp_id }}@if(!$loop->last), @endif@endforeach]
+                    [IDs: @foreach($employees as $e){{ $e->employee_num }}@if(!$loop->last), @endif@endforeach]
                 @endif
             </div>
             <select id="employee-select" wire:model="employee_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="">-- Select Employee --</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->emp_id }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->emp_id) [{{ $employee->emp_id }}]@endif</option>
+                    <option value="{{ $employee->employee_num }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->employee_num) [{{ $employee->employee_num }}]@endif</option>
                 @endforeach
             </select>
         </div>
@@ -51,10 +51,6 @@
             <div>
                 <label class="block mb-1 text-xs font-semibold">Effective Start Date</label>
                 <input type="date" wire:model="effective_start_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
-            </div>
-            <div>
-                <label class="block mb-1 text-xs font-semibold">Effective End Date</label>
-                <input type="date" wire:model="effective_end_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
             </div>
             <div>
                 <label class="block mb-1 text-xs font-semibold">Expires At</label>

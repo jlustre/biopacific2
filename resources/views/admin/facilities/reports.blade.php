@@ -3,9 +3,13 @@
 @section('content')
 <div class="container py-8">
     <div class="flex items-center justify-between mb-2">
-        <div></div>
+        <div>
+            <a href="{{ route('admin.facility.dashboard', ['facility' => $facility->slug ?? $facility->id]) }}" class="inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700 mr-2">
+                &larr; Back to Facility HR Dashboard
+            </a>
+        </div>
         @if($isAdmin)
-            <a href="{{ route('admin.reports.index') }}" class="inline-block px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Go to Reports Management2</a>
+            <a href="{{ route('admin.reports.index') }}" class="inline-block px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Go to Reports Management</a>
         @endif
     </div>
     <h1 class="text-2xl font-bold mb-4">Reports for {{ $facility->name }}</h1>

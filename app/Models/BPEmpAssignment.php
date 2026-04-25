@@ -10,13 +10,13 @@ class BPEmpAssignment extends Model
     protected $primaryKey = 'assign_id';
     protected $fillable = [
         'assign_id',
-        'emp_id',
+        'employee_num',
         'effdt',
         'effseq',
         'facility_id',
         'dept_id',
         'job_code_id',
-        'reports_to_emp_id',
+        'reports_to_employee_num',
         'reg_temp',
         'full_part_time',
         'bargaining_unit_id',

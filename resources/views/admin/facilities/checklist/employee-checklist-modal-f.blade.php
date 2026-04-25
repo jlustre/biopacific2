@@ -2,9 +2,9 @@
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
         <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             onclick="closeVerifyModalF()">&times;</button>
-        <h3 class="text-lg font-bold mb-4">Performance Assessment</h3>
+        <h3 class="text-lg font-bold mb-4">Performance Assessment2</h3>
         <form id="verifyFormF">
-            <input type="hidden" name="emp_id" id="verifyEmpIdF">
+            <input type="hidden" name="employee_num" id="verifyEmpIdF">
             <input type="hidden" name="item_key" id="verifyItemKeyF">
             <input type="hidden" name="eff_date" id="verifyEffDateF">
             <div class="mb-3">

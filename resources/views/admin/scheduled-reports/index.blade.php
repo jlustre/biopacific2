@@ -33,37 +33,37 @@
     @endif
 
     @if(session('download_url'))
-    <!-- Modal for download link -->
-    <div id="downloadModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
-            <button onclick="document.getElementById('downloadModal').style.display='none'" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl">&times;</button>
-            <div class="flex flex-col items-center">
-                <i class="fas fa-file-download text-4xl text-blue-600 mb-4"></i>
-                <h2 class="text-lg font-bold mb-2">Report Ready</h2>
-                <p class="mb-4">Your scheduled report has been generated.</p>
-                <a href="{{ session('download_url') }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold flex items-center">
-                    <i class="fas fa-download mr-2"></i> Download {{ session('download_label') }}
-                </a>
+        <!-- Modal for download link -->
+        <div id="downloadModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+            <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+                <button onclick="document.getElementById('downloadModal').style.display='none'" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl">&times;</button>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-file-download text-4xl text-blue-600 mb-4"></i>
+                    <h2 class="text-lg font-bold mb-2">Report Ready</h2>
+                    <p class="mb-4">Your scheduled report has been generated.</p>
+                    <a href="{{ session('download_url') }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold flex items-center">
+                        <i class="fas fa-download mr-2"></i> Download {{ session('download_label') }}
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-    <script>
-        // Auto-close modal after 15 seconds
-        setTimeout(function() {
-            var modal = document.getElementById('downloadModal');
-            if (modal) modal.style.display = 'none';
-        }, 15000);
-    </script>
+        <script>
+            // Auto-close modal after 15 seconds
+            setTimeout(function() {
+                var modal = document.getElementById('downloadModal');
+                if (modal) modal.style.display = 'none';
+            }, 15000);
+        </script>
     @endif
 
     <form method="GET" class="mb-4 flex flex-wrap gap-2 items-end">
         <div>
             <label class="block text-xs font-semibold mb-1">Search</label>
-            <input type="text" name="search" value="{{ request('search') }}" class="form-input border border-teal-500 px-2 py-1 text-sm rounded w-48" placeholder="Name or report...">
+            <input type="text" name="search" value="{{ request('search') }}" class="form-input bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48" placeholder="Name or report...">
         </div>
         <div>
             <label class="block text-xs font-semibold mb-1">Status</label>
-            <select name="status" class="form-select border border-teal-500 px-2 py-1 text-sm rounded w-32">
+            <select name="status" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-32">
                 <option value="">All</option>
                 <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                 <option value="paused" {{ request('status') == 'paused' ? 'selected' : '' }}>Paused</option>
@@ -72,7 +72,7 @@
         </div>
         <div>
             <label class="block text-xs font-semibold mb-1">Report</label>
-            <select name="report_id" class="form-select border border-teal-500 px-2 py-1 text-sm rounded w-48">
+            <select name="report_id" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48">
                 <option value="">All Reports</option>
                 @foreach($reports as $report)
                     <option value="{{ $report->id }}" {{ request('report_id') == $report->id ? 'selected' : '' }}>{{ $report->name }}</option>
@@ -113,6 +113,16 @@
                     <a href="{{ route('admin.scheduled-reports.history', $sr) }}" class="mx-1 text-indigo-600 hover:text-indigo-800" title="History">
                         <i class="fas fa-history"></i>
                     </a>
+                    @php
+                        $latestRun = $sr->runs()->orderByDesc('executed_at')->first();
+                    @endphp
+                    @if($latestRun)
+                        <a href="{{ route('admin.scheduled-report-runs.show', $latestRun) }}" class="mx-1 text-teal-600 hover:text-teal-800" title="View Latest Report">
+                            <i class="fas fa-file-alt"></i>
+                        </a>
+                    @else
+                        <span class="mx-1 text-gray-400" title="No report available"><i class="fas fa-file-alt"></i></span>
+                    @endif
                     <form action="{{ route('admin.scheduled-reports.destroy', $sr) }}" method="POST" class="inline-block mx-1" onsubmit="return confirm('Delete this scheduled report?');">
                         @csrf
                         @method('DELETE')

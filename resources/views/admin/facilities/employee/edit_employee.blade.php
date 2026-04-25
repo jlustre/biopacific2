@@ -45,7 +45,7 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
     <div class="text-lg font-semibold text-gray-800 mb-4 text-center">
         @if(!$isAddMode)
             {{ $employee->last_name }}, {{ $employee->first_name }}@if($employee->middle_name), {{
-            $employee->middle_name }}@endif / {{ $employee->emp_id }}
+            $employee->middle_name }}@endif / {{ $employee->employee_num }}
         @endif
     </div>
 
@@ -61,7 +61,7 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
     
     @include('admin.facilities.employee.employee-assignment')
 
-     @include('admin.facilities.checklist.employee-checklist')
+    @include('admin.facilities.employee.employee-documents')
     
 </div>
 @endsection
@@ -104,7 +104,7 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
                     facility_id: assignmentLatest ? assignmentLatest.facility_id : '',
                     dept_id: assignmentLatest ? assignmentLatest.dept_id : '',
                     job_code_id: assignmentLatest ? assignmentLatest.job_code_id : '',
-                    reports_to_emp_id: assignmentLatest ? assignmentLatest.reports_to_emp_id : '',
+                    reports_to_employee_num: assignmentLatest ? assignmentLatest.reports_to_employee_num : '',
                     reg_temp: assignmentLatest ? assignmentLatest.reg_temp : 'r',
                     full_part_time: assignmentLatest ? assignmentLatest.full_part_time : 'ft',
                     bargaining_unit_id: assignmentLatest && assignmentLatest.bargaining_unit_id != null && assignmentLatest.bargaining_unit_id !== 'null'
@@ -117,10 +117,10 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
                 latestEffdt: assignmentLatest ? assignmentLatest.effdt : '',
                 latestEffseq: assignmentLatest ? assignmentLatest.effseq : '',
                 setAssignment(assign) {
-                    this.currentAssignment = Object.assign({facility_id: '', dept_id: '', job_code_id: '', reports_to_emp_id: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
+                    this.currentAssignment = Object.assign({facility_id: '', dept_id: '', job_code_id: '', reports_to_employee_num: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
                 },
                 clearAssignment() {
-                    this.currentAssignment = {facility_id: '', dept_id: '', job_code_id: '', reports_to_emp_id: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
+                    this.currentAssignment = {facility_id: '', dept_id: '', job_code_id: '', reports_to_employee_num: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
                 },
                 isLatestRecord() {
                     return this.currentAssignment.effdt == this.latestEffdt && String(this.currentAssignment.effseq) == String(this.latestEffseq);

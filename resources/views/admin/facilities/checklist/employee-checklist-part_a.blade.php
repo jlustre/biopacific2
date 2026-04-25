@@ -30,7 +30,7 @@
                 @php
                 $empChecklist = null;
                 if ($empChecklists && count($empChecklists)) {
-                $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
                 if ($empChecklistRow && isset($empChecklistRow->items[$item->name])) {
                 $empChecklist = (object) $empChecklistRow->items[$item->name];
                 }
@@ -42,7 +42,7 @@
                         @php
                         $empChecklist = null;
                         if ($empChecklists && count($empChecklists)) {
-                        $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                        $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
                         if ($empChecklistRow && isset($empChecklistRow->items[$item->name])) {
                         $empChecklist = (object) $empChecklistRow->items[$item->name];
                         }
@@ -53,11 +53,11 @@
                         @if($empChecklist && $empChecklist->verified_by)
                         <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}">Revoke</a>
+                            data-emp-id="{{ $employee->employee_num }}">Revoke</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}"
+                            data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
@@ -67,7 +67,7 @@
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}"
+                            data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
@@ -128,7 +128,7 @@
                 @php
                 $empChecklist = null;
                 if ($empChecklists && count($empChecklists)) {
-                $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
                 if ($empChecklistRow && isset($empChecklistRow->items[$item['name']])) {
                 $empChecklist = (object) $empChecklistRow->items[$item['name']];
                 }
@@ -140,7 +140,7 @@
                         @php
                         $empChecklist = null;
                         if ($empChecklists && count($empChecklists)) {
-                        $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                        $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
                         if ($empChecklistRow && isset($empChecklistRow->items[$item['name']])) {
                         $empChecklist = (object) $empChecklistRow->items[$item['name']];
                         }
@@ -151,15 +151,15 @@
                         @if($empChecklist && $empChecklist->verified_by)
                         <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}">Revoke</a>
+                            data-emp-id="{{ $employee->employee_num }}">Revoke</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}">View</a>
+                            data-emp-id="{{ $employee->employee_num }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}"
+                            data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
@@ -225,7 +225,7 @@
                 @php
                 $empChecklist = null;
                 if ($empChecklists && count($empChecklists)) {
-                $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
                 if ($empChecklistRow && isset($empChecklistRow->items[$item['name']])) {
                 $empChecklist = (object) $empChecklistRow->items[$item['name']];
                 }
@@ -237,7 +237,7 @@
                         @php
                         $empChecklist = null;
                         if ($empChecklists && count($empChecklists)) {
-                        $empChecklistRow = $empChecklists->firstWhere('emp_id', $employee->emp_id);
+                        $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
                         if ($empChecklistRow && isset($empChecklistRow->items[$item['name']])) {
                         $empChecklist = (object) $empChecklistRow->items[$item['name']];
                         }
@@ -248,15 +248,15 @@
                         @if($empChecklist && $empChecklist->verified_by)
                         <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}">Revoke</a>
+                            data-emp-id="{{ $employee->employee_num }}">Revoke</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}">View</a>
+                            data-emp-id="{{ $employee->employee_num }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
-                            data-emp-id="{{ $employee->emp_id }}"
+                            data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"

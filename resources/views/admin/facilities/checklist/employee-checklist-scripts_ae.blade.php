@@ -317,6 +317,7 @@
         var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         var verifiedById = document.getElementById('verifyVerifiedById').value;
         var payload = {
+            employee_num: empId,
             doc_name: docName,
             doc_type_id: docTypeId,
             on_file: onFile,
@@ -325,6 +326,7 @@
             comments: comments,
             verified_by: verifiedById,
         };
+        console.log('Checklist AE Save payload:', payload);
         fetch(`/admin/employees/${empId}/checklist/verify`, {
             method: 'POST',
             headers: {

@@ -45,7 +45,7 @@ class FacilityUploads extends Component
     {
         $this->validate([
             'facility_id' => 'required|exists:facilities,id',
-            'employee_id' => 'required|exists:bp_employees,emp_id',
+            'employee_id' => 'required|exists:bp_employees,employee_num',
             'upload_type_id' => 'required|exists:upload_types,id',
             'file' => 'required|file',
         ]);

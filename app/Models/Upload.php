@@ -9,8 +9,14 @@ class Upload extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'facility_id',
+        'employee_num',
         'user_id',
         'upload_type_id',
         'file_path',
@@ -19,9 +25,15 @@ class Upload extends Model
         'uploaded_at',
         'expires_at',
         'effective_start_date',
-        'effective_end_date',
         'comments',
     ];
+    /**
+     * Get the employee that owns this upload.
+     */
+    public function employee()
+    {
+        return $this->belongsTo(BPEmployee::class, 'employee_num', 'employee_num');
+    }
 
     
     public function facility()

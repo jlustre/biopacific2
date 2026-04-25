@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         $this->call([
-            \Database\Seeders\ReportCategoriesTableSeeder::class,
             ColorSchemesTableSeeder::class,
             FacilitySeeder::class,
             BioPacificCorporateSeeder::class,
@@ -32,7 +31,6 @@ class DatabaseSeeder extends Seeder
             EmailRecipientsTableSeeder::class,
             EmployeeEmailMappingsTableSeeder::class,
             EmailTemplatesSeeder::class,
-            // GeneralJobOpeningSeeder::class,
             TestUsersSeeder::class,
             DepartmentSeeder::class,
             PositionsSeeder::class,
@@ -40,6 +38,7 @@ class DatabaseSeeder extends Seeder
             UsersTableSeeder::class,
             BPDepartmentsTableSeeder::class,
             DocTypesTableSeeder::class,
+            UploadsSeeder::class,
             BPPositionsTableSeeder::class,
             BPBargainingUnitsTableSeeder::class,
             BPEmpEmployeesTableSeeder::class,
@@ -55,7 +54,10 @@ class DatabaseSeeder extends Seeder
             EmployeePerformanceItemsSeeder::class,
             StatesTableSeeder::class,
             UploadTypesTableSeeder::class,
+            ReportCategoriesTableSeeder::class,
             ReportSeeder::class,
+            OptionTypesSeeder::class,
+            SelectOptionsSeeder::class,
         ]);
 
     }

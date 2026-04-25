@@ -7,35 +7,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeDocument extends Model
 {
+    protected $table = 'employee_documents';
     protected $fillable = [
-        'facility_id',
-        'user_id',
-        'pre_employment_application_id',
-        'document_type',
+        'employee_num',
         'file_name',
-        'file_path',
+        'original_filename',
         'mime_type',
         'file_size',
-        'created_by',
+        'description',
+        'effective_start_date',
+        'effective_end_date',
+        'expires_at',
+        'comments',
+        'uploaded_by',
     ];
 
-    public function facility(): BelongsTo
+    public function employee()
     {
-        return $this->belongsTo(Facility::class);
+        return $this->belongsTo(BPEmployee::class, 'employee_num', 'employee_num');
     }
 
-    public function user(): BelongsTo
+    public function uploader()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function preEmploymentApplication(): BelongsTo
-    {
-        return $this->belongsTo(PreEmploymentApplication::class);
-    }
-
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }

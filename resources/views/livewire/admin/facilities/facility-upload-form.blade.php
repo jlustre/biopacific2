@@ -1,4 +1,17 @@
-<div>
+<div x-data="{
+    requiresExpiry: false,
+    updateExpiry() {
+        const select = $refs.uploadType;
+        if (!select) { this.requiresExpiry = false; return; }
+        const selected = select.options[select.selectedIndex];
+        this.requiresExpiry = !!(selected && selected.dataset.requiresExpiry === '1');
+    }
+}"
+    x-init="updateExpiry();
+        window.addEventListener('livewire:update', () => { $nextTick(() => updateExpiry()); });
+    "
+    x-effect="updateExpiry()"
+>
     <div style="background: #ff0; color: #000; padding: 10px; font-weight: bold;">Livewire COMPONENT RENDERED: If you see this, the Livewire view is being rendered.</div>
     @if(session('success'))
         <div class="p-3 mb-4 text-green-800 bg-green-100 border border-green-400 rounded">
@@ -24,20 +37,20 @@
             <div style="background: #007; color: #fff; padding: 4px; font-size: 12px; margin-bottom: 4px;">
                 Employees loaded: {{ count($employees) }}
                 @if(count($employees) > 0)
-                    [IDs: @foreach($employees as $e){{ $e->emp_id }}@if(!$loop->last), @endif@endforeach]
+                    [IDs: @foreach($employees as $e){{ $e->employee_num }}@if(!$loop->last), @endif@endforeach]
                 @endif
             </div>
             <select id="employee-select" wire:model="employee_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="">-- Select Employee --</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->emp_id }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->emp_id) [{{ $employee->emp_id }}]@endif</option>
+                    <option value="{{ $employee->employee_num }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->employee_num) [{{ $employee->employee_num }}]@endif</option>
                 @endforeach
             </select>
         </div>
         <div class="col-span-1">
             <label class="block mb-1 text-xs font-semibold">Upload Type <span class="text-red-600">*</span></label>
-            <select wire:model="upload_type_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
-                <option value="">Select Type</option>
+            <select wire:model="upload_type_id" x-ref="uploadType" @change="updateExpiry()" @input="updateExpiry()" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
+                <option value="" hidden selected>Select Type</option>
                 @foreach($uploadTypes as $type)
                     <option value="{{ $type->id }}" data-requires-expiry="{{ $type->requires_expiry ? '1' : '0' }}">{{ $type->name }}</option>
                 @endforeach
@@ -48,18 +61,18 @@
             <input type="file" wire:model="file" class="form-input w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
         </div>
         <div class="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="block mb-1 text-xs font-semibold">Effective Start Date</label>
-                <input type="date" wire:model="effective_start_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
-            </div>
-            <div>
-                <label class="block mb-1 text-xs font-semibold">Effective End Date</label>
-                <input type="date" wire:model="effective_end_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
-            </div>
-            <div>
-                <label class="block mb-1 text-xs font-semibold">Expires At</label>
-                <input type="date" wire:model="expires_at" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
-            </div>
+            <template x-if="requiresExpiry">
+                <div class="flex gap-4">
+                    <div>
+                        <label class="block mb-1 text-xs font-semibold">Effective Start Date</label>
+                        <input type="date" wire:model="effective_start_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-xs font-semibold">Expires At</label>
+                        <input type="date" wire:model="expires_at" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
+                    </div>
+                </div>
+            </template>
         </div>
         <div class="col-span-2 flex flex-col md:flex-row gap-4 items-end">
             <div class="flex-1">

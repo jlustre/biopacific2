@@ -14,13 +14,13 @@ return new class extends Migration
     {
         Schema::create('bp_emp_assignments', function (Blueprint $table) {
             $table->id('assign_id');
-            $table->string('emp_id');
+            $table->string('employee_num');
             $table->date('effdt'); // Effective Date
             $table->integer('effseq')->default(0); // Sequence for same-day changes
             $table->unsignedBigInteger('facility_id')->nullable();
             $table->unsignedBigInteger('dept_id')->nullable();
             $table->unsignedBigInteger('job_code_id')->nullable();
-            $table->unsignedBigInteger('reports_to_emp_id')->nullable();
+            $table->unsignedBigInteger('reports_to_employee_num')->nullable();
             $table->enum('reg_temp', ['r', 't'])->default('r'); // Regular, Temporary
             $table->enum('full_part_time', ['ft', 'pt', 'pd'])->default('ft'); // Full-time, Part-time, Per Diem
             // Standard Audit
@@ -28,8 +28,8 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by');
             $table->timestamps();
             // Constraints & Performance Indexing
-            // $table->foreign('emp_id')->references('emp_id')->on('bp_employees'); // Removed to break circular dependency
-            $table->index(['emp_id', 'effdt', 'effseq'], 'idx_bp_assign_hist');
+            // $table->foreign('employee_num')->references('employee_num')->on('bp_employees'); // Removed to break circular dependency
+            $table->index(['employee_num', 'effdt', 'effseq'], 'idx_bp_assign_hist');
             // Link to the bargaining unit; NULL if the employee is Non-Union
             $table->unsignedBigInteger('bargaining_unit_id')->nullable();
             $table->date('union_seniority_dt')->nullable(); // Often different from hire date

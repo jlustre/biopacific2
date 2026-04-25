@@ -23,11 +23,11 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Report Name</label>
-                    <input type="text" name="name" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" required value="{{ old('name', $scheduledReport->name) }}">
+                    <input type="text" name="name" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required value="{{ old('name', $scheduledReport->name) }}">
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Report</label>
-                    <select name="report_id" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" required>
+                    <select name="report_id" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required>
                         <option value="">Select Report</option>
                         @foreach($reports as $report)
                         <option value="{{ $report->id }}" {{ (old('report_id', $scheduledReport->report_id) == $report->id) ? 'selected' : '' }}>{{ $report->name }}</option>
@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Report Format</label>
-                    <select name="report_format" id="report_format" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" required onchange="toggleOrientation()">
+                    <select name="report_format" id="report_format" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required onchange="toggleOrientation()">
                         <option value="csv" {{ old('report_format', $scheduledReport->report_format ?? 'csv') == 'csv' ? 'selected' : '' }}>CSV</option>
                         <option value="pdf" {{ old('report_format', $scheduledReport->report_format) == 'pdf' ? 'selected' : '' }}>PDF</option>
                         <option value="html" {{ old('report_format', $scheduledReport->report_format) == 'html' ? 'selected' : '' }}>HTML</option>
@@ -45,7 +45,7 @@
                 </div>
                 <div id="pdf_orientation_group" style="display: {{ old('report_format', $scheduledReport->report_format) == 'pdf' ? 'block' : 'none' }};">
                     <label class="block text-gray-700 font-semibold mb-1">PDF Orientation</label>
-                    <select name="pdf_orientation" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                    <select name="pdf_orientation" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                         <option value="P" {{ old('pdf_orientation', $scheduledReport->pdf_orientation) == 'P' ? 'selected' : '' }}>Portrait</option>
                         <option value="L" {{ old('pdf_orientation', $scheduledReport->pdf_orientation) == 'L' ? 'selected' : '' }}>Landscape</option>
                     </select>
@@ -72,7 +72,7 @@
                             </span>
                         </span>
                     </label>
-                    <textarea name="parameters" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" rows="2">{{ old('parameters', json_encode($scheduledReport->parameters)) }}</textarea>
+                    <textarea name="parameters" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" rows="2">{{ old('parameters', json_encode($scheduledReport->parameters)) }}</textarea>
                     <span class="text-xs text-gray-500">Optional. Example: {"facility_id":1}</span>
                 </div>
                 <div>
@@ -85,7 +85,7 @@
                     <label class="block text-gray-700 font-semibold mb-1">Notification Recipients</label>
                     <div class="mb-2">
                         <label class="block text-xs font-semibold mb-1">Notify Roles</label>
-                        <select name="notify_roles[]" multiple class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm notify-roles-select">
+                        <select name="notify_roles[]" multiple class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white notify-roles-select">
                             <option value="">Select roles...</option>
                             <option value="admin" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('admin')) ? 'selected' : '' }}>Admin</option>
                             <option value="facility-admin" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('facility-admin')) ? 'selected' : '' }}>Facility Admin</option>
@@ -98,18 +98,18 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold mb-1">Notify Email Addresses</label>
-                        <input type="text" name="notify_emails" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" placeholder="Enter email addresses, separated by commas" value="{{ old('notify_emails', $scheduledReport->notify_emails) }}">
+                        <input type="text" name="notify_emails" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" placeholder="Enter email addresses, separated by commas" value="{{ old('notify_emails', $scheduledReport->notify_emails) }}">
                         <span class="text-xs text-gray-500">You can enter multiple emails separated by commas.</span>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">Start Date/Time</label>
-                        <input type="datetime-local" name="start_at" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" value="{{ old('start_at', $scheduledReport->start_at ? $scheduledReport->start_at->format('Y-m-d\TH:i') : null) }}">
+                        <input type="datetime-local" name="start_at" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" value="{{ old('start_at', $scheduledReport->start_at ? $scheduledReport->start_at->format('Y-m-d\TH:i') : null) }}">
                     </div>
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">End Date/Time</label>
-                        <input type="datetime-local" name="end_at" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm" value="{{ old('end_at', $scheduledReport->end_at ? $scheduledReport->end_at->format('Y-m-d\TH:i') : null) }}">
+                        <input type="datetime-local" name="end_at" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" value="{{ old('end_at', $scheduledReport->end_at ? $scheduledReport->end_at->format('Y-m-d\TH:i') : null) }}">
                         <span class="text-xs text-gray-500">Leave blank for ongoing schedule.</span>
                     </div>
                 </div>
@@ -118,7 +118,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
                         <div>
                             <label class="block text-xs font-semibold mb-1">Month</label>
-                            <select id="cron_month" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                            <select id="cron_month" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                                 <option value="*">Every</option>
                                 @for($i=1;$i<=12;$i++)
                                     <option value="{{$i}}" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[3] ?? '*') == $i ? 'selected' : '' }}>{{$i}}</option>
@@ -127,7 +127,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">Weekday</label>
-                            <select id="cron_weekday" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                            <select id="cron_weekday" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                                 <option value="*">Every</option>
                                 <option value="0" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[4] ?? '*') == '0' ? 'selected' : '' }}>Sunday</option>
                                 <option value="1" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[4] ?? '*') == '1' ? 'selected' : '' }}>Monday</option>
@@ -140,7 +140,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">Day</label>
-                            <select id="cron_day" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                            <select id="cron_day" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                                 <option value="*">Every</option>
                                 @for($i=1;$i<=31;$i++)
                                     <option value="{{$i}}" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[2] ?? '*') == $i ? 'selected' : '' }}>{{$i}}</option>
@@ -149,7 +149,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">Hour</label>
-                            <select id="cron_hour" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                            <select id="cron_hour" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                                 <option value="*">Every</option>
                                 @for($i=0;$i<24;$i++)
                                     <option value="{{$i}}" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[1] ?? '*') == $i ? 'selected' : '' }}>{{$i}}</option>
@@ -158,7 +158,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">Minute</label>
-                            <select id="cron_minute" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                            <select id="cron_minute" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                                 <option value="*">Every</option>
                                 @for($i=0;$i<60;$i++)
                                     <option value="{{$i}}" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[0] ?? '*') == $i ? 'selected' : '' }}>{{$i}}</option>
@@ -172,7 +172,7 @@
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Status</label>
-                    <select name="status" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm">
+                    <select name="status" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
                         <option value="active" {{ old('status', $scheduledReport->status) == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="paused" {{ old('status', $scheduledReport->status) == 'paused' ? 'selected' : '' }}>Paused</option>
                     </select>

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('bp_emp_addresses', function (Blueprint $table) {
             $table->id('address_id');
-            $table->string('emp_id'); // Foreign key to bp_employees.emp_id
+            $table->string('employee_num'); // Foreign key to bp_employees.employee_num
             $table->enum('address_type', ['H', 'W', 'O']); // e.g. 'home', 'work', 'other', etc.
             $table->date('effdt'); // Effective date for the address
             $table->integer('effseq')->default(0); // Effective sequence for the address
@@ -25,8 +25,8 @@ return new class extends Migration
             $table->string('country', 50)->default('usa');
             $table->boolean('is_primary')->default(false);
             $table->timestamps();
-            $table->foreign('emp_id')->references('emp_id')->on('bp_employees');
-            $table->index(['emp_id', 'address_type'], 'idx_emp_addr_type');
+            $table->foreign('employee_num')->references('employee_num')->on('bp_employees');
+            $table->index(['employee_num', 'address_type'], 'idx_emp_addr_type');
         });
     }
 

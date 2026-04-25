@@ -25,15 +25,18 @@
                 <label class="block text-gray-700 font-semibold mb-2" for="importFile">
                     <span class="inline-flex items-center gap-1"><svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 text-indigo-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3'/></svg> Excel File</span>
                 </label>
-                <input type="file" name="file" id="importFile" accept=".xlsx,.xls,.csv" required class="border-2 border-indigo-200 rounded-lg w-full p-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition">
+                <input type="file" name="file" id="importFile" accept=".xlsx,.xls,.csv" required class="border-2 border-teal-800 bg-teal-100 rounded-lg w-full p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none transition">
             </div>
             <div class="flex justify-end">
                 <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-2 py-1 rounded-lg shadow transition border border-teal-700">Next</button>
             </div>
         </form>
 
+
         <!-- Mapping UI (hidden by default, shown after upload) -->
         <div class="px-8 pb-8">
+            <!-- Success/Error message area -->
+            <div id="mappingMessage" class="hidden mb-4"></div>
             @include('admin.facilities.partials.import-mapping')
         </div>
         @include('admin.facilities.partials.import-mapping-scripts')

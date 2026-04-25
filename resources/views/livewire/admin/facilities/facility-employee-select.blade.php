@@ -14,7 +14,7 @@
             <select id="employee-select" wire:model="employee_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="">-- Select Employee --</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->id }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->emp_id) [{{ $employee->emp_id }}]@endif</option>
+                    <option value="{{ $employee->id }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->employee_num) [{{ $employee->employee_num }}]@endif</option>
                 @endforeach
             </select>
         </div>

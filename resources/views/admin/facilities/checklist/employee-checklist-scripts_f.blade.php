@@ -309,7 +309,7 @@
         if (viewOnly && docTypeId && empId && assessmentPeriodId && itemKey) {
             // Fetch comment from backend
             commentsField.value = '';
-            fetch('/admin/employees/performance-section-comment?emp_id=' + encodeURIComponent(empId) + '&assessment_period_id=' + encodeURIComponent(assessmentPeriodId) + '&doc_type_id=' + encodeURIComponent(docTypeId) + '&item_key=' + encodeURIComponent(itemKey), {
+            fetch('/admin/employees/performance-section-comment?employee_num=' + encodeURIComponent(empId) + '&assessment_period_id=' + encodeURIComponent(assessmentPeriodId) + '&doc_type_id=' + encodeURIComponent(docTypeId) + '&item_key=' + encodeURIComponent(itemKey), {
                 headers: { 'Accept': 'application/json' }
             })
             .then(resp => resp.json())
@@ -499,7 +499,7 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    emp_id: empId,
+                    employee_num: empId,
                     item_key: itemKey,
                     assessment_period_id: assessmentPeriodId
                 })
@@ -592,6 +592,17 @@
         }
         var token = tokenMeta.getAttribute('content');
 
+        // Debug: Log payload before sending
+        const payload = {
+            employee_num: empId,
+            item_key: itemKey,
+            rating: rating,
+            assessment_date: assessmentDate,
+            comments: comments,
+            assessment_period_id: assessmentPeriodId
+        };
+        console.log('PART F Save payload:', payload);
+
         // Send AJAX POST request to save the assessment
         fetch('/admin/employees/performance-assessment', {
             method: 'POST',
@@ -600,33 +611,26 @@
                 'X-CSRF-TOKEN': token,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                emp_id: empId,
-                item_key: itemKey,
-                rating: rating,
-                assessment_date: assessmentDate,
-                comments: comments,
-                assessment_period_id: assessmentPeriodId
-            })
+            body: JSON.stringify(payload)
         })
         .then(async response => {
             let data;
             let rawText = await response.text();
             try {
-                // Try to parse the JSON response
                 data = JSON.parse(rawText);
             } catch (err) {
-                // If parsing fails, show error
                 alert('Save failed.1');
                 return;
             }
-            // If save is successful and expected data is present, close modal and update the table row
             if (data.success && data.data && data.data.items && data.data.assessed_by) {
                 closeVerifyModalF();
                 updatePartFRow(itemKey, empId, data.data.items[itemKey], data.data.assessed_by, data.data.assessment_date);
             } else {
-                // Otherwise, show error
-                alert('Save failed.2');
+                // Show backend error message if present
+                let msg = 'Save failed.2';
+                if (data && data.message) msg += '\n' + data.message;
+                if (data && data.errors) msg += '\n' + JSON.stringify(data.errors);
+                alert(msg);
             }
         })
         .catch(err => {
@@ -701,7 +705,7 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        emp_id: empId,
+                        employee_num: empId,
                         assessment_period_id: assessmentPeriodId,
                         doc_type_id: docTypeId,
                         comment: comment

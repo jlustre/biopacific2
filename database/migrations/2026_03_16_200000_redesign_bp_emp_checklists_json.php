@@ -9,7 +9,7 @@ return new class extends Migration {
         Schema::dropIfExists('bp_emp_checklists');
         Schema::create('bp_emp_checklists', function (Blueprint $table) {
             $table->id();
-            $table->string('emp_id')->unique();
+            $table->string('employee_num')->unique();
             $table->json('items'); // All checklist items as JSON
             $table->timestamps();
         });

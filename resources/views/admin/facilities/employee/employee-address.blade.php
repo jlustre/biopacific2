@@ -5,113 +5,113 @@
     null;
     $latestAddrEffdt = $latestAddr->effdt ?? '';
     $latestAddrEffseq = $latestAddr->effseq ?? '';
-    $homeAddress = \App\Models\BPEmpAddress::where('emp_id', $employee->emp_id)
+    $homeAddress = \App\Models\BPEmpAddress::where('employee_num', $employee->employee_num)
     ->where('address_type', 'h')
     ->orderByDesc('effdt')
     ->orderByDesc('effseq')
     ->first();
     @endphp
     <div x-data="addressForm()" x-init="initAddress()">
-        <div class="flex justify-end items-center mb-4 space-x-4">
-            <button type="button" @click="clearAddress()"
-                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                Add New Address
-            </button>
-            <template x-if="isLatestRecord()">
-                <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest
-                    Record</span>
-            </template>
-        </div>
-        @if(!empty($employee->emp_id))
-        <form method="POST" action="{{ route('admin.employees.address.update', $employee->emp_id) }}">
-            @csrf
-            @method('PUT')
-            <div class="bg-white shadow rounded-lg p-4 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="mb-2 lg:col-span-2">
-                        <label class="block text-sm font-medium mb-1">Address 1</label>
-                        <input type="text" name="address1" x-model="currentAddress.address1"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
-                    </div>
-                    <div class="mb-2 lg:col-span-2">
-                        <label class="block text-sm font-medium mb-1">Address 2</label>
-                        <input type="text" name="address2" x-model="currentAddress.address2"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">City</label>
-                        <input type="text" name="city" x-model="currentAddress.city"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">State</label>
-                        <select name="state" x-model="currentAddress.state"
-                            class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
-                            <option value="">Select State</option>
-                            @foreach($states as $state)
-                            <option value="{{ $state->abbreviation }}" @if((old('state', $latestAddr->state ?? 'CA') ==
-                                $state->abbreviation)) selected @endif>
-                                {{ $state->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">ZIP</label>
-                        <input type="text" name="zip" x-model="currentAddress.zip"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">Country</label>
-                        <input type="text" name="country" x-model="currentAddress.country"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">Is Primary</label>
-                        <select name="is_primary" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
-                            x-model="currentAddress.is_primary" @change="handlePrimaryChange">
-                            <option value="1">Yes</option>
-                            <option value="0" :disabled="onlyOnePrimary && currentAddress.is_primary == '1'">No</option>
-                        </select>
-                        <template x-if="showPrimaryWarning">
-                            <div class="text-red-600 text-xs mt-1">At least one address must be set as default.</div>
-                        </template>
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">Type</label>
-                        <select name="address_type"
-                            class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
-                            x-model="currentAddress.address_type">
-                            <option value="h">Home</option>
-                            <option value="w">Work</option>
-                            <option value="o">Other</option>
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">Effective Date</label>
-                        <input type="date" name="effdt" x-model="currentAddress.effdt"
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-medium mb-1">Effective Seq</label>
-                        <input type="number" name="effseq" x-model="currentAddress.effseq" readonly
-                            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 bg-gray-100 cursor-not-allowed">
-                    </div>
+        @if(isset($isAddMode) && $isAddMode)
+            <div class="p-6 mb-6 bg-white rounded shadow text-gray-600">
+                <div class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
+                    <strong>Notice:</strong> Please complete and save the Personal tab form before continuing with the checklist.
                 </div>
-                <div class="flex justify-between mt-6 md:col-span-2 lg:col-span-4">
-                    <a href="{{ url()->previous() }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</a>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save
-                        Address</button>
-                </div>
+                <em>Save the employee record before adding addresses.</em>
             </div>
-        </form>
         @else
-        <div class="mb-4">
-            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
-                <strong class="font-bold">Notice:</strong>
-                <span class="block sm:inline">Please complete and save the Personal tab first before adding addresses.</span>
+            <div class="flex justify-end items-center mb-4 space-x-4">
+                <button type="button" @click="clearAddress()"
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    Add New Address
+                </button>
+                <template x-if="isLatestRecord()">
+                    <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest
+                        Record</span>
+                </template>
             </div>
-        </div>
+            <form method="POST" action="{{ route('admin.employees.address.update', $employee->id) }}">
+                @csrf
+                @method('PUT')
+                <div class="bg-white shadow rounded-lg p-4 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="mb-2 lg:col-span-2">
+                            <label class="block text-sm font-medium mb-1">Address 1</label>
+                            <input type="text" name="address1" x-model="currentAddress.address1"
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        </div>
+                        <div class="mb-2 lg:col-span-2">
+                            <label class="block text-sm font-medium mb-1">Address 2</label>
+                            <input type="text" name="address2" x-model="currentAddress.address2"
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">City</label>
+                            <input type="text" name="city" x-model="currentAddress.city"
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">State</label>
+                            <select name="state" x-model="currentAddress.state"
+                                class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
+                                <option value="">Select State</option>
+                                @foreach($states as $state)
+                                <option value="{{ $state->abbreviation }}" @if((old('state', $latestAddr->state ?? 'CA') ==
+                                    $state->abbreviation)) selected @endif>
+                                    {{ $state->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">ZIP</label>
+                            <input type="text" name="zip" x-model="currentAddress.zip"
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">Country</label>
+                            <input type="text" name="country" x-model="currentAddress.country"
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">Is Primary</label>
+                            <select name="is_primary" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
+                                x-model="currentAddress.is_primary" @change="handlePrimaryChange">
+                                <option value="1">Yes</option>
+                                <option value="0" :disabled="onlyOnePrimary && currentAddress.is_primary == '1'">No</option>
+                            </select>
+                            <template x-if="showPrimaryWarning">
+                                <div class="text-red-600 text-xs mt-1">At least one address must be set as default.</div>
+                            </template>
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">Type</label>
+                            <select name="address_type"
+                                class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
+                                x-model="currentAddress.address_type">
+                                <option value="h">Home</option>
+                                <option value="w">Work</option>
+                                <option value="o">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">Effective Date</label>
+                            <input type="date" name="effdt" x-model="currentAddress.effdt"
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">Effective Seq</label>
+                            <input type="number" name="effseq" x-model="currentAddress.effseq" readonly
+                                class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 bg-gray-100 cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-6 md:col-span-2 lg:col-span-4">
+                        <a href="{{ url()->previous() }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</a>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save
+                            Address</button>
+                    </div>
+                </div>
+            </form>
         @endif
         <!-- Address History Table -->
         @include('admin.facilities.employee.employee-address-table')

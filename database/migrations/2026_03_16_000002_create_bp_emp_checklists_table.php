@@ -8,7 +8,7 @@ return new class extends Migration {
     {
         Schema::create('bp_emp_checklists', function (Blueprint $table) {
             $table->id();
-            $table->string('emp_id');
+            $table->string('employee_num');
             $table->string('doc_name');
             $table->unsignedBigInteger('doc_type_id');
             $table->boolean('on_file')->default(false);

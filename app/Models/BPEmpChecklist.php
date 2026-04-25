@@ -9,7 +9,7 @@ class BPEmpChecklist extends Model
     use HasFactory;
     protected $table = 'bp_emp_checklists';
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'items',
     ];
     protected $casts = [

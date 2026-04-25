@@ -13,7 +13,7 @@
         @if(isset($report)) @method('PUT') @endif
         <div class="mb-4">
             <label class="block font-semibold mb-1">Category</label>
-            <select name="category_id" class="form-select w-full border border-teal-500 px-2 py-1" required>
+            <select name="category_id" class="form-select bg-teal-50 w-full border border-teal-500 px-2 py-1" required>
                 <option value="">-- Select Category --</option>
                 @foreach($categories as $cat)
                     <option value="{{ $cat->id }}" {{ old('category_id', $report->category_id ?? '') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
@@ -22,11 +22,11 @@
         </div>
         <div class="mb-4">
             <label class="block font-semibold mb-1">Name</label>
-            <input type="text" name="name" class="form-input w-full border border-teal-500 px-2 py-1" value="{{ old('name', $report->name ?? '') }}" required>
+            <input type="text" name="name" class="form-input bg-teal-50 w-full border border-teal-500 px-2 py-1" value="{{ old('name', $report->name ?? '') }}" required>
         </div>
         <div class="mb-4">
             <label class="block font-semibold mb-1">Description</label>
-            <textarea name="description" class="form-input w-full border border-teal-500 px-2 py-1">{{ old('description', $report->description ?? '') }}</textarea>
+            <textarea name="description" class="form-input bg-teal-50 w-full border border-teal-500 px-2 py-1">{{ old('description', $report->description ?? '') }}</textarea>
         </div>
         <div class="mb-4">
             <div class="flex items-center justify-between">

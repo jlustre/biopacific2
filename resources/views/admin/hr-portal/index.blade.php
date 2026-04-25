@@ -12,7 +12,7 @@
         <ul class="mt-4 list-disc list-inside">
             @foreach($facilities as $facility)
             <li>
-                <a href="{{ route('admin.facility.dashboard', ['facility' => $facility->slug]) }}"
+                <a href="{{ route('admin.hr-portal.select-facility', ['facility' => $facility->slug ?? $facility->id]) }}"
                     class="text-blue-600 hover:underline">
                     {{ $facility->name }}
                 </a>

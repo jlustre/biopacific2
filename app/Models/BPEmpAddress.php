@@ -11,7 +11,7 @@ class BPEmpAddress extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'address_type',
         'effdt',
         'effseq',

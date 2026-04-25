@@ -25,18 +25,18 @@ class EmployeePerformanceAssessmentController extends Controller {
         }
         $assessments = \App\Models\EmployeePerformanceAssessment::where('assessment_period_id', $assessmentPeriodId)
             ->get();
-        $empIds = $assessments->pluck('emp_id')->unique()->values();
-        $employees = \App\Models\BPEmployee::whereIn('emp_id', $empIds)
+        $empIds = $assessments->pluck('employee_num')->unique()->values();
+        $employees = \App\Models\BPEmployee::whereIn('employee_num', $empIds)
             ->whereHas('currentAssignment', function($q) use ($facilityId) {
                 $q->where('facility_id', $facilityId);
             })
             ->with(['currentAssignment.facility', 'currentAssignment.position', 'currentAssignment.department'])
             ->get();
-        Log::debug('getReviewedEmployees found employees', ['count' => $employees->count(), 'emp_ids' => $employees->pluck('emp_id')]);
+        Log::debug('getReviewedEmployees found employees', ['count' => $employees->count(), 'employee_nums' => $employees->pluck('employee_num')]);
         $result = $employees->map(function($emp) use ($assessments, $assessmentPeriodId) {
-            $assessment = $assessments->firstWhere('emp_id', $emp->emp_id);
+            $assessment = $assessments->firstWhere('employee_num', $emp->employee_num);
             return [
-                'emp_id' => $emp->emp_id,
+                'employee_num' => $emp->employee_num,
                 'name' => trim($emp->last_name . ', ' . $emp->first_name . ($emp->middle_name ? ' ' . $emp->middle_name : '')),
                 'position' => $emp->currentAssignment && $emp->currentAssignment->position ? $emp->currentAssignment->position->position_title : '',
                 'department' => $emp->currentAssignment && $emp->currentAssignment->department ? $emp->currentAssignment->department->dept_name : '',
@@ -63,7 +63,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             $affectedList = $affected->map(function($a) {
                 $emp = $a->employee ?? null;
                 return [
-                    'emp_id' => $a->emp_id,
+                    'employee_num' => $a->employee_num,
                     'employee_name' => $emp ? ($emp->last_name . ', ' . $emp->first_name . ($emp->middle_name ? ' ' . $emp->middle_name : '')) : null,
                     'assessment_date' => $a->assessment_date,
                 ];
@@ -85,7 +85,7 @@ class EmployeePerformanceAssessmentController extends Controller {
     {
         try {
             $validated = $request->validate([
-                'emp_id' => 'required',
+                'employee_num' => 'required',
                 'item_key' => 'required',
                 'rating' => 'required',
                 'assessment_date' => 'required|date',
@@ -106,7 +106,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         // Find or create the assessment record for this employee and assessment period
         $assessment = EmployeePerformanceAssessment::firstOrCreate(
             [
-                'emp_id' => $validated['emp_id'],
+                'employee_num' => $validated['employee_num'],
                 'assessment_period_id' => $validated['assessment_period_id'],
             ],
             [
@@ -148,19 +148,19 @@ class EmployeePerformanceAssessmentController extends Controller {
     {
         try {
             $validated = $request->validate([
-                'emp_id' => 'required',
+                'employee_num' => 'required',
                 'item_key' => 'required',
                 'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             ]);
 
             Log::debug('Revoke request', $validated);
 
-            $assessment = EmployeePerformanceAssessment::where('emp_id', $validated['emp_id'])
+            $assessment = EmployeePerformanceAssessment::where('employee_num', $validated['employee_num'])
                 ->where('assessment_period_id', $validated['assessment_period_id'])
                 ->first();
             if (!$assessment) {
                 Log::warning('Assessment not found for revoke', $validated);
-                return response()->json(['success' => false, 'message' => 'Assessment not found for emp_id: ' . $validated['emp_id'] . ', assessment_period_id: ' . $validated['assessment_period_id']], 404);
+                return response()->json(['success' => false, 'message' => 'Assessment not found for employee_num: ' . $validated['employee_num'] . ', assessment_period_id: ' . $validated['assessment_period_id']], 404);
             }
 
             $items = $assessment->items ? json_decode($assessment->items, true) : [];

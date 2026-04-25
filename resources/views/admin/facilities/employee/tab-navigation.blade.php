@@ -12,4 +12,7 @@
     <button type="button" @click="setTab('checklist')"
         :class="tab === 'checklist' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
         class="px-4 py-2 rounded">Checklist</button>
+    <button type="button" @click="setTab('documents')"
+        :class="tab === 'documents' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+        class="px-4 py-2 rounded">Documents</button>
 </div>

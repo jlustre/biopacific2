@@ -13,7 +13,7 @@ class BPEmpCredentialsTableSeeder extends Seeder
         $empId = DB::table('bp_employees')->orderBy('id')->value('id');
         DB::table('bp_emp_credentials')->insert([
             [
-                'emp_id' => $empId,
+                'employee_num' => $empId,
                 'credential_type' => 'rn',
                 'credential_number' => 'RN123456',
                 'issue_date' => '2022-01-01',

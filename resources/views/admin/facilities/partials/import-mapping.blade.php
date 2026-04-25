@@ -5,13 +5,13 @@
             <h3 class="text-lg font-semibold mb-2">Source</h3>
             <div class="mb-4">
                 <label class="block text-gray-700 mb-2">Worksheet</label>
-                <select id="worksheetSelect" class="border rounded w-full p-2">
+                <select id="worksheetSelect" class="border-2 border-teal-800 bg-teal-100 rounded w-full p-2">
                     <option value="">-- Select Worksheet --</option>
                 </select>
             </div>
             <div class="mb-4">
                 <label class="block text-gray-700 mb-2">Column</label>
-                <select id="worksheetColumnSelect" class="border rounded w-full p-2">
+                <select id="worksheetColumnSelect" class="border-2 border-teal-800 bg-teal-100 rounded w-full p-2">
                     <option value="">-- Select Column --</option>
                 </select>
             </div>
@@ -21,7 +21,7 @@
             <h3 class="text-lg font-semibold mb-2">Target</h3>
             <div class="mb-4">
                 <label class="block text-gray-700 mb-2">Table</label>
-                <select id="tableSelect" class="border rounded w-full p-2">
+                <select id="tableSelect" class="border-2 border-teal-800 bg-teal-100 rounded w-full p-2">
                     <option value="">-- Select Table --</option>
                     <option value="bp_emp_checklists">bp_emp_checklists</option>
                     <option value="bp_emp_assignments">bp_emp_assignments</option>
@@ -35,20 +35,20 @@
             </div>
             <div class="mb-4">
                 <label class="block text-gray-700 mb-2">Column</label>
-                <select id="tableColumnSelect" class="border rounded w-full p-2">
+                <select id="tableColumnSelect" class="border-2 border-teal-800 bg-teal-100 rounded w-full p-2">
                     <option value="">-- Select Column --</option>
                 </select>
             </div>
         </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 mt-4 mb-2">
-        <select id="mappingPresetSelect" class="border border-gray-300 rounded-lg px-3 py-2 w-56 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm">
+        <select id="mappingPresetSelect" class="border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 w-56 focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm">
             <option value="">-- Load Mapping Preset --</option>
         </select>
         <button type="button" id="deletePresetBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm hidden" title="Delete selected preset">
             <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>Delete
         </button>
-        <input type="text" id="mappingPresetName" class="border border-gray-300 rounded-lg px-3 py-2 w-44 focus:ring-2 focus:ring-purple-400 focus:outline-none text-sm" placeholder="Preset Name">
+        <input type="text" id="mappingPresetName" class="border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 w-44 focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm" placeholder="Preset Name">
         <button type="button" class="bg-orange-500 hover:bg-orange-700 text-white font-bold px-2 py-1 rounded-lg shadow-sm text-sm" onclick="saveMappingPreset()">
             <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'/></svg>Save Preset
         </button>

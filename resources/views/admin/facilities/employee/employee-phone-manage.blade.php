@@ -1,16 +1,16 @@
 
 <!-- Debug: Show employee ID if available -->
-@if(!empty($employee) && !empty($employee->emp_id))
-    <span style="display:none" id="debug-empid">{{ $employee->emp_id }}</span>
+@if(!empty($employee) && !empty($employee->employee_num))
+    <span style="display:none" id="debug-empid">{{ $employee->employee_num }}</span>
 @endif
 <div x-show="showPhoneModal" style="display: none;" class="fixed inset-0 flex items-center justify-center z-50">
     <div class="fixed inset-0 bg-black opacity-40" @click="showPhoneModal = false"></div>
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl z-10">
         <h3 class="text-lg font-bold mb-4">Manage Phones</h3>
 
-        @if(!empty($employee) && !empty($employee->emp_id))
+        @if(!empty($employee) && !empty($employee->employee_num))
             <!-- Add Phone Form -->
-            <form x-show="addPhone" method="POST" action="{{ route('admin.employees.phones.add', $employee->emp_id) }}" class="mb-4">
+            <form x-show="addPhone" method="POST" action="{{ route('admin.employees.phones.add', $employee->employee_num) }}" class="mb-4">
                 @csrf
                 <div class="flex gap-2 mb-2">
                     <select name="phone_type" class="form-select border rounded px-2 py-1" required>
@@ -31,7 +31,7 @@
             <!-- Edit Phone Form -->
             <template x-if="phoneAction === 'edit' && editPhone">
                 <form method="POST"
-                    :action="editPhone ? `{{ url('admin/employees') }}/{{ $employee->emp_id }}/phones/${editPhone.phone_id}/update` : ''"
+                    :action="editPhone ? `{{ url('admin/employees') }}/{{ $employee->employee_num }}/phones/${editPhone.phone_id}/update` : ''"
                     class="mb-4">
                     @csrf
                     @method('PUT')

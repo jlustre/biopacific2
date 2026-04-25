@@ -13,13 +13,13 @@ class BPEmpAssignmentsTableSeeder extends Seeder
         for ($i = 1; $i <= 20; $i++) {
             $isUnion = $i % 2 === 0;
             $assignments[] = [
-                'emp_id' => 'EMP' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                'employee_num' => 'EMP' . str_pad($i, 3, '0', STR_PAD_LEFT),
                 'effdt' => '2022-01-01',
                 'effseq' => 0,
                 'facility_id' => ($i % 2) + 1, // alternate between 1 and 2
                 'dept_id' => ($i % 5) + 1, // cycle through 1-5
                 'job_code_id' => ($i % 5) + 1, // cycle through 1-5
-                'reports_to_emp_id' => null,
+                'reports_to_employee_num' => null,
                 'reg_temp' => 'r',
                 'full_part_time' => $i % 3 === 0 ? 'pt' : 'ft',
                 'created_by' => 1,

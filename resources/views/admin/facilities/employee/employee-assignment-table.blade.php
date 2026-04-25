@@ -34,7 +34,7 @@
                             facility_id: '{{ $assign->facility_id }}',
                             dept_id: '{{ $assign->dept_id }}',
                             job_code_id: '{{ $assign->job_code_id }}',
-                            reports_to_emp_id: '{{ $assign->reports_to_emp_id }}',
+                            reports_to_employee_num: '{{ $assign->reports_to_employee_num }}',
                             reg_temp: '{{ $assign->reg_temp }}',
                             full_part_time: '{{ $assign->full_part_time }}',
                             bargaining_unit_id: '{{ $assign->bargaining_unit_id ?? '' }}',

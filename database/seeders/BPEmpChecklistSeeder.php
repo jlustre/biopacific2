@@ -14,7 +14,7 @@ class BPEmpChecklistSeeder extends Seeder
     public function run(): void
     {
         // Get all employees
-        $employees = DB::table('bp_employees')->pluck('emp_id');
+        $employees = DB::table('bp_employees')->pluck('employee_num');
         // Get all checklist items
         $items = DB::table('checklist_items')->get();
         $now = Carbon::now();

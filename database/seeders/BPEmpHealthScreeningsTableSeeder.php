@@ -13,7 +13,7 @@ class BPEmpHealthScreeningsTableSeeder extends Seeder
         $empId = DB::table('bp_employees')->orderBy('id')->value('id');
         DB::table('bp_emp_health_screenings')->insert([
             [
-                'emp_id' => $empId,
+                'employee_num' => $empId,
                 'screening_type' => 'tb test',
                 'screening_date' => '2023-06-01',
                 'expiry_date' => '2024-06-01',

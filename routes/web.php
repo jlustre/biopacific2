@@ -43,24 +43,30 @@ use App\Http\Controllers\Admin\Facilities\UploadController;
 use App\Models\Facility;
 use App\Models\Position;
 
-// Download route for facility uploads (inside admin group)
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
-    Route::get('/admin/facility/{facility}/uploads/{upload}/download', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'download'])
-        ->name('admin.facility.uploads.download');
-    Route::get('/admin/facility/{facility}/uploads/{upload}/view', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'view'])
-        ->name('admin.facility.uploads.view');
+// Debug route to confirm routing works
+Route::get('/debug-upload-view', function() { dd('global route hit'); });
 
-    // Facility Files Import (Excel)
-    Route::post('/admin/facility/{facility}/files/import', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'import'])
-        ->name('admin.facility.files.import');
-    // Import mapped data to bp_employees (with duplicate check and confirmation)
-    Route::post('/admin/facility/{facility}/files/import-data', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'importData'])
-        ->name('admin.facility.files.import_data');
+// Temporarily remove middleware for debugging
+Route::get('/admin/facility/{facility}/uploads/{upload}/download', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'download'])
+    ->name('admin.facility.uploads.download');
+Route::get('/admin/facility/{facility}/uploads/{upload}/view', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'view'])
+    ->name('admin.facility.uploads.view');
 
-    // AJAX: Get columns for a bp_emp_ table
-    Route::get('/admin/facility/files/table-columns', [\App\Http\Controllers\Admin\Facilities\TableInfoController::class, 'columns'])
-        ->name('admin.facility.files.table_columns');
-});
+// Facility Files Import (Excel)
+Route::post('/admin/facility/{facility}/files/import', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'import'])
+    ->name('admin.facility.files.import');
+// Import mapped data to bp_employees (with duplicate check and confirmation)
+
+Route::post('/admin/facility/{facility}/files/import-data', [\App\Http\Controllers\Admin\Facilities\FilesController::class, 'importData'])
+    ->name('admin.facility.files.import_data');
+// AJAX: Get columns for a bp_emp_ table
+Route::get('/admin/facility/files/table-columns', [\App\Http\Controllers\Admin\Facilities\TableInfoController::class, 'columns'])
+    ->name('admin.facility.files.table_columns');
+
+
+// Facility session selection route
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
+
 
 // Admin Reports Management (CRUD)
 Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
@@ -108,9 +114,7 @@ Route::get('/admin/facilities/all', function () {
     return \App\Models\Facility::orderBy('name')->get(['id','name']);
 });
 Route::get('/admin/facility/{facility}/employees/all', function ($facility) {
-    return \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
-        $q->where('facility_id', $facility);
-    })->orderBy('last_name')->get(['emp_id','first_name','last_name']);
+    return \App\Helpers\EmployeeHelper::getAllEmployeesByFacility($facility);
 });
 Route::get('/admin/upload-types/all', function () {
     return \App\Models\UploadType::orderBy('name')->get(['id','name','requires_expiry']);
@@ -134,7 +138,7 @@ Route::get('/admin/positions/all', function() {
 });
 
 // PART F: Areas for Development (save)
-Route::post('admin/employees/{emp_id}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
+Route::post('admin/employees/{employee}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
 
 // PART F: List reviewed employees for selected period and facility (AJAX)
 Route::middleware(['auth'])->prefix('admin')->group(function () {
@@ -763,3 +767,14 @@ Route::post('/test-facility-uploads-alpine', function (\Illuminate\Http\Request 
 Route::get('/admin/facilities/all', function () {
     return \App\Models\Facility::orderBy('name')->get(['id','name']);
 });
+
+// Employee Documents Upload/Download
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])
+    ->prefix('admin/employees')
+    ->name('admin.employees.')
+    ->group(function () {
+        Route::post('{employee_num}/documents/upload', [\App\Http\Controllers\Admin\EmployeesController::class, 'uploadDocument'])
+            ->name('documents.upload');
+        Route::get('{employee_num}/documents/{document}/download', [\App\Http\Controllers\Admin\EmployeesController::class, 'downloadDocument'])
+            ->name('documents.download');
+    });

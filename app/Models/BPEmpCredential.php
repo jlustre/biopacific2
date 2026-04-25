@@ -11,7 +11,7 @@ class BPEmpCredential extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'credential_type',
         'credential_number',
         'issue_date',

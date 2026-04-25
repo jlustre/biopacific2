@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('bp_employees', function (Blueprint $table) {
             $table->id('id'); // Primary Key
-            $table->string('emp_id')->unique(); // Business Identifier
+            $table->string('employee_num')->unique(); // Business Identifier
             $table->string('ssn', 11)->unique(); // Social Security Number
             $table->string('first_name', 100);
             $table->string('middle_name', 100)->nullable();

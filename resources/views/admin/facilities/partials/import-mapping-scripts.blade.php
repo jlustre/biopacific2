@@ -319,6 +319,20 @@
         await doImportMapping(mappings, dataRows, false, worksheets);
     }
 
+    function showMappingMessage(type, message) {
+        const msgDiv = document.getElementById('mappingMessage');
+        if (!msgDiv) return;
+        msgDiv.classList.remove('hidden');
+        msgDiv.className = 'mb-4';
+        if (type === 'success') {
+            msgDiv.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-800', 'rounded', 'px-4', 'py-3');
+        } else {
+            msgDiv.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-800', 'rounded', 'px-4', 'py-3');
+        }
+        msgDiv.innerText = message;
+        setTimeout(() => { msgDiv.classList.add('hidden'); }, 6000);
+    }
+
     async function doImportMapping(mappings, dataRows, confirmOverwrite, worksheets) {
         const facilityId = document.querySelector('[name=facility_id]')?.value || window._facilityId;
         const url = `/admin/facility/${facilityId}/files/import-data`;
@@ -351,13 +365,14 @@
                 return;
             }
             if (result.success) {
+                showMappingMessage('success', 'Mapping imported successfully!');
                 showImportSuccessModal();
                 window._importDataRows = null;
                 return;
             }
-            alert(result.message || 'Import failed.');
+            showMappingMessage('error', result.message || 'Import failed.');
         } catch (e) {
-            alert('Import failed: ' + (e && e.message ? e.message : ''));
+            showMappingMessage('error', 'Import failed: ' + (e && e.message ? e.message : ''));
         }
     }
 
@@ -366,14 +381,14 @@
         let html = `<div><strong>${message || 'Invalid data found.'}</strong></div>`;
         html += '<table class="border mt-2"><thead><tr><th>Row</th><th>Employee ID</th><th>Gender Value</th></tr></thead><tbody>';
         invalidRows.forEach(row => {
-            html += `<tr><td>${row.row}</td><td>${row.emp_id}</td><td>${row.gender}</td></tr>`;
+            html += `<tr><td>${row.row}</td><td>${row.employee_num}</td><td>${row.gender}</td></tr>`;
         });
         html += '</tbody></table>';
         // Use a modal if you have one, otherwise alert
         if (window.showCustomModal) {
             window.showCustomModal(html);
         } else {
-            alert(message + '\n' + invalidRows.map(r => `Row ${r.row}: ${r.emp_id} (Gender: ${r.gender})`).join('\n'));
+            alert(message + '\n' + invalidRows.map(r => `Row ${r.row}: ${r.employee_num} (Gender: ${r.gender})`).join('\n'));
         }
     }
 

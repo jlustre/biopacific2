@@ -6,41 +6,66 @@ use Illuminate\Database\Eloquent\Model;
 
 class BPEmployee extends Model
 {
+    // Relationship: Employee has one phone (primary)
+    public function phone()
+    {
+        return $this->hasOne(\App\Models\BPEmpPhone::class, 'employee_num', 'employee_num')->where('is_primary', 1);
+    }
+
+    // Relationship: Employee has one address
+    public function address()
+    {
+        return $this->hasOne(\App\Models\BPEmpAddress::class, 'employee_num', 'employee_num');
+    }
+
     // Relationship: Employee belongs to a user
     public function user()
     {
         return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
     }
     protected $table = 'bp_employees';
-    protected $primaryKey = 'emp_id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'ssn',
         'first_name',
         'middle_name',
         'last_name',
         'gender',
         'assignment_id',
+        'dob',
+        'original_hire_dt',
+        'marital_status_id',
+        'ethnic_group_id',
+        'military_status_id',
+        'citizenship_status_id',
+        // Newly added columns
+        'action_id',
+        'hourly_status_id',
+        'std_hrs_week',
+        'federal_tax_data_id',
+        'state_tax_data_id',
+        'local_tax_data_id',
+        'compensation_rate_id',
+        'amount',
+        'union_code',
+        'effdt_of_membership',
+        'email',
     ];
 
     // Relationship: Employee has one phone (primary)
-    public function phone()
+    // Relationship: Employee has many uploads
+    public function uploads()
     {
-        return $this->belongsTo(\App\Models\BPEmpPhone::class, 'phone_id', 'phone_id');
-    }
-
-    // Relationship: Employee has one address (current/primary)
-    public function address()
-    {
-        return $this->belongsTo(\App\Models\BPEmpAddress::class, 'address_id', 'address_id');
+        return $this->hasMany(\App\Models\Upload::class, 'employee_num', 'employee_num');
     }
 
     // Relationship: Employee has many assignments
     public function assignments()
     {
-        return $this->hasMany(\App\Models\BPEmpAssignment::class, 'emp_id', 'emp_id');
+        return $this->hasMany(\App\Models\BPEmpAssignment::class, 'employee_num', 'employee_num');
     }
 
     /**
@@ -49,7 +74,7 @@ class BPEmployee extends Model
     public function currentAssignment()
     {
         // Always get the latest assignment by effdt and effseq
-        return $this->hasOne(\App\Models\BPEmpAssignment::class, 'emp_id', 'emp_id')
+        return $this->hasOne(\App\Models\BPEmpAssignment::class, 'employee_num', 'employee_num')
             ->latestOfMany(['effdt', 'effseq']);
     }
 
@@ -107,12 +132,12 @@ class BPEmployee extends Model
     // Relationship: Employee has many phones
     public function phones()
     {
-        return $this->hasMany(\App\Models\BPEmpPhone::class, 'emp_id', 'emp_id');
+        return $this->hasMany(\App\Models\BPEmpPhone::class, 'employee_num', 'employee_num');
     }
 
     // Relationship: Employee has many addresses
     public function addresses()
     {
-        return $this->hasMany(\App\Models\BPEmpAddress::class, 'emp_id', 'emp_id');
+        return $this->hasMany(\App\Models\BPEmpAddress::class, 'employee_num', 'employee_num');
     }
 }

@@ -33,16 +33,17 @@
                         {{ ucfirst($run->status) }}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    @if($run->result_path)
-                        @php
-                            $ext = pathinfo($run->result_path, PATHINFO_EXTENSION);
-                            $label = strtoupper($ext);
-                        @endphp
-                        <a href="{{ route('admin.scheduled-reports.download', [$scheduledReport, $run]) }}" class="text-blue-600 hover:underline">Download {{ $label }}</a>
-                    @else
-                        -
-                    @endif
+                <td class="px-6 py-4 whitespace-nowrap flex gap-2 items-center">
+                    <a href="{{ route('admin.scheduled-report-runs.show', $run) }}" class="text-teal-600 hover:text-teal-800" title="View Report">
+                        <i class="fas fa-file-alt"></i>
+                    </a>
+                    <form action="{{ route('admin.scheduled-report-runs.destroy', $run) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this report run?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:text-red-800" title="Delete Report Run">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-xs text-red-600">{{ $run->error_message }}</td>
             </tr>

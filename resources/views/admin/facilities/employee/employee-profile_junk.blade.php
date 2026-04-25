@@ -3,7 +3,7 @@
     @php use Illuminate\Support\Facades\Auth; @endphp
 
     <div class="bg-white shadow rounded-lg p-4 mb-6">
-        <form method="POST" action="{{ route('admin.employees.personal.update', $employee->emp_id) }}">
+        <form method="POST" action="{{ route('admin.employees.personal.update', $employee->employee_num) }}">
             @csrf
             @method('PUT')
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -15,7 +15,7 @@
                 <div class="mb-1" x-data="{ editingEmpId: false }">
                     <label class="block text-sm font-medium mb-2">Employee ID</label>
                     <div class="flex items-center gap-2">
-                        <input type="text" name="emp_id" value="{{ old('emp_id', $employee->emp_id) }}"
+                        <input type="text" name="employee_num" value="{{ old('employee_num', $employee->employee_num) }}"
                             class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 bg-gray-100"
                             :readonly="!editingEmpId">
                         @php
@@ -176,7 +176,7 @@
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="user_id" value="{{ $employee->user_id }}">
-                <input type="hidden" name="emp_id" value="{{ $employee->emp_id }}">
+                <input type="hidden" name="employee_num" value="{{ $employee->employee_num }}">
                 <input type="email" name="email" inputmode="email" maxlength="255"
                     value="{{ $employee->user ? $employee->user->email : '' }}"
                     class="form-input w-full rounded-lg px-2 py-1 mb-4 {{ $errors->has('email') ? 'border-red-500' : 'border border-teal-300' }}"

@@ -6,14 +6,14 @@
             <h1 class="text-3xl font-bold">{{ $facility->name }}</h1>
             <div class="text-gray-600 text-lg">{{ $facility->address ?? 'No address on file' }}</div>
         </div>
-        <div class="bg-white p-6 rounded shadow mb-8">
+        {{-- <div class="bg-white p-6 rounded shadow mb-8">
             <p>Welcome to the dashboard for <strong>{{ $facility->name }}</strong>.</p>
             <ul class="mt-4">
                 <li><strong>Phone:</strong> {{ $facility->phone ?? 'N/A' }}</li>
                 <li><strong>Email:</strong> {{ $facility->email ?? 'N/A' }}</li>
                 <li><strong>Status:</strong> {{ $facility->status ?? 'N/A' }}</li>
             </ul>
-        </div>
+        </div> --}}
 
         <!-- Quick Actions Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">

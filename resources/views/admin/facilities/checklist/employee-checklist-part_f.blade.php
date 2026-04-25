@@ -43,9 +43,9 @@
         </div>
         @endif
     </div>
-    @if((empty($assessment) || empty($assessment->finalized)) && !empty($employee->emp_id))
+    @if((empty($assessment) || empty($assessment->finalized)) && !empty($employee->employee_num))
     <form id="areasDevelopmentForm" method="POST"
-        action="{{ route('admin.employees.areas_development.save', ['emp_id' => $employee->emp_id]) }}">
+        action="{{ route('admin.employees.areas_development.save', ['employee' => $employee->id]) }}">
         <input type="hidden" name="assessment_period_id" value="{{ $selectedAssessmentPeriodId }}">
         @csrf
         @include('admin.facilities.checklist.employee-areas-development')

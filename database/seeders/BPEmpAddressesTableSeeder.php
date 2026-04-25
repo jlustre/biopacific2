@@ -11,7 +11,7 @@ class BPEmpAddressesTableSeeder extends Seeder
     {
         DB::table('bp_emp_addresses')->insert([
             [
-                'emp_id' => 'EMP001',
+                'employee_num' => 'EMP001',
                 'address_type' => 'H',
                 'effdt' => '2023-01-01',
                 'effseq' => 0,
@@ -26,7 +26,7 @@ class BPEmpAddressesTableSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'emp_id' => 'EMP001',
+                'employee_num' => 'EMP001',
                 'address_type' => 'H',
                 'effdt' => '2022-12-01',
                 'effseq' => 0,

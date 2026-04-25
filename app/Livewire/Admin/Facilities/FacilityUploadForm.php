@@ -19,7 +19,7 @@ class FacilityUploadForm extends Component
     public $upload_type_id;
     public $file;
     public $effective_start_date;
-    public $effective_end_date;
+    // public $effective_end_date; // Removed
     public $expires_at;
     public $comments;
     public $uploadTypes = [];
@@ -72,7 +72,7 @@ class FacilityUploadForm extends Component
     {
         $this->validate([
             'facility_id' => 'required|exists:facilities,id',
-            'employee_id' => 'required|exists:bp_employees,emp_id',
+            'employee_id' => 'required|exists:bp_employees,id',
             'upload_type_id' => 'required|exists:upload_types,id',
             'file' => 'required|file',
         ]);
@@ -88,11 +88,11 @@ class FacilityUploadForm extends Component
             'uploaded_at' => now(),
             'expires_at' => $this->expires_at,
             'effective_start_date' => $this->effective_start_date,
-            'effective_end_date' => $this->effective_end_date,
+            // 'effective_end_date' => $this->effective_end_date, // Removed
             'comments' => $this->comments,
         ]);
         session()->flash('success', 'File uploaded successfully.');
-        $this->reset(['employee_id','upload_type_id','file','effective_start_date','effective_end_date','expires_at','comments']);
+        $this->reset(['employee_id','upload_type_id','file','effective_start_date','expires_at','comments']);
         $this->updateEmployees();
     }
 

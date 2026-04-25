@@ -11,7 +11,7 @@ class BPEmpPhone extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'phone_type',
         'phone_number',
         'is_primary',

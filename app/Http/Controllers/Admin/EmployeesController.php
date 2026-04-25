@@ -6,14 +6,78 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BPEmployee;
+use App\Models\Upload;
 use App\Models\Facility;
 use App\Models\State;
 use Illuminate\Support\Facades\Auth;
 // use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
+
+
 class EmployeesController extends Controller
 {
+
+    /**
+     * Handle employee document upload.
+     */
+    public function uploadDocument(Request $request, $employee_num)
+    {
+        // Validate file and description
+        $uploadTypeId = $request->input('upload_type_id');
+        $uploadType = \App\Models\UploadType::find($uploadTypeId);
+        $requiresExpiry = $uploadType && $uploadType->requires_expiry;
+
+        $rules = [
+            'upload_type_id' => 'required|exists:upload_types,id',
+            'document' => 'required|file|max:10240', // 10MB max
+            'description' => 'nullable|string|max:255',
+        ];
+        if ($requiresExpiry) {
+            $rules['expires_at'] = 'required|date';
+        } else {
+            $rules['expires_at'] = 'nullable|date';
+        }
+        $rules['effective_start_date'] = 'nullable|date';
+        $rules['effective_end_date'] = 'nullable|date';
+
+        $validated = $request->validate($rules);
+
+
+        $employee = BPEmployee::findOrFail($employee_num); // $employee_num is actually the PK id
+        $file = $request->file('document');
+        $path = $file->store('employee_documents/' . $employee->employee_num, 'public');
+
+        Upload::create([
+            'employee_num' => $employee->employee_num,
+            'user_id' => auth()->id(),
+            'upload_type_id' => $uploadTypeId,
+            'original_filename' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_size' => $file->getSize(),
+            'uploaded_at' => now(),
+            'comments' => $validated['description'] ?? null,
+            'effective_start_date' => $validated['effective_start_date'] ?? null,
+            'effective_end_date' => $validated['effective_end_date'] ?? null,
+            'expires_at' => $validated['expires_at'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Document uploaded successfully.');
+    }
+
+    /**
+     * Download an employee document.
+     */
+    public function downloadDocument($employee_num, $document_id)
+    {
+        $employee = BPEmployee::findOrFail($employee_num);
+        $document = Upload::where('employee_num', $employee->employee_num)->findOrFail($document_id);
+        $filePath = storage_path('app/public/' . $document->file_path);
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
+        return response()->download($filePath, $document->original_filename);
+    }
     /**
      * Update only the user's email from the modal form.
      * Route: PUT admin/employees/{user}/update-email
@@ -104,28 +168,29 @@ class EmployeesController extends Controller
     /**
      * Display the specified employee details for modal.
      */
-    public function show($emp_id)
+    public function show($employee_num)
     {
         $employee = \App\Models\BPEmployee::with([
             'currentAssignment',
             'currentAssignment.facility',
             'currentAssignment.department',
             'currentAssignment.position',
-        ])->findOrFail($emp_id);
+        ])->findOrFail($employee_num); // $employee_num is PK id
         return view('admin.facilities.employee-details', compact('employee'));
     }
     /**
      * Show the form for editing the specified employee.
      */
-    public function edit($emp_id)
+    public function edit($employee_num)
     {
-        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment'])->findOrFail($emp_id);
+        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment'])->findOrFail($employee_num); // $employee_num is PK id
         $departments = \App\Models\BPDepartment::all();
         $positions = \App\Models\BPPosition::all();
         $facilities = \App\Models\Facility::all();
         $checklistItems = \App\Models\ChecklistItem::all();
-        $empChecklists = \App\Models\BPEmpChecklist::where('emp_id', $emp_id)->get();
+        $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
+        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
 
         // Load all states for address select dropdown
         $states = State::orderBy('name')->get();
@@ -140,7 +205,7 @@ class EmployeesController extends Controller
         $reviewerName = '';
         $reviewType = '';
         if ($selectedAssessmentPeriodId) {
-            $assessment = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
+            $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee_num)
                 ->where('assessment_period_id', $selectedAssessmentPeriodId)
                 ->first();
             $period = \App\Models\EmployeeAssessmentPeriod::find($selectedAssessmentPeriodId);
@@ -163,7 +228,7 @@ class EmployeesController extends Controller
         // PART F: Load section comments for this employee and assessment period
         $sectionComments = [];
         if ($selectedAssessmentPeriodId) {
-            $comments = \App\Models\EmployeePerformanceSectionComment::where('emp_id', $emp_id)
+            $comments = \App\Models\EmployeePerformanceSectionComment::where('employee_num', $employee_num)
                 ->where('assessment_period_id', $selectedAssessmentPeriodId)
                 ->get();
             foreach ($comments as $comment) {
@@ -174,8 +239,8 @@ class EmployeesController extends Controller
         // Supervisor name logic: use Reports To if available, else logged-in user
         $supervisorName = '';
         $assignment = $employee->currentAssignment;
-        if ($assignment && $assignment->reports_to_emp_id) {
-            $supervisorEmp = \App\Models\BPEmployee::where('emp_id', $assignment->reports_to_emp_id)->first();
+        if ($assignment && $assignment->reports_to_employee_num) {
+            $supervisorEmp = \App\Models\BPEmployee::where('id', $assignment->reports_to_employee_num)->first();
             if ($supervisorEmp && $supervisorEmp->user) {
                 $supervisorName = $supervisorEmp->user->name;
             } elseif ($supervisorEmp) {
@@ -197,6 +262,19 @@ class EmployeesController extends Controller
 
         $reviewDt = $reviewDate; // For PART F form field
         $isAddMode = false;
+        $maritalOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Marital Status')->value('id'))
+            ->orderBy('sort_order')->get();
+        $ethnicOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Ethnic Group')->value('id'))
+            ->orderBy('sort_order')->get();
+        $militaryOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Military Status')->value('id'))
+            ->orderBy('sort_order')->get();
+        $citizenOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
+            ->orderBy('sort_order')->get();
+
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
             'departments',
@@ -218,26 +296,35 @@ class EmployeesController extends Controller
             'reviewType',
             'reviewDt',
             'states',
-            'isAddMode'
+            'isAddMode',
+            'maritalOptions',
+            'ethnicOptions',
+            'militaryOptions',
+            'citizenOptions',
+            'uploadTypes'
         ));
     }
 
     /**
      * Update the specified employee's personal info (tabbed form).
      */
-    public function updatePersonal(Request $request, $emp_id)
+    public function updatePersonal(Request $request, $employee_num)
     {
-        $employee = \App\Models\BPEmployee::with('user')->findOrFail($emp_id);
+        $employee = \App\Models\BPEmployee::with('user')->findOrFail($employee_num); // $employee_num is PK id
         try {
             $validated = $request->validate([
                 'user_id' => 'nullable|string|max:255',
-                'emp_id' => 'nullable|string|max:255',
+                // 'employee_num' => 'nullable|string|max:255', // removed, not a column in bp_employees
                 'ssn' => 'nullable|string|max:255',
                 'original_hire_dt' => 'nullable|date',
                 'first_name' => 'required|string|max:255',
                 'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'required|string|max:255',
                 'dob' => 'nullable|date',
+                'marital_status_id' => 'nullable|integer|exists:selectoptions,id',
+                'ethnic_group_id' => 'nullable|integer|exists:selectoptions,id',
+                'military_status_id' => 'nullable|integer|exists:selectoptions,id',
+                'citizenship_status_id' => 'nullable|integer|exists:selectoptions,id',
                 'gender' => 'required|in:M,F,O,N',
                 'email' => [
                     'nullable',
@@ -258,7 +345,14 @@ class EmployeesController extends Controller
             if (!$canUpdateSsn) {
                 unset($validated['ssn']); // Prevent masked or unauthorized SSN update
             }
+            if (isset($validated['dob']) && $validated['dob']) {
+                $validated['dob'] = date('Y-m-d', strtotime($validated['dob']));
+            }
             $employee->fill($validated);
+            $employee->marital_status_id = $validated['marital_status_id'] ?? null;
+            $employee->ethnic_group_id = $validated['ethnic_group_id'] ?? null;
+            $employee->military_status_id = $validated['military_status_id'] ?? null;
+            $employee->citizenship_status_id = $validated['citizenship_status_id'] ?? null;
             $dirty = $employee->isDirty();
             $employee->save();
 
@@ -269,14 +363,14 @@ class EmployeesController extends Controller
             }
 
             $msg = $dirty ? 'Personal information updated successfully.' : 'No changes were made, but your profile is up to date.';
-            return redirect()->route('admin.employees.edit', $employee->emp_id)
+            return redirect()->route('admin.employees.edit', $employee->id)
                 ->with('success', $msg);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->route('admin.employees.edit', $employee->emp_id)
+            return redirect()->route('admin.employees.edit', $employee->id)
                 ->withErrors($e->validator)
                 ->withInput();
         } catch (\Exception $e) {
-            return redirect()->route('admin.employees.edit', $employee->emp_id)
+            return redirect()->route('admin.employees.edit', $employee->id)
                 ->with('error', 'Failed to update personal information: ' . $e->getMessage())
                 ->withInput();
         }
@@ -296,15 +390,15 @@ class EmployeesController extends Controller
             // Checkbox submits as 'on' if checked, so use has()
             $isPrimary = $request->has('is_primary');
 
-            // If this phone is set as primary, unset all other primary phones for this employee
+            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
             if ($isPrimary) {
-                \App\Models\BPEmpPhone::where('emp_id', $employee)
+                \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
                     ->where('is_primary', 1)
                     ->update(['is_primary' => 0]);
             }
 
             $phone = new \App\Models\BPEmpPhone();
-            $phone->emp_id = $employee;
+            $phone->employee_num = $employeeModel->employee_num;
             $phone->phone_type = $validated['phone_type'];
             $phone->phone_number = $validated['phone_number'];
             $phone->is_primary = $isPrimary ? 1 : 0;
@@ -324,11 +418,12 @@ class EmployeesController extends Controller
                 'is_primary' => 'nullable',
             ]);
 
-            $phoneModel = \App\Models\BPEmpPhone::where('emp_id', $employee)->where('phone_id', $phone)->firstOrFail();
+            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
+            $phoneModel = \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
 
             $isPrimary = $request->has('is_primary');
             if ($isPrimary) {
-                \App\Models\BPEmpPhone::where('emp_id', $employee)
+                \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
                     ->where('is_primary', 1)
                     ->update(['is_primary' => 0]);
             }
@@ -368,7 +463,8 @@ class EmployeesController extends Controller
         // Enforce only one default address per employee
         if ($validated['is_primary'] == '1') {
             // If updating, allow this address to remain primary, but unset all others
-            $query = \App\Models\BPEmpAddress::where('emp_id', $employee)
+            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
+            $query = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', 1);
             if (isset($validated['effseq']) && $validated['effseq'] !== '') {
                 $query->where(function($q) use ($validated) {
@@ -380,7 +476,8 @@ class EmployeesController extends Controller
             $query->update(['is_primary' => 0]);
         } else {
             // If trying to set is_primary=0, but there is no other primary, prevent unsetting the last default
-            $otherPrimary = \App\Models\BPEmpAddress::where('emp_id', $employee)
+            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
+            $otherPrimary = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', 1);
             if (isset($validated['effseq']) && $validated['effseq'] !== '') {
                 $otherPrimary->where(function($q) use ($validated) {
@@ -396,10 +493,11 @@ class EmployeesController extends Controller
         }
 
         // If effseq is present, update existing address; else, add new with correct effseq
+        $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
         if (isset($validated['effseq']) && $validated['effseq'] !== '') {
             // Update existing address
             $address = \App\Models\BPEmpAddress::where([
-                'emp_id' => $employee,
+                'employee_num' => $employeeModel->employee_num,
                 'effdt' => $validated['effdt'],
                 'effseq' => $validated['effseq'],
                 'address_type' => $validated['address_type'],
@@ -410,13 +508,13 @@ class EmployeesController extends Controller
                 $msg = 'Address updated successfully.';
             } else {
                 // fallback: create new if not found
-                $validated['emp_id'] = $employee;
+                $validated['employee_num'] = $employeeModel->employee_num;
                 \App\Models\BPEmpAddress::create($validated);
                 $msg = 'Address added successfully.';
             }
         } else {
             // Add new address, determine effseq
-            $latest = \App\Models\BPEmpAddress::where('emp_id', $employee)
+            $latest = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
                 ->where('address_type', $validated['address_type'])
                 ->orderByDesc('effdt')
                 ->orderByDesc('effseq')
@@ -426,7 +524,7 @@ class EmployeesController extends Controller
                 $effseq = $latest->effseq + 1;
             }
             $validated['effseq'] = $effseq;
-            $validated['emp_id'] = $employee;
+            $validated['employee_num'] = $employeeModel->employee_num;
             \App\Models\BPEmpAddress::create($validated);
             $msg = 'Address added successfully.';
         }
@@ -445,7 +543,7 @@ class EmployeesController extends Controller
             'facility_id' => 'required|integer',
             'dept_id' => 'required|integer',
             'job_code_id' => 'required|integer',
-            'reports_to_emp_id' => 'nullable|integer',
+            'reports_to_employee_num' => 'nullable|integer',
             'reg_temp' => 'required|in:r,t',
             'full_part_time' => 'required|in:ft,pt,pd',
             'bargaining_unit_id' => 'nullable|integer',
@@ -466,7 +564,7 @@ class EmployeesController extends Controller
         if (isset($validated['effseq']) && $validated['effseq'] !== '') {
             // Update existing assignment
             $assignment = \App\Models\BPEmpAssignment::where([
-                'emp_id' => $employee,
+                'employee_num' => $employee,
                 'effdt' => $validated['effdt'],
                 'effseq' => $validated['effseq'],
             ])->first();
@@ -476,13 +574,13 @@ class EmployeesController extends Controller
                 $msg = 'Assignment updated successfully.';
             } else {
                 // fallback: create new if not found
-                $validated['emp_id'] = $employee;
+                $validated['employee_num'] = $employee;
                 \App\Models\BPEmpAssignment::create($validated);
                 $msg = 'Assignment added successfully.';
             }
         } else {
             // Add new assignment, determine effseq
-            $latest = \App\Models\BPEmpAssignment::where('emp_id', $employee)
+            $latest = \App\Models\BPEmpAssignment::where('employee_num', $employee)
                 ->where('facility_id', $validated['facility_id'])
                 ->orderByDesc('effdt')
                 ->orderByDesc('effseq')
@@ -492,7 +590,7 @@ class EmployeesController extends Controller
                 $effseq = $latest->effseq + 1;
             }
             $validated['effseq'] = $effseq;
-            $validated['emp_id'] = $employee;
+            $validated['employee_num'] = $employee;
             \App\Models\BPEmpAssignment::create($validated);
             $msg = 'Assignment added successfully.';
         }
@@ -522,7 +620,8 @@ class EmployeesController extends Controller
             ]);
 
             $userId = Auth::id();
-            $checklist = \App\Models\BPEmpChecklist::firstOrNew(['emp_id' => $employee]);
+            $employeeModel = \App\Models\BPEmployee::where('employee_num', $employee)->firstOrFail();
+            $checklist = \App\Models\BPEmpChecklist::firstOrNew(['employee_num' => $employeeModel->employee_num]);
             $items = $checklist->items ?? [];
             $docName = $validated['doc_name'];
             $items[$docName] = [
@@ -538,7 +637,7 @@ class EmployeesController extends Controller
             $checklist->save();
 
             // Log::debug('Checklist verification saved successfully', [
-            //     'emp_id' => $employee,
+            //     'employee_num' => $employee,
             //     'doc_name' => $docName,
             //     'item' => $items[$docName],
             // ]);
@@ -585,7 +684,7 @@ class EmployeesController extends Controller
                 'doc_name' => 'required|string|max:255',
             ]);
             $docName = $validated['doc_name'];
-            $checklist = \App\Models\BPEmpChecklist::where('emp_id', $employee)->first();
+            $checklist = \App\Models\BPEmpChecklist::where('employee_num', $employee)->first();
             $itemData = null;
             if ($checklist && is_array($checklist->items) && array_key_exists($docName, $checklist->items)) {
                 $items = $checklist->items;
@@ -626,7 +725,7 @@ class EmployeesController extends Controller
     /**
      * Save Areas for Development (PART F) for an employee and assessment period.
      */
-    public function saveAreasDevelopment(Request $request, $emp_id)
+    public function saveAreasDevelopment(Request $request, $employee_num)
     {
         $rules = [
             'supervisor_name' => 'required|string|max:255',
@@ -646,11 +745,12 @@ class EmployeesController extends Controller
         }
 
         // Save Areas Requiring Further Development
+        $employee = \App\Models\BPEmployee::findOrFail($employee_num);
         $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
         if ($areasDevDocType) {
             \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
                 [
-                    'emp_id' => $emp_id,
+                    'employee_num' => $employee->employee_num,
                     'assessment_period_id' => $assessmentPeriodId,
                     'doc_type_id' => $areasDevDocType->id,
                 ],
@@ -664,7 +764,7 @@ class EmployeesController extends Controller
         if ($devPlansDocType) {
             \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
                 [
-                    'emp_id' => $emp_id,
+                    'employee_num' => $employee->employee_num,
                     'assessment_period_id' => $assessmentPeriodId,
                     'doc_type_id' => $devPlansDocType->id,
                 ],
@@ -678,7 +778,7 @@ class EmployeesController extends Controller
         if ($empCommentsDocType) {
             \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
                 [
-                    'emp_id' => $emp_id,
+                    'employee_num' => $employee->employee_num,
                     'assessment_period_id' => $assessmentPeriodId,
                     'doc_type_id' => $empCommentsDocType->id,
                 ],
@@ -689,7 +789,7 @@ class EmployeesController extends Controller
         }
 
         // Set review_dt and acknowledge_dt on EmployeePerformanceAssessment
-        $assessment = \App\Models\EmployeePerformanceAssessment::where('emp_id', $emp_id)
+        $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee_num)
             ->where('assessment_period_id', $assessmentPeriodId)
             ->first();
         if ($assessment) {
@@ -737,6 +837,20 @@ class EmployeesController extends Controller
         $developmentPlans = '';
         $employeeComments = '';
         $isAddMode = true;
+        $maritalOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Marital Status')->value('id'))
+            ->orderBy('sort_order')->get();
+        $ethnicOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Ethnic Group')->value('id'))
+            ->orderBy('sort_order')->get();
+        $militaryOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Military Status')->value('id'))
+            ->orderBy('sort_order')->get();
+        $citizenOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
+            ->orderBy('sort_order')->get();
+
+        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
             'departments',
@@ -758,7 +872,12 @@ class EmployeesController extends Controller
             'reviewType',
             'reviewDt',
             'states',
-            'isAddMode'
+            'isAddMode',
+            'maritalOptions',
+            'ethnicOptions',
+            'militaryOptions',
+            'citizenOptions',
+            'uploadTypes'
         ));
     }
 
@@ -769,13 +888,17 @@ class EmployeesController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'nullable|string|max:255',
-            'emp_id' => 'nullable|string|max:255',
+            'employee_num' => 'nullable|string|max:255',
             'ssn' => 'nullable|string|max:255',
             'original_hire_dt' => 'nullable|date',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'dob' => 'nullable|date',
+            'marital_status_id' => 'nullable|integer|exists:selectoptions,id',
+            'ethnic_group_id' => 'nullable|integer|exists:selectoptions,id',
+            'military_status_id' => 'nullable|integer|exists:selectoptions,id',
+            'citizenship_status_id' => 'nullable|integer|exists:selectoptions,id',
             'gender' => 'required|in:M,F,O,N',
             'email' => [
                 'nullable',
@@ -800,18 +923,22 @@ class EmployeesController extends Controller
 
             $employee = new \App\Models\BPEmployee();
             $employee->user_id = $user ? $user->id : null;
-            $employee->emp_id = $validated['emp_id'] ?? null;
+            $employee->employee_num = $validated['employee_num'] ?? null;
             $employee->ssn = $validated['ssn'] ?? null;
             $employee->original_hire_dt = $validated['original_hire_dt'] ?? null;
             $employee->first_name = $validated['first_name'];
             $employee->middle_name = $validated['middle_name'] ?? null;
             $employee->last_name = $validated['last_name'];
-            $employee->dob = $validated['dob'] ?? null;
+            $employee->dob = isset($validated['dob']) && $validated['dob'] ? date('Y-m-d', strtotime($validated['dob'])) : null;
             $employee->gender = $validated['gender'];
+            $employee->marital_status_id = $validated['marital_status_id'] ?? null;
+            $employee->ethnic_group_id = $validated['ethnic_group_id'] ?? null;
+            $employee->military_status_id = $validated['military_status_id'] ?? null;
+            $employee->citizenship_status_id = $validated['citizenship_status_id'] ?? null;
             $employee->save();
 
             DB::commit();
-            return redirect()->route('admin.employees.edit', $employee->emp_id)
+            return redirect()->route('admin.employees.edit', $employee->employee_num)
                 ->with('success', 'Employee created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();

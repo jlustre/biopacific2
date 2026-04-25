@@ -305,14 +305,26 @@ class QuickActionsController extends Controller
     //     return view('admin.facilities.attendance', compact('facility'));
     // }
 
-    public function documents(Facility $facility)
+    public function documents(Facility $facility, \Illuminate\Http\Request $request)
     {
         $this->authorizeFacilityAccess($facility);
         // Get employees for this facility from bp_employees via assignments
         $employees = \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
             $q->where('facility_id', $facility->id);
         })->orderBy('last_name')->get();
-        return view('admin.facilities.documents', compact('facility', 'employees'));
+        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+
+        $query = \App\Models\Upload::with(['facility','user','uploadType']);
+        if ($request->facility_id) $query->where('facility_id', $request->facility_id);
+        if ($request->search) $query->where('original_filename', 'like', '%'.$request->search.'%');
+        $uploads = $query->latest()->paginate(15);
+
+        $editUpload = null;
+        if ($request->has('edit')) {
+            $editUpload = \App\Models\Upload::find($request->input('edit'));
+        }
+
+        return view('admin.facilities.documents', compact('facility', 'employees', 'uploadTypes', 'uploads', 'editUpload'));
     }
 
     public function reports(Facility $facility)

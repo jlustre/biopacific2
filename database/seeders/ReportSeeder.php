@@ -47,6 +47,20 @@ class ReportSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'id' => 3,
+                'category_id' => 13,
+                'name' => 'List of Documents That need Expiry Tracking',
+                'description' => 'List of Documents That need to be tracked its expiration date.',
+                'sql_template' => 'SELECT `id`,`name` FROM `upload_types` WHERE `requires_expiry` = :requires_expiry',
+                'parameters' => '[{"name": "requires_expiry", "type": "boolean", "label": "Requires Expiry"}]',
+                'is_active' => 1,
+                'visibility' => 'admin',
+                'visible_roles' => '[]',
+                'visible_facilities' => '[]',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

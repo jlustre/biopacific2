@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('bp_emp_credentials', function (Blueprint $table) {
             $table->id('credential_id');
-            $table->unsignedBigInteger('emp_id'); // Foreign key to bp_employees.id
+            $table->unsignedBigInteger('employee_num'); // Foreign key to bp_employees.id
             $table->string('credential_type', 50); // e.g. rn, lvn, cna, etc.
             $table->string('credential_number', 100);
             $table->date('issue_date')->nullable();
@@ -23,8 +23,8 @@ return new class extends Migration {
             $table->enum('status', ['a', 'e', 's']); // active, expired, suspended
             $table->timestamps();
 
-            $table->foreign('emp_id')->references('id')->on('bp_employees');
-            $table->index(['emp_id', 'credential_type', 'expiry_date'], 'idx_emp_cred_type');
+            $table->foreign('employee_num')->references('id')->on('bp_employees');
+            $table->index(['employee_num', 'credential_type', 'expiry_date'], 'idx_emp_cred_type');
         });
     }
 

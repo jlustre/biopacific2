@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('bp_emp_compensation', function (Blueprint $table) {
             $table->id('comp_id');
-            $table->unsignedBigInteger('emp_id'); // Foreign key to bp_employees.id
+            $table->unsignedBigInteger('employee_num'); // Foreign key to bp_employees.id
             $table->date('effdt'); // Effective date
             $table->integer('effseq')->default(0); // Sequence for same-day changes
             $table->decimal('base_rate', 12, 2); // Base hourly or salary rate
@@ -22,8 +22,8 @@ return new class extends Migration {
             $table->string('reason_code', 10)->nullable(); // e.g. 'hire', 'promo', 'adjust'
             $table->timestamps();
 
-            $table->foreign('emp_id')->references('id')->on('bp_employees');
-            $table->index(['emp_id', 'effdt', 'effseq'], 'idx_emp_comp_hist');
+            $table->foreign('employee_num')->references('id')->on('bp_employees');
+            $table->index(['employee_num', 'effdt', 'effseq'], 'idx_emp_comp_hist');
         });
     }
 

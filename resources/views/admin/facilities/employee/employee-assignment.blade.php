@@ -5,16 +5,14 @@ $latestEffdt = $latest->effdt ?? '';
 $latestEffseq = $latest->effseq ?? '';
 @endphp
 <div x-show="tab === 'assignment'" x-data="assignmentForm()" x-init="initAssignment()">
-    @if(empty($employee->emp_id))
-    <div class="mb-4">
-        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
-            <strong class="font-bold">Notice:</strong>
-            <span class="block sm:inline">Please complete and save the Personal tab form before adding assignments.</span>
+    @if(isset($isAddMode) && $isAddMode)
+        <div class="p-6 mb-6 bg-white rounded shadow text-gray-600">
+            <div class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
+                <strong>Notice:</strong> Please complete and save the Personal tab form before continuing with the checklist.
+            </div>
+            <em>Save the employee record before adding assignments.</em>
         </div>
-    </div>
-    @endif
-
-     @if(!empty($employee->emp_id))
+    @else
     <div class="flex justify-end items-center mb-4 space-x-4">
         <button type="button" @click="clearAssignment()"
             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
@@ -24,7 +22,7 @@ $latestEffseq = $latest->effseq ?? '';
             <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest Record</span>
         </template>
     </div>
-    <form method="POST" action="{{ route('admin.employees.update_assignment', $employee->emp_id) }}">
+    <form method="POST" action="{{ route('admin.employees.update_assignment', $employee->id) }}">
         @csrf
         @method('PUT')
         <div class="bg-white shadow rounded-lg p-4 mb-6">
@@ -61,7 +59,7 @@ $latestEffseq = $latest->effseq ?? '';
                 </div>
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Reports To</label>
-                    <select name="reports_to_emp_id" x-model="currentAssignment.reports_to_emp_id"
+                    <select name="reports_to_employee_num" x-model="currentAssignment.reports_to_employee_num"
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Supervisor</option>
                         @foreach(App\Models\BPPosition::where('has_supervisor_role', true)->get() as $supervisor)

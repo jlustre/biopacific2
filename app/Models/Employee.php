@@ -12,7 +12,7 @@ class Employee extends Model
 
     protected $fillable = [
         'user_id',
-        'emp_id',
+        'employee_num',
         // Employee model removed after merge with BPEmployee
     ];
 
@@ -80,7 +80,7 @@ class Employee extends Model
      */
     public function currentAssignment()
     {
-        return $this->hasOne(\App\Models\BPEmpAssignment::class, 'emp_id', 'emp_id')
+        return $this->hasOne(\App\Models\BPEmpAssignment::class, 'employee_num', 'employee_num')
             ->orderByDesc('effdt')
             ->orderByDesc('effseq');
     }

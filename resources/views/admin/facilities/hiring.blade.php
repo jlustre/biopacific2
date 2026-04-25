@@ -78,6 +78,11 @@
 </div>
 @endif
 <div class="container mx-auto py-8 px-4">
+    <div class="mb-4">
+        <a href="{{ route('admin.facility.dashboard', ['facility' => $facility->slug ?? $facility->id]) }}" class="inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700">
+            &larr; Back to Facility HR Dashboard
+        </a>
+    </div>
     <!-- Page Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">{{ $facility->name }} - Hiring Management</h1>

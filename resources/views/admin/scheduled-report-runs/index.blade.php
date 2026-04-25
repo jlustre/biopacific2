@@ -19,11 +19,11 @@
         <form method="GET" class="mb-6 flex flex-wrap gap-4 items-end">
             <div>
                 <label class="block text-xs font-semibold mb-1">Report Name</label>
-                <input type="text" name="report_name" value="{{ request('report_name') }}" class="form-input w-48 border border-teal-500 px-2 py-1 rounded-sm" placeholder="Search report name">
+                <input type="text" name="report_name" value="{{ request('report_name') }}" class="form-input w-48 bg-teal-50 border border-teal-500 px-2 py-1 rounded-sm" placeholder="Search report name">
             </div>
             <div>
                 <label class="block text-xs font-semibold mb-1">Status</label>
-                <select name="status" class="form-select w-32 border border-teal-500 px-2 py-1 rounded-sm">
+                <select name="status" class="form-select w-32 bg-teal-50 border border-teal-500 px-2 py-1 rounded-sm">
                     <option value="">All</option>
                     <option value="success" {{ request('status') == 'success' ? 'selected' : '' }}>Success</option>
                     <option value="error" {{ request('status') == 'error' ? 'selected' : '' }}>Error</option>
@@ -32,11 +32,11 @@
             </div>
             <div>
                 <label class="block text-xs font-semibold mb-1">Date From</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-input w-36 border border-teal-500 px-2 py-1 rounded-sm">
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-input w-36 bg-teal-50 border border-teal-500 px-2 py-1 rounded-sm">
             </div>
             <div>
                 <label class="block text-xs font-semibold mb-1">Date To</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-input w-36 border border-teal-500 px-2 py-1 rounded-sm">
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-input w-36 bg-teal-50 border border-teal-500 px-2 py-1 rounded-sm">
             </div>
             <div>
                 <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">Filter</button>

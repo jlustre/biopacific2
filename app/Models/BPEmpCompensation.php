@@ -11,7 +11,7 @@ class BPEmpCompensation extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'effdt',
         'effseq',
         'base_rate',

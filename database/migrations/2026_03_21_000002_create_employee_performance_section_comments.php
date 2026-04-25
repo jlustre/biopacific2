@@ -9,7 +9,7 @@ return new class extends Migration {
 	{
 		Schema::create('employee_performance_section_comments', function (Blueprint $table) {
 			$table->id();
-			$table->string('emp_id');
+			$table->string('employee_num');
 			$table->unsignedBigInteger('assessment_period_id');
 			$table->string('section_label');
 			$table->text('comment')->nullable();

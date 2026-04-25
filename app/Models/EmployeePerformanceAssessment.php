@@ -8,7 +8,7 @@ class EmployeePerformanceAssessment extends Model
 {
     protected $table = 'employee_performance_assessments';
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'assessment_period_id',
         'items',
         'assessment_date',

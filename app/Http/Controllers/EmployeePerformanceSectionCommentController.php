@@ -13,14 +13,14 @@ class EmployeePerformanceSectionCommentController extends Controller
 {
     /**
      * Store or update a section comment for an employee and assessment period.
-     * Expects: emp_id, assessment_period_id, section_label, comment
+     * Expects: employee_num, assessment_period_id, section_label, comment
      * Returns: success, message, comment
      */
     public function store(Request $request)
     {
 
         $validated = $request->validate([
-            'emp_id' => 'required|string',
+            'employee_num' => 'required|string',
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'doc_type_id' => 'required|integer|exists:doc_types,id',
             'comment' => 'nullable|string',
@@ -28,7 +28,7 @@ class EmployeePerformanceSectionCommentController extends Controller
 
         $comment = EmployeePerformanceSectionComment::updateOrCreate(
             [
-                'emp_id' => $validated['emp_id'],
+                'employee_num' => $validated['employee_num'],
                 'assessment_period_id' => $validated['assessment_period_id'],
                 'doc_type_id' => $validated['doc_type_id'],
             ],
@@ -47,14 +47,14 @@ class EmployeePerformanceSectionCommentController extends Controller
 
     /**
      * Retrieve a section comment for an employee and assessment period.
-     * Expects: emp_id, assessment_period_id, section_label
+     * Expects: employee_num, assessment_period_id, section_label
      * Returns: success, comment
      */
     public function show(Request $request)
         {
 
         $validated = $request->validate([
-            'emp_id' => 'required|string',
+            'employee_num' => 'required|string',
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'doc_type_id' => 'required|integer|exists:doc_types,id',
             'item_key' => 'required|string',
@@ -62,7 +62,7 @@ class EmployeePerformanceSectionCommentController extends Controller
 
         // Fetch from employee_performance_assessments table
         $assessment = \App\Models\EmployeePerformanceAssessment::where([
-            'emp_id' => $validated['emp_id'],
+            'employee_num' => $validated['employee_num'],
             'assessment_period_id' => $validated['assessment_period_id'],
         ])->first();
 

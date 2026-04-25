@@ -2,6 +2,25 @@
 
 @section('content')
 <div class="container py-8">
+
+    <div class="mb-4">
+        @php
+            // Try to get the selected facility from the request or from the first facility in the list
+            $selectedFacility = null;
+            if(request('facility')) {
+                $selectedFacility = $facilities->firstWhere('id', request('facility'));
+            } elseif(isset($facility)) {
+                $selectedFacility = $facility;
+            } elseif(isset($facilities) && count($facilities)) {
+                $selectedFacility = $facilities[0];
+            }
+        @endphp
+        @if($selectedFacility)
+            <a href="{{ route('admin.facility.dashboard', ['facility' => $selectedFacility->slug ?? $selectedFacility->id]) }}" class="inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700">
+                &larr; Back to Facility HR Dashboard
+            </a>
+        @endif
+    </div>
     <h1 class="text-3xl font-bold mb-6 text-center">Employees</h1>
 
     <div class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -108,7 +127,7 @@
                     <td class="px-4 py-2 whitespace-nowrap">{{ \Illuminate\Support\Str::limit($employee->current_facility?->name ?? '-', 16, '...') }}</td>
                     <td class="px-4 py-2 whitespace-nowrap">{{ $employee->current_union_status ? 'Yes' : 'No' }}</td>
                     <td class="px-4 py-2 whitespace-nowrap">
-                        <a href="{{ route('admin.employees.edit', $employee->emp_id) }}" class="text-blue-600 hover:underline">View/Edit</a>
+                        <a href="{{ route('admin.employees.edit', $employee->id) }}" class="text-blue-600 hover:underline">View/Edit</a>
                     </td>
                 </tr>
                 @empty

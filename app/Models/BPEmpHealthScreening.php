@@ -11,7 +11,7 @@ class BPEmpHealthScreening extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'emp_id',
+        'employee_num',
         'screening_type',
         'screening_date',
         'expiry_date',

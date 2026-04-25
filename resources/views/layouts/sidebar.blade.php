@@ -24,29 +24,10 @@ use Illuminate\Support\Facades\Log;
             <i class="fas fa-globe mr-2"></i> Bio-Pacific Home
         </a>
 
-        <!-- Always show personal dashboard -->
-        <a href="{{ route('dashboard.index') }}"
-            class="flex items-center px-4 py-2 text-blue-700 hover:bg-blue-50 rounded {{ request()->routeIs('dashboard.index') ? 'bg-blue-100 font-bold' : '' }}">
-            <i class="fas fa-user mr-2"></i> My Dashboard
-        </a>
-
         @if($showPreEmploymentLink)
         <a href="{{ route('pre-employment.portal') }}"
             class="flex items-center px-4 py-2 text-teal-700 hover:bg-teal-50 rounded {{ request()->routeIs('pre-employment.*') ? 'bg-teal-100 font-bold' : '' }}">
             <i class="fas fa-file-signature mr-2"></i> Pre-Employment
-        </a>
-        @endif
-
-        <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
-        @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
-        <a href="{{ route('hr-portal.index') }}"
-            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
-            <i class="fas fa-users-cog mr-2"></i> HR Portal
-        </a>
-        @elseif($user && $user->hasRole(['hrrd','facility-admin','facility-dsd']))
-        <a href="{{ route('user.hr-portal') }}"
-            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
-            <i class="fas fa-users-cog mr-2"></i> HR Portal
         </a>
         @endif
 
@@ -371,5 +352,24 @@ use Illuminate\Support\Facades\Log;
             </div>
         </div>
         @endif
+
+        <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
+        @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+        <a href="{{ route('hr-portal.index') }}"
+            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
+            <i class="fas fa-users-cog mr-2"></i> HR Portal
+        </a>
+        @elseif($user && $user->hasRole(['hrrd','facility-admin','facility-dsd']))
+        <a href="{{ route('user.hr-portal') }}"
+            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
+            <i class="fas fa-users-cog mr-2"></i> HR Portal
+        </a>
+        @endif
+
+        <!-- Always show personal dashboard -->
+        <a href="{{ route('dashboard.index') }}"
+            class="flex items-center px-4 py-2 text-blue-700 hover:bg-blue-50 rounded {{ request()->routeIs('dashboard.index') ? 'bg-blue-100 font-bold' : '' }}">
+            <i class="fas fa-user mr-2"></i> My Dashboard
+        </a>
     </nav>
 </aside>

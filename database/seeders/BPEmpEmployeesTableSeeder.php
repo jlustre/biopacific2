@@ -17,7 +17,7 @@ class BPEmpEmployeesTableSeeder extends Seeder
             $empId = 'EMP' . str_pad($i, 3, '0', STR_PAD_LEFT);
             $empIds[] = $empId;
             $employees[] = [
-                'emp_id' => $empId,
+                'employee_num' => $empId,
                 'ssn' => $faker->unique()->numerify('###-##-####'),
                 'first_name' => $faker->firstName,
                 'middle_name' => null,
@@ -33,7 +33,7 @@ class BPEmpEmployeesTableSeeder extends Seeder
         // After assignments are seeded, update bp_employees with assignment_id
         $assignments = DB::table('bp_emp_assignments')->orderBy('assign_id')->get();
         foreach ($assignments as $assignment) {
-            DB::table('bp_employees')->where('emp_id', $assignment->emp_id)->update([
+            DB::table('bp_employees')->where('employee_num', $assignment->employee_num)->update([
                 'assignment_id' => $assignment->assign_id,
             ]);
         }

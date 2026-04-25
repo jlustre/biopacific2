@@ -130,7 +130,7 @@
                                 '<td class="border px-2 py-1">' + (emp.assessment_date || '') + '</td>' +
                                 '<td class="border px-2 py-1">' + (emp.reviewed_by || '') + '</td>' +
                                 '<td class="border px-2 py-1 text-center">' +
-                                    '<button class="px-2 py-1 bg-blue-600 text-white rounded text-xs load-employee-btn" data-emp-id="' + emp.emp_id + '">Load</button>' +
+                                    '<button class="px-2 py-1 bg-blue-600 text-white rounded text-xs load-employee-btn" data-emp-id="' + emp.employee_num + '">Load</button>' +
                                 '</td>' +
                                 '</tr>';
                         });
@@ -141,9 +141,9 @@
                             btn.addEventListener('click', function() {
                                 var empId = this.getAttribute('data-emp-id');
                                 if (!empId) return;
-                                // Build new URL with emp_id replaced or added
+                                // Build new URL with employee_num replaced or added
                                 var url = new URL(window.location.href);
-                                url.searchParams.set('emp_id', empId);
+                                url.searchParams.set('employee_num', empId);
                                 window.location.href = url.toString();
                             });
                         });
@@ -279,7 +279,7 @@
                         var confirmBtn = document.getElementById('confirmDeletePeriodBtn');
                         if (!modal || !list || !confirmBtn) return;
                         list.innerHTML = '<ul class="list-disc pl-5">' + affected.map(function(a) {
-                            return '<li><strong>' + (a.employee_name || 'Employee ID: ' + a.emp_id) + '</strong> (' + (a.assessment_date || 'No date') + ')</li>';
+                            return '<li><strong>' + (a.employee_name || 'Employee ID: ' + a.employee_num) + '</strong> (' + (a.assessment_date || 'No date') + ')</li>';
                         }).join('') + '</ul>';
                         modal.classList.remove('hidden');
                         modal.classList.add('flex');
@@ -364,8 +364,8 @@
         $displayReviewerName = $reviewerName;
         } else {
         $displayReviewerName = '';
-        if ($assignment && $assignment->reports_to_emp_id) {
-        $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to_emp_id)->first();
+        if ($assignment && $assignment->reports_to_employee_num) {
+        $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to_employee_num)->first();
         if ($reviewerEmp && $reviewerEmp->user) {
         $displayReviewerName = $reviewerEmp->user->name;
         } elseif ($reviewerEmp) {
@@ -397,8 +397,8 @@
             <td class="border px-2 py-1">
                 @php
                 $reviewerPosition = '';
-                if (!empty($assignment) && $assignment->reports_to_emp_id) {
-                $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to_emp_id)->first();
+                if (!empty($assignment) && $assignment->reports_to_employee_num) {
+                $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to_employee_num)->first();
                 if ($reviewerEmp && $reviewerEmp->currentAssignment && $reviewerEmp->currentAssignment->position) {
                 $reviewerPosition = $reviewerEmp->currentAssignment->position->position_title;
                 }

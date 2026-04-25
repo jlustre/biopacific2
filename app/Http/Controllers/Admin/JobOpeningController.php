@@ -15,7 +15,10 @@ class JobOpeningController extends Controller
     public function index(Facility $facility)
     {
         $jobs = $facility->jobOpenings()->latest()->get();
-        return view('admin.facilities.job_openings', compact('facility', 'jobs'));
+        $positions = \App\Models\Position::orderBy('title')->get();
+        $departments = \App\Models\Department::orderBy('name')->get();
+        $supervisors = \App\Models\Position::where('supervisor_role', 1)->orderBy('title')->get();
+        return view('admin.facilities.job_openings', compact('facility', 'jobs', 'positions', 'departments', 'supervisors'));
     }
 
     public function store(Request $request, Facility $facility)
@@ -31,10 +34,9 @@ class JobOpeningController extends Controller
             'description' => 'required|string',
             'active' => 'nullable|boolean',
         ]);
-        // If 'Other' is selected, use the value from title_other
+        // Handle 'Other' for title
         if ($data['title'] === 'Other' && !empty($data['title_other'])) {
             $data['title'] = $data['title_other'];
-            // Add to positions table if not exists
             $existing = \App\Models\Position::where('title', $data['title_other'])->first();
             if (!$existing) {
                 \App\Models\Position::create(['title' => $data['title_other']]);
@@ -46,6 +48,31 @@ class JobOpeningController extends Controller
             $positionAdded = false;
         }
         unset($data['title_other']);
+
+        // Handle 'Other' for employment_type
+        if (isset($data['employment_type']) && $data['employment_type'] === 'Other' && $request->filled('employment_type_other')) {
+            $data['employment_type'] = $request->input('employment_type_other');
+        }
+        // Remove extra field
+        $data = array_diff_key($data, ['employment_type_other' => '']);
+
+        // Handle 'Other' for department
+        if (isset($data['department']) && $data['department'] === 'Other' && $request->filled('department_other')) {
+            $data['department'] = $request->input('department_other');
+            // Add to departments table if not exists
+            $existingDept = \App\Models\Department::where('name', $data['department'])->first();
+            if (!$existingDept) {
+                \App\Models\Department::create(['name' => $data['department']]);
+            }
+        }
+        $data = array_diff_key($data, ['department_other' => '']);
+
+        // Handle 'Other' for reporting_to
+        if (isset($data['reporting_to']) && $data['reporting_to'] === 'Other' && $request->filled('reporting_to_other')) {
+            $data['reporting_to'] = $request->input('reporting_to_other');
+        }
+        $data = array_diff_key($data, ['reporting_to_other' => '']);
+
         $data['active'] = $request->input('active', 0) == '1';
         $data['created_by'] = $request->user() ? $request->user()->id : null;
         $facility->jobOpenings()->create($data);

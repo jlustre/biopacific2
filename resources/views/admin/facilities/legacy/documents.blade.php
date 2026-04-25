@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container py-8">
-    <h1 class="mb-4 text-2xl font-bold">Facility Uploads2</h1>
+    <h1 class="mb-4 text-2xl font-bold">Facility Uploads</h1>
     @php
         $required = "";
     @endphp

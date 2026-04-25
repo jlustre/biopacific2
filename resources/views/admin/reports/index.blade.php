@@ -13,11 +13,11 @@
     <form method="GET" class="mb-4 flex flex-wrap gap-2 items-end">
         <div>
             <label class="block text-xs font-semibold mb-1">Search</label>
-            <input type="text" name="search" value="{{ request('search') }}" class="form-input border border-teal-500 px-2 py-1 text-sm rounded w-48" placeholder="Name or description...">
+            <input type="text" name="search" value="{{ request('search') }}" class="form-input bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48" placeholder="Name or description...">
         </div>
         <div>
             <label class="block text-xs font-semibold mb-1">Category</label>
-            <select name="category_id" class="form-select border border-teal-500 px-2 py-1 text-sm rounded w-48">
+            <select name="category_id" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48">
                 <option value="">All Categories</option>
                 @foreach($categories as $cat)
                     <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>

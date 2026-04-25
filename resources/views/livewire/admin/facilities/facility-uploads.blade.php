@@ -19,7 +19,7 @@
             <select wire:model="employee_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="">-- Select Employee --</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->emp_id }}">{{ $employee->last_name }}, {{ $employee->first_name }}</option>
+                    <option value="{{ $employee->employee_num }}">{{ $employee->last_name }}, {{ $employee->first_name }}</option>
                 @endforeach
             </select>
         </div>
@@ -40,10 +40,6 @@
             <div>
                 <label class="block mb-1 text-xs font-semibold">Effective Start Date</label>
                 <input type="date" wire:model="effective_start_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
-            </div>
-            <div>
-                <label class="block mb-1 text-xs font-semibold">Effective End Date</label>
-                <input type="date" wire:model="effective_end_date" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input w-full">
             </div>
             <div>
                 <label class="block mb-1 text-xs font-semibold">Expires At</label>

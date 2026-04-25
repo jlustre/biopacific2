@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->date('date_to');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
-            // No emp_id, periods are now global
+            // No employee_num, periods are now global
             $table->index(['period_year', 'period_sequence'], 'ea_periods_year_seq_idx');
         });
 
