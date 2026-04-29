@@ -37,8 +37,12 @@ $latestEffseq = $latest->effseq ?? '';
                         @endforeach
                     </select>
                 </div>
+                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Facility</label>
+                    <div class="mb-1 text-xs text-blue-700 bg-blue-50 rounded px-2 py-1">
+                        As an <strong>admin</strong> or <strong>HRRD</strong>, you can move this employee to another facility.
+                    </div>
                     <select name="facility_id" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
                         x-model="currentAssignment.facility_id">
                         <option value="">Select Facility</option>
@@ -47,6 +51,7 @@ $latestEffseq = $latest->effseq ?? '';
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Department</label>
                     <select name="dept_id" x-model="currentAssignment.dept_id"

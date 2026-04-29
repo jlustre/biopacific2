@@ -13,18 +13,28 @@ class ImportMappingPresetController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'mappings' => 'required|array',
+            'facility_id' => 'nullable|integer',
         ]);
         $preset = ImportMappingPreset::create([
             'user_id' => Auth::id(),
+            'facility_id' => $request->input('facility_id', 99),
             'name' => $request->input('name'),
             'mappings' => $request->input('mappings'),
         ]);
         return response()->json(['success' => true, 'preset' => $preset]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $presets = ImportMappingPreset::where('user_id', Auth::id())->get();
+        $facilityId = $request->input('facility_id');
+        $query = ImportMappingPreset::where('user_id', Auth::id());
+        if ($facilityId) {
+            $query->where(function($q) use ($facilityId) {
+                $q->where('facility_id', $facilityId)
+                  ->orWhere('facility_id', 99); // include global presets
+            });
+        }
+        $presets = $query->get();
         return response()->json(['presets' => $presets]);
     }
 
@@ -34,10 +44,12 @@ class ImportMappingPresetController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'mappings' => 'required|array',
+            'facility_id' => 'nullable|integer',
         ]);
         $preset->update([
             'name' => $request->input('name'),
             'mappings' => $request->input('mappings'),
+            'facility_id' => $request->input('facility_id', $preset->facility_id ?? 99),
         ]);
         return response()->json(['success' => true, 'preset' => $preset]);
     }

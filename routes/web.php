@@ -63,9 +63,26 @@ Route::post('/admin/facility/{facility}/files/import-data', [\App\Http\Controlle
 Route::get('/admin/facility/files/table-columns', [\App\Http\Controllers\Admin\Facilities\TableInfoController::class, 'columns'])
     ->name('admin.facility.files.table_columns');
 
+// Employee profile page (for redirect compatibility)
+Route::get('/admin/employees/{employee}/profile', [\App\Http\Controllers\Admin\EmployeesController::class, 'showProfile'])->name('admin.employees.profile');
+
+
+// Route::get('/admin/employees/{employee}/documents/{upload}/edit', [\App\Http\Controllers\Admin\EmployeesController::class, 'editDocument'])->name('admin.employees.documents.edit');
+Route::put('/admin/employees/{employee}/documents/{upload}', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateDocument'])->name('admin.employees.documents.update');
+
+// Redirect unsupported GET requests for document edit route to employee profile documents tab
+Route::get('/admin/employees/{employee}/documents/{upload}', function ($employee) {
+    return redirect()->route('admin.employees.profile', $employee) . '#documents';
+})->where(['employee' => '[0-9]+', 'upload' => '[0-9]+']);
+
+// Employee Document View Route
+Route::get('/admin/employees/{employee}/documents/{upload}/view', [\App\Http\Controllers\Admin\EmployeesController::class, 'viewDocument'])->name('admin.employees.documents.view');
 
 // Facility session selection route
 Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
+
+// Employee Document Delete Route
+Route::delete('/admin/employees/{employee}/documents/{upload}', [\App\Http\Controllers\Admin\EmployeesController::class, 'deleteDocument'])->name('admin.employees.documents.delete');
 
 
 // Admin Reports Management (CRUD)

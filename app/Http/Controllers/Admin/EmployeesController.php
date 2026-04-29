@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -12,7 +11,8 @@ use App\Models\State;
 use Illuminate\Support\Facades\Auth;
 // use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-
+use App\Models\SelectOption;
+use App\Models\Optionstype;
 
 
 class EmployeesController extends Controller
@@ -50,7 +50,7 @@ class EmployeesController extends Controller
 
         Upload::create([
             'employee_num' => $employee->employee_num,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'upload_type_id' => $uploadTypeId,
             'original_filename' => $file->getClientOriginalName(),
             'file_path' => $path,
@@ -63,6 +63,136 @@ class EmployeesController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Document uploaded successfully.');
+    }
+
+        /**
+     * Show the employee profile page (tabbed view).
+     */
+    public function showProfile($employee_num)
+    {
+        $employee = BPEmployee::findOrFail($employee_num);
+        $isAddMode = false;
+        // Get the Optionstype id for 'marital status'
+        $maritalType = Optionstype::where('name', 'marital status')->first();
+        $maritalOptions = $maritalType
+            ? SelectOption::where('type_id', $maritalType->id)->where('isActive', 1)->orderBy('sort_order')->get()
+            : collect();
+        // Get the Optionstype id for 'ethnic group'
+        $ethnicType = Optionstype::where('name', 'ethnic group')->first();
+        $ethnicOptions = $ethnicType
+            ? SelectOption::where('type_id', $ethnicType->id)->where('isActive', 1)->orderBy('sort_order')->get()
+            : collect();
+        // Get the Optionstype id for 'military status'
+        $militaryType = Optionstype::where('name', 'military status')->first();
+        $militaryOptions = $militaryType
+            ? SelectOption::where('type_id', $militaryType->id)->where('isActive', 1)->orderBy('sort_order')->get()
+            : collect();
+        // Get the Optionstype id for 'citizenship status'
+        $citizenType = Optionstype::where('name', 'citizenship status')->first();
+        $citizenOptions = $citizenType
+            ? SelectOption::where('type_id', $citizenType->id)->where('isActive', 1)->orderBy('sort_order')->get()
+            : collect();
+        // You may want to load additional data as needed for the profile view
+        return view('admin.facilities.employee.employee-profile', compact('employee', 'isAddMode', 'maritalOptions', 'ethnicOptions', 'militaryOptions', 'citizenOptions'));
+    }
+
+    /**
+     * Delete an employee document.
+     */
+    public function deleteDocument($employee_num, $upload_id)
+    {
+        $employee = BPEmployee::findOrFail($employee_num);
+        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        $filePath = storage_path('app/public/' . $upload->file_path);
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+        $upload->delete();
+        return redirect()->back()->with('success', 'Document deleted successfully.');
+    }
+
+     /**
+     * Update an employee document (upload).
+     */
+    public function updateDocument(Request $request, $employee_num, $upload_id)
+    {
+        $employee = BPEmployee::findOrFail($employee_num);
+        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+
+        $uploadTypeId = $request->input('upload_type_id');
+        $uploadType = \App\Models\UploadType::find($uploadTypeId);
+        $requiresExpiry = $uploadType && $uploadType->requires_expiry;
+
+        $rules = [
+            'upload_type_id' => 'required|exists:upload_types,id',
+            'document' => 'nullable|file|max:10240', // 10MB max
+            'comments' => 'nullable|string|max:255',
+        ];
+        if ($requiresExpiry) {
+            $rules['expires_at'] = 'required|date';
+        } else {
+            $rules['expires_at'] = 'nullable|date';
+        }
+        $rules['effective_start_date'] = 'nullable|date';
+        $rules['effective_end_date'] = 'nullable|date';
+
+        $validated = $request->validate($rules);
+
+        $upload->upload_type_id = $uploadTypeId;
+        $upload->expires_at = $validated['expires_at'] ?? null;
+        $upload->effective_start_date = $validated['effective_start_date'] ?? null;
+        $upload->effective_end_date = $validated['effective_end_date'] ?? null;
+        $upload->comments = $validated['comments'] ?? null;
+
+        if ($request->hasFile('document')) {
+            // Delete old file
+            $oldPath = storage_path('app/public/' . $upload->file_path);
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
+            }
+            $file = $request->file('document');
+            $path = $file->store('employee_documents/' . $employee->employee_num, 'public');
+            $upload->file_path = $path;
+            $upload->original_filename = $file->getClientOriginalName();
+            $upload->file_size = $file->getSize();
+            $upload->uploaded_at = now();
+        }
+
+        $upload->save();
+
+        return redirect()->route('admin.employees.documents.edit', [$employee->id, $upload->id])
+            ->with('success', 'Document updated successfully.');
+    }
+
+       /**
+     * Show the form for editing an employee document.
+     */
+    public function editDocument($employee_num, $upload_id)
+    {
+        $employee = BPEmployee::findOrFail($employee_num);
+        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        // You may want to pass upload types or other data as needed
+        $uploadTypes = \App\Models\UploadType::all();
+        return view('admin.facilities.employee.edit_document', compact('employee', 'upload', 'uploadTypes'));
+    }
+
+    /**
+     * View an employee document (shows file inline if possible, otherwise downloads).
+     */
+    public function viewDocument($employee_num, $upload_id)
+    {
+        $employee = BPEmployee::findOrFail($employee_num);
+        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        $filePath = storage_path('app/public/' . $upload->file_path);
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
+        $mimeType = mime_content_type($filePath);
+        $disposition = in_array($mimeType, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif']) ? 'inline' : 'attachment';
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => $disposition . '; filename="' . $upload->original_filename . '"',
+        ]);
     }
 
     /**
@@ -78,6 +208,8 @@ class EmployeesController extends Controller
         }
         return response()->download($filePath, $document->original_filename);
     }
+
+    
     /**
      * Update only the user's email from the modal form.
      * Route: PUT admin/employees/{user}/update-email

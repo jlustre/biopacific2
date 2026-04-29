@@ -27,6 +27,7 @@
         <div class="flex flex-wrap gap-2 items-end w-full md:w-auto">
             <form method="GET" action="" class="flex flex-wrap gap-2 items-end" id="employee-filter-form">
             <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
+                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
                 <div>
                 <label for="facility" class="block text-sm font-medium">Facility</label>
                 <select name="facility" id="facility"
@@ -39,6 +40,7 @@
                     @endforeach
                 </select>
                 </div>
+                @endif
                 <div>
                     <label for="department" class="block text-sm font-medium">Department</label>
                     <select name="department" id="department"
@@ -50,12 +52,6 @@
                             @endif>{{ $department->dept_name }}</option>
                         @endforeach
                     </select>
-                </div>
-                <div class="mt-2">
-                <a href="{{ route('admin.employees.create') }}"
-                class="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition h-10 flex items-center">
-                    <span class="font-semibold text-base">+ Add Employee</span>
-                </a>
                 </div>
             </div>
             <div>
@@ -71,7 +67,7 @@
                 </select>
             </div>
             <div>
-                <label for="union" class="block text-sm font-medium">Union Status2</label>
+                <label for="union" class="block text-sm font-medium">Union Status</label>
                 <select name="union" id="union"
                     class="form-select border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
                     onchange="this.form.submit()">
@@ -98,6 +94,12 @@
                     @endforeach
                 </select>
             </div>
+                <div class="mt-2">
+                <a href="{{ route('admin.employees.create') }}"
+                class="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition h-10 flex items-center">
+                    <span class="font-semibold text-base">+ Add Employee</span>
+                </a>
+                </div>
             </form>
         </div>
     </div>

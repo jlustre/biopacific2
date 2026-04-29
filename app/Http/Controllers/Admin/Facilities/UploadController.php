@@ -149,12 +149,10 @@ class UploadController extends Controller {
         ]);
     }
 
-    public function destroy($upload)
+    public function destroy($facility, $upload)
     {
         // Always resolve the model manually to avoid property access on string
-        if (!$upload instanceof Upload) {
-            $upload = Upload::find($upload);
-        }
+        $upload = Upload::find($upload);
         if (!$upload) {
             return redirect()->back()->with('error', 'Upload not found.');
         }

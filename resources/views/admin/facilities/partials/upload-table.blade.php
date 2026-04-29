@@ -1,3 +1,4 @@
+@php use Illuminate\Support\Facades\Auth; @endphp
 <div id="upload-table" class="p-6 bg-white rounded shadow" tabindex="-1">
     <form id="upload-table-filter-form" method="GET" class="flex flex-wrap items-end gap-4 mb-4">
         <div x-data="{
@@ -19,15 +20,28 @@
                 <label class="block mb-1 text-xs font-semibold">Search by Name</label>
                 <input type="text" name="search" value="{{ request('search') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="File name...">
             </div>
-            <div>
-                <label class="block mb-1 text-xs font-semibold">Filter by Facility</label>
-                <select name="facility_id" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
-                    <option value="">All Facilities</option>
-                    @foreach(App\Models\Facility::orderBy('name')->get() as $fac)
-                    <option value="{{ $fac->id }}" @if(request('facility_id')==$fac->id) selected @endif>{{ $fac->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+            @php
+                $user = Auth::user();
+                $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('hrrd'));
+                $userFacility = $user && $user->facility ? $user->facility : null;
+            @endphp
+            @if($canChooseFacility)
+                <div>
+                    <label class="block mb-1 text-xs font-semibold">Filter by Facility</label>
+                    <select name="facility_id" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
+                        <option value="">All Facilities</option>
+                        @foreach(App\Models\Facility::orderBy('name')->get() as $fac)
+                        <option value="{{ $fac->id }}" @if(request('facility_id')==$fac->id) selected @endif>{{ $fac->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @elseif($userFacility)
+                <div>
+                    <label class="block mb-1 text-xs font-semibold">Facility</label>
+                    <span class="text-teal-700 font-semibold">{{ $userFacility->name }}</span>
+                    <input type="hidden" name="facility_id" value="{{ $userFacility->id }}">
+                </div>
+            @endif
             <div>
                 <label class="block mb-1 text-xs font-semibold">Filter by Upload Type</label>
                 <select name="upload_type_id" x-model="selectedType" @change="updateShowExpiry()" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
@@ -73,6 +87,7 @@
             <tr class="bg-gray-100">
                 <th class="px-3 py-2 border text-sm">Type</th>
                 <th class="px-3 py-2 border text-sm">Facility</th>
+                <th class="px-3 py-2 border text-sm">Employee #</th>
                 <th class="px-3 py-2 border text-sm">Employee Name</th>
                 <th class="px-3 py-2 border text-sm">Expires</th>
                 <th class="px-3 py-2 border text-sm">Actions</th>
@@ -81,8 +96,21 @@
         <tbody>
             @php
             $query = App\Models\Upload::with(['facility','user','uploadType']);
-            if(request('facility_id')) $query->where('facility_id', request('facility_id'));
-            if(request('search')) $query->where('original_filename', 'like', '%'.request('search').'%');
+            $user = Auth::user();
+            $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('hrrd'));
+            $userFacility = $user && $user->facility ? $user->facility : null;
+            if($canChooseFacility) {
+                if(request('facility_id')) $query->where('facility_id', request('facility_id'));
+            } elseif($userFacility) {
+                $query->where('facility_id', $userFacility->id);
+            }
+            if(request('search')) {
+                $search = request('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('original_filename', 'like', "%$search%")
+                      ->orWhereRaw('LOWER(employee_num) LIKE ?', ['%' . strtolower($search) . '%']);
+                });
+            }
             if(request('upload_type_id')) $query->where('upload_type_id', request('upload_type_id'));
             $now = now();
             $expiryRange = request('expiry_range');
@@ -129,6 +157,7 @@
             <tr>
                 <td class="px-3 py-2 border text-xs">{{ $upload->uploadType->name ?? '-' }}</td>
                 <td class="px-3 py-2 border text-xs">{{ $upload->facility->name ?? '-' }}</td>
+                <td class="px-3 py-2 border text-xs">{{ $upload->employee_num ?? '-' }}</td>
                 <td class="px-3 py-2 border text-xs">
                     @if($upload->employee)
                         {{ $upload->employee->last_name }}, {{ $upload->employee->first_name }}
@@ -220,5 +249,5 @@
                     sessionStorage.removeItem('focus-upload-table');
                 }
             });
-            </script>
+    </script>
 </div>
