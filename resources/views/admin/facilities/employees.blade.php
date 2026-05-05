@@ -1,63 +1,89 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container py-8">
-
-    <div class="mb-4">
-        @php
-            // Try to get the selected facility from the request or from the first facility in the list
-            $selectedFacility = null;
-            if(request('facility')) {
-                $selectedFacility = $facilities->firstWhere('id', request('facility'));
-            } elseif(isset($facility)) {
-                $selectedFacility = $facility;
-            } elseif(isset($facilities) && count($facilities)) {
-                $selectedFacility = $facilities[0];
-            }
-        @endphp
-        @if($selectedFacility)
-            <a href="{{ route('admin.facility.dashboard', ['facility' => $selectedFacility->slug ?? $selectedFacility->id]) }}" class="inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700">
-                &larr; Back to Facility HR Dashboard
+@php
+// Try to get the selected facility from the request or from the first facility in the list
+$selectedFacility = null;
+if(request('facility')) {
+$selectedFacility = $facilities->firstWhere('id', request('facility'));
+} elseif(isset($facility)) {
+$selectedFacility = $facility;
+} elseif(isset($facilities) && count($facilities)) {
+$selectedFacility = $facilities[0];
+}
+@endphp
+<div class="px-0 py-0">
+    <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
+        <div class="w-full sm:w-auto px-4 sm:px-0">
+            @if($selectedFacility)
+                <a href="{{ route('admin.facility.dashboard', ['facility' => $selectedFacility->slug ?? $selectedFacility->id]) }}" class="rounded-md block w-full bg-teal-500 sm:w-auto px-4 py-3 sm:py-2 text-center">
+                    &larr; Back to Facility HR Dashboard
+                </a>
+            @endif
+        </div>
+        <div class="w-full sm:w-auto px-4 sm:px-0">
+            <a href="{{ route('admin.employees.create') }}"
+                class="rounded-md block w-full sm:w-auto px-4 py-3 sm:py-2 bg-green-600 text-white hover:bg-green-700 transition text-center">
+                <span class="font-semibold text-base w-full">+ Add Employee</span>
             </a>
-        @endif
+        </div>
     </div>
-    <h1 class="text-3xl font-bold mb-6 text-center">Employees</h1>
+    <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-center">Employees</h1>
+
+    
+    @if($selectedFacility && !(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd'))))
+        <div class="mb-4 text-center">
+            <span class="inline-block px-4 py-1 bg-teal-100 text-teal-800 rounded font-semibold">
+                Facility: {{ $selectedFacility->name }}
+            </span>
+        </div>
+    @endif
 
     <div class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div class="flex flex-wrap gap-2 items-end w-full md:w-auto">
-            <form method="GET" action="" class="flex flex-wrap gap-2 items-end" id="employee-filter-form">
-            <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
-                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
-                <div>
-                <label for="facility" class="block text-sm font-medium">Facility</label>
-                <select name="facility" id="facility"
-                    class="form-select border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
-                    onchange="this.form.submit()">
-                    <option value="">All Facilities</option>
-                    @foreach($facilities as $facility)
-                    <option value="{{ $facility->id }}" @if(request('facility')==$facility->id) selected @endif>{{
-                        $facility->name }}</option>
-                    @endforeach
-                </select>
-                </div>
-                @endif
-                <div>
-                    <label for="department" class="block text-sm font-medium">Department</label>
-                    <select name="department" id="department"
-                        class="form-select border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
+        <div class="flex flex-col sm:flex-row flex-wrap gap-2 items-end w-full md:w-auto">
+            <form method="GET" action="" class="flex flex-col sm:flex-row flex-wrap gap-2 items-end w-full px-2 sm:px-0" id="employee-filter-form" autocomplete="off">
+                <div class="w-full sm:w-auto px-0 sm:px-0">
+                    <label for="reports_to" class="block text-sm font-medium">Reports To</label>
+                    <select name="reports_to" id="reports_to"
+                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
                         onchange="this.form.submit()">
-                        <option value="">All Departments</option>
-                        @foreach($departments as $department)
-                        <option value="{{ $department->dept_id }}" @if(request('department')==$department->dept_id) selected
-                            @endif>{{ $department->dept_name }}</option>
+                        <option value="">All Supervisors</option>
+                        @foreach($supervisorPositions as $supervisor)
+                        <option value="{{ $supervisor->position_id }}" @if(request('reports_to')==$supervisor->position_id) selected @endif>{{ $supervisor->position_title }}</option>
                         @endforeach
                     </select>
                 </div>
-            </div>
-            <div>
+                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
+                <div class="w-full sm:w-auto px-0 sm:px-0">
+                    <label for="facility" class="block text-sm font-medium">Facility</label>
+                    <select name="facility" id="facility"
+                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
+                        onchange="this.form.submit()">
+                        <option value="">All Facilities</option>
+                        @foreach($facilities as $facility)
+                        <option value="{{ $facility->id }}" @if(request('facility')==$facility->id) selected @endif>{{
+                            $facility->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                <div class="w-full sm:w-auto px-0 sm:px-0">
+                    <label for="department" class="block text-sm font-medium">Department</label>
+                    <select name="department" id="department"
+                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
+                        onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        @foreach($departments as $department)
+                        <option value="{{ $department->id }}" @if(request('department')==$department->id) selected
+                            @endif>{{ $department->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+           
+            <div class="w-full sm:w-auto px-0 sm:px-0">
                 <label for="position" class="block text-sm font-medium">Position</label>
                 <select name="position" id="position"
-                    class="form-select border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
+                    class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
                     onchange="this.form.submit()">
                     <option value="">All Positions</option>
                     @foreach($positions as $position)
@@ -66,27 +92,18 @@
                     @endforeach
                 </select>
             </div>
-            <div>
-                <label for="union" class="block text-sm font-medium">Union Status</label>
-                <select name="union" id="union"
-                    class="form-select border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
-                    onchange="this.form.submit()">
-                    <option value="">All</option>
-                    <option value="union" @if(request('union')=='union' ) selected @endif>Union</option>
-                    <option value="non-union" @if(request('union')=='non-union' ) selected @endif>Non-Union</option>
-                </select>
-            </div>
-            <div>
+            <!-- Union Status filter removed -->
+            <div class="w-full sm:w-auto px-0 sm:px-0">
                 <label for="search" class="block text-sm font-medium">Search</label>
                 <input type="text" name="search" id="search" value="{{ request('search') }}"
-                    class="form-input border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
-                    placeholder="Employee name..." onblur="this.form.submit()"
+                    class="form-input w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
+                    placeholder="Employee Name or Number..." onblur="this.form.submit()"
                     onkeydown="if(event.key==='Enter'){this.form.submit();}">
             </div>
-            <div>
+            <div class="w-full sm:w-auto px-0 sm:px-0">
                 <label for="per_page" class="block text-sm font-medium">Page Size</label>
                 <select name="per_page" id="per_page"
-                    class="form-select border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-2 py-1"
+                    class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
                     onchange="this.form.submit()">
                     @foreach([10, 20, 50, 100] as $size)
                     <option value="{{ $size }}" @if((request('per_page', $perPage ?? 10)==$size)) selected @endif>{{
@@ -94,51 +111,49 @@
                     @endforeach
                 </select>
             </div>
-                <div class="mt-2">
-                <a href="{{ route('admin.employees.create') }}"
-                class="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition h-10 flex items-center">
-                    <span class="font-semibold text-base">+ Add Employee</span>
-                </a>
-                </div>
             </form>
         </div>
     </div>
 
-    <div class="overflow-x-auto bg-white rounded shadow">
+    <div class="bg-white rounded shadow pt-2 px-0 sm:px-4">
         <div class="mb-2 text-sm text-gray-700 ml-4 mt-2">
             Showing {{ $employees->firstItem() }} to {{ $employees->lastItem() }} of {{ $employees->total() }} results
         </div>
-
-        <table class="min-w-full divide-y divide-gray-300">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Facility</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Union</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($employees as $employee)
-                <tr class="text-sm">
-                    <td class="px-4 py-2 whitespace-nowrap">{{ $employee->last_name }}, {{ $employee->first_name }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->position_title ?? '-' }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->dept_name ?? '-' }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap">{{ \Illuminate\Support\Str::limit($employee->current_facility?->name ?? '-', 16, '...') }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap">{{ $employee->current_union_status ? 'Yes' : 'No' }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap">
-                        <a href="{{ route('admin.employees.edit', $employee->id) }}" class="text-blue-600 hover:underline">View/Edit</a>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="6" class="px-4 py-4 text-center text-gray-500">No employees found.</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+        <div class="overflow-x-auto -mx-2 sm:mx-0">
+            <table class="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">EMP_NUM</th>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Name</th>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Position</th>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Department</th>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($employees as $employee)
+                    <tr class="sm:text-sm">
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->last_name }}, {{ $employee->first_name }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->position_title ?? '-' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->name ?? '-' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center">
+                            <a href="{{ route('admin.employees.edit', $employee->id) }}" class="text-blue-600 hover:text-blue-800 transition" title="View/Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 align-middle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <title>View/Edit</title>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-4.243 1.415 1.415-4.243a4 4 0 01.94-1.414z" />
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-4 text-center text-gray-500">No employees found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
         <div class="p-4 my-4 text-center">
             @include('admin.facilities.employee.employee-pagination')
         </div>

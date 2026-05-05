@@ -31,7 +31,7 @@ use App\Http\Controllers\TermsOfServiceController;
 use App\Http\Controllers\AccessibilityController;
 use App\Http\Controllers\AdminJobApplicationController;
 use App\Http\Controllers\AdminMfaController;
-use App\Http\Controllers\AdminAuthenticatedSessionController;
+use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\TourRequestController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\PreEmploymentController;
@@ -436,6 +436,13 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
 
     // Positions Management CRUD
     Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class)->names('positions');
+
+    // Checklist Items Management CRUD
+    Route::post('checklist-items/bulk-positions', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'bulkUpdatePositions'])
+        ->name('checklist-items.bulk-positions');
+    Route::resource('checklist-items', \App\Http\Controllers\Admin\ChecklistItemController::class)
+        ->except(['show'])
+        ->names('checklist-items');
 
     // Departments Management CRUD
     Route::resource('departments', \App\Http\Controllers\Admin\DepartmentController::class)->names('departments');

@@ -28,35 +28,25 @@
                 @endphp
                 @foreach ($applicantItems as $item)
                 @php
-                $empChecklist = null;
-                if ($empChecklists && count($empChecklists)) {
-                $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
-                if ($empChecklistRow && isset($empChecklistRow->items[$item->name])) {
-                $empChecklist = (object) $empChecklistRow->items[$item->name];
-                }
-                }
+                $empChecklist = $resolveChecklistEntry($item);
+                $checklistKey = $resolveChecklistKey($item);
                 @endphp
                 <tr data-doc-type-id="{{ $item->doc_type_id }}">
                     <td class="border px-2 py-1">{{ $item->name }}</td>
                     <td class="border px-2 py-1">
-                        @php
-                        $empChecklist = null;
-                        if ($empChecklists && count($empChecklists)) {
-                        $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
-                        if ($empChecklistRow && isset($empChecklistRow->items[$item->name])) {
-                        $empChecklist = (object) $empChecklistRow->items[$item->name];
-                        }
-                        }
-                        @endphp
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
                         <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
+                            data-item-id="{{ $item->id }}"
+                            data-checklist-key="{{ $checklistKey }}"
                             data-emp-id="{{ $employee->employee_num }}">Revoke</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
+                            data-item-id="{{ $item->id }}"
+                            data-checklist-key="{{ $checklistKey }}"
                             data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
@@ -67,6 +57,8 @@
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
+                            data-item-id="{{ $item->id }}"
+                            data-checklist-key="{{ $checklistKey }}"
                             data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"

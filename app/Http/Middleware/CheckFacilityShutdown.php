@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Facility;
 
 class CheckFacilityShutdown
@@ -12,7 +13,9 @@ class CheckFacilityShutdown
     public function handle(Request $request, Closure $next)
     {
         // Check global shutdown
-        $global = DB::table('global_shutdowns')->orderByDesc('id')->first();
+        $global = Schema::hasTable('global_shutdowns')
+            ? DB::table('global_shutdowns')->orderByDesc('id')->first()
+            : null;
         if ($global && $global->is_shutdown) {
             return response()->view('shutdown', [
                 'message' => $global->shutdown_message,

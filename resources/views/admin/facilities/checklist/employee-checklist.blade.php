@@ -1,6 +1,29 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <div x-show="tab === 'checklist'">
     <div class="bg-white p-4 rounded shadow">
+        @php
+        $empChecklistItems = optional($empChecklists->firstWhere('employee_num', $employee->employee_num))->items ?? [];
+        $resolveChecklistKey = function ($item) {
+            $itemId = is_array($item) ? ($item['id'] ?? null) : ($item->id ?? null);
+            $itemName = is_array($item) ? ($item['name'] ?? null) : ($item->name ?? null);
+
+            return $itemId ? 'item_' . $itemId : $itemName;
+        };
+        $resolveChecklistEntry = function ($item) use ($empChecklistItems) {
+            $itemId = is_array($item) ? ($item['id'] ?? null) : ($item->id ?? null);
+            $itemName = is_array($item) ? ($item['name'] ?? null) : ($item->name ?? null);
+
+            if ($itemId && isset($empChecklistItems['item_' . $itemId])) {
+                return (object) $empChecklistItems['item_' . $itemId];
+            }
+
+            if ($itemName && isset($empChecklistItems[$itemName])) {
+                return (object) $empChecklistItems[$itemName];
+            }
+
+            return null;
+        };
+        @endphp
         @if(isset($isAddMode) && $isAddMode)
         <div class="mb-4">
             <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">

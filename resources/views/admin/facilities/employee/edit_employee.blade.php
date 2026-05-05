@@ -11,6 +11,19 @@ $assignmentLatest = $employee->assignments->sortBy([['effdt', 'desc'], ['effseq'
 if ($assignmentLatest) {
 $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ?? '';
 }
+
+$assignmentPositions = \App\Models\Position::query()
+    ->with('department:id,name')
+    ->orderBy('title')
+    ->get(['id', 'title', 'position_title', 'department_id'])
+    ->map(function ($position) {
+        return [
+            'id' => $position->id,
+            'title' => $position->position_title,
+            'department_id' => $position->department_id,
+            'department_name' => optional($position->department)->name,
+        ];
+    });
 @endphp
 
 <div class="container py-8 max-w-4xl mx-auto" x-data="{
@@ -97,14 +110,19 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
         });
 
         const assignmentLatest = @json($assignmentLatest);
+        const assignmentPositions = @json($assignmentPositions);
         
         function assignmentForm() {
             return {
+                positionsById: assignmentPositions.reduce((carry, position) => {
+                    carry[String(position.id)] = position;
+                    return carry;
+                }, {}),
                 currentAssignment: {
                     facility_id: assignmentLatest ? assignmentLatest.facility_id : '',
                     dept_id: assignmentLatest ? assignmentLatest.dept_id : '',
                     job_code_id: assignmentLatest ? assignmentLatest.job_code_id : '',
-                    reports_to_employee_num: assignmentLatest ? assignmentLatest.reports_to_employee_num : '',
+                    reports_to: assignmentLatest ? assignmentLatest.reports_to : '',
                     reg_temp: assignmentLatest ? assignmentLatest.reg_temp : 'r',
                     full_part_time: assignmentLatest ? assignmentLatest.full_part_time : 'ft',
                     bargaining_unit_id: assignmentLatest && assignmentLatest.bargaining_unit_id != null && assignmentLatest.bargaining_unit_id !== 'null'
@@ -116,17 +134,30 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
                 },
                 latestEffdt: assignmentLatest ? assignmentLatest.effdt : '',
                 latestEffseq: assignmentLatest ? assignmentLatest.effseq : '',
+                syncDepartmentFromPosition() {
+                    const selectedPosition = this.positionsById[String(this.currentAssignment.job_code_id || '')];
+                    this.currentAssignment.dept_id = selectedPosition && selectedPosition.department_id
+                        ? String(selectedPosition.department_id)
+                        : '';
+                },
+                currentDepartmentName() {
+                    const selectedPosition = this.positionsById[String(this.currentAssignment.job_code_id || '')];
+                    return selectedPosition && selectedPosition.department_name
+                        ? selectedPosition.department_name
+                        : '';
+                },
                 setAssignment(assign) {
-                    this.currentAssignment = Object.assign({facility_id: '', dept_id: '', job_code_id: '', reports_to_employee_num: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
+                    this.currentAssignment = Object.assign({facility_id: '', dept_id: '', job_code_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
+                    this.syncDepartmentFromPosition();
                 },
                 clearAssignment() {
-                    this.currentAssignment = {facility_id: '', dept_id: '', job_code_id: '', reports_to_employee_num: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
+                    this.currentAssignment = {facility_id: '', dept_id: '', job_code_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
                 },
                 isLatestRecord() {
                     return this.currentAssignment.effdt == this.latestEffdt && String(this.currentAssignment.effseq) == String(this.latestEffseq);
                 },
                 initAssignment() {
-                    // Optionally set initial assignment if needed
+                    this.syncDepartmentFromPosition();
                 }
             }
         }

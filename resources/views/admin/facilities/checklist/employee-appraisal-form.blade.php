@@ -364,8 +364,8 @@
         $displayReviewerName = $reviewerName;
         } else {
         $displayReviewerName = '';
-        if ($assignment && $assignment->reports_to_employee_num) {
-        $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to_employee_num)->first();
+        if ($assignment && $assignment->reports_to) {
+        $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to)->first();
         if ($reviewerEmp && $reviewerEmp->user) {
         $displayReviewerName = $reviewerEmp->user->name;
         } elseif ($reviewerEmp) {
@@ -397,8 +397,8 @@
             <td class="border px-2 py-1">
                 @php
                 $reviewerPosition = '';
-                if (!empty($assignment) && $assignment->reports_to_employee_num) {
-                $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to_employee_num)->first();
+                if (!empty($assignment) && $assignment->reports_to) {
+                $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to)->first();
                 if ($reviewerEmp && $reviewerEmp->currentAssignment && $reviewerEmp->currentAssignment->position) {
                 $reviewerPosition = $reviewerEmp->currentAssignment->position->position_title;
                 }

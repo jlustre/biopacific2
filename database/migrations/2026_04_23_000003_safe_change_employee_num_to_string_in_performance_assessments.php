@@ -8,10 +8,14 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up()
     {
+        // Drop existing foreign key if it exists to avoid duplicate constraint error
+        try {
+            DB::statement('ALTER TABLE employee_performance_assessments DROP FOREIGN KEY employee_performance_assessments_employee_num_foreign');
+        } catch (\Exception $e) {
+            // Ignore if the foreign key does not exist
+        }
         Schema::table('employee_performance_assessments', function (Blueprint $table) {
-            // Change column type to string
             $table->string('employee_num')->change();
-            // Add new foreign key to bp_employees.employee_num (string)
             $table->foreign('employee_num')->references('employee_num')->on('bp_employees')->onDelete('cascade');
         });
     }

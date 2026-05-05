@@ -10,13 +10,13 @@ class PositionsSeeder extends Seeder
     public function run(): void
     {
         // Get department IDs
-        $nursingDept = Department::where('name', 'Nursing')->where('type', 'facility')->first();
-        $administrationDept = Department::where('name', 'Administration')->where('type', 'facility')->first();
-        $socialServicesDept = Department::where('name', 'Social Services')->where('type', 'facility')->first();
-        $activitiesDept = Department::where('name', 'Activities')->where('type', 'facility')->first();
-        $dietaryDept = Department::where('name', 'Dietary')->where('type', 'facility')->first();
-        $envServicesDept = Department::where('name', 'Environmental Services')->where('type', 'facility')->first();
-        $maintenanceDept = Department::where('name', 'Maintenance')->where('type', 'facility')->first();
+        $nursingDept = Department::query()->where('name', 'Nursing')->where('type', 'facility')->first();
+        $administrationDept = Department::query()->where('name', 'Administration')->where('type', 'facility')->first();
+        $socialServicesDept = Department::query()->where('name', 'Social Services')->where('type', 'facility')->first();
+        $activitiesDept = Department::query()->where('name', 'Activities')->where('type', 'facility')->first();
+        $dietaryDept = Department::query()->where('name', 'Dietary')->where('type', 'facility')->first();
+        $envServicesDept = Department::query()->where('name', 'Environmental Services')->where('type', 'facility')->first();
+        $maintenanceDept = Department::query()->where('name', 'Maintenance')->where('type', 'facility')->first();
 
         if (!$nursingDept || !$administrationDept || !$socialServicesDept || !$activitiesDept || !$dietaryDept || !$envServicesDept || !$maintenanceDept) {
             throw new \Exception('Required departments not found. Please run DepartmentSeeder first.');
@@ -40,6 +40,7 @@ class PositionsSeeder extends Seeder
             ['title' => 'Certified Nursing Assistant', 'description' => 'Provides basic care and assists residents with daily activities.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0],
             ['title' => 'Charge Nurse', 'description' => 'Supervises nursing staff during shifts.', 'department_id' => $nursingDept->id, 'supervisor_role' => 1],
             ['title' => 'Director of Nursing', 'description' => 'Oversees nursing staff and operations.', 'department_id' => $nursingDept->id, 'supervisor_role' => 1],
+            
             ['title' => 'IP Nurse', 'description' => 'Infection prevention nurse.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0],
             ['title' => 'Licensed Nurse', 'description' => 'Licensed nurse.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0],
             ['title' => 'Licensed Vocational Nurse', 'description' => 'Assists in nursing care under RN supervision.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0],
@@ -74,7 +75,8 @@ class PositionsSeeder extends Seeder
             ['title' => 'OT/PT Assistant', 'description' => 'Assists occupational/physical therapists.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0],
             ['title' => 'Physical Therapist', 'description' => 'Provides physical therapy.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0],
             ['title' => 'Rehab Manager', 'description' => 'Manages rehabilitation services.', 'department_id' => $nursingDept->id, 'supervisor_role' => 1],
-        ];
+            ['title' => 'Director of Staff Development', 'description' => 'Leads staff development and education programs.', 'department_id' => $administrationDept->id, 'supervisor_role' => 1],
+            ];
 
         foreach ($positions as $position) {
             Position::firstOrCreate(

@@ -30,11 +30,20 @@ class BPEmpEmployeesTableSeeder extends Seeder
         }
         DB::table('bp_employees')->insert($employees);
 
-        // After assignments are seeded, update bp_employees with assignment_id
-        $assignments = DB::table('bp_emp_assignments')->orderBy('assign_id')->get();
-        foreach ($assignments as $assignment) {
-            DB::table('bp_employees')->where('employee_num', $assignment->employee_num)->update([
-                'assignment_id' => $assignment->assign_id,
+        // After assignments are seeded, update bp_employees with assignment_id and reports_to
+        $assignments = DB::table('bp_emp_assignments')
+            ->select('employee_num', 'assign_id', 'reports_to')
+            ->orderBy('employee_num')
+            ->orderByDesc('effdt')
+            ->orderByDesc('effseq')
+            ->get()
+            ->groupBy('employee_num');
+
+        foreach ($assignments as $employeeNum => $assignmentGroup) {
+            $latestAssignment = $assignmentGroup->first();
+            DB::table('bp_employees')->where('employee_num', $employeeNum)->update([
+                'assignment_id' => $latestAssignment->assign_id,
+                'reports_to' => $latestAssignment->reports_to,
             ]);
         }
 

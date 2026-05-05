@@ -3,6 +3,10 @@
 $latest = $employee->assignments->sortBy([['effdt', 'desc'], ['effseq', 'desc']])->first();
 $latestEffdt = $latest->effdt ?? '';
 $latestEffseq = $latest->effseq ?? '';
+$assignmentPositions = App\Models\Position::query()
+    ->with('department:id,name')
+    ->orderBy('title')
+    ->get();
 @endphp
 <div x-show="tab === 'assignment'" x-data="assignmentForm()" x-init="initAssignment()">
     @if(isset($isAddMode) && $isAddMode)
@@ -25,14 +29,17 @@ $latestEffseq = $latest->effseq ?? '';
     <form method="POST" action="{{ route('admin.employees.update_assignment', $employee->id) }}">
         @csrf
         @method('PUT')
+        @if(auth()->user() && auth()->user()->hasRole('facility-admin'))
+            <input type="hidden" name="facility_id" value="{{ auth()->user()->facility_id ?? ($employee->facility_id ?? '') }}">
+        @endif
         <div class="bg-white shadow rounded-lg p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Position</label>
-                    <select name="job_code_id" x-model="currentAssignment.job_code_id"
+                    <select name="job_code_id" x-model="currentAssignment.job_code_id" @change="syncDepartmentFromPosition()"
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Position</option>
-                        @foreach(App\Models\BPPosition::all() as $pos)
+                        @foreach($assignmentPositions as $pos)
                         <option value="{{ $pos->position_id }}">{{ $pos->position_title }}</option>
                         @endforeach
                     </select>
@@ -40,9 +47,6 @@ $latestEffseq = $latest->effseq ?? '';
                 @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Facility</label>
-                    <div class="mb-1 text-xs text-blue-700 bg-blue-50 rounded px-2 py-1">
-                        As an <strong>admin</strong> or <strong>HRRD</strong>, you can move this employee to another facility.
-                    </div>
                     <select name="facility_id" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
                         x-model="currentAssignment.facility_id">
                         <option value="">Select Facility</option>
@@ -54,20 +58,18 @@ $latestEffseq = $latest->effseq ?? '';
                 @endif
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Department</label>
-                    <select name="dept_id" x-model="currentAssignment.dept_id"
-                        class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
-                        <option value="">Select Department</option>
-                        @foreach(App\Models\BPDepartment::all() as $dept)
-                        <option value="{{ $dept->dept_id }}">{{ $dept->dept_name }}</option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="dept_id" :value="currentAssignment.dept_id">
+                    <input type="text" :value="currentDepartmentName()"
+                        readonly
+                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 bg-gray-100 cursor-not-allowed text-gray-700"
+                        placeholder="Select Position First">
                 </div>
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Reports To</label>
-                    <select name="reports_to_employee_num" x-model="currentAssignment.reports_to_employee_num"
+                    <select name="reports_to" x-model="currentAssignment.reports_to"
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Supervisor</option>
-                        @foreach(App\Models\BPPosition::where('has_supervisor_role', true)->get() as $supervisor)
+                        @foreach(App\Models\Position::query()->supervisorRoles()->get() as $supervisor)
                         <option value="{{ $supervisor->position_id }}">{{ $supervisor->position_title }}</option>
                         @endforeach
                     </select>

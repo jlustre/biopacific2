@@ -17,13 +17,8 @@
             <tbody>
                 @foreach ($partDItems as $item)
                 @php
-                $empChecklist = null;
-                if ($empChecklists && count($empChecklists)) {
-                $empChecklistRow = $empChecklists->firstWhere('employee_num', $employee->employee_num);
-                if ($empChecklistRow && isset($empChecklistRow->items[$item->name])) {
-                $empChecklist = (object) $empChecklistRow->items[$item->name];
-                }
-                }
+                $empChecklist = $resolveChecklistEntry($item);
+                $checklistKey = $resolveChecklistKey($item);
                 @endphp
                 <tr data-doc-type-id="{{ $item->doc_type_id ?? 4 }}">
                     <td class="border px-2 py-1 @if(isset($item->disabled) && $item->disabled) line-through @endif">{!!
@@ -35,13 +30,13 @@
                         @if(empty($item->disabled))
                         @if($empChecklist && $empChecklist->verified_by)
                         <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
-                            data-item-name="{{ $item->name }}" data-emp-id="{{ $employee->employee_num }}">Revoke</a>
+                            data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}">Revoke</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
-                            data-item-name="{{ $item->name }}" data-emp-id="{{ $employee->employee_num }}">View</a>
+                            data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
-                            data-item-name="{{ $item->name }}" data-emp-id="{{ $employee->employee_num }}"
+                            data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"

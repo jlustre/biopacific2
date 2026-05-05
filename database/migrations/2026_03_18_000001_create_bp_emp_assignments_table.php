@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('facility_id')->nullable();
             $table->unsignedBigInteger('dept_id')->nullable();
             $table->unsignedBigInteger('job_code_id')->nullable();
-            $table->unsignedBigInteger('reports_to_employee_num')->nullable();
+            $table->unsignedBigInteger('reports_to')->nullable();
             $table->enum('reg_temp', ['r', 't'])->default('r'); // Regular, Temporary
             $table->enum('full_part_time', ['ft', 'pt', 'pd'])->default('ft'); // Full-time, Part-time, Per Diem
             // Standard Audit

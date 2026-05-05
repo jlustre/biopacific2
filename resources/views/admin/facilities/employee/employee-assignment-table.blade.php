@@ -20,7 +20,7 @@
                 <td class="px-3 py-2 text-sm">{{ $assign->effseq }}</td>
                 <td class="px-3 py-2 text-sm">{{ optional($assign->position)->position_title }}</td>
                 <td class="px-3 py-2 text-sm">{{ optional($assign->facility)->name }}</td>
-                <td class="px-3 py-2 text-sm">{{ optional($assign->department)->dept_name }}</td>
+                <td class="px-3 py-2 text-sm">{{ optional($assign->department)->name }}</td>
                 <td class="px-3 py-2 text-sm">
                     @if($assign->reg_temp === 'r') Regular @elseif($assign->reg_temp === 't') Temporary @else —
                     @endif
@@ -34,7 +34,7 @@
                             facility_id: '{{ $assign->facility_id }}',
                             dept_id: '{{ $assign->dept_id }}',
                             job_code_id: '{{ $assign->job_code_id }}',
-                            reports_to_employee_num: '{{ $assign->reports_to_employee_num }}',
+                            reports_to: '{{ $assign->reports_to }}',
                             reg_temp: '{{ $assign->reg_temp }}',
                             full_part_time: '{{ $assign->full_part_time }}',
                             bargaining_unit_id: '{{ $assign->bargaining_unit_id ?? '' }}',

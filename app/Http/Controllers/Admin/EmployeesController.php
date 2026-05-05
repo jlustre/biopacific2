@@ -102,7 +102,10 @@ class EmployeesController extends Controller
     public function deleteDocument($employee_num, $upload_id)
     {
         $employee = BPEmployee::findOrFail($employee_num);
-        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        $upload = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($upload_id)
+            ->firstOrFail();
         $filePath = storage_path('app/public/' . $upload->file_path);
         if (file_exists($filePath)) {
             @unlink($filePath);
@@ -117,7 +120,10 @@ class EmployeesController extends Controller
     public function updateDocument(Request $request, $employee_num, $upload_id)
     {
         $employee = BPEmployee::findOrFail($employee_num);
-        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        $upload = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($upload_id)
+            ->firstOrFail();
 
         $uploadTypeId = $request->input('upload_type_id');
         $uploadType = \App\Models\UploadType::find($uploadTypeId);
@@ -170,7 +176,10 @@ class EmployeesController extends Controller
     public function editDocument($employee_num, $upload_id)
     {
         $employee = BPEmployee::findOrFail($employee_num);
-        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        $upload = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($upload_id)
+            ->firstOrFail();
         // You may want to pass upload types or other data as needed
         $uploadTypes = \App\Models\UploadType::all();
         return view('admin.facilities.employee.edit_document', compact('employee', 'upload', 'uploadTypes'));
@@ -182,7 +191,10 @@ class EmployeesController extends Controller
     public function viewDocument($employee_num, $upload_id)
     {
         $employee = BPEmployee::findOrFail($employee_num);
-        $upload = Upload::where('employee_num', $employee->employee_num)->findOrFail($upload_id);
+        $upload = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($upload_id)
+            ->firstOrFail();
         $filePath = storage_path('app/public/' . $upload->file_path);
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'File not found.');
@@ -201,7 +213,10 @@ class EmployeesController extends Controller
     public function downloadDocument($employee_num, $document_id)
     {
         $employee = BPEmployee::findOrFail($employee_num);
-        $document = Upload::where('employee_num', $employee->employee_num)->findOrFail($document_id);
+        $document = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($document_id)
+            ->firstOrFail();
         $filePath = storage_path('app/public/' . $document->file_path);
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'File not found.');
@@ -237,9 +252,16 @@ class EmployeesController extends Controller
     public function index(Request $request)
     {
         $facilities = Facility::all();
-        $departments = \App\Models\BPDepartment::all();
-        $positions = \App\Models\BPPosition::all();
+        $departments = \App\Models\Department::all();
+        $positions = \App\Models\Position::all();
+        $supervisorPositions = \App\Models\Position::query()->supervisorRoles()->get();
         $query = BPEmployee::query();
+        // Filter by Reports To (supervisor position)
+        if ($request->filled('reports_to')) {
+            $query->whereHas('assignments', function ($q) use ($request) {
+                $q->where('reports_to', $request->reports_to);
+            });
+        }
 
         // Filter by facility (current assignment only)
         if ($request->filled('facility')) {
@@ -278,11 +300,12 @@ class EmployeesController extends Controller
         // Search by name
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name', 'like', "%$search%")
-                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%$search%"]);
-            });
+                        $query->where(function ($q) use ($search) {
+                                $q->where('first_name', 'like', "%$search%")
+                                    ->orWhere('last_name', 'like', "%$search%")
+                                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%$search%"])
+                                    ->orWhere('employee_num', 'like', "%$search%");
+                        });
         }
 
         $perPage = $request->input('per_page', 10);
@@ -295,7 +318,7 @@ class EmployeesController extends Controller
 
         // dd($employees->toArray());
 
-        return view('admin.facilities.employees', compact('employees', 'facilities', 'departments', 'positions', 'perPage'));
+        return view('admin.facilities.employees', compact('employees', 'facilities', 'departments', 'positions', 'supervisorPositions', 'perPage'));
     }
     /**
      * Display the specified employee details for modal.
@@ -315,11 +338,11 @@ class EmployeesController extends Controller
      */
     public function edit($employee_num)
     {
-        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment'])->findOrFail($employee_num); // $employee_num is PK id
-        $departments = \App\Models\BPDepartment::all();
-        $positions = \App\Models\BPPosition::all();
+        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment', 'currentAssignment.position'])->findOrFail($employee_num); // $employee_num is PK id
+        $departments = \App\Models\Department::all();
+        $positions = \App\Models\Position::all();
         $facilities = \App\Models\Facility::all();
-        $checklistItems = \App\Models\ChecklistItem::all();
+        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
@@ -371,8 +394,8 @@ class EmployeesController extends Controller
         // Supervisor name logic: use Reports To if available, else logged-in user
         $supervisorName = '';
         $assignment = $employee->currentAssignment;
-        if ($assignment && $assignment->reports_to_employee_num) {
-            $supervisorEmp = \App\Models\BPEmployee::where('id', $assignment->reports_to_employee_num)->first();
+        if ($assignment && $assignment->reports_to) {
+            $supervisorEmp = \App\Models\BPEmployee::where('id', $assignment->reports_to)->first();
             if ($supervisorEmp && $supervisorEmp->user) {
                 $supervisorName = $supervisorEmp->user->name;
             } elseif ($supervisorEmp) {
@@ -669,13 +692,18 @@ class EmployeesController extends Controller
      */
     public function updateAssignment(Request $request, $employee)
     {
+        $employeeModel = \App\Models\BPEmployee::query()
+            ->whereKey($employee)
+            ->orWhere('employee_num', $employee)
+            ->firstOrFail();
+        $employeeNum = $employeeModel->employee_num;
+
         // If effseq is present, it's an update; otherwise, it's an add
         $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
         $rules = [
             'facility_id' => 'required|integer',
-            'dept_id' => 'required|integer',
-            'job_code_id' => 'required|integer',
-            'reports_to_employee_num' => 'nullable|integer',
+            'job_code_id' => 'required|integer|exists:positions,id',
+            'reports_to' => 'nullable|integer',
             'reg_temp' => 'required|in:r,t',
             'full_part_time' => 'required|in:ft,pt,pd',
             'bargaining_unit_id' => 'nullable|integer',
@@ -688,43 +716,39 @@ class EmployeesController extends Controller
             $rules['effdt'][] = 'after_or_equal:' . now()->toDateString();
         }
         $validated = $request->validate($rules);
+        $position = \App\Models\Position::query()->find($validated['job_code_id']);
+        if (!$position || !$position->department_id) {
+            return redirect()->back()
+                ->withErrors(['job_code_id' => 'The selected position does not have an assigned department.'])
+                ->withInput();
+        }
+
+        $validated['dept_id'] = $position->department_id;
         $userId = Auth::id();
         $validated['created_by'] = $userId;
         $validated['updated_by'] = $userId;
 
-        // If effseq is present, update existing assignment; else, add new with correct effseq
-        if (isset($validated['effseq']) && $validated['effseq'] !== '') {
-            // Update existing assignment
-            $assignment = \App\Models\BPEmpAssignment::where([
-                'employee_num' => $employee,
-                'effdt' => $validated['effdt'],
-                'effseq' => $validated['effseq'],
-            ])->first();
-            if ($assignment) {
-                $assignment->fill($validated);
-                $assignment->save();
-                $msg = 'Assignment updated successfully.';
-            } else {
-                // fallback: create new if not found
-                $validated['employee_num'] = $employee;
-                \App\Models\BPEmpAssignment::create($validated);
-                $msg = 'Assignment added successfully.';
-            }
-        } else {
-            // Add new assignment, determine effseq
-            $latest = \App\Models\BPEmpAssignment::where('employee_num', $employee)
-                ->where('facility_id', $validated['facility_id'])
-                ->orderByDesc('effdt')
-                ->orderByDesc('effseq')
-                ->first();
+        // Always update the latest assignment unless effdt is changed
+        $latest = \App\Models\BPEmpAssignment::where('employee_num', $employeeNum)
+            ->orderByDesc('effdt')
+            ->orderByDesc('effseq')
+            ->first();
+
+        // If effdt is changed or no assignment exists, create new
+        if (!$latest || $validated['effdt'] !== $latest->effdt) {
             $effseq = 0;
             if ($latest && $latest->effdt === $validated['effdt']) {
                 $effseq = $latest->effseq + 1;
             }
             $validated['effseq'] = $effseq;
-            $validated['employee_num'] = $employee;
+            $validated['employee_num'] = $employeeNum;
             \App\Models\BPEmpAssignment::create($validated);
             $msg = 'Assignment added successfully.';
+        } else {
+            // Update the latest assignment
+            $latest->fill($validated);
+            $latest->save();
+            $msg = 'Assignment updated successfully.';
         }
 
         return redirect()->route('admin.employees.edit', $employee)
@@ -742,6 +766,7 @@ class EmployeesController extends Controller
             //     'request' => $request->all(),
             // ]);
             $validated = $request->validate([
+                'checklist_item_id' => 'nullable|integer|exists:checklist_items,id',
                 'doc_name' => 'required|string|max:255',
                 'doc_type_id' => 'required|integer',
                 'on_file' => 'required|boolean',
@@ -756,7 +781,9 @@ class EmployeesController extends Controller
             $checklist = \App\Models\BPEmpChecklist::firstOrNew(['employee_num' => $employeeModel->employee_num]);
             $items = $checklist->items ?? [];
             $docName = $validated['doc_name'];
-            $items[$docName] = [
+            $checklistKey = !empty($validated['checklist_item_id']) ? 'item_' . $validated['checklist_item_id'] : $docName;
+            $items[$checklistKey] = [
+                'checklist_item_id' => $validated['checklist_item_id'] ?? null,
                 'doc_type_id' => $validated['doc_type_id'],
                 'on_file' => $validated['on_file'],
                 'verified_dt' => $validated['verified_dt'] ?? now()->toDateString(),
@@ -782,12 +809,13 @@ class EmployeesController extends Controller
                     $verifiedByName = $user->name;
                 }
             }
-            $itemWithName = $items[$docName];
+            $itemWithName = $items[$checklistKey];
             $itemWithName['verified_by_name'] = $verifiedByName;
             return response()->json([
                 'success' => true,
                 'message' => 'Checklist verification saved.',
                 'data' => [
+                    'checklist_key' => $checklistKey,
                     'doc_name' => $docName,
                     'item' => $itemWithName,
                 ]
@@ -813,14 +841,16 @@ class EmployeesController extends Controller
     {
         try {
             $validated = $request->validate([
+                'checklist_item_id' => 'nullable|integer|exists:checklist_items,id',
                 'doc_name' => 'required|string|max:255',
             ]);
             $docName = $validated['doc_name'];
+            $checklistKey = !empty($validated['checklist_item_id']) ? 'item_' . $validated['checklist_item_id'] : $docName;
             $checklist = \App\Models\BPEmpChecklist::where('employee_num', $employee)->first();
             $itemData = null;
-            if ($checklist && is_array($checklist->items) && array_key_exists($docName, $checklist->items)) {
+            if ($checklist && is_array($checklist->items) && array_key_exists($checklistKey, $checklist->items)) {
                 $items = $checklist->items;
-                unset($items[$docName]);
+                unset($items[$checklistKey]);
                 $checklist->items = $items;
                 // If no items left, delete the row, else save
                 if (empty($items)) {
@@ -949,8 +979,8 @@ class EmployeesController extends Controller
     public function create()
     {
         $employee = new \App\Models\BPEmployee();
-        $departments = \App\Models\BPDepartment::all();
-        $positions = \App\Models\BPPosition::all();
+        $departments = \App\Models\Department::all();
+        $positions = \App\Models\Position::all();
         $facilities = \App\Models\Facility::all();
         $checklistItems = \App\Models\ChecklistItem::all();
         $empChecklists = collect();

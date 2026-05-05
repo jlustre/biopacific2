@@ -32,20 +32,20 @@
         @include('layouts.sidebar')
 
         <!-- Main Content Area -->
-        <div class="flex-1">
+        <div class="flex-1 -pl-2 sm:p-3 md:p-4 lg:p-6">
             <!-- Add left margin and top padding for fixed sidebar and navbar -->
             <div :class="sidebarOpen ? 'pt-20 pl-64' : 'pt-20 pl-4'">
                 <!-- Page Header -->
                 @hasSection('header')
                 <div class="bg-white/60 shadow-sm border-b border-gray-200 rounded-xl">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
                         @yield('header')
                     </div>
                 </div>
                 @endif
 
                 <!-- Main Content -->
-                <main class="bg-white/60 rounded-xl max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main class="bg-teal-50/60 rounded-lg max-w-full mx-auto px-2 sm:p-3 md:p-4 lg:p-4">
                     @yield('content')
                 </main>
             </div>

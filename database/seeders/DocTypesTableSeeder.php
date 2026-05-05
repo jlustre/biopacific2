@@ -24,6 +24,20 @@ class DocTypesTableSeeder extends Seeder
             'Areas Requiring Further Development',
             'Development Plans',
             'Employee Comments',
+            'Administrator Orientation',
+            'Blood Administration LN Competency Skills',
+            'Blood Glucose Skills checklist',
+            'CNA Competency Perineal Care Checklist',
+            'CNA skills checklist',
+            'DON Orientation Checklist',
+            'Dietary_Department-Skills Checklist',
+            'Housekeeper\'s Skills Checklist',
+            'Licensed Nurse Competency Checklist',
+            'NA skills checklist',
+            'New DSD Orientation Checklist',
+            'SSD Orientation Checklist',
+            'Tracheostomy Care Skills Check',
+            'Treatment Nurse Care Skills Checklist',
         ];
         foreach ($types as $name) {
             DocType::firstOrCreate(['name' => $name]);

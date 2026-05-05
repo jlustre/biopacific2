@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class FacilityController extends Controller
 {
@@ -51,7 +52,9 @@ class FacilityController extends Controller
      */
     public function publicView(Facility $facility)
     {
-        $global = DB::table('global_shutdowns')->orderByDesc('id')->first();
+        $global = Schema::hasTable('global_shutdowns')
+            ? DB::table('global_shutdowns')->orderByDesc('id')->first()
+            : null;
         if ($global && $global->is_shutdown) {
             return response()->view('shutdown', [
                 'message' => $global->shutdown_message,

@@ -16,18 +16,84 @@
     // Modal close function for PART A-E
     function closeVerifyModalAE() {
         var modal = document.getElementById('verifyModal');
+        var subitemValidationMsg = document.getElementById('subitemValidationMsg');
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+        if (subitemValidationMsg) {
+            subitemValidationMsg.textContent = '';
+            subitemValidationMsg.classList.add('hidden');
+        }
+    }
+
+    function getChecklistRowLevel(row) {
+        if (!row) {
+            return 0;
+        }
+
+        return parseInt(row.getAttribute('data-item-level') || '0', 10);
+    }
+
+    function getIncompletePartESubitems(row) {
+        if (!row || !row.closest('#partE')) {
+            return [];
+        }
+
+        var currentLevel = getChecklistRowLevel(row);
+        var incompleteSubitems = [];
+        var nextRow = row.nextElementSibling;
+
+        while (nextRow) {
+            if (!nextRow.hasAttribute('data-item-level')) {
+                nextRow = nextRow.nextElementSibling;
+                continue;
+            }
+
+            var nextLevel = getChecklistRowLevel(nextRow);
+            if (nextLevel <= currentLevel) {
+                break;
+            }
+
+            if (nextRow.getAttribute('data-item-disabled') !== '1') {
+                var checkbox = nextRow.querySelector('input[type="checkbox"]');
+                if (!checkbox || !checkbox.checked) {
+                    incompleteSubitems.push(nextRow.getAttribute('data-item-name') || 'Unnamed sub-item');
+                }
+            }
+
+            nextRow = nextRow.nextElementSibling;
+        }
+
+        return incompleteSubitems;
     }
 
     // Opens the PART A-E modal and populates its fields for the selected item/employee
-    function openVerifyModalAE(itemName, empId, viewOnly = false) {
+    function findChecklistLink(itemName, empId, itemId = null, checklistKey = null) {
+        return Array.from(document.querySelectorAll('.verify-link, .view-link')).find((link) => {
+            if (String(link.getAttribute('data-emp-id')) !== String(empId)) {
+                return false;
+            }
+
+            if (itemId && String(link.getAttribute('data-item-id')) === String(itemId)) {
+                return true;
+            }
+
+            if (checklistKey && link.getAttribute('data-checklist-key') === checklistKey) {
+                return true;
+            }
+
+            return link.getAttribute('data-item-name') === itemName;
+        });
+    }
+
+    function openVerifyModalAE(itemName, empId, itemId = null, checklistKey = null, viewOnly = false) {
         // Get modal and field elements
         var modal = document.getElementById('verifyModal');
         var empIdField = document.getElementById('verifyEmpId');
+        var checklistItemIdField = document.getElementById('verifyChecklistItemId');
         var docNameField = document.getElementById('verifyDocName');
+        var docTypeIdField = document.getElementById('verifyDocTypeId');
         var onFileField = document.getElementById('verifyOnFile');
         var verifiedDtField = document.getElementById('verifyVerifiedDt');
         var expDtField = document.getElementById('verifyExpDt');
@@ -35,6 +101,12 @@
         var verifiedByField = document.getElementById('verifyVerifiedBy');
         var verifiedByIdField = document.getElementById('verifyVerifiedById');
         var expDtRequiredMsg = document.getElementById('expDtRequiredMsg');
+        var subitemValidationMsg = document.getElementById('subitemValidationMsg');
+
+        if (subitemValidationMsg) {
+            subitemValidationMsg.textContent = '';
+            subitemValidationMsg.classList.add('hidden');
+        }
 
         // Find isExpiring for this item (assumes a global JS object window.checklistItemsByName)
         var isExpiring = 0;
@@ -58,14 +130,14 @@
         }
         
         // Find the row for this itemName/empId to get any existing data
-        var link = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
-        l => l.getAttribute('data-item-name') === itemName && l.getAttribute('data-emp-id') == empId
-        );
+        var link = findChecklistLink(itemName, empId, itemId, checklistKey);
         var row = link ? link.closest('tr') : null;
         
         // Set hidden fields for employee and document
         if (empIdField) empIdField.value = empId;
+        if (checklistItemIdField) checklistItemIdField.value = itemId || (link ? (link.getAttribute('data-item-id') || '') : '');
         if (docNameField) docNameField.value = itemName;
+        if (docTypeIdField) docTypeIdField.value = row ? (row.getAttribute('data-doc-type-id') || '') : '';
         
         // Always default verification date to today unless in viewOnly mode
         if (verifiedDtField && !viewOnly) {
@@ -73,7 +145,7 @@
         }
         // Populate fields from data attributes if available
         if (link) {
-            if (onFileField) onFileField.value = '1'; // Always set to 1 (checked)
+            if (onFileField) onFileField.value = link.getAttribute('data-on-file') || '1';
             if (verifiedDtField && link.hasAttribute('data-verified-dt') && link.getAttribute('data-verified-dt')) {
                 verifiedDtField.value = link.getAttribute('data-verified-dt');
             }
@@ -83,9 +155,11 @@
             if (verifiedByIdField && link.hasAttribute('data-verified-by')) verifiedByIdField.value = link.getAttribute('data-verified-by') || '';
         }
         
-        // Set verified by fields to current user if available
-        if (window.currentUserName && verifiedByField) verifiedByField.value = window.currentUserName;
-        if (window.currentUserId && verifiedByIdField) verifiedByIdField.value = window.currentUserId;
+        // Only default to the current user when editing a new confirmation.
+        if (!viewOnly) {
+            if (window.currentUserName && verifiedByField) verifiedByField.value = window.currentUserName;
+            if (window.currentUserId && verifiedByIdField) verifiedByIdField.value = window.currentUserId;
+        }
         
         // Set fields to readonly if viewOnly is true
         var editBtn = document.getElementById('editBtn');
@@ -177,24 +251,21 @@
     document.addEventListener('DOMContentLoaded', function () {
         // Get all tab link elements
         const tabLinks = document.querySelectorAll('#employeeFileTabs .tab-link');
-        // Get all tab content containers by their IDs
-        const tabContents = [
-            document.getElementById('partA'),
-            document.getElementById('partB'),
-            document.getElementById('partC'),
-            document.getElementById('partD'),
-            document.getElementById('partE'),
-            document.getElementById('partF'),
-        ];
+        // Use the rendered tab panes so stale localStorage values cannot blank the checklist.
+        const tabContents = document.querySelectorAll('#employeeFileTabs ~ div.tab-content, #partA, #partB, #partC, #partD, #partE, #partF');
+        const validTabIds = Array.from(tabLinks).map(link => link.getAttribute('data-tab'));
 
         // Function to activate a tab by its ID
         function setActiveTab(tabId) {
+            const resolvedTabId = validTabIds.includes(tabId) ? tabId : 'partA';
+            const activeTabId = resolvedTabId;
+
             // Loop through all tab links and update their classes for active/inactive state
             tabLinks.forEach(link => {
                 // Remove all possible state classes first
                 link.classList.remove('text-white', 'bg-teal-600', 'border-teal-600', 'bg-white');
                 // If this link matches the active tab, add active classes
-                if (link.getAttribute('data-tab') === tabId) {
+                if (link.getAttribute('data-tab') === activeTabId) {
                     link.classList.add('text-white', 'bg-teal-600', 'border-teal-600');
                 } else {
                     // Otherwise, make it look inactive
@@ -206,10 +277,10 @@
                 if (tc) tc.classList.add('hidden');
             });
             // Show the selected tab's content
-            const activeContent = document.getElementById(tabId);
+            const activeContent = document.getElementById(activeTabId);
             if (activeContent) activeContent.classList.remove('hidden');
             // Remember the selected tab in localStorage for persistence
-            localStorage.setItem('employeeChecklistActiveTab', tabId);
+            localStorage.setItem('employeeChecklistActiveTab', activeTabId);
         }
         
         // Add click event listeners to each tab link to activate the correct tab
@@ -226,7 +297,6 @@
         bindChecklistLinks();
     });
 
-    // Binds click events for PART A-E checklist action links (Verify/View/Revoke)
     function bindChecklistLinksAE() {
         // For each 'Verify' link in PART A-E, bind click to open the modal in edit mode
         document.querySelectorAll('.verify-link[data-item-name]').forEach(function(link) {
@@ -234,7 +304,9 @@
                 e.preventDefault();
                 var itemName = this.getAttribute('data-item-name');
                 var empId = this.getAttribute('data-emp-id');
-                openVerifyModalAE(itemName, empId, false); // false = not view-only
+                var itemId = this.getAttribute('data-item-id');
+                var checklistKey = this.getAttribute('data-checklist-key');
+                openVerifyModalAE(itemName, empId, itemId, checklistKey, false); // false = not view-only
             };
         });
         // For each 'View' link in PART A-E, bind click to open the modal in view-only mode
@@ -243,16 +315,21 @@
                 e.preventDefault();
                 var itemName = this.getAttribute('data-item-name');
                 var empId = this.getAttribute('data-emp-id');
-                openVerifyModalAE(itemName, empId, true); // true = view-only
+                var itemId = this.getAttribute('data-item-id');
+                var checklistKey = this.getAttribute('data-checklist-key');
+                openVerifyModalAE(itemName, empId, itemId, checklistKey, true); // true = view-only
             };
         });
-        // For each 'Revoke' link in PART A-E, bind click to send AJAX unverify
         document.querySelectorAll('.unverify-link[data-item-name]').forEach(function(link) {
             link.onclick = function(e) {
                 e.preventDefault();
                 var itemName = this.getAttribute('data-item-name');
+                var itemId = this.getAttribute('data-item-id');
                 var empId = this.getAttribute('data-emp-id');
                 var row = this.closest('tr');
+                if (!window.confirm(`Warning: this will unconfirm "${itemName}". Continue?`)) {
+                    return;
+                }
                 var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 fetch(`/admin/employees/${empId}/checklist/unverify`, {
                     method: 'POST',
@@ -261,7 +338,7 @@
                         'X-CSRF-TOKEN': token,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ doc_name: itemName })
+                    body: JSON.stringify({ doc_name: itemName, checklist_item_id: itemId || null })
                 })
                 .then(async response => {
                     let data;
@@ -269,17 +346,17 @@
                     try {
                         data = JSON.parse(rawText);
                     } catch (err) {
-                        alert('Revoke failed.');
+                        alert('Confirmation failed.');
                         return;
                     }
                     if (data.success && data.data && data.data.item) {
                         updateChecklistRow(row, data.data.item, itemName, empId);
                     } else {
-                        alert('Revoke failed.');
+                        alert('Confirmation failed.');
                     }
                 })
                 .catch(err => {
-                    alert('Revoke failed.');
+                    alert('Confirmation failed.');
                 });
             };
         });
@@ -289,18 +366,30 @@
     function handleChecklistFormSubmit(e) {
         e.preventDefault();
         var empId = document.getElementById('verifyEmpId').value;
+        var checklistItemId = document.getElementById('verifyChecklistItemId').value;
         var docName = document.getElementById('verifyDocName').value;
-        var docTypeId = parseInt(document.getElementById('verifyForm').getAttribute('data-doc-type-id') || '1', 10);
+        var docTypeId = parseInt(document.getElementById('verifyDocTypeId').value || document.getElementById('verifyForm').getAttribute('data-doc-type-id') || '1', 10);
         var onFile = true; // Always true when verified
         var verifiedDt = document.getElementById('verifyVerifiedDt').value;
-        var row = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
-            l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId
-        )?.closest('tr');
+        var row = findChecklistLink(docName, empId, checklistItemId)?.closest('tr');
         var expDtField = document.getElementById('verifyExpDt');
         var expDtRequiredMsg = document.getElementById('expDtRequiredMsg');
+        var subitemValidationMsg = document.getElementById('subitemValidationMsg');
         var isExpiring = 0;
         if (window.checklistItemsByName && window.checklistItemsByName[docName]) {
             isExpiring = window.checklistItemsByName[docName].isExpiring ? 1 : 0;
+        }
+        if (subitemValidationMsg) {
+            subitemValidationMsg.textContent = '';
+            subitemValidationMsg.classList.add('hidden');
+        }
+        var incompleteSubitems = getIncompletePartESubitems(row);
+        if (incompleteSubitems.length > 0) {
+            if (subitemValidationMsg) {
+                subitemValidationMsg.textContent = 'Confirm all sub-items first: ' + incompleteSubitems.join(', ');
+                subitemValidationMsg.classList.remove('hidden');
+            }
+            return;
         }
         // If item is expiring, require Expiration Date
         if (isExpiring && (!expDtField.value || expDtField.value === '')) {
@@ -318,6 +407,7 @@
         var verifiedById = document.getElementById('verifyVerifiedById').value;
         var payload = {
             employee_num: empId,
+            checklist_item_id: checklistItemId || null,
             doc_name: docName,
             doc_type_id: docTypeId,
             on_file: onFile,
@@ -348,8 +438,8 @@
                 return;
             }
             if (data.success && data.data && data.data.item) {
-                var row = Array.from(document.querySelectorAll('.verify-link, .view-link')).find(l => l.getAttribute('data-item-name') === docName && l.getAttribute('data-emp-id') == empId)?.closest('tr');
-                updateChecklistRow(row, data.data.item, docName, empId);
+                var row = findChecklistLink(docName, empId, checklistItemId, data.data.checklist_key)?.closest('tr');
+                updateChecklistRow(row, data.data.item, docName, empId, checklistItemId, data.data.checklist_key);
                     closeVerifyModalAE();
             } else {
                 alert('Save failed.');
@@ -364,7 +454,7 @@
     }
 
     // Updates the PART A-E checklist table row after verification save
-    function updateChecklistRow(row, item, docName, empId) {
+    function updateChecklistRow(row, item, docName, empId, itemId = null, checklistKey = null) {
         if (!row || row.children.length < 5) return;
         // Update the On File checkbox in the row
         var checkbox = row.children[1].querySelector('input[type="checkbox"]');
@@ -384,7 +474,6 @@
         while (verifiedByCell.firstChild) { verifiedByCell.removeChild(verifiedByCell.firstChild); }
         verifiedByCell.appendChild(document.createTextNode(item.verified_by_name || item.verified_by || ''));
 
-        // Build the action links for the row (Revoke/View or Verify)
         var actionCell = row.children[1];
         var checkboxElem = actionCell.querySelector('input[type="checkbox"]');
         var expDtNotRequiredAttr = '';
@@ -392,24 +481,31 @@
             expDtNotRequiredAttr = ` data-exp-dt-not-required="${item.exp_dt_not_required ? 1 : 0}"`;
         }
         var itemNameAttr = docName.replace(/"/g, '&quot;');
+        var itemIdAttr = itemId ? ` data-item-id="${String(itemId).replace(/"/g, '&quot;')}"` : '';
+        var checklistKeyAttr = checklistKey ? ` data-checklist-key="${String(checklistKey).replace(/"/g, '&quot;')}"` : '';
+        var verifyLabel = row.closest('#partE') ? 'Confirm' : 'Verify';
         var actionLinks = '';
         if (item.verified_by || item.verified_by_name) {
-            // If verified, show Revoke and View links with tooltips
             actionLinks =
-                `<a href="#" class="text-red-600 underline ml-3 mr-2 unverify-link" title="Revoke Verification" data-item-name="${itemNameAttr}" data-emp-id="${empId}"${expDtNotRequiredAttr}>Revoke</a>` +
+                `<a href="#" class="text-red-600 underline ml-3 mr-2 unverify-link" title="Click to unconfirm Item" data-item-name="${itemNameAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}"${expDtNotRequiredAttr}>Confirmed</a>` +
                 `<span>|</span>` +
-                `<a href="#" class="text-teal-600 underline ml-2 view-link" title="View Verification Details" data-item-name="${itemNameAttr}" data-emp-id="${empId}"${expDtNotRequiredAttr}>View</a>`;
+                `<a href="#" class="text-teal-600 underline ml-2 view-link" title="View Confirmation Details" data-item-name="${itemNameAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}"` +
+                ` data-on-file="${item.on_file ? 1 : 0}"` +
+                ` data-verified-dt="${item.verified_dt || ''}"` +
+                ` data-exp-dt="${item.exp_dt || ''}"` +
+                ` data-comments="${item.comments || ''}"` +
+                ` data-verified-by="${item.verified_by_name || item.verified_by || ''}"${expDtNotRequiredAttr}>View</a>`;
         } else {
             // If not verified, show Verify link with tooltip and all relevant data attributes
             actionLinks =
-                `<a href="#" class="text-teal-600 underline ml-3 verify-link" title="Verify Item" data-item-name="${itemNameAttr}" data-emp-id="${empId}" title="Verify Item"` +
+                `<a href="#" class="text-teal-600 underline ml-3 verify-link" title="Click to confirm Item" data-item-name="${itemNameAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}" title="Verify Item"` +
                 ` data-on-file="${item.on_file ? 1 : 0}"` +
                 ` data-verified-dt="${item.verified_dt || ''}"` +
                 ` data-exp-dt="${item.exp_dt || ''}"` +
                 ` data-comments="${item.comments || ''}"` +
                 ` data-verified-by="${item.verified_by || ''}"` +
                 ` data-exp-dt-not-required="${item.exp_dt_not_required ? 1 : 0}"` +
-                `>Verify</a>`;
+                `>${verifyLabel}</a>`;
         }
         // Remove any existing action links after the checkbox, then add new ones
         if (checkboxElem) {
@@ -424,7 +520,6 @@
                 });
             }
         }
-        // Re-bind events for new links (Verify/View/Revoke)
         bindChecklistLinks();
     }
 

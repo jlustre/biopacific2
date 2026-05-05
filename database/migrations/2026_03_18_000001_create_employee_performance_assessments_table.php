@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('employee_performance_assessments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_num'); // FK to bp_employees.id
+            $table->string('employee_num'); // FK to bp_employees.employee_num
             $table->json('items'); // All assessment items for this employee
             $table->date('assessment_date')->nullable();
             $table->date('next_assessment_date')->nullable();
@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->text('comments')->nullable();
             $table->timestamps();
 
-            $table->foreign('employee_num')->references('id')->on('bp_employees')->onDelete('cascade');
+            // Foreign key for employee_num is now added in a later migration after type change
             $table->foreign('assessed_by')->references('id')->on('users')->onDelete('set null');
             $table->index('employee_num');
         });

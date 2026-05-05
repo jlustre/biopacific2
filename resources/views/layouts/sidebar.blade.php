@@ -177,7 +177,7 @@ use Illuminate\Support\Facades\Log;
                 <!-- Manage Tables Menu -->
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') || request()->routeIs('admin.departments.*') || request()->routeIs('admin.events.*') || request()->routeIs('admin.email-recipients.*') || request()->routeIs('admin.email-templates.*') ? 'bg-gray-100 font-bold' : '' }}">
+                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') || request()->routeIs('admin.checklist-items.*') || request()->routeIs('admin.departments.*') || request()->routeIs('admin.events.*') || request()->routeIs('admin.email-recipients.*') || request()->routeIs('admin.email-templates.*') ? 'bg-gray-100 font-bold' : '' }}">
                         <i class="fas fa-table mr-2"></i> Manage Tables
                         <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -195,6 +195,10 @@ use Illuminate\Support\Facades\Log;
                         <a href="{{ route('admin.positions.index') }}"
                             class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.positions.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
                             <i class="fas fa-briefcase mr-2 text-blue-600"></i> Positions
+                        </a>
+                        <a href="{{ route('admin.checklist-items.index') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.checklist-items.*') ? 'bg-cyan-50 text-cyan-700 font-medium' : '' }}">
+                            <i class="fas fa-list-check mr-2 text-cyan-600"></i> Checklist Items
                         </a>
                         <a href="{{ route('admin.departments.index') }}"
                             class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.departments.*') ? 'bg-green-50 text-green-700 font-medium' : '' }}">
