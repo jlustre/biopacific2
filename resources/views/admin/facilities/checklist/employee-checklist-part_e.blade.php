@@ -1,21 +1,10 @@
 <div id="partE" class="tab-content hidden">
     <div class="overflow-x-auto">
         @php
-        $partEItems = $checklistItems->where('section', 'PART E')->sortBy('order');
-        $currentPositionTitle = trim((string) ($employee->currentAssignment?->position?->position_title ?? ''));
-        $normalizedPositionTitle = \Illuminate\Support\Str::lower($currentPositionTitle);
-        $orientationPositionTitles = collect([
-            'administrator',
-            'director of staff development',
-        ]);
-        $orientationPositionKeywords = collect([
-            'administrator',
-            'staff development',
-        ]);
-        $isOrientationChecklist = $orientationPositionTitles->contains($normalizedPositionTitle)
-            || $orientationPositionKeywords->contains(function ($keyword) use ($normalizedPositionTitle) {
-                return $normalizedPositionTitle !== '' && \Illuminate\Support\Str::contains($normalizedPositionTitle, $keyword);
-            });
+        $partEItems = $checklistItems
+            ->where('section', 'PART E')
+            ->reject(fn ($item) => (int) ($item->doc_type_id ?? 0) === 5)
+            ->sortBy('order');
         $partEChildItems = [
             'Morning Meeting/Ambassador Rounds',
             'Mini/Thorough Utilization Review',
@@ -54,11 +43,11 @@
             'Restorative Nursing Program Meeting-weekly/monthly',
         ];
         @endphp
-        <h2 class="text-xl font-bold mb-4">{{ $isOrientationChecklist ? 'ORIENTATION' : 'SKILLS' }} CHECKLIST: {{ $employee->currentAssignment?->position?->position_title ?? 'No Position Assigned' }}</h2>
+        <h2 class="text-xl font-bold mb-4">ORIENTATION CHECKLIST: {{ $employee->currentAssignment?->position?->position_title ?? 'No Position Assigned' }}</h2>
         <table class="min-w-full border text-xs md:text-sm">
             <thead>
                 <tr class="bg-gray-100">
-                    <th class="border px-2 py-1 text-left">{{ $isOrientationChecklist ? 'ORIENTATION ITEMS' : 'SKILLS/ITEMS' }}</th>
+                    <th class="border px-2 py-1 text-left">ORIENTATION ITEMS</th>
                     <th class="border px-2 py-1 text-center w-1/4">CONFIRMATION</th>
                     <th class="border px-2 py-1 text-center w-1/8">CONFIRMED DATE</th>
                     <th class="border px-2 py-1 text-center w-1/8">EXPIRED DATE</th>
@@ -151,15 +140,11 @@
                 @empty
                 <tr>
                     <td colspan="5" class="border px-4 py-6 text-center text-gray-500">
-                        No Part E checklist items apply to this employee's current position.
+                        No orientation checklist items apply to this employee's current position.
                     </td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
-        {{-- <div class="mt-4">
-            <label class="font-semibold">Comments2:</label>
-            <textarea class="border rounded w-full min-h-[60px] mt-1" rows="3"></textarea>
-        </div> --}}
     </div>
 </div>

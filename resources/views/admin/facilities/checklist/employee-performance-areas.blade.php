@@ -35,19 +35,18 @@
                 @php
                 $itemKey = 'F_' . md5($sectionLabel . '_' . $item->id);
                 $empChecklist = $empPerformanceChecklist[$itemKey] ?? null;
+                $ratingText = match ($empChecklist['rating'] ?? null) {
+                    'E' => 'Excellent',
+                    'S' => 'Satisfactory',
+                    'U' => 'Unsatisfactory',
+                    'N' => 'Not Applicable',
+                    default => '',
+                };
                 @endphp
                 <tr>
                     <td class="border px-2 py-1 text-sm">{{ $item->label ?? '' }}</td>
                     <td class="border px-2 py-1 text-sm">{!! $item->item !!}</td>
                     <td class="border px-2 py-1 text-center">
-                        @php
-                        $ratingText = '';
-                        if (isset($empChecklist['rating'])) {
-                        if ($empChecklist['rating'] == 1) $ratingText = 'Below';
-                        elseif ($empChecklist['rating'] == 2) $ratingText = 'Meets';
-                        elseif ($empChecklist['rating'] == 3) $ratingText = 'Exceeds';
-                        }
-                        @endphp
                         {{ $ratingText }}
                     </td>
                     <td class="border px-2 py-1 text-center">
@@ -67,11 +66,23 @@
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link cursor-pointer text-sm"
                             title="View Assessment Details" data-item-key="{{ $itemKey }}"
-                            data-emp-id="{{ $employee->employee_num }}" data-doc-type-id="{{ $docTypeId }}">View</a>
+                            data-emp-id="{{ $employee->employee_num }}" data-doc-type-id="{{ $docTypeId }}"
+                            data-item-label="{{ strip_tags($item->item) }}"
+                            data-source-item-id="{{ $item->id }}"
+                            data-rating="{{ $empChecklist['rating'] ?? '' }}"
+                            data-assessment-date="{{ $empChecklist['verified_dt'] ?? '' }}"
+                            data-comments="{{ $empChecklist['comments'] ?? '' }}"
+                            data-assessed-by-id="{{ $empChecklist['verified_by'] ?? '' }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline verify-link cursor-pointer" title="Assess Item"
                             data-item-key="{{ $itemKey }}" data-emp-id="{{ $employee->employee_num }}"
-                            data-doc-type-id="{{ $docTypeId }}">Assess</a>
+                            data-doc-type-id="{{ $docTypeId }}"
+                            data-item-label="{{ strip_tags($item->item) }}"
+                            data-source-item-id="{{ $item->id }}"
+                            data-rating="{{ $empChecklist['rating'] ?? '' }}"
+                            data-assessment-date="{{ $empChecklist['verified_dt'] ?? '' }}"
+                            data-comments="{{ $empChecklist['comments'] ?? '' }}"
+                            data-assessed-by-id="{{ $empChecklist['verified_by'] ?? '' }}">Assess</a>
                         @endif
                     </td>
                 </tr>

@@ -1,4 +1,25 @@
 <script>
+    function showAssessmentFeedback(message, type) {
+        var banner = document.getElementById('assessmentActionFeedback');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'assessmentActionFeedback';
+            banner.className = 'fixed top-4 right-4 z-50 rounded px-4 py-2 text-sm shadow-lg';
+            banner.style.display = 'none';
+            document.body.appendChild(banner);
+        }
+
+        banner.textContent = message;
+        banner.classList.remove('bg-green-600', 'bg-red-600', 'text-white');
+        banner.classList.add(type === 'error' ? 'bg-red-600' : 'bg-green-600', 'text-white');
+        banner.style.display = 'block';
+
+        clearTimeout(window.assessmentActionFeedbackTimer);
+        window.assessmentActionFeedbackTimer = setTimeout(function() {
+            banner.style.display = 'none';
+        }, 2500);
+    }
+
     // Opens the modal for creating or editing an assessment period
     function openNewPeriodModal(period = null) {
         var newPeriodModal = document.getElementById('newPeriodModal');
@@ -245,12 +266,15 @@
     function openVerifyModalF(itemKey, empId, viewOnly = false, effDate = null, forceNew = false) {
         var empIdField = document.getElementById('verifyEmpIdF');
         var itemKeyField = document.getElementById('verifyItemKeyF');
+        var itemLabelField = document.getElementById('verifyItemLabelF');
+        var sourceItemIdField = document.getElementById('verifySourceItemIdF');
         var ratingField = document.getElementById('verifyRatingF');
         var assessmentDateField = document.getElementById('verifyAssessmentDateF');
         var commentsField = document.getElementById('verifyCommentsF');
         var assessedByField = document.getElementById('verifyAssessedByF');
         var assessedByIdField = document.getElementById('verifyAssessedByIdF');
         var apidField = document.getElementById('verifyAssessmentPeriodIdF');
+        var saveBtn = document.getElementById('verifySaveBtnF');
         // Find the row for this itemKey/empId to get any existing data
         var link = itemKey ? Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
             l => l.getAttribute('data-item-key') === itemKey && l.getAttribute('data-emp-id') == empId
@@ -259,6 +283,8 @@
         // Set hidden fields for employee and item
         empIdField.value = empId;
         itemKeyField.value = itemKey || '';
+        if (itemLabelField) itemLabelField.value = link ? (link.getAttribute('data-item-label') || '') : '';
+        if (sourceItemIdField) sourceItemIdField.value = link ? (link.getAttribute('data-source-item-id') || '') : '';
         // Try to get rating from data attribute, or from the Blade-rendered table cell
         var ratingValue = '';
         if (link && link.getAttribute('data-rating')) {
@@ -266,9 +292,10 @@
         } else if (row && row.children[2]) {
             // Try to map text to value if user refreshed page
             var cellText = row.children[2].textContent.trim().toLowerCase();
-            if (cellText === 'below' || cellText === '1') ratingValue = '1';
-            else if (cellText === 'meets' || cellText === '2') ratingValue = '2';
-            else if (cellText === 'exceeds' || cellText === '3') ratingValue = '3';
+            if (cellText === 'excellent' || cellText === 'e') ratingValue = 'E';
+            else if (cellText === 'satisfactory' || cellText === 's') ratingValue = 'S';
+            else if (cellText === 'unsatisfactory' || cellText === 'u') ratingValue = 'U';
+            else if (cellText === 'not applicable' || cellText === 'n') ratingValue = 'N';
         }
         ratingField.value = ratingValue;
         // Set assessment date to today if not present
@@ -291,47 +318,43 @@
                 apidField.readOnly = false;
             }
         }
-        // Populate comments if available, else fetch from backend if in view mode
-        var docTypeId = null;
-        if (link && link.getAttribute('data-doc-type-id')) {
-            docTypeId = link.getAttribute('data-doc-type-id');
-        } else if (row) {
-            // Fallback: Try to get docTypeId from a textarea in the same section
-            var sectionRow = row.closest('table');
-            if (sectionRow) {
-                var textarea = sectionRow.parentElement.querySelector('textarea.section-comment-textarea');
-                if (textarea && textarea.dataset.docTypeId) {
-                    docTypeId = textarea.dataset.docTypeId;
-                }
-            }
-        }
-        var assessmentPeriodId = apidField ? apidField.value : (window.selectedAssessmentPeriodId || '');
-        if (viewOnly && docTypeId && empId && assessmentPeriodId && itemKey) {
-            // Fetch comment from backend
-            commentsField.value = '';
-            fetch('/admin/employees/performance-section-comment?employee_num=' + encodeURIComponent(empId) + '&assessment_period_id=' + encodeURIComponent(assessmentPeriodId) + '&doc_type_id=' + encodeURIComponent(docTypeId) + '&item_key=' + encodeURIComponent(itemKey), {
-                headers: { 'Accept': 'application/json' }
-            })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data && data.success && data.data && data.data.comment) {
-                    commentsField.value = data.data.comment;
-                } else {
-                    commentsField.value = '';
-                }
-            })
-            .catch(() => { 
-                commentsField.value = ''; 
-            });
-        } else {
-            commentsField.value = link && link.getAttribute('data-comments') ? link.getAttribute('data-comments') : '';
-        }
+        commentsField.value = link && link.getAttribute('data-comments') ? link.getAttribute('data-comments') : '';
         // Set assessed by fields to current user
         if (window.currentUserName) {
             assessedByField.value = window.currentUserName;
         }
         if (window.currentUserId) {
             assessedByIdField.value = window.currentUserId;
+        }
+        ratingField.disabled = !!viewOnly;
+        assessmentDateField.readOnly = !!viewOnly;
+        commentsField.readOnly = !!viewOnly;
+        if (saveBtn) {
+            saveBtn.classList.toggle('hidden', !!viewOnly);
+        }
+
+        var historyList = document.getElementById('assessmentHistoryListF');
+        var historyEmpty = document.getElementById('assessmentHistoryEmptyF');
+        if (historyList && historyEmpty) {
+            historyList.innerHTML = '';
+            var historyEntries = (window.assessmentItemHistories && itemKey && window.assessmentItemHistories[itemKey])
+                ? window.assessmentItemHistories[itemKey]
+                : [];
+            if (!historyEntries.length) {
+                historyEmpty.classList.remove('hidden');
+            } else {
+                historyEmpty.classList.add('hidden');
+                historyEntries.forEach(function(entry) {
+                    var li = document.createElement('li');
+                    var status = entry.revoked_at ? 'revoked' : 'active';
+                    var assessedByName = entry.verified_by_name || (window.users && entry.verified_by ? window.users[entry.verified_by] : '') || entry.verified_by || '';
+                    var periodLabel = entry.period_label ? entry.period_label : 'Current period';
+                    var selectedFlag = entry.is_selected_period ? ' | selected period' : '';
+                    li.className = 'border rounded px-3 py-2 bg-gray-50';
+                    li.textContent = periodLabel + ' | ' + (entry.verified_dt || 'N/A') + ' | ' + (entry.rating || '') + ' | ' + assessedByName + (entry.comments ? ' | ' + entry.comments : '') + ' | ' + status + selectedFlag;
+                    historyList.appendChild(li);
+                });
+            }
         }
         // Show the modal
         var modal = document.getElementById('verifyModalF');
@@ -349,7 +372,7 @@
     }
 
         // After PART F row update, always re-bind PART F links
-    function updatePartFRow(itemKey, empId, item, assessedById, assessmentDate) {
+    function updateAssessmentRow(itemKey, empId, item, history) {
         // Find the row by matching the action link with data-item-key and data-emp-id
         var row = null;
         document.querySelectorAll('.verify-link[data-item-key], .view-link[data-item-key]').forEach(function(link) {
@@ -361,46 +384,61 @@
             console.error('updatePartFRow: Row not found for itemKey:', itemKey, 'empId:', empId);
             return;
         }
-        if (row.children.length < 6) {
+        if (row.children.length < 5) {
             console.error('updatePartFRow: Row does not have enough columns:', row, row.children);
             return;
         }
+        var ratingIndex = row.children.length === 6 ? 2 : 1;
+        var assessedDateIndex = row.children.length === 6 ? 3 : 2;
+        var assessedByIndex = row.children.length === 6 ? 4 : 3;
+        var actionIndex = row.children.length === 6 ? 5 : 4;
+        var itemLabel = '';
+        var sourceItemId = '';
+        var existingLink = row.querySelector('[data-item-key]');
+        if (existingLink) {
+            itemLabel = existingLink.getAttribute('data-item-label') || '';
+            sourceItemId = existingLink.getAttribute('data-source-item-id') || '';
+        }
         // Update Rating as word
+        var isCompetencyRow = row.children.length === 5;
         var ratingText = '';
         if (item && item.rating) {
-            if (item.rating == 1 || item.rating === '1') ratingText = 'Below';
-            else if (item.rating == 2 || item.rating === '2') ratingText = 'Meets';
-            else if (item.rating == 3 || item.rating === '3') ratingText = 'Exceeds';
+            if (isCompetencyRow) {
+                ratingText = item.rating;
+            } else if (item.rating === 'E') ratingText = 'Excellent';
+            else if (item.rating === 'S') ratingText = 'Satisfactory';
+            else if (item.rating === 'U') ratingText = 'Unsatisfactory';
+            else if (item.rating === 'N') ratingText = 'Not Applicable';
         }
-        row.children[2].textContent = ratingText;
+        row.children[ratingIndex].textContent = ratingText;
         // Update Assessed Date and Assessed By
         if (item && item.rating) {
-            row.children[3].textContent = item.verified_dt ? item.verified_dt : (assessmentDate || '');
-            var assessedByCell = row.children[4];
+            row.children[assessedDateIndex].textContent = item.verified_dt ? item.verified_dt : '';
+            var assessedByCell = row.children[assessedByIndex];
             if (!assessedByCell) {
                 console.error('updatePartFRow: assessedByCell missing', row, row.children);
                 return;
             }
             while (assessedByCell.firstChild) { assessedByCell.removeChild(assessedByCell.firstChild); }
             var assessedByName = '';
-            if (window.users && window.users[assessedById]) {
-                assessedByName = window.users[assessedById];
-            } else if (window.currentUserName && window.currentUserId == assessedById) {
+            if (item.verified_by && window.users && window.users[item.verified_by]) {
+                assessedByName = window.users[item.verified_by];
+            } else if (window.currentUserName && window.currentUserId == item.verified_by) {
                 assessedByName = window.currentUserName;
             } else {
-                assessedByName = assessedById;
+                assessedByName = item.verified_by || '';
             }
             assessedByCell.appendChild(document.createTextNode(assessedByName));
         } else {
             // Clear Assessed Date and Assessed By columns if revoked
-            row.children[3].textContent = '';
-            var assessedByCell = row.children[4];
+            row.children[assessedDateIndex].textContent = '';
+            var assessedByCell = row.children[assessedByIndex];
             if (assessedByCell) {
                 while (assessedByCell.firstChild) { assessedByCell.removeChild(assessedByCell.firstChild); }
             }
         }
         // Update Actions: show Revoke & View if assessed, else Assess
-        var actionCell = row.children[5];
+        var actionCell = row.children[actionIndex];
         if (!actionCell) {
             console.error('updatePartFRow: actionCell missing', row, row.children);
             return;
@@ -413,6 +451,8 @@
             revokeLink.className = 'text-red-600 underline mr-1 unverify-link';
             revokeLink.setAttribute('data-item-key', itemKey);
             revokeLink.setAttribute('data-emp-id', empId);
+            revokeLink.setAttribute('data-item-label', itemLabel);
+            revokeLink.setAttribute('data-source-item-id', sourceItemId);
             revokeLink.textContent = 'Revoke';
             revokeLink.title = 'Revoke Assessment';
             actionCell.appendChild(revokeLink);
@@ -424,6 +464,12 @@
             viewLink.className = 'text-teal-600 underline ml-1 view-link';
             viewLink.setAttribute('data-item-key', itemKey);
             viewLink.setAttribute('data-emp-id', empId);
+            viewLink.setAttribute('data-item-label', itemLabel);
+            viewLink.setAttribute('data-source-item-id', sourceItemId);
+            viewLink.setAttribute('data-rating', item.rating || '');
+            viewLink.setAttribute('data-assessment-date', item.verified_dt || '');
+            viewLink.setAttribute('data-comments', item.comments || '');
+            viewLink.setAttribute('data-assessed-by-id', item.verified_by || '');
             viewLink.textContent = 'View';
             viewLink.title = 'View Assessment Details';
             actionCell.appendChild(viewLink);
@@ -434,9 +480,17 @@
             assessLink.className = 'text-teal-600 underline verify-link cursor-pointer';
             assessLink.setAttribute('data-item-key', itemKey);
             assessLink.setAttribute('data-emp-id', empId);
+            assessLink.setAttribute('data-item-label', itemLabel);
+            assessLink.setAttribute('data-source-item-id', sourceItemId);
             assessLink.textContent = 'Assess';
             assessLink.title = 'Assess Item';
             actionCell.appendChild(assessLink);
+        }
+        if (window.assessmentItemHistories) {
+            window.assessmentItemHistories[itemKey] = history || [];
+        }
+        if (isCompetencyRow && typeof window.updatePartGSummaryScores === 'function') {
+            window.updatePartGSummaryScores();
         }
         // Re-bind PART F links after row update
         bindChecklistLinksF();
@@ -465,9 +519,9 @@
     }
 
 
-    // Use event delegation for 'Revoke' link in PART F
-    var partFTable = document.querySelector('#partFTableContainer') || document;
-    partFTable.addEventListener('click', function(e) {
+    // Use event delegation for 'Revoke' links in PART F and PART G
+    [document.querySelector('#partFTableContainer'), document.querySelector('#partGTableContainer')].filter(Boolean).forEach(function(container) {
+    container.addEventListener('click', function(e) {
         var target = e.target;
         if (target.classList.contains('unverify-link') && target.hasAttribute('data-item-key')) {
             e.preventDefault();
@@ -517,11 +571,15 @@
                     target.style.opacity = '';
                     return;
                 }
-                if (data.success && data.data && data.data.items) {
-                    // Remove the item from the row
-                    updatePartFRow(itemKey, empId, data.data.items[itemKey], data.data.assessed_by, data.data.assessment_date);
+                if (data.success && data.data) {
+                    updateAssessmentRow(itemKey, empId, data.data.latest, data.data.history || []);
+                    showAssessmentFeedback('Assessment revoked successfully.');
                 } else {
-                    alert('Revoke failed.2');
+                    var message = 'Revoke failed.2';
+                    if (data && data.message) {
+                        message += '\n' + data.message;
+                    }
+                    alert(message);
                     // Restore link state
                     target.textContent = originalText;
                     target.style.pointerEvents = '';
@@ -538,11 +596,11 @@
             });
         }
     });
+    });
 
-    // For each 'Verify' link in PART F, bind click to open the modal in edit mode
-    // Use event delegation for .verify-link and .view-link
-    var partFTable = document.querySelector('#partFTableContainer') || document;
-    partFTable.addEventListener('click', function(e) {
+    // Use event delegation for .verify-link and .view-link in PART F and PART G
+    [document.querySelector('#partFTableContainer'), document.querySelector('#partGTableContainer')].filter(Boolean).forEach(function(container) {
+    container.addEventListener('click', function(e) {
         var target = e.target;
         if ((target.classList.contains('verify-link') || target.classList.contains('view-link')) && target.hasAttribute('data-item-key')) {
             e.preventDefault();
@@ -555,6 +613,7 @@
             var isView = target.classList.contains('view-link');
             openVerifyModalF(itemKey, empId, isView);
         }
+    });
     });
 
      // PART F: Handles the form submission for performance assessment verification (modal)
@@ -596,6 +655,8 @@
         const payload = {
             employee_num: empId,
             item_key: itemKey,
+            item_label: document.getElementById('verifyItemLabelF').value,
+            source_item_id: document.getElementById('verifySourceItemIdF').value || null,
             rating: rating,
             assessment_date: assessmentDate,
             comments: comments,
@@ -622,9 +683,9 @@
                 alert('Save failed.1');
                 return;
             }
-            if (data.success && data.data && data.data.items && data.data.assessed_by) {
+            if (data.success && data.data) {
                 closeVerifyModalF();
-                updatePartFRow(itemKey, empId, data.data.items[itemKey], data.data.assessed_by, data.data.assessment_date);
+                updateAssessmentRow(itemKey, empId, data.data.latest, data.data.history || []);
             } else {
                 // Show backend error message if present
                 let msg = 'Save failed.2';

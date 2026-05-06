@@ -10,7 +10,7 @@ class EmployeePerformanceItemsSeeder extends Seeder
     public function run()
     {
         // Use plain section names for DB, Roman numerals for display only
-        $sections = [
+        $performanceReviewItems = [
             'Job Skills and Knowledge' => [
                 'Understands the job role and duties.',
                 'Initiates work projects without prompting, once briefed.',
@@ -63,12 +63,14 @@ class EmployeePerformanceItemsSeeder extends Seeder
                 'Considers possible alternatives and makes thoughtful recommendations to safety committee, actively participates in training, and promotes safety culture.',
             ],
         ];
+
         $order = 0;
-        foreach ($sections as $section => $items) {
+        foreach ($performanceReviewItems as $section => $items) {
             foreach ($items as $item) {
                 DB::table('employee_performance_items')->insert([
                     'section' => $section,
                     'item' => $item,
+                    'position_ids' => json_encode(['global']),
                     'order' => $order++,
                     'created_at' => now(),
                     'updated_at' => now(),

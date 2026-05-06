@@ -24,10 +24,12 @@ $assignmentPositions = \App\Models\Position::query()
             'department_name' => optional($position->department)->name,
         ];
     });
+
+$initialEmployeeTab = session('employeeTab') ?: request('tab');
 @endphp
 
 <div class="container py-8 max-w-4xl mx-auto" x-data="{
-        tab: (sessionStorage.getItem('employeeTab') || localStorage.getItem('employeeTab') || 'personal'),
+        tab: (@js($initialEmployeeTab) || sessionStorage.getItem('employeeTab') || localStorage.getItem('employeeTab') || 'personal'),
         setTab(newTab) {
             this.tab = newTab;
             sessionStorage.setItem('employeeTab', newTab);
@@ -103,6 +105,11 @@ $assignmentPositions = \App\Models\Position::query()
         
         document.addEventListener('DOMContentLoaded', function() {
             // If a tab was set in sessionStorage (from a form submit), restore it
+            var preferredTab = @json($initialEmployeeTab);
+            if (preferredTab) {
+                sessionStorage.setItem('employeeTab', preferredTab);
+                localStorage.setItem('employeeTab', preferredTab);
+            }
             var tab = sessionStorage.getItem('employeeTab');
             if (tab) {
                 localStorage.setItem('employeeTab', tab);

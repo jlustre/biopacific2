@@ -34,21 +34,31 @@ class EmployeesController extends Controller
             'description' => 'nullable|string|max:255',
         ];
         if ($requiresExpiry) {
-            $rules['expires_at'] = 'required|date';
+            $rules['expires_at'] = 'required|date|after_or_equal:effective_start_date';
         } else {
-            $rules['expires_at'] = 'nullable|date';
+            $rules['expires_at'] = 'nullable|date|after_or_equal:effective_start_date';
         }
         $rules['effective_start_date'] = 'nullable|date';
-        $rules['effective_end_date'] = 'nullable|date';
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'expires_at.after_or_equal' => 'The expiration date must be on or after the Effective Start Date.',
+        ]);
 
 
-        $employee = BPEmployee::findOrFail($employee_num); // $employee_num is actually the PK id
+        $employee = BPEmployee::with('currentAssignment')->findOrFail($employee_num); // $employee_num is actually the PK id
+        $facilityId = $employee->currentAssignment?->facility_id;
+        if (!$facilityId) {
+            return redirect()->route('admin.employees.edit', $employee->id)
+                ->with('employeeTab', 'documents')
+                ->with('error', 'The employee must have a current assignment with a facility before documents can be uploaded.')
+                ->withInput();
+        }
+
         $file = $request->file('document');
-        $path = $file->store('employee_documents/' . $employee->employee_num, 'public');
+        $path = Upload::storeEmployeeFile($file, $employee->employee_num);
 
         Upload::create([
+            'facility_id' => $facilityId,
             'employee_num' => $employee->employee_num,
             'user_id' => Auth::id(),
             'upload_type_id' => $uploadTypeId,
@@ -58,11 +68,12 @@ class EmployeesController extends Controller
             'uploaded_at' => now(),
             'comments' => $validated['description'] ?? null,
             'effective_start_date' => $validated['effective_start_date'] ?? null,
-            'effective_end_date' => $validated['effective_end_date'] ?? null,
             'expires_at' => $validated['expires_at'] ?? null,
         ]);
 
-        return redirect()->back()->with('success', 'Document uploaded successfully.');
+        return redirect()->route('admin.employees.edit', $employee->id)
+            ->with('employeeTab', 'documents')
+            ->with('success', 'Document uploaded successfully.');
     }
 
         /**
@@ -106,12 +117,10 @@ class EmployeesController extends Controller
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
             ->firstOrFail();
-        $filePath = storage_path('app/public/' . $upload->file_path);
-        if (file_exists($filePath)) {
-            @unlink($filePath);
-        }
         $upload->delete();
-        return redirect()->back()->with('success', 'Document deleted successfully.');
+        return redirect()->route('admin.employees.edit', $employee->id)
+            ->with('employeeTab', 'documents')
+            ->with('success', 'Document deleted successfully.');
     }
 
      /**
@@ -135,29 +144,26 @@ class EmployeesController extends Controller
             'comments' => 'nullable|string|max:255',
         ];
         if ($requiresExpiry) {
-            $rules['expires_at'] = 'required|date';
+            $rules['expires_at'] = 'required|date|after_or_equal:effective_start_date';
         } else {
-            $rules['expires_at'] = 'nullable|date';
+            $rules['expires_at'] = 'nullable|date|after_or_equal:effective_start_date';
         }
         $rules['effective_start_date'] = 'nullable|date';
-        $rules['effective_end_date'] = 'nullable|date';
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'expires_at.after_or_equal' => 'The expiration date must be on or after the Effective Start Date.',
+        ]);
 
         $upload->upload_type_id = $uploadTypeId;
         $upload->expires_at = $validated['expires_at'] ?? null;
         $upload->effective_start_date = $validated['effective_start_date'] ?? null;
-        $upload->effective_end_date = $validated['effective_end_date'] ?? null;
         $upload->comments = $validated['comments'] ?? null;
 
         if ($request->hasFile('document')) {
             // Delete old file
-            $oldPath = storage_path('app/public/' . $upload->file_path);
-            if (file_exists($oldPath)) {
-                @unlink($oldPath);
-            }
+            $upload->deleteStoredFile();
             $file = $request->file('document');
-            $path = $file->store('employee_documents/' . $employee->employee_num, 'public');
+            $path = Upload::storeEmployeeFile($file, $employee->employee_num);
             $upload->file_path = $path;
             $upload->original_filename = $file->getClientOriginalName();
             $upload->file_size = $file->getSize();
@@ -166,7 +172,8 @@ class EmployeesController extends Controller
 
         $upload->save();
 
-        return redirect()->route('admin.employees.documents.edit', [$employee->id, $upload->id])
+        return redirect()->route('admin.employees.edit', $employee->id)
+            ->with('employeeTab', 'documents')
             ->with('success', 'Document updated successfully.');
     }
 
@@ -343,6 +350,10 @@ class EmployeesController extends Controller
         $positions = \App\Models\Position::all();
         $facilities = \App\Models\Facility::all();
         $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
+        $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
+            ->applicableToPosition($employee->currentAssignment?->job_code_id)
+            ->orderBy('order')
+            ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
@@ -354,22 +365,163 @@ class EmployeesController extends Controller
         $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
         $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
 
-        // Load performance assessment items and review date for this employee and selected assessment period
+        // Load assessment item states and history for this employee and selected assessment period.
+        $assessmentItemStates = [];
+        $assessmentItemHistories = [];
         $empPerformanceChecklist = [];
+        $empCompetencyAssessments = [];
+        $competencyAssessmentHistory = [];
         $reviewDate = '';
         $reviewerName = '';
         $reviewType = '';
+        $assessmentPeriodLabels = $assessmentPeriods->keyBy('id');
+        $allAssessmentEntries = \App\Models\EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $employee->employee_num)
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $assessmentItemHistories = $allAssessmentEntries
+            ->groupBy('item_key')
+            ->map(function ($entries) use ($users, $assessmentPeriodLabels, $selectedAssessmentPeriodId) {
+                return $entries->map(function ($entry) use ($users, $assessmentPeriodLabels, $selectedAssessmentPeriodId) {
+                    $period = $assessmentPeriodLabels->get($entry->assessment_period_id);
+
+                    return [
+                        'id' => $entry->id,
+                        'rating' => $entry->rating,
+                        'verified_dt' => optional($entry->assessment_date)->toDateString(),
+                        'verified_by' => $entry->assessed_by,
+                        'verified_by_name' => optional($users->firstWhere('id', $entry->assessed_by))->name ?? $entry->assessed_by,
+                        'comments' => $entry->comments,
+                        'assessment_period_id' => $entry->assessment_period_id,
+                        'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $entry->assessment_period_id),
+                        'is_selected_period' => (int) $entry->assessment_period_id === (int) $selectedAssessmentPeriodId,
+                        'revoked_at' => optional($entry->revoked_at)->format('Y-m-d H:i:s'),
+                        'revoked_by' => $entry->revoked_by,
+                        'revoked_by_name' => optional($users->firstWhere('id', $entry->revoked_by))->name ?? $entry->revoked_by,
+                    ];
+                })->values()->all();
+            })
+            ->all();
+
+        $competencyAssessmentHistory = $allAssessmentEntries
+            ->filter(fn ($entry) => $entry->assessment_type === 'competency')
+            ->groupBy('assessment_period_id')
+            ->map(function ($entries, $assessmentPeriodId) use ($assessmentPeriodLabels) {
+                $latestStates = $entries
+                    ->filter(fn ($entry) => $entry->revoked_at === null)
+                    ->groupBy('item_key')
+                    ->map(function ($groupedEntries) {
+                        return $groupedEntries
+                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                            ->first();
+                    })
+                    ->filter();
+
+                $total = 0;
+                $count = 0;
+                foreach ($latestStates as $state) {
+                    $score = match ($state->rating) {
+                        'E' => 3,
+                        'S' => 2,
+                        'U' => 1,
+                        default => null,
+                    };
+
+                    if ($score === null) {
+                        continue;
+                    }
+
+                    $total += $score;
+                    $count++;
+                }
+
+                $average = $count > 0 ? round($total / $count, 2) : 0;
+                $overall = $count === 0
+                    ? 'N/A'
+                    : ($average >= 2.5
+                        ? 'Excellent'
+                        : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
+                $latestAssessment = $entries
+                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                    ->first();
+
+                return [
+                    'assessment_period_id' => (int) $assessmentPeriodId,
+                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
+                    'assessment_date' => optional(optional($latestAssessment)->assessment_date)->toDateString(),
+                    'items_count' => $count,
+                    'total_score' => $total,
+                    'average_score' => number_format($average, 2),
+                    'overall_rating' => $overall,
+                ];
+            })
+            ->sortByDesc('assessment_date')
+            ->values()
+            ->all();
+
         if ($selectedAssessmentPeriodId) {
-            $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee_num)
+            $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
                 ->where('assessment_period_id', $selectedAssessmentPeriodId)
                 ->first();
             $period = \App\Models\EmployeeAssessmentPeriod::find($selectedAssessmentPeriodId);
             if ($period) {
                 $reviewType = $period->review_type === 'Q' ? 'Quarterly' : 'Annual';
             }
+
+            $assessmentEntries = $allAssessmentEntries
+                ->where('assessment_period_id', (int) $selectedAssessmentPeriodId)
+                ->values();
+
+            $assessmentItemStates = $assessmentEntries
+                ->filter(fn ($entry) => $entry->revoked_at === null)
+                ->groupBy('item_key')
+                ->map(function ($entries) use ($users) {
+                    $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
+
+                    return [
+                        'rating' => $latest->rating,
+                        'verified_dt' => optional($latest->assessment_date)->toDateString(),
+                        'verified_by' => $latest->assessed_by,
+                        'verified_by_name' => optional($users->firstWhere('id', $latest->assessed_by))->name ?? $latest->assessed_by,
+                        'comments' => $latest->comments,
+                    ];
+                })
+                ->all();
+
             if ($assessment) {
                 if ($assessment->items) {
-                    $empPerformanceChecklist = json_decode($assessment->items, true);
+                    $legacyItems = json_decode($assessment->items, true) ?: [];
+                    foreach ($legacyItems as $itemKey => $itemData) {
+                        if (!isset($assessmentItemStates[$itemKey])) {
+                            $assessmentItemStates[$itemKey] = [
+                                'rating' => $itemData['rating'] ?? null,
+                                'verified_dt' => $itemData['verified_dt'] ?? null,
+                                'verified_by' => $itemData['verified_by'] ?? null,
+                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
+                                'comments' => $itemData['comments'] ?? null,
+                            ];
+                        }
+
+                        if (!isset($assessmentItemHistories[$itemKey])) {
+                            $assessmentItemHistories[$itemKey] = [[
+                                'id' => null,
+                                'rating' => $itemData['rating'] ?? null,
+                                'verified_dt' => $itemData['verified_dt'] ?? null,
+                                'verified_by' => $itemData['verified_by'] ?? null,
+                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
+                                'comments' => $itemData['comments'] ?? null,
+                                'assessment_period_id' => (int) $selectedAssessmentPeriodId,
+                                'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
+                                'is_selected_period' => true,
+                                'revoked_at' => null,
+                                'revoked_by' => null,
+                                'revoked_by_name' => null,
+                            ]];
+                        }
+                    }
                 }
                 $reviewDate = $assessment->review_dt;
                 // Lookup reviewer name if assessed_by is set
@@ -378,7 +530,55 @@ class EmployeesController extends Controller
                     $reviewerName = $reviewerUser ? $reviewerUser->name : '';
                 }
             }
+
+            $legacyChecklistItems = optional($empChecklists->firstWhere('employee_num', $employee->employee_num))->items ?? [];
+            foreach ($legacyChecklistItems as $legacyKey => $legacyItem) {
+                if (!str_starts_with((string) $legacyKey, 'competency::')) {
+                    continue;
+                }
+
+                $competencyItemId = (int) \Illuminate\Support\Str::after((string) $legacyKey, 'competency::');
+                if ($competencyItemId <= 0) {
+                    continue;
+                }
+
+                $itemKey = 'G_' . $competencyItemId;
+                if (isset($assessmentItemStates[$itemKey])) {
+                    continue;
+                }
+
+                $assessmentItemStates[$itemKey] = [
+                    'rating' => 'S',
+                    'verified_dt' => $legacyItem['verified_dt'] ?? null,
+                    'verified_by' => $legacyItem['verified_by'] ?? null,
+                    'verified_by_name' => optional($users->firstWhere('id', $legacyItem['verified_by'] ?? null))->name ?? ($legacyItem['verified_by'] ?? null),
+                    'comments' => $legacyItem['comments'] ?? null,
+                ];
+
+                $assessmentItemHistories[$itemKey] = [[
+                    'id' => null,
+                    'rating' => 'S',
+                    'verified_dt' => $legacyItem['verified_dt'] ?? null,
+                    'verified_by' => $legacyItem['verified_by'] ?? null,
+                    'verified_by_name' => optional($users->firstWhere('id', $legacyItem['verified_by'] ?? null))->name ?? ($legacyItem['verified_by'] ?? null),
+                    'comments' => $legacyItem['comments'] ?? null,
+                    'assessment_period_id' => (int) $selectedAssessmentPeriodId,
+                    'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
+                    'is_selected_period' => true,
+                    'revoked_at' => null,
+                    'revoked_by' => null,
+                    'revoked_by_name' => null,
+                ]];
+            }
         }
+
+        $empPerformanceChecklist = collect($assessmentItemStates)
+            ->filter(fn ($item, $itemKey) => str_starts_with((string) $itemKey, 'F_'))
+            ->all();
+
+        $empCompetencyAssessments = collect($assessmentItemStates)
+            ->filter(fn ($item, $itemKey) => str_starts_with((string) $itemKey, 'G_'))
+            ->all();
 
         // PART F: Load section comments for this employee and assessment period
         $sectionComments = [];
@@ -436,9 +636,14 @@ class EmployeesController extends Controller
             'positions',
             'facilities',
             'checklistItems',
+            'employeeCompetencyItems',
             'empChecklists',
             'users',
             'empPerformanceChecklist',
+            'empCompetencyAssessments',
+            'competencyAssessmentHistory',
+            'assessmentItemStates',
+            'assessmentItemHistories',
             'assessmentPeriods',
             'selectedAssessmentPeriodId',
             'sectionComments',
@@ -951,7 +1156,7 @@ class EmployeesController extends Controller
         }
 
         // Set review_dt and acknowledge_dt on EmployeePerformanceAssessment
-        $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee_num)
+        $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
             ->where('assessment_period_id', $assessmentPeriodId)
             ->first();
         if ($assessment) {
@@ -983,12 +1188,17 @@ class EmployeesController extends Controller
         $positions = \App\Models\Position::all();
         $facilities = \App\Models\Facility::all();
         $checklistItems = \App\Models\ChecklistItem::all();
+        $employeeCompetencyItems = collect();
         $empChecklists = collect();
         $users = \App\Models\User::all();
         $states = \App\Models\State::orderBy('name')->get();
         $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
         $selectedAssessmentPeriodId = null;
         $empPerformanceChecklist = [];
+        $empCompetencyAssessments = [];
+        $competencyAssessmentHistory = [];
+        $assessmentItemStates = [];
+        $assessmentItemHistories = [];
         $reviewDate = '';
         $reviewerName = '';
         $reviewType = '';
@@ -1019,9 +1229,14 @@ class EmployeesController extends Controller
             'positions',
             'facilities',
             'checklistItems',
+            'employeeCompetencyItems',
             'empChecklists',
             'users',
             'empPerformanceChecklist',
+            'empCompetencyAssessments',
+            'competencyAssessmentHistory',
+            'assessmentItemStates',
+            'assessmentItemHistories',
             'assessmentPeriods',
             'selectedAssessmentPeriodId',
             'sectionComments',

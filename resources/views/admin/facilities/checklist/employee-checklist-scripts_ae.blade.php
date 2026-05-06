@@ -35,8 +35,8 @@
         return parseInt(row.getAttribute('data-item-level') || '0', 10);
     }
 
-    function getIncompletePartESubitems(row) {
-        if (!row || !row.closest('#partE')) {
+    function getIncompleteChecklistSubitems(row) {
+        if (!row || (!row.closest('#partE') && !row.closest('#partG'))) {
             return [];
         }
 
@@ -58,7 +58,7 @@
             if (nextRow.getAttribute('data-item-disabled') !== '1') {
                 var checkbox = nextRow.querySelector('input[type="checkbox"]');
                 if (!checkbox || !checkbox.checked) {
-                    incompleteSubitems.push(nextRow.getAttribute('data-item-name') || 'Unnamed sub-item');
+                    incompleteSubitems.push(nextRow.getAttribute('data-item-label') || nextRow.getAttribute('data-item-name') || 'Unnamed sub-item');
                 }
             }
 
@@ -252,7 +252,7 @@
         // Get all tab link elements
         const tabLinks = document.querySelectorAll('#employeeFileTabs .tab-link');
         // Use the rendered tab panes so stale localStorage values cannot blank the checklist.
-        const tabContents = document.querySelectorAll('#employeeFileTabs ~ div.tab-content, #partA, #partB, #partC, #partD, #partE, #partF');
+        const tabContents = document.querySelectorAll('#employeeFileTabs ~ div.tab-content, #partA, #partB, #partC, #partD, #partE, #partF, #partG');
         const validTabIds = Array.from(tabLinks).map(link => link.getAttribute('data-tab'));
 
         // Function to activate a tab by its ID
@@ -327,7 +327,8 @@
                 var itemId = this.getAttribute('data-item-id');
                 var empId = this.getAttribute('data-emp-id');
                 var row = this.closest('tr');
-                if (!window.confirm(`Warning: this will unconfirm "${itemName}". Continue?`)) {
+                var itemLabel = this.getAttribute('data-item-label') || itemName;
+                if (!window.confirm(`Warning: this will unconfirm "${itemLabel}". Continue?`)) {
                     return;
                 }
                 var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -362,7 +363,7 @@
         });
     }
 
-    // Handles the form submission for PART A-E checklist verification modal
+    // Handles the form submission for checklist verification modal
     function handleChecklistFormSubmit(e) {
         e.preventDefault();
         var empId = document.getElementById('verifyEmpId').value;
@@ -383,7 +384,7 @@
             subitemValidationMsg.textContent = '';
             subitemValidationMsg.classList.add('hidden');
         }
-        var incompleteSubitems = getIncompletePartESubitems(row);
+        var incompleteSubitems = getIncompleteChecklistSubitems(row);
         if (incompleteSubitems.length > 0) {
             if (subitemValidationMsg) {
                 subitemValidationMsg.textContent = 'Confirm all sub-items first: ' + incompleteSubitems.join(', ');
@@ -481,15 +482,17 @@
             expDtNotRequiredAttr = ` data-exp-dt-not-required="${item.exp_dt_not_required ? 1 : 0}"`;
         }
         var itemNameAttr = docName.replace(/"/g, '&quot;');
+        var itemLabel = row.getAttribute('data-item-label') || docName;
+        var itemLabelAttr = itemLabel.replace(/"/g, '&quot;');
         var itemIdAttr = itemId ? ` data-item-id="${String(itemId).replace(/"/g, '&quot;')}"` : '';
         var checklistKeyAttr = checklistKey ? ` data-checklist-key="${String(checklistKey).replace(/"/g, '&quot;')}"` : '';
         var verifyLabel = row.closest('#partE') ? 'Confirm' : 'Verify';
         var actionLinks = '';
         if (item.verified_by || item.verified_by_name) {
             actionLinks =
-                `<a href="#" class="text-red-600 underline ml-3 mr-2 unverify-link" title="Click to unconfirm Item" data-item-name="${itemNameAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}"${expDtNotRequiredAttr}>Confirmed</a>` +
+            `<a href="#" class="text-red-600 underline ml-3 mr-2 unverify-link" title="Click to unconfirm Item" data-item-name="${itemNameAttr}" data-item-label="${itemLabelAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}"${expDtNotRequiredAttr}>Confirmed</a>` +
                 `<span>|</span>` +
-                `<a href="#" class="text-teal-600 underline ml-2 view-link" title="View Confirmation Details" data-item-name="${itemNameAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}"` +
+            `<a href="#" class="text-teal-600 underline ml-2 view-link" title="View Confirmation Details" data-item-name="${itemNameAttr}" data-item-label="${itemLabelAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}"` +
                 ` data-on-file="${item.on_file ? 1 : 0}"` +
                 ` data-verified-dt="${item.verified_dt || ''}"` +
                 ` data-exp-dt="${item.exp_dt || ''}"` +
@@ -498,7 +501,7 @@
         } else {
             // If not verified, show Verify link with tooltip and all relevant data attributes
             actionLinks =
-                `<a href="#" class="text-teal-600 underline ml-3 verify-link" title="Click to confirm Item" data-item-name="${itemNameAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}" title="Verify Item"` +
+                `<a href="#" class="text-teal-600 underline ml-3 verify-link" title="Click to confirm Item" data-item-name="${itemNameAttr}" data-item-label="${itemLabelAttr}"${itemIdAttr}${checklistKeyAttr} data-emp-id="${empId}" title="Verify Item"` +
                 ` data-on-file="${item.on_file ? 1 : 0}"` +
                 ` data-verified-dt="${item.verified_dt || ''}"` +
                 ` data-exp-dt="${item.exp_dt || ''}"` +

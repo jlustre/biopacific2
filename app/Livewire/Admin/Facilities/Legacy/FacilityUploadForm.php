@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Facility;
 use App\Models\BPEmployee;
+use App\Models\Upload;
 use App\Models\UploadType;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -69,9 +70,11 @@ class FacilityUploadForm extends Component
             'upload_type_id' => 'required|exists:upload_types,id',
             'file' => 'required|file',
         ]);
-        $path = $this->file->store('uploads');
-        \App\Models\Upload::create([
+        $employee = BPEmployee::findOrFail($this->employee_id);
+        $path = Upload::storeEmployeeFile($this->file, $employee->employee_num);
+        Upload::create([
             'facility_id' => $this->facility_id,
+            'employee_num' => $employee->employee_num,
             'user_id' => Auth::id(),
             'upload_type_id' => $this->upload_type_id,
             'file_path' => $path,
@@ -80,8 +83,7 @@ class FacilityUploadForm extends Component
             'uploaded_at' => now(),
             'expires_at' => $this->expires_at,
             'effective_start_date' => $this->effective_start_date,
-            'effective_end_date' => $this->effective_end_date,
-            'description' => $this->comments,
+            'comments' => $this->comments,
         ]);
         session()->flash('success', 'File uploaded successfully.');
         $this->reset(['employee_id','upload_type_id','file','effective_start_date','effective_end_date','expires_at','comments']);

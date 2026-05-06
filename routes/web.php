@@ -47,9 +47,9 @@ use App\Models\Position;
 Route::get('/debug-upload-view', function() { dd('global route hit'); });
 
 // Temporarily remove middleware for debugging
-Route::get('/admin/facility/{facility}/uploads/{upload}/download', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'download'])
+Route::get('/admin/facility/{facility}/uploads/{upload}/download', [UploadController::class, 'download'])
     ->name('admin.facility.uploads.download');
-Route::get('/admin/facility/{facility}/uploads/{upload}/view', [\App\Http\Controllers\Admin\Facilities\UploadController::class, 'view'])
+Route::get('/admin/facility/{facility}/uploads/{upload}/view', [UploadController::class, 'view'])
     ->name('admin.facility.uploads.view');
 
 // Facility Files Import (Excel)
@@ -797,6 +797,9 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
     ->prefix('admin/employees')
     ->name('admin.employees.')
     ->group(function () {
+        Route::get('{employee_num}/documents/upload', function ($employee_num) {
+            return redirect()->to(route('admin.employees.edit', $employee_num) . '?tab=documents');
+        })->name('documents.upload.redirect');
         Route::post('{employee_num}/documents/upload', [\App\Http\Controllers\Admin\EmployeesController::class, 'uploadDocument'])
             ->name('documents.upload');
         Route::get('{employee_num}/documents/{document}/download', [\App\Http\Controllers\Admin\EmployeesController::class, 'downloadDocument'])

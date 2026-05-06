@@ -14,7 +14,7 @@ class FacilitySeeder extends Seeder
             [
                 'name' => 'Almaden Healthcare and Rehabilitation Center',
                 'tagline' => 'Compassion and Care You Can Trust',
-                'headline' => 'Delivering Excellence in Skilled Nursing and Rehabilitation',
+                'headline' => 'Rehabilitation Services Designed Around Your Needs',
                 'subheadline' => 'Providing compassionate rehabilitation and skilled nursing care you can trust.',
                 'address' => '2065 LOS GATOS-ALMADEN ROAD',
                 'phone' => '4083779275',
@@ -168,9 +168,9 @@ class FacilitySeeder extends Seeder
             ],
             [
                 'name' => 'Fremont Healthcare Center',
-                'tagline' => 'Dedicated to Excellence in Every Step',
-                'headline' => 'Excellence in Every Journey of Care',
-                'subheadline' => 'Skilled professionals dedicated to recovery and wellness.',
+                'tagline' => 'Daily Care Matters',
+                'headline' => 'Services designed to promote comfort, stability, and well-being',
+                'subheadline' => 'Services designed to promote comfort, stability, and well-being',
                 'address' => '39022 PRESIDIO WAY',
                 'phone' => '5107923743',
                 'city' => 'FREMONT',
@@ -510,8 +510,8 @@ class FacilitySeeder extends Seeder
             [
                 'name' => 'Vale Healthcare Center',
                 'tagline' => 'A Legacy of Care, A Promise of Hope',
-                'headline' => 'Exceptional Care in a Warm, Elegant Setting',
-                'subheadline' => 'Providing skilled nursing and rehabilitation built on trust, compassion, and excellence.',
+                'headline' => 'A Setting Where Residents and Families Matter Most',
+                'subheadline' => 'Providing skilled nursing and rehabilitation built on trust, compassion, and a commitment to quality care.',
                 'address' => '13484 SAN PABLO AVENUE',
                 'phone' => '5102325945',
                 'city' => 'SAN PABLO',

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\BPEmpChecklist;
+use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeePerformanceAssessment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +12,93 @@ use Illuminate\Support\Facades\DB;
 
 
 class EmployeePerformanceAssessmentController extends Controller {
+    protected function revokeLegacyAssessment(string $employeeNum, int $assessmentPeriodId, string $itemKey): bool
+    {
+        if (str_starts_with($itemKey, 'F_')) {
+            $assessment = EmployeePerformanceAssessment::query()
+                ->where('employee_num', $employeeNum)
+                ->where('assessment_period_id', $assessmentPeriodId)
+                ->first();
+
+            if (!$assessment || !$assessment->items) {
+                return false;
+            }
+
+            $items = json_decode($assessment->items, true) ?: [];
+            if (!array_key_exists($itemKey, $items)) {
+                return false;
+            }
+
+            unset($items[$itemKey]);
+            $assessment->items = empty($items) ? null : json_encode($items);
+            $assessment->save();
+
+            return true;
+        }
+
+        if (str_starts_with($itemKey, 'G_')) {
+            $legacyChecklistKey = 'competency::' . substr($itemKey, 2);
+            $checklist = BPEmpChecklist::query()
+                ->where('employee_num', $employeeNum)
+                ->first();
+
+            if (!$checklist || !is_array($checklist->items) || !array_key_exists($legacyChecklistKey, $checklist->items)) {
+                return false;
+            }
+
+            $items = $checklist->items;
+            unset($items[$legacyChecklistKey]);
+            $checklist->items = $items;
+
+            $checklist->save();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    protected function inferAssessmentType(string $itemKey): string
+    {
+        return str_starts_with($itemKey, 'G_') ? 'competency' : 'performance';
+    }
+
+    protected function serializeEntry($entry): ?array
+    {
+        if (!$entry) {
+            return null;
+        }
+
+        return [
+            'id' => $entry->id,
+            'rating' => $entry->rating,
+            'verified_dt' => optional($entry->assessment_date)->toDateString(),
+            'verified_by' => $entry->assessed_by,
+            'comments' => $entry->comments,
+            'assessment_type' => $entry->assessment_type,
+            'revoked_at' => optional($entry->revoked_at)->format('Y-m-d H:i:s'),
+            'revoked_by' => $entry->revoked_by,
+        ];
+    }
+
+    protected function historyPayload(string $employeeNum, int $assessmentPeriodId, string $itemKey): array
+    {
+        $entries = EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $employeeNum)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->where('item_key', $itemKey)
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $latest = $entries->first(fn ($entry) => $entry->revoked_at === null);
+
+        return [
+            'latest' => $this->serializeEntry($latest),
+            'history' => $entries->map(fn ($entry) => $this->serializeEntry($entry))->values()->all(),
+        ];
+    }
+
 
     /**
      * Return all employees reviewed for a given assessment period and facility (AJAX for PART F modal)
@@ -87,7 +176,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             $validated = $request->validate([
                 'employee_num' => 'required',
                 'item_key' => 'required',
-                'rating' => 'required',
+                'item_label' => 'nullable|string|max:255',
+                'source_item_id' => 'nullable|integer',
+                'rating' => 'required|in:E,S,U,N',
                 'assessment_date' => 'required|date',
                 'comments' => 'nullable|string',
                 'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
@@ -103,7 +194,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             throw $e;
         }
 
-        // Find or create the assessment record for this employee and assessment period
+        // Keep the period-level wrapper record for signatures and review metadata.
         $assessment = EmployeePerformanceAssessment::firstOrCreate(
             [
                 'employee_num' => $validated['employee_num'],
@@ -116,30 +207,34 @@ class EmployeePerformanceAssessmentController extends Controller {
             ]
         );
 
-        // Decode items JSON, update the relevant item, and re-save
-        $items = $assessment->items ? json_decode($assessment->items, true) : [];
-        $items[$validated['item_key']] = [
-            'rating' => $validated['rating'],
-            'verified_dt' => $validated['assessment_date'],
-            'verified_by' => Auth::id(),
-            'comments' => $validated['comments'] ?? null,
-        ];
-        $assessment->items = json_encode($items);
         $assessment->assessment_date = $validated['assessment_date'];
         $assessment->assessed_by = Auth::id();
-        $assessment->comments = $validated['comments'] ?? null;
         $assessment->save();
 
-        // Prepare response structure for JS
-        $itemsArr = $assessment->items ? json_decode($assessment->items, true) : [];
-        $assessedBy = $assessment->assessed_by;
-        $assessmentDate = $assessment->assessment_date;
+        EmployeeAssessmentItemEntry::create([
+            'employee_num' => $validated['employee_num'],
+            'assessment_period_id' => $validated['assessment_period_id'],
+            'assessment_type' => $this->inferAssessmentType($validated['item_key']),
+            'item_key' => $validated['item_key'],
+            'item_label' => $validated['item_label'] ?? null,
+            'source_item_id' => $validated['source_item_id'] ?? null,
+            'rating' => $validated['rating'],
+            'assessment_date' => $validated['assessment_date'],
+            'assessed_by' => Auth::id(),
+            'comments' => $validated['comments'] ?? null,
+        ]);
+
+        $historyPayload = $this->historyPayload(
+            (string) $validated['employee_num'],
+            (int) $validated['assessment_period_id'],
+            (string) $validated['item_key']
+        );
+
         return response()->json([
             'success' => true,
             'data' => [
-                'items' => $itemsArr,
-                'assessed_by' => $assessedBy,
-                'assessment_date' => $assessmentDate,
+                'latest' => $historyPayload['latest'],
+                'history' => $historyPayload['history'],
             ]
         ]);
     }
@@ -155,31 +250,50 @@ class EmployeePerformanceAssessmentController extends Controller {
 
             Log::debug('Revoke request', $validated);
 
-            $assessment = EmployeePerformanceAssessment::where('employee_num', $validated['employee_num'])
+            $entry = EmployeeAssessmentItemEntry::query()
+                ->where('employee_num', $validated['employee_num'])
                 ->where('assessment_period_id', $validated['assessment_period_id'])
+                ->where('item_key', $validated['item_key'])
+                ->whereNull('revoked_at')
+                ->orderByDesc('assessment_date')
+                ->orderByDesc('id')
                 ->first();
-            if (!$assessment) {
-                Log::warning('Assessment not found for revoke', $validated);
-                return response()->json(['success' => false, 'message' => 'Assessment not found for employee_num: ' . $validated['employee_num'] . ', assessment_period_id: ' . $validated['assessment_period_id']], 404);
+            if (!$entry) {
+                $legacyRevoked = $this->revokeLegacyAssessment(
+                    (string) $validated['employee_num'],
+                    (int) $validated['assessment_period_id'],
+                    (string) $validated['item_key']
+                );
+
+                if (!$legacyRevoked) {
+                    Log::warning('Assessment not found for revoke', $validated);
+                    return response()->json(['success' => false, 'message' => 'Assessment not found for employee_num: ' . $validated['employee_num'] . ', assessment_period_id: ' . $validated['assessment_period_id']], 404);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'latest' => null,
+                        'history' => [],
+                    ]
+                ]);
             }
 
-            $items = $assessment->items ? json_decode($assessment->items, true) : [];
-            if (!array_key_exists($validated['item_key'], $items)) {
-                Log::warning('Item key not found in assessment items', ['item_key' => $validated['item_key'], 'items' => $items]);
-            }
-            unset($items[$validated['item_key']]);
-            $assessment->items = json_encode($items);
-            $assessment->save();
+            $entry->revoked_at = now();
+            $entry->revoked_by = Auth::id();
+            $entry->save();
 
-            $itemsArr = $assessment->items ? json_decode($assessment->items, true) : [];
-            $assessedBy = $assessment->assessed_by;
-            $assessmentDate = $assessment->assessment_date;
+            $historyPayload = $this->historyPayload(
+                (string) $validated['employee_num'],
+                (int) $validated['assessment_period_id'],
+                (string) $validated['item_key']
+            );
+
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'items' => $itemsArr,
-                    'assessed_by' => $assessedBy,
-                    'assessment_date' => $assessmentDate,
+                    'latest' => $historyPayload['latest'],
+                    'history' => $historyPayload['history'],
                 ]
             ]);
         } catch (\Exception $e) {

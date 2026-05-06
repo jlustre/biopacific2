@@ -44,11 +44,9 @@ class UploadController extends Controller {
 
         if ($request->has('reupload') && $request->hasFile('file')) {
             // Delete old file from storage if it exists
-            if ($upload->file_path && Storage::disk('public')->exists($upload->file_path)) {
-                Storage::disk('public')->delete($upload->file_path);
-            }
+            $upload->deleteStoredFile();
             $file = $request->file('file');
-            $path = $file->store('uploads', 'public');
+            $path = Upload::storeEmployeeFile($file, $request->employee_num);
             $upload->file_path = $path;
             $upload->original_filename = $file->getClientOriginalName();
             $upload->file_size = $file->getSize();
@@ -94,16 +92,14 @@ class UploadController extends Controller {
             ];
         if ($uploadType && $uploadType->requires_expiry) {
             $rules['effective_start_date'] = 'required|date';
-            $rules['effective_end_date'] = 'nullable|date|after_or_equal:effective_start_date';
             $rules['expires_at'] = 'required|date|after_or_equal:effective_start_date';
         } else {
             $rules['effective_start_date'] = 'nullable';
-            $rules['effective_end_date'] = 'nullable';
             $rules['expires_at'] = 'nullable';
         }
         $validated = $request->validate($rules);
         $file = $request->file('file');
-        $path = $file->store('uploads', 'public');
+        $path = Upload::storeEmployeeFile($file, $request->employee_num);
             $upload = Upload::create([
                 'facility_id' => $request->facility_id,
                 'employee_num' => $request->employee_num,
@@ -115,7 +111,6 @@ class UploadController extends Controller {
                 'uploaded_at' => now(),
                 'expires_at' => $request->expires_at,
                 'effective_start_date' => $request->effective_start_date,
-                'effective_end_date' => $request->effective_end_date,
                 'comments' => $request->comments,
             ]);
         return redirect()->back()->with('success', 'File uploaded successfully.');
@@ -155,10 +150,6 @@ class UploadController extends Controller {
         $upload = Upload::find($upload);
         if (!$upload) {
             return redirect()->back()->with('error', 'Upload not found.');
-        }
-        // Delete the actual file from storage if it exists
-        if ($upload->file_path && Storage::disk('public')->exists($upload->file_path)) {
-            Storage::disk('public')->delete($upload->file_path);
         }
         $upload->delete();
         return redirect()->back()->with('success', 'File deleted successfully.');

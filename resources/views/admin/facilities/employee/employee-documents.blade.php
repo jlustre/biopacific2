@@ -4,6 +4,14 @@
         ->orderByDesc('uploaded_at')
         ->get();
     $uploadTypes = \App\Models\UploadType::all();
+    $existingUploads = $uploads->map(function ($upload) {
+        return [
+            'id' => $upload->id,
+            'upload_type_id' => (string) $upload->upload_type_id,
+            'original_filename' => $upload->original_filename,
+            'expires_at' => $upload->expires_at,
+        ];
+    })->values();
 @endphp
  <div x-show="tab === 'documents'">
     @if(empty($employee->employee_num))
@@ -40,7 +48,7 @@
         <div x-data="employeeDocumentInlineEdit()" wire:ignore>
             <div class="p-6 mb-6 bg-white rounded shadow">
                 <!-- Inline Edit/Upload Form -->
-                <form id="employee-upload-form" method="POST" :action="formAction" enctype="multipart/form-data" @reset.prevent="resetForm()">
+                <form id="employee-upload-form" method="POST" :action="formAction" enctype="multipart/form-data" @submit.prevent="submitForm($event)" @reset.prevent="resetForm()">
                     <input type="hidden" name="_token" :value="csrf">
                     <template x-if="editMode">
                         <input type="hidden" name="_method" value="PUT">
@@ -57,7 +65,7 @@
                         </div>
                         <div>
                             <label class="block mb-1 text-xs font-semibold">File <span class="text-red-600" x-show="!editMode">*</span></label>
-                            <input type="file" name="document" class="form-input w-full px-2 py-1 bg-teal-50 border-teal-700 rounded border-1 focus:border-teal-800" :required="!editMode">
+                            <input type="file" name="document" x-ref="documentInput" class="form-input w-full px-2 py-1 bg-teal-50 border-teal-700 rounded border-1 focus:border-teal-800" :required="!editMode">
                             <div class="text-xs text-gray-500 mt-1" x-show="editMode">Leave blank to keep the current file.</div>
                         </div>
                         <template x-if="form.upload_type_id && uploadTypesById[form.upload_type_id] && uploadTypesById[form.upload_type_id].requires_expiry">
@@ -68,7 +76,7 @@
                                 </div>
                                 <div>
                                     <label class="block mb-1 text-xs font-semibold">Expires At <span class="text-red-600">*</span></label>
-                                    <input type="date" name="expires_at" class="px-2 py-1 border-teal-700 rounded border-1 focus:border-teal-800 form-input w-full" x-model="form.expires_at" :required="form.upload_type_id && uploadTypesById[form.upload_type_id] && uploadTypesById[form.upload_type_id].requires_expiry">
+                                    <input type="date" name="expires_at" class="px-2 py-1 border-teal-700 rounded border-1 focus:border-teal-800 form-input w-full" x-model="form.expires_at" :min="form.effective_start_date || null" :required="form.upload_type_id && uploadTypesById[form.upload_type_id] && uploadTypesById[form.upload_type_id].requires_expiry">
                                 </div>
                             </div>
                         </template>
@@ -147,12 +155,55 @@
                 csrf: '{{ csrf_token() }}',
                 uploadTypes: @json($uploadTypes->values()),
                 uploadTypesById: @json($uploadTypes->keyBy('id')),
+                existingUploads: @json($existingUploads),
                 form: {
                     id: null,
                     upload_type_id: '',
                     effective_start_date: '',
                     expires_at: '',
                     comments: '',
+                },
+                duplicateWarnings() {
+                    const warnings = [];
+                    const selectedTypeId = String(this.form.upload_type_id || '');
+                    if (!selectedTypeId) {
+                        return warnings;
+                    }
+
+                    const selectedFile = this.$refs.documentInput && this.$refs.documentInput.files.length
+                        ? this.$refs.documentInput.files[0].name
+                        : '';
+                    const selectedExpiry = this.form.expires_at || '';
+
+                    this.existingUploads.forEach((upload) => {
+                        if (upload.id === this.form.id || upload.upload_type_id !== selectedTypeId) {
+                            return;
+                        }
+
+                        if (selectedFile && upload.original_filename === selectedFile) {
+                            warnings.push(`A ${this.uploadTypeName(selectedTypeId)} document named "${selectedFile}" already exists.`);
+                        }
+
+                        if (selectedExpiry && upload.expires_at === selectedExpiry) {
+                            warnings.push(`A ${this.uploadTypeName(selectedTypeId)} document already uses expiration date ${selectedExpiry}.`);
+                        }
+                    });
+
+                    return [...new Set(warnings)];
+                },
+                uploadTypeName(typeId) {
+                    return this.uploadTypesById[typeId]?.name || 'document';
+                },
+                submitForm(event) {
+                    const warnings = this.duplicateWarnings();
+                    if (warnings.length > 0) {
+                        const confirmed = window.confirm(`${warnings.join('\n')}\n\nDo you still want to continue?`);
+                        if (!confirmed) {
+                            return;
+                        }
+                    }
+
+                    event.target.submit();
                 },
                 get formAction() {
                     if (this.editMode && this.form.id) {
@@ -182,6 +233,9 @@
                         expires_at: '',
                         comments: '',
                     };
+                    if (this.$refs.documentInput) {
+                        this.$refs.documentInput.value = '';
+                    }
                 },
             }
         }

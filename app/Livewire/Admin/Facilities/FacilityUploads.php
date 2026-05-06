@@ -49,9 +49,10 @@ class FacilityUploads extends Component
             'upload_type_id' => 'required|exists:upload_types,id',
             'file' => 'required|file',
         ]);
-        $path = $this->file->store('uploads');
+        $path = Upload::storeEmployeeFile($this->file, $this->employee_id);
         Upload::create([
             'facility_id' => $this->facility_id,
+            'employee_num' => $this->employee_id,
             'user_id' => Auth::id(),
             'upload_type_id' => $this->upload_type_id,
             'file_path' => $path,
@@ -60,7 +61,6 @@ class FacilityUploads extends Component
             'uploaded_at' => now(),
             'expires_at' => $this->expires_at,
             'effective_start_date' => $this->effective_start_date,
-            'effective_end_date' => $this->effective_end_date,
             'comments' => $this->comments,
         ]);
         session()->flash('success', 'File uploaded successfully.');
