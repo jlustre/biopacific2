@@ -15,12 +15,14 @@ $assignmentLatest->bargaining_unit_id = $assignmentLatest->bargaining_unit_id ??
 $assignmentPositions = \App\Models\Position::query()
     ->with('department:id,name')
     ->orderBy('title')
-    ->get(['id', 'title', 'position_title', 'department_id'])
+    ->get(['id', 'title', 'department_id', 'reports_to_position_id', 'supervisor_role'])
     ->map(function ($position) {
         return [
             'id' => $position->id,
-            'title' => $position->position_title,
+            'title' => $position->title,
             'department_id' => $position->department_id,
+            'reports_to_position_id' => $position->reports_to_position_id,
+            'supervisor_role' => $position->supervisor_role,
             'department_name' => optional($position->department)->name,
         ];
     });
@@ -147,6 +149,16 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
                         ? String(selectedPosition.department_id)
                         : '';
                 },
+                syncReportsToFromPosition() {
+                    const selectedPosition = this.positionsById[String(this.currentAssignment.job_code_id || '')];
+                    this.currentAssignment.reports_to = selectedPosition && selectedPosition.reports_to_position_id
+                        ? String(selectedPosition.reports_to_position_id)
+                        : '';
+                },
+                handlePositionChange() {
+                    this.syncDepartmentFromPosition();
+                    this.syncReportsToFromPosition();
+                },
                 currentDepartmentName() {
                     const selectedPosition = this.positionsById[String(this.currentAssignment.job_code_id || '')];
                     return selectedPosition && selectedPosition.department_name
@@ -155,16 +167,28 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
                 },
                 setAssignment(assign) {
                     this.currentAssignment = Object.assign({facility_id: '', dept_id: '', job_code_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
-                    this.syncDepartmentFromPosition();
+                    this.handlePositionChange();
                 },
                 clearAssignment() {
                     this.currentAssignment = {facility_id: '', dept_id: '', job_code_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
+                },
+                willUpdateExistingRecord() {
+                    return Boolean(this.latestEffdt) && this.currentAssignment.effdt === this.latestEffdt;
+                },
+                confirmAssignmentSubmit(event) {
+                    const message = this.willUpdateExistingRecord()
+                        ? 'This will update the current latest assignment record. Do you want to continue?'
+                        : 'This will create a new assignment record. Do you want to continue?';
+
+                    if (!window.confirm(message)) {
+                        event.preventDefault();
+                    }
                 },
                 isLatestRecord() {
                     return this.currentAssignment.effdt == this.latestEffdt && String(this.currentAssignment.effseq) == String(this.latestEffseq);
                 },
                 initAssignment() {
-                    this.syncDepartmentFromPosition();
+                    this.handlePositionChange();
                 }
             }
         }

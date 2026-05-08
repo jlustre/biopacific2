@@ -3,7 +3,7 @@
         <span class="font-semibold">Name:</span> {{ $employee->last_name }}, {{ $employee->first_name }}
     </div>
     <div class="mb-2">
-        <span class="font-semibold">Position:</span> {{ $employee->current_position?->position_title ?? '-' }}
+        <span class="font-semibold">Position:</span> {{ $employee->current_position?->title ?? '-' }}
     </div>
     <div class="mb-2">
         <span class="font-semibold">Department:</span> {{ $employee->current_department?->dept_name ?? '-' }}

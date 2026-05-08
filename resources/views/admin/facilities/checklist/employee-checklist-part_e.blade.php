@@ -43,15 +43,15 @@
             'Restorative Nursing Program Meeting-weekly/monthly',
         ];
         @endphp
-        <h2 class="text-xl font-bold mb-4">ORIENTATION CHECKLIST: {{ $employee->currentAssignment?->position?->position_title ?? 'No Position Assigned' }}</h2>
-        <table class="min-w-full border text-xs md:text-sm">
+        <h2 class="text-xl font-bold mb-4">ORIENTATION CHECKLIST: {{ $employee->currentAssignment?->position?->title ?? 'No Position Assigned' }}</h2>
+        <table class="min-w-full table-fixed overflow-hidden rounded-md border border-slate-500 text-[11px] text-slate-900 shadow-sm md:text-xs">
             <thead>
-                <tr class="bg-gray-100">
-                    <th class="border px-2 py-1 text-left">ORIENTATION ITEMS</th>
-                    <th class="border px-2 py-1 text-center w-1/4">CONFIRMATION</th>
-                    <th class="border px-2 py-1 text-center w-1/8">CONFIRMED DATE</th>
-                    <th class="border px-2 py-1 text-center w-1/8">EXPIRED DATE</th>
-                    <th class="border px-2 py-1 text-center w-1/8">CONFIRMED BY</th>
+                <tr class="bg-slate-200 text-slate-900">
+                    <th class="border border-slate-500 px-2 py-1.5 text-left font-semibold tracking-wide">ORIENTATION ITEMS</th>
+                    <th class="w-28 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">CONFIRMATION</th>
+                    <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">CONFIRMED DATE</th>
+                    <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">EXPIRED DATE</th>
+                    <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">CONFIRMED BY</th>
                 </tr>
             </thead>
             <tbody>
@@ -76,13 +76,14 @@
                     $displayIndentClass = 'inline-block pl-4';
                     $itemLevel = 1;
                 }
+                $rowClasses = $loop->odd ? 'bg-white text-slate-900' : 'bg-slate-50 text-slate-900';
                 @endphp
-                <tr data-doc-type-id="{{ $item->doc_type_id ?? 5 }}" data-item-name="{{ $item->name }}"
+                <tr class="{{ $rowClasses }} hover:bg-slate-100 transition-colors" data-doc-type-id="{{ $item->doc_type_id ?? 5 }}" data-item-name="{{ $item->name }}"
                     data-item-level="{{ $itemLevel }}" data-item-disabled="{{ !empty($item->disabled) ? 1 : 0 }}">
-                    <td class="border px-2 py-1 @if(isset($item->disabled) && $item->disabled) line-through @endif">
-                        <span class="text-sm {{ $displayIndentClass }} {{ $itemLevel === 0 ? 'font-bold' : '' }}">{{ $displayName }}</span>
+                    <td class="border border-slate-500 px-2 py-1.5 align-top @if(isset($item->disabled) && $item->disabled) line-through @endif">
+                        <span class="text-[11px] leading-tight {{ $displayIndentClass }} {{ $itemLevel === 0 ? 'font-bold' : '' }}">{{ $displayName }}</span>
                     </td>
-                    <td class="border px-2 py-1">
+                    <td class="border border-slate-500 px-1.5 py-1.5 align-top text-center whitespace-nowrap">
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ? 'checked' : '' }} readonly
                         tabindex="-1" style="pointer-events:none;" @if(isset($item->disabled) && $item->disabled)
                         disabled @endif>
@@ -91,7 +92,7 @@
                         <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Click to unconfirm Item"
                             data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}">Confirmed</a>
                         <span>|</span>
-                        <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Confirmation Details"
+                        <a href="#" class="text-slate-700 underline ml-1 view-link" title="View Confirmation Details"
                             data-item-name="{{ $item->name }}"
                             data-item-id="{{ $item->id }}"
                             data-checklist-key="{{ $checklistKey }}"
@@ -103,7 +104,7 @@
                             data-verified-by="{{ optional($users->firstWhere('id', $empChecklist->verified_by))->name ?? $empChecklist->verified_by }}"
                             data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">View</a>
                         @else
-                        <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Confirm Item"
+                        <a href="#" class="text-slate-700 underline ml-2 verify-link" title="Confirm Item"
                             data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}"
                             data-on-file="{{ $empChecklist && $empChecklist->on_file ? 1 : 0 }}"
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
@@ -114,7 +115,7 @@
                         @endif
                         @endif
                     </td>
-                    <td class="border px-2 py-1 text-center">
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">
                         @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
                         {{ ($empChecklist->verified_dt === null || $empChecklist->verified_dt === '') ? 'N/A' :
                         $empChecklist->verified_dt }}
@@ -122,7 +123,7 @@
                         {{ $empChecklist->verified_dt ?? '' }}
                         @endif
                     </td>
-                    <td class="border px-2 py-1 text-center">
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">
                         @if($empChecklist && ($empChecklist->on_file || $empChecklist->verified_dt))
                         {{ ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '') ? 'N/A' :
                         $empChecklist->exp_dt }}
@@ -130,7 +131,7 @@
                         {{ $empChecklist->exp_dt ?? '' }}
                         @endif
                     </td>
-                    <td class="border px-2 py-1 text-center">
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">
                         @if($empChecklist && $empChecklist->verified_by && isset($users))
                         {{ optional($users->firstWhere('id', $empChecklist->verified_by))->name ??
                         $empChecklist->verified_by }}
@@ -139,7 +140,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="border px-4 py-6 text-center text-gray-500">
+                    <td colspan="5" class="border border-slate-500 bg-slate-50 px-4 py-6 text-center text-slate-600">
                         No orientation checklist items apply to this employee's current position.
                     </td>
                 </tr>

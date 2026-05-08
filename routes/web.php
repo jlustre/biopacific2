@@ -772,6 +772,11 @@ Route::get('/admin/facilities/test_livewire_validation', function() {
 // Save employee performance assessment
 Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/performance-assessment', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'store'])->name('admin.employees.performance-assessment.store');
+    Route::post('/employees/competency-assessment/draft', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'saveCompetencyAssessmentDraft'])->name('admin.employees.competency-assessment.draft');
+    Route::post('/employees/competency-assessment/submit', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'submitCompetencyAssessment'])->name('admin.employees.competency-assessment.submit');
+    Route::post('/employees/competency-assessment/employee-sign', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'employeeSignCompetencyAssessment'])->name('admin.employees.competency-assessment.employee-sign');
+    Route::post('/employees/competency-assessment/reviewer-sign', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'reviewerSignCompetencyAssessment'])->name('admin.employees.competency-assessment.reviewer-sign');
+    Route::get('/employees/competency-assessment/{assessment}/pdf', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'downloadCompetencyAssessmentPdf'])->name('admin.employees.competency-assessment.pdf');
     Route::post('/employees/performance-assessment/revoke', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'revoke'])->name('admin.employees.performance-assessment.revoke');
     Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
 });

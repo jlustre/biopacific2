@@ -49,7 +49,7 @@ $selectedFacility = $facilities[0];
                         onchange="this.form.submit()">
                         <option value="">All Supervisors</option>
                         @foreach($supervisorPositions as $supervisor)
-                        <option value="{{ $supervisor->position_id }}" @if(request('reports_to')==$supervisor->position_id) selected @endif>{{ $supervisor->position_title }}</option>
+                        <option value="{{ $supervisor->position_id }}" @if(request('reports_to')==$supervisor->position_id) selected @endif>{{ $supervisor->title }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -88,7 +88,7 @@ $selectedFacility = $facilities[0];
                     <option value="">All Positions</option>
                     @foreach($positions as $position)
                     <option value="{{ $position->position_id }}" @if(request('position')==$position->position_id)
-                        selected @endif>{{ $position->position_title }}</option>
+                        selected @endif>{{ $position->title }}</option>
                     @endforeach
                 </select>
             </div>
@@ -135,7 +135,7 @@ $selectedFacility = $facilities[0];
                     <tr class="sm:text-sm">
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->last_name }}, {{ $employee->first_name }}</td>
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->position_title ?? '-' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->title ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->name ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center">
                             <a href="{{ route('admin.employees.edit', $employee->id) }}" class="text-blue-600 hover:text-blue-800 transition" title="View/Edit">

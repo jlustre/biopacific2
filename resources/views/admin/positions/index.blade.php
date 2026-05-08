@@ -1,15 +1,21 @@
 @extends('layouts.dashboard', ['title' => 'Positions Management'])
 
 @section('content')
-<div class="flex justify-between items-center">
+<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
     <div>
         <h1 class="text-3xl font-bold text-gray-900">Positions Management</h1>
         <p class="text-gray-600 mt-2">Manage job positions and their departments</p>
     </div>
-    <a href="{{ route('admin.positions.create') }}"
-        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
-        <i class="fas fa-plus mr-2"></i> Create Position
-    </a>
+    <div class="flex flex-wrap items-center gap-3">
+        <a href="{{ route('admin.departments.index') }}"
+            class="inline-flex items-center justify-center whitespace-nowrap bg-white text-gray-700 px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold">
+            <i class="fas fa-sitemap mr-2"></i> Departments Management
+        </a>
+        <a href="{{ route('admin.positions.create') }}"
+            class="inline-flex items-center justify-center whitespace-nowrap bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
+            <i class="fas fa-plus mr-2"></i> Create Position
+        </a>
+    </div>
 </div>
 
 <div class="space-y-6">
@@ -75,6 +81,7 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Title</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Department</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Reports To</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Description</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-900">Actions</th>
                 </tr>
@@ -83,41 +90,56 @@
                 @forelse ($positions as $position)
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-6 py-4">
-                        <span class="font-semibold text-gray-900">{{ $position->title }}</span>
+                        <span class="font-semibold text-gray-900 text-sm">{{ $position->title }}</span>
                     </td>
                     <td class="px-6 py-4">
                         <span class="inline-block bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
                             {{ $position->department->name ?? 'N/A' }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-gray-600">
+                    <td class="px-6 py-4 text-gray-600 text-xs">
+                        {{ $position->reportsToPosition->title ?? '-' }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 text-xs">
                         {{ isset($position->description) && strlen($position->description) > 0 ?
                         (strlen($position->description) > 50 ? substr($position->description, 0, 50) . '...' :
                         $position->description) : '-' }}
                     </td>
-                    <td class="px-6 py-4 text-right space-x-2">
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end space-x-1">
                         <a href="{{ route('admin.positions.show', $position) }}"
-                            class="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                            <i class="fas fa-eye"></i> View
+                            class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-all duration-200"
+                            data-tooltip="View Position"
+                            aria-label="View Position">
+                            <i class="fas fa-eye text-sm"></i>
+                            <span class="sr-only">View Position</span>
                         </a>
                         <a href="{{ route('admin.positions.edit', $position) }}"
-                            class="text-green-600 hover:text-green-900 text-sm font-medium">
-                            <i class="fas fa-edit"></i> Edit
+                            class="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-all duration-200"
+                            data-tooltip="Edit Position"
+                            aria-label="Edit Position">
+                            <i class="fas fa-edit text-sm"></i>
+                            <span class="sr-only">Edit Position</span>
                         </a>
                         <form action="{{ route('admin.positions.destroy', $position) }}" method="POST"
                             class="inline-block"
                             onsubmit="return confirm('Are you sure you want to delete this position?');">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:text-red-900 text-sm font-medium">
-                                <i class="fas fa-trash"></i> Delete
+                            <button type="submit"
+                                class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-all duration-200"
+                                data-tooltip="Delete Position"
+                                aria-label="Delete Position">
+                                <i class="fas fa-trash text-sm"></i>
+                                <span class="sr-only">Delete Position</span>
                             </button>
                         </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="px-6 py-12 text-center text-gray-600">
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-600">
                         <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
                         <p>No positions found</p>
                     </td>
@@ -132,4 +154,38 @@
         {{ $positions->links() }}
     </div>
 </div>
+
+<style>
+    [data-tooltip] {
+        position: relative;
+    }
+
+    [data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #1f2937;
+        color: #fff;
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    [data-tooltip]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: 115%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: #1f2937;
+        z-index: 1000;
+        pointer-events: none;
+    }
+</style>
 @endsection

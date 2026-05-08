@@ -18,7 +18,7 @@
             <tr class="border-b">
                 <td class="px-3 py-2 text-sm">{{ $assign->effdt }}</td>
                 <td class="px-3 py-2 text-sm">{{ $assign->effseq }}</td>
-                <td class="px-3 py-2 text-sm">{{ optional($assign->position)->position_title }}</td>
+                <td class="px-3 py-2 text-sm">{{ optional($assign->position)->title }}</td>
                 <td class="px-3 py-2 text-sm">{{ optional($assign->facility)->name }}</td>
                 <td class="px-3 py-2 text-sm">{{ optional($assign->department)->name }}</td>
                 <td class="px-3 py-2 text-sm">

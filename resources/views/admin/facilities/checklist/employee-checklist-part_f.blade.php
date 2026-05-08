@@ -1,13 +1,18 @@
 <div id="partF" class="tab-content hidden">
+    @php
+        $partFSelectedAssessment = $selectedPerformanceAssessment ?? ($assessment ?? null);
+        $partFAssessmentLocked = !empty(optional($partFSelectedAssessment)->finalized);
+        $partFStatusLabel = $partFAssessmentLocked ? 'Completed' : ($partFSelectedAssessment ? 'In Progress' : null);
+        $partFCurrentReviewerId = auth()->id();
+        $partFSelectedReviewerId = optional($partFSelectedAssessment)->assessed_by;
+        $partFShowStatusWarning = $partFAssessmentLocked
+            || ($partFSelectedAssessment && (string) $partFSelectedReviewerId !== (string) $partFCurrentReviewerId);
+    @endphp
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var partF = document.getElementById('partF');
             var hasMessages = false;
-            if (partF && (
-                partF.querySelector('.bg-green-100') ||
-                partF.querySelector('.bg-red-100') ||
-                partF.querySelector('.border-red-500')
-            )) {
+            if (partF && partF.querySelector('#partF-messages > *')) {
                 hasMessages = true;
             }
             if (hasMessages) {
@@ -15,95 +20,132 @@
                 localStorage.setItem('employeeTab', 'checklist');
                 if (partF) partF.classList.remove('hidden');
                 // Optionally scroll to the message
-                var msg = partF.querySelector('.bg-green-100, .bg-red-100, .border-red-500');
+                var msg = partF.querySelector('#partF-messages > *');
                 if (msg) msg.scrollIntoView({behavior: 'smooth', block: 'center'});
             }
         });
     </script>
-    <h2 class="text-xl font-bold mb-4">PART F - EMPLOYEE PERFORMANCE APPRAISAL</h2>
-    @include('admin.facilities.checklist.employee-appraisal-form')
-
-    <!-- PERFORMANCE AREAS (Dynamic from DB) -->
-    @include('admin.facilities.checklist.employee-performance-areas')
-
-    <div id="partF-messages">
-        @if(session('success'))
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">{{ session('success') }}</div>
-        @endif
-        @if(session('error'))
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">{{ session('error') }}</div>
-        @endif
-        @if($errors->any())
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
-            <ul class="list-disc pl-5 mb-0">
-                @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+    <div class="overflow-x-auto">
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold">PART F - EMPLOYEE PERFORMANCE APPRAISAL</h2>
+            @if($partFStatusLabel)
+            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $partFAssessmentLocked ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}">{{ $partFAssessmentLocked ? 'Read Only' : $partFStatusLabel }}</span>
+            @endif
         </div>
-        @endif
-    </div>
-    @if((empty($assessment) || empty($assessment->finalized)) && !empty($employee->employee_num))
-    <form id="areasDevelopmentForm" method="POST"
-        action="{{ route('admin.employees.areas_development.save', ['employee' => $employee->id]) }}">
-        <input type="hidden" name="assessment_period_id" value="{{ $selectedAssessmentPeriodId }}">
-        @csrf
-        @include('admin.facilities.checklist.employee-areas-development')
 
-        <div class="mb-4">
-            <h3 class="font-bold mb-2">Signatures</h3>
-            <table class="min-w-full border text-xs md:text-sm mb-4">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="border px-2 py-1">Signatures</th>
-                        <th class="border px-2 py-1">Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="border px-2 py-1">
-                            Supervisor: <input type="text" name="supervisor_name"
-                                class="border rounded px-2 py-1 w-full mb-1" value="{{ $supervisorName ?? '' }}">
-                        </td>
-                        <td class="border px-2 py-1">
-                            <label class="text-xs text-gray-600">Review Date <span
-                                    class="text-red-500">*</span>:</label>
-                            <input type="date" name="review_dt" class="border rounded px-2 py-1 w-auto"
-                                value="{{ old('review_dt', isset($reviewDt) ? $reviewDt : '') }}" required
-                                @if(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id)
-                            readonly @endif>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="border px-2 py-1">Employee: <input type="text" name="employee_name"
-                                class="border rounded px-2 py-1 w-full"
-                                value="{{ $employee->last_name }}, {{ $employee->first_name }}@if($employee->middle_name), {{ $employee->middle_name }}@endif"
-                                readonly></td>
-                        <td class="border px-2 py-1">
-                            <label class="text-xs text-gray-600">Acknowledge Date:</label>
-                            <input type="date" name="employee_acknowledge_dt" class="border rounded px-2 py-1 w-auto"
-                                value="{{ old('employee_acknowledge_dt', isset($employeeAcknowledgeDt) ? $employeeAcknowledgeDt : '') }}"
-                                @if(!(auth()->check() && isset($employee->user_id) && auth()->id() ==
-                            $employee->user_id)) readonly @endif>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="flex justify-end space-x-2">
-                <button type="submit" name="action" value="save"
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">Save</button>
-                <button type="submit" name="action" value="submit"
-                    class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 cursor-pointer">Submit This
-                    Assessment</button>
+        <div class="mb-4 grid gap-3 xl:grid-cols-2 xl:items-stretch">
+            <div>
+                @include('admin.facilities.checklist.employee-assessment-subject-summary', [
+                    'managerId' => 'partF',
+                ])
+            </div>
+            <div>
+                @include('admin.facilities.checklist.employee-assessment-period-manager', [
+                    'managerId' => 'partF',
+                    'contextLabel' => 'Performance Appraisal',
+                ])
             </div>
         </div>
-    </form>
-    @endif
+
+        <div class="mb-4 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
+            Rating Legend: 3 = Excellent &nbsp;&nbsp;&nbsp; 2 = Satisfactory &nbsp;&nbsp;&nbsp; 1 = Unsatisfactory &nbsp;&nbsp;&nbsp; N = Not Applicable
+        </div>
+
+        @if($partFStatusLabel && $partFShowStatusWarning)
+        <div class="mb-4 rounded-md border {{ $partFAssessmentLocked ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-sky-300 bg-sky-50 text-sky-900' }} px-3 py-2 text-[11px] shadow-sm">
+            <strong>Warning:</strong>
+            @if($partFAssessmentLocked)
+            A performance assessment already exists for this employee in the selected period with status <strong>{{ $partFStatusLabel }}</strong>. This loaded assessment is read-only.
+            @else
+            A performance assessment already exists for this employee in the selected period with status <strong>{{ $partFStatusLabel }}</strong>. The reviewer can still update it until it is completed.
+            @endif
+        </div>
+        @endif
+
+        @include('admin.facilities.checklist.employee-performance-areas')
+
+        <div id="partF-messages">
+            @if(session('success'))
+            <div class="mb-4 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-800 shadow-sm">{{ session('success') }}</div>
+            @endif
+            @if(session('error'))
+            <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 shadow-sm">{{ session('error') }}</div>
+            @endif
+            @if($errors->any())
+            <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 shadow-sm">
+                <ul class="mb-0 list-disc pl-5">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+        </div>
+
+        @if(!empty($employee->employee_num))
+        <form id="areasDevelopmentForm" method="POST" action="{{ route('admin.employees.areas_development.save', ['employee' => $employee->id]) }}">
+            <input type="hidden" name="assessment_period_id" value="{{ $selectedAssessmentPeriodId }}">
+            @csrf
+
+            @include('admin.facilities.checklist.employee-assessment-summary-form', [
+                'assessmentSummaryMode' => 'performance',
+                'assessmentWord' => 'Performance',
+                'assessmentSummaryTitle' => 'Performance Evaluation Summary',
+                'assessmentSummaryDescription' => 'Capture the development notes and signatures for this performance assessment period.',
+            ])
+        </form>
+        @endif
+
+        <div class="mt-5 rounded-md border border-slate-400 bg-slate-50 p-3 shadow-sm">
+            <div class="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h3 class="text-[11px] font-bold uppercase tracking-wide text-slate-900">Performance Assessment History</h3>
+                    <p class="text-[11px] text-slate-700">Previous Part F assessments for this employee, grouped by assessment period.</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-md border border-slate-400 bg-white shadow-sm">
+                <table class="min-w-full table-fixed text-[11px] text-slate-900 md:text-xs">
+                    <thead class="bg-slate-200 text-slate-900">
+                        <tr>
+                            <th class="w-[26%] border border-slate-400 px-2 py-1.5 text-left font-semibold tracking-wide">Assessment Period</th>
+                            <th class="w-[14%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Assessed Date</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Items Rated</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Total</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Average</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Overall</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($performanceAssessmentHistory as $history)
+                        <tr class="{{ $loop->odd ? 'bg-white' : 'bg-slate-50' }}">
+                            <td class="border border-slate-400 px-2 py-1.5 whitespace-nowrap">{{ $history['period_label'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['assessment_date'] ?: 'N/A' }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['items_count'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['total_score'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['average_score'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['overall_rating'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['status'] }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="border border-slate-400 bg-slate-50 px-4 py-6 text-center text-slate-700">No performance assessment history is available for this employee yet.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
     var form = document.getElementById('areasDevelopmentForm');
+    if (!form) return;
+
     var submitBtn = form.querySelector('button[type="submit"][name="action"][value="submit"]');
-    if (!form || !submitBtn) return;
+    if (!submitBtn) return;
 
     // Disable submit by default
     submitBtn.disabled = true;

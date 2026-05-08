@@ -75,7 +75,7 @@
                     <select name="position_ids[]" id="bulk_position_ids" multiple size="6"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         @foreach ($positions as $position)
-                        <option value="{{ $position->position_id }}">{{ $position->position_title }} ({{ $position->position_code }})</option>
+                        <option value="{{ $position->position_id }}">{{ $position->title }} ({{ $position->position_code }})</option>
                         @endforeach
                     </select>
                     <p class="text-xs text-gray-500 mt-2">Select one or more positions, then choose checklist rows below.</p>
@@ -117,7 +117,7 @@
                     $positionLabels = collect($checklistItem->position_ids ?? [])
                         ->map(fn ($positionId) => $positionLookup->get($positionId))
                         ->filter()
-                        ->map(fn ($position) => $position->position_title)
+                        ->map(fn ($position) => $position->title)
                         ->values();
                 @endphp
                 <tr class="hover:bg-gray-50 transition">

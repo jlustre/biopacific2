@@ -14,7 +14,7 @@ class PositionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Position::with('department');
+        $query = Position::with(['department', 'reportsToPosition']);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -39,7 +39,9 @@ class PositionController extends Controller
     public function create()
     {
         $departments = Department::orderBy('name')->get();
-        return view('admin.positions.create', compact('departments'));
+        $reportingPositions = Position::orderBy('title')->get();
+
+        return view('admin.positions.create', compact('departments', 'reportingPositions'));
     }
 
     /**
@@ -51,6 +53,7 @@ class PositionController extends Controller
             'title' => 'required|string|max:255|unique:positions',
             'description' => 'nullable|string',
             'department_id' => 'required|exists:departments,id',
+            'reports_to_position_id' => 'nullable|exists:positions,id|different:id',
         ]);
 
         Position::create($validated);
@@ -63,7 +66,7 @@ class PositionController extends Controller
      */
     public function show(Position $position)
     {
-        $position->load('department');
+        $position->load(['department', 'reportsToPosition']);
         return view('admin.positions.show', compact('position'));
     }
 
@@ -73,7 +76,11 @@ class PositionController extends Controller
     public function edit(Position $position)
     {
         $departments = Department::orderBy('name')->get();
-        return view('admin.positions.edit', compact('position', 'departments'));
+        $reportingPositions = Position::where('id', '!=', $position->id)
+            ->orderBy('title')
+            ->get();
+
+        return view('admin.positions.edit', compact('position', 'departments', 'reportingPositions'));
     }
 
     /**
@@ -85,6 +92,7 @@ class PositionController extends Controller
             'title' => 'required|string|max:255|unique:positions,title,' . $position->id,
             'description' => 'nullable|string',
             'department_id' => 'required|exists:departments,id',
+            'reports_to_position_id' => 'nullable|exists:positions,id|different:' . $position->id,
         ]);
 
         $position->update($validated);

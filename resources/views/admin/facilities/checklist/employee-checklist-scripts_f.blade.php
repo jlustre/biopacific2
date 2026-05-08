@@ -1,4 +1,45 @@
 <script>
+    function setHierarchyRowExpansion(parentRow, expanded) {
+        if (!parentRow) {
+            return;
+        }
+
+        var toggle = parentRow.querySelector('.hierarchy-toggle');
+        var parentIndentLevel = Number(parentRow.getAttribute('data-indent-level') || 0);
+        var nextRow = parentRow.nextElementSibling;
+
+        while (nextRow) {
+            var nextIndentAttr = nextRow.getAttribute('data-indent-level');
+            if (nextIndentAttr === null) {
+                break;
+            }
+
+            var nextIndentLevel = Number(nextIndentAttr || 0);
+            if (nextIndentLevel <= parentIndentLevel) {
+                break;
+            }
+
+            nextRow.classList.toggle('hidden', !expanded);
+            nextRow = nextRow.nextElementSibling;
+        }
+
+        if (toggle) {
+            toggle.setAttribute('data-expanded', expanded ? '1' : '0');
+            toggle.setAttribute('aria-label', expanded ? 'Collapse child items' : 'Expand child items');
+            toggle.textContent = expanded ? '▲' : '▼';
+        }
+    }
+
+    function initializeHierarchyToggles(container) {
+        if (!container) {
+            return;
+        }
+
+        container.querySelectorAll('tr[data-has-child-items="1"][data-indent-level="0"]').forEach(function(row) {
+            setHierarchyRowExpansion(row, true);
+        });
+    }
+
     function showAssessmentFeedback(message, type) {
         var banner = document.getElementById('assessmentActionFeedback');
         if (!banner) {
@@ -20,246 +61,103 @@
         }, 2500);
     }
 
-    // Opens the modal for creating or editing an assessment period
-    function openNewPeriodModal(period = null) {
-        var newPeriodModal = document.getElementById('newPeriodModal');
-        var newPeriodForm = document.getElementById('newPeriodForm');
-        var dateFromInput = document.getElementById('newPeriodDateFromInput');
-        var dateToInput = document.getElementById('newPeriodDateToInput');
-        var reviewTypeInput = document.getElementById('newPeriodReviewTypeInput');
-        var periodIdInput = document.getElementById('newPeriodIdInput');
-        var title = document.getElementById('periodModalTitle');
-        var submitBtn = document.getElementById('periodModalSubmitBtn');
-        if (!newPeriodModal || !newPeriodForm || !dateFromInput || !dateToInput || !reviewTypeInput || !periodIdInput || !title || !submitBtn) {
-            alert('Modal elements missing.');
+    function updatePartFSummaryScores() {
+        var totalScoreField = document.getElementById('partFTotalScore');
+        var averageScoreField = document.getElementById('partFAverageScore');
+        var overallRatingField = document.getElementById('partFOverallRating');
+        var overallRatingValueField = document.getElementById('partFOverallRatingValue');
+        var overallRatingCard = document.getElementById('partFOverallRatingCard');
+        var tableContainer = document.getElementById('partFTableContainer');
+        var unsatisfactoryReasonWrapper = document.getElementById('partFUnsatisfactoryReasonWrapper');
+        var unsatisfactoryReasonField = document.getElementById('partFUnsatisfactoryReason');
+
+        if (!tableContainer || !totalScoreField || !averageScoreField || !overallRatingField || !overallRatingCard) {
             return;
         }
-        // Reset form fields
-        newPeriodForm.reset();
-        periodIdInput.value = '';
-        dateFromInput.value = '';
-        dateToInput.value = '';
-        reviewTypeInput.value = 'A';
-        // Hide error messages
-        var dateFromError = document.getElementById('newPeriodDateFromError');
-        var dateToError = document.getElementById('newPeriodDateToError');
-        if (dateFromError) dateFromError.classList.add('hidden');
-        if (dateToError) dateToError.classList.add('hidden');
-        // If editing, populate fields
-        if (period) {
-            periodIdInput.value = period.id || '';
-            dateFromInput.value = period.date_from || '';
-            dateToInput.value = period.date_to || '';
-            reviewTypeInput.value = period.review_type || 'A';
-            if (title) title.textContent = 'Edit Assessment Period';
-            if (submitBtn) submitBtn.textContent = 'Update';
-        } else {
-            var today = new Date();
-            var yyyy = today.getFullYear();
-            var mm = String(today.getMonth() + 1).padStart(2, '0');
-            var dd = String(today.getDate()).padStart(2, '0');
-            var todayStr = yyyy + '-' + mm + '-' + dd;
-            if (dateFromInput) dateFromInput.value = todayStr;
-            if (dateToInput) dateToInput.value = todayStr;
-            if (reviewTypeInput) reviewTypeInput.value = 'A';
-            if (title) title.textContent = 'Create Assessment Period';
-            if (submitBtn) submitBtn.textContent = 'Create';
+
+        function parsePerformanceRating(rawRating) {
+            var rating = (rawRating || '').trim().toUpperCase();
+            if (rating === 'EXCELLENT' || rating === 'E' || rating === 'EXCEEDS' || rating === '3') return 3;
+            if (rating === 'SATISFACTORY' || rating === 'S' || rating === 'MEETS' || rating === 'M' || rating === '2') return 2;
+            if (rating === 'UNSATISFACTORY' || rating === 'U' || rating === 'BELOW' || rating === 'B' || rating === '1') return 1;
+            return null;
         }
-        // Show the modal
-        newPeriodModal.classList.remove('hidden');
-        newPeriodModal.classList.add('flex');
+
+        function syncOverallEvaluation(average) {
+            var overallLabel = 'Not Rated';
+            var cardClassList = overallRatingCard.classList;
+
+            cardClassList.remove('border-teal-400', 'bg-teal-100', 'border-slate-400', 'bg-white', 'border-amber-300', 'bg-amber-100');
+
+            if (average >= 2.5) {
+                overallLabel = 'Excellent';
+                cardClassList.add('border-teal-400', 'bg-teal-100');
+            } else if (average >= 1.5) {
+                overallLabel = 'Satisfactory';
+                cardClassList.add('border-slate-400', 'bg-white');
+            } else if (average > 0) {
+                overallLabel = 'Unsatisfactory';
+                cardClassList.add('border-amber-300', 'bg-amber-100');
+            } else {
+                cardClassList.add('border-slate-400', 'bg-white');
+            }
+
+            overallRatingField.value = overallLabel;
+
+            if (overallRatingValueField) {
+                overallRatingValueField.value = overallLabel;
+            }
+
+            if (unsatisfactoryReasonWrapper && unsatisfactoryReasonField) {
+                var showUnsatisfactoryReason = overallLabel === 'Unsatisfactory';
+                unsatisfactoryReasonWrapper.classList.toggle('hidden', !showUnsatisfactoryReason);
+                unsatisfactoryReasonField.disabled = !showUnsatisfactoryReason;
+                unsatisfactoryReasonField.required = showUnsatisfactoryReason;
+
+                if (!showUnsatisfactoryReason) {
+                    unsatisfactoryReasonField.value = '';
+                }
+            }
+        }
+
+        var total = 0;
+        var count = 0;
+
+        tableContainer.querySelectorAll('tbody tr').forEach(function(row) {
+            var cells = row.querySelectorAll('td');
+            if (cells.length !== 6) {
+                return;
+            }
+
+            if (row.getAttribute('data-summary-exclude') === '1') {
+                return;
+            }
+
+            var numericRating = parsePerformanceRating(cells[2].textContent);
+            if (numericRating === null) {
+                return;
+            }
+
+            total += numericRating;
+            count += 1;
+        });
+
+        totalScoreField.value = String(total);
+        var average = count ? (total / count) : 0;
+        averageScoreField.value = average.toFixed(2);
+        syncOverallEvaluation(average);
     }
+
     // Binds click events for PART F checklist action links (Verify/View)
     function bindChecklistLinksF() {
-        // No longer disables PART F links globally; handled in event delegation
-        // Sync assessment period dropdown with window.selectedAssessmentPeriodId and hidden input
-        var periodSelect = document.getElementById('assessmentPeriodSelect');
+        var periodSelect = document.querySelector('.js-assessment-period-select');
         if (periodSelect) {
             window.selectedAssessmentPeriodId = periodSelect.value;
-            periodSelect.addEventListener('change', function() {
-                window.selectedAssessmentPeriodId = this.value;
-                var apidField = document.getElementById('verifyAssessmentPeriodIdF');
-                if (apidField) apidField.value = this.value;
-            });
+            var apidField = document.getElementById('verifyAssessmentPeriodIdF');
+            if (apidField) {
+                apidField.value = periodSelect.value;
+            }
         }
-        // New Period button logic
-        var addNewPeriodBtn = document.getElementById('addNewPeriodBtn');
-        if (addNewPeriodBtn) {
-            addNewPeriodBtn.onclick = function() {
-                openNewPeriodModal();
-            };
-        }
-        // Edit Period button logic
-        var editPeriodBtn = document.getElementById('editPeriodBtn');
-        if (editPeriodBtn) {
-            editPeriodBtn.onclick = function() {
-                var periodSelect = document.getElementById('assessmentPeriodSelect');
-                if (!periodSelect) return;
-                var selectedId = periodSelect.value;
-                var selectedOption = periodSelect.options[periodSelect.selectedIndex];
-                // Find the selected period's data from window.assessmentPeriods (to be injected)
-                var periods = window.assessmentPeriods || [];
-                var period = periods.find(function(p) { return p.id == selectedId; });
-                openNewPeriodModal(period);
-            };
-        }
-
-        // Modal submit logic for creating/updating assessment periods
-        var newPeriodForm = document.getElementById('newPeriodForm');
-        if (newPeriodForm) {
-            newPeriodForm.onsubmit = function(e) {
-                e.preventDefault();
-                var id = document.getElementById('newPeriodIdInput').value;
-                var dateFrom = document.getElementById('newPeriodDateFromInput').value;
-                var dateTo = document.getElementById('newPeriodDateToInput').value;
-                var reviewType = document.getElementById('newPeriodReviewTypeInput').value;
-                var dateFromError = document.getElementById('newPeriodDateFromError');
-                var dateToError = document.getElementById('newPeriodDateToError');
-                var submitBtn = document.getElementById('periodModalSubmitBtn');
-                // Basic validation
-                var hasError = false;
-                if (!dateFrom) {
-                    if (dateFromError) dateFromError.classList.remove('hidden');
-                    hasError = true;
-                } else {
-                    if (dateFromError) dateFromError.classList.add('hidden');
-                }
-                if (!dateTo) {
-                    if (dateToError) dateToError.classList.remove('hidden');
-                    hasError = true;
-                } else {
-                    if (dateToError) dateToError.classList.add('hidden');
-                }
-                if (hasError) return;
-                // CSRF token
-                var tokenMeta = document.querySelector('meta[name="csrf-token"]');
-                if (!tokenMeta) {
-                    alert('CSRF token missing.');
-                    return;
-                }
-                var token = tokenMeta.getAttribute('content');
-                // Disable submit button
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = id ? 'Updating...' : 'Creating...';
-                }
-                // Prepare payload
-                var payload = {
-                    date_from: dateFrom,
-                    date_to: dateTo,
-                    review_type: reviewType
-                };
-                if (id) payload.id = id;
-                // Use the correct backend route for assessment period create/update
-                fetch('/admin/employees/performance-assessment/period', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(async response => {
-                    let data;
-                    let rawText = await response.text();
-                    try {
-                        data = JSON.parse(rawText);
-                    } catch (err) {
-                        alert('Save failed.1');
-                        if (submitBtn) {
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = id ? 'Update' : 'Create';
-                        }
-                        return;
-                    }
-                    // Handle warning (overlap or in-use)
-                    if (data.warning && data.message) {
-                        if (confirm(data.message)) {
-                            // Add force or force_edit flag and re-submit
-                            if (data.message.includes('overlaps')) {
-                                payload.force = true;
-                            } else if (data.message.includes('using this assessment period')) {
-                                payload.force_edit = true;
-                            }
-                            fetch('/admin/employees/performance-assessment/period', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': token,
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify(payload)
-                            })
-                            .then(async response2 => {
-                                let data2;
-                                let rawText2 = await response2.text();
-                                try {
-                                    data2 = JSON.parse(rawText2);
-                                } catch (err) {
-                                    alert('Save failed.1');
-                                    if (submitBtn) {
-                                        submitBtn.disabled = false;
-                                        submitBtn.textContent = id ? 'Update' : 'Create';
-                                    }
-                                    return;
-                                }
-                                if (data2.success) {
-                                    closeNewPeriodModal();
-                                    window.location.reload();
-                                } else {
-                                    alert(data2.message || 'Save failed.2');
-                                    if (submitBtn) {
-                                        submitBtn.disabled = false;
-                                        submitBtn.textContent = id ? 'Update' : 'Create';
-                                    }
-                                }
-                            })
-                            .catch(err => {
-                                alert('Save failed.3: ' + (err && err.message ? err.message : err));
-                                if (submitBtn) {
-                                    submitBtn.disabled = false;
-                                    submitBtn.textContent = id ? 'Update' : 'Create';
-                                }
-                            });
-                            return;
-                        } else {
-                            if (submitBtn) {
-                                submitBtn.disabled = false;
-                                submitBtn.textContent = id ? 'Update' : 'Create';
-                            }
-                            return;
-                        }
-                    }
-                    if (data.success) {
-                        closeNewPeriodModal();
-                        window.location.reload();
-                    } else {
-                        alert(data.message || 'Save failed.2');
-                        if (submitBtn) {
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = id ? 'Update' : 'Create';
-                        }
-                    }
-                })
-                .catch(err => {
-                    alert('Save failed.3: ' + (err && err.message ? err.message : err));
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = id ? 'Update' : 'Create';
-                    }
-                });
-            };
-        }
-        // No modal logic here. All modal open/submit logic is handled by openNewPeriodModal().
-    }
-
-    function closeNewPeriodModal() {
-        var modal = document.getElementById('newPeriodModal');
-        if (modal) modal.classList.add('hidden');
-        // Reset form fields
-        var form = document.getElementById('newPeriodForm');
-        if (form) form.reset();
     }
 
      // Opens the PART F modal and populates its fields for the selected item/employee
@@ -271,10 +169,26 @@
         var ratingField = document.getElementById('verifyRatingF');
         var assessmentDateField = document.getElementById('verifyAssessmentDateF');
         var commentsField = document.getElementById('verifyCommentsF');
+        var commentsError = document.getElementById('commentsFError');
         var assessedByField = document.getElementById('verifyAssessedByF');
         var assessedByIdField = document.getElementById('verifyAssessedByIdF');
         var apidField = document.getElementById('verifyAssessmentPeriodIdF');
         var saveBtn = document.getElementById('verifySaveBtnF');
+
+        function syncUnsatisfactoryCommentRequirement() {
+            var requiresComments = ratingField && ratingField.value === 'U' && !viewOnly;
+            if (commentsField) {
+                commentsField.required = requiresComments;
+                commentsField.placeholder = requiresComments
+                    ? 'Required: explain why this item is unsatisfactory.'
+                    : '';
+            }
+
+            if (commentsError) {
+                var hasComments = commentsField && commentsField.value.trim() !== '';
+                commentsError.classList.toggle('hidden', !requiresComments || hasComments);
+            }
+        }
         // Find the row for this itemKey/empId to get any existing data
         var link = itemKey ? Array.from(document.querySelectorAll('.verify-link, .view-link')).find(
             l => l.getAttribute('data-item-key') === itemKey && l.getAttribute('data-emp-id') == empId
@@ -329,6 +243,13 @@
         ratingField.disabled = !!viewOnly;
         assessmentDateField.readOnly = !!viewOnly;
         commentsField.readOnly = !!viewOnly;
+        if (ratingField) {
+            ratingField.onchange = syncUnsatisfactoryCommentRequirement;
+        }
+        if (commentsField) {
+            commentsField.oninput = syncUnsatisfactoryCommentRequirement;
+        }
+        syncUnsatisfactoryCommentRequirement();
         if (saveBtn) {
             saveBtn.classList.toggle('hidden', !!viewOnly);
         }
@@ -410,6 +331,7 @@
             else if (item.rating === 'U') ratingText = 'Unsatisfactory';
             else if (item.rating === 'N') ratingText = 'Not Applicable';
         }
+        row.setAttribute('data-current-rating', item && item.rating ? item.rating : '');
         row.children[ratingIndex].textContent = ratingText;
         // Update Assessed Date and Assessed By
         if (item && item.rating) {
@@ -443,12 +365,13 @@
             console.error('updatePartFRow: actionCell missing', row, row.children);
             return;
         }
+        var isAssessableItem = row.getAttribute('data-assessable-item') !== '0';
         while (actionCell.firstChild) { actionCell.removeChild(actionCell.firstChild); }
         if (item && item.rating) {
             // Show Revoke | View
             var revokeLink = document.createElement('a');
             revokeLink.href = '#';
-            revokeLink.className = 'text-red-600 underline mr-1 unverify-link';
+            revokeLink.className = 'text-red-600 underline mr-1 unverify-link cursor-pointer text-xs';
             revokeLink.setAttribute('data-item-key', itemKey);
             revokeLink.setAttribute('data-emp-id', empId);
             revokeLink.setAttribute('data-item-label', itemLabel);
@@ -461,7 +384,7 @@
             actionCell.appendChild(sep);
             var viewLink = document.createElement('a');
             viewLink.href = '#';
-            viewLink.className = 'text-teal-600 underline ml-1 view-link';
+            viewLink.className = 'text-teal-600 underline ml-1 view-link cursor-pointer text-xs';
             viewLink.setAttribute('data-item-key', itemKey);
             viewLink.setAttribute('data-emp-id', empId);
             viewLink.setAttribute('data-item-label', itemLabel);
@@ -473,7 +396,7 @@
             viewLink.textContent = 'View';
             viewLink.title = 'View Assessment Details';
             actionCell.appendChild(viewLink);
-        } else {
+        } else if (isAssessableItem) {
             // Show Assess
             var assessLink = document.createElement('a');
             assessLink.href = '#';
@@ -491,38 +414,25 @@
         }
         if (isCompetencyRow && typeof window.updatePartGSummaryScores === 'function') {
             window.updatePartGSummaryScores();
+        } else {
+            updatePartFSummaryScores();
         }
         // Re-bind PART F links after row update
         bindChecklistLinksF();
     }
 
-    // Add New Period button: open modal with empty/default fields and today's date as eff_date
-    var addNewPeriodBtn = document.getElementById('addNewPeriodBtn');
-    if (addNewPeriodBtn) {
-        addNewPeriodBtn.onclick = function() {
-            var today = new Date();
-            var yyyy = today.getFullYear();
-            var mm = String(today.getMonth() + 1).padStart(2, '0');
-            var dd = String(today.getDate()).padStart(2, '0');
-            var effDate = yyyy + '-' + mm + '-' + dd;
-            openVerifyModalF(null, window.currentEmpId, false, effDate, true); // true = force new period
-        };
-    }
-
-    // Assessment period dropdown: reload page on change
-    var periodSelect = document.getElementById('assessmentPeriodSelect');
-    if (periodSelect) {
-        periodSelect.onchange = function() {
-            var form = document.getElementById('assessmentPeriodForm');
-            if (form) form.submit();
-        };
-    }
-
-
     // Use event delegation for 'Revoke' links in PART F and PART G
     [document.querySelector('#partFTableContainer'), document.querySelector('#partGTableContainer')].filter(Boolean).forEach(function(container) {
     container.addEventListener('click', function(e) {
         var target = e.target;
+        var toggleButton = target.closest('.hierarchy-toggle');
+        if (toggleButton) {
+            e.preventDefault();
+            var parentRow = toggleButton.closest('tr');
+            var expanded = toggleButton.getAttribute('data-expanded') !== '1';
+            setHierarchyRowExpansion(parentRow, expanded);
+            return;
+        }
         if (target.classList.contains('unverify-link') && target.hasAttribute('data-item-key')) {
             e.preventDefault();
             var itemKey = target.getAttribute('data-item-key');
@@ -628,6 +538,8 @@
         // Get the selected rating and the error display element
         var rating = document.getElementById('verifyRatingF').value;
         var ratingError = document.getElementById('ratingFError');
+        var commentsField = document.getElementById('verifyCommentsF');
+        var commentsError = document.getElementById('commentsFError');
 
         // Validate that a rating is selected; if not, show error and focus the field
         if (!rating) {
@@ -638,9 +550,17 @@
             if (ratingError) ratingError.classList.add('hidden');
         }
 
+        if (rating === 'U' && (!commentsField || !commentsField.value.trim())) {
+            if (commentsError) commentsError.classList.remove('hidden');
+            if (commentsField) commentsField.focus();
+            return;
+        } else if (commentsError) {
+            commentsError.classList.add('hidden');
+        }
+
         // Get other form values: assessment date, comments, and assessed by (user ID)
         var assessmentDate = document.getElementById('verifyAssessmentDateF').value;
-        var comments = document.getElementById('verifyCommentsF').value;
+        var comments = commentsField ? commentsField.value : '';
         var assessedBy = document.getElementById('verifyAssessedByIdF').value;
 
         // Get CSRF token from meta tag for secure POST request
@@ -718,6 +638,9 @@
         }
         // Always bind PART F links on load
         bindChecklistLinksF();
+        initializeHierarchyToggles(document.querySelector('#partFTableContainer'));
+        initializeHierarchyToggles(document.querySelector('#partGTableContainer'));
+        updatePartFSummaryScores();
 
         // PART F: Section comment save logic
         document.querySelectorAll('.section-comment-save-btn').forEach(function(btn) {
@@ -726,9 +649,11 @@
                 var empId = btn.getAttribute('data-emp-id');
                 var assessmentPeriodId = btn.getAttribute('data-assessment-period-id');
                 var textarea = document.querySelector('.section-comment-textarea[data-doc-type-id="' + docTypeId + '"]');
-                // Find the status span in the same .mb-2 container as the button
-                var mb2Container = btn.closest('.mb-2');
-                var statusSpan = mb2Container ? mb2Container.querySelector('.section-comment-status') : null;
+                var statusSpan = btn.parentElement ? btn.parentElement.querySelector('.section-comment-status') : null;
+                if (!statusSpan) {
+                    var sectionContainer = btn.closest('.rounded-md');
+                    statusSpan = sectionContainer ? sectionContainer.querySelector('.section-comment-status') : null;
+                }
                 if (!docTypeId || !empId || !assessmentPeriodId) {
                     var debugMsg = 'Missing required data. ';
                     if (!docTypeId) debugMsg += '[docTypeId missing] ';
@@ -789,8 +714,11 @@
                             statusSpan.textContent = 'Saved!';
                             statusSpan.style.color = 'green';
                         }
+                        showAssessmentFeedback('Section comment saved successfully.');
                         setTimeout(function() {
-                            statusSpan.textContent = '';
+                                if (statusSpan) {
+                                    statusSpan.textContent = '';
+                                }
                         }, 2000);
                     } else {
                         if (statusSpan) {

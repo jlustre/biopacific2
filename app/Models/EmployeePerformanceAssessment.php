@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class EmployeePerformanceAssessment extends Model
 {
     protected $table = 'employee_performance_assessments';
+
     protected $fillable = [
         'employee_num',
         'assessment_period_id',
@@ -16,6 +17,11 @@ class EmployeePerformanceAssessment extends Model
         'acknowledge_dt',
         'assessed_by',
         'comments',
+        'finalized',
+    ];
+
+    protected $casts = [
+        'finalized' => 'boolean',
     ];
 
     public function period()

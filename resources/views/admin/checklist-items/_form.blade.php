@@ -69,7 +69,7 @@
                 {{ in_array($position->position_id, $selectedPositionIds, true) ? 'checked' : '' }}
                 class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
             <span>
-                <span class="block text-sm font-semibold text-gray-900">{{ $position->position_title }}</span>
+                <span class="block text-sm font-semibold text-gray-900">{{ $position->title }}</span>
                 <span class="block text-xs text-gray-600">{{ $position->position_code }}{{ $position->dept_code ? ' • ' . $position->dept_code : '' }}</span>
             </span>
         </label>

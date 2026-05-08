@@ -20,4 +20,9 @@ class EmployeeAssessmentPeriod extends Model
     {
         return $this->hasMany(EmployeePerformanceAssessment::class, 'assessment_period_id');
     }
+
+    public function competencyAssessments()
+    {
+        return $this->hasMany(EmployeeCompetencyAssessment::class, 'assessment_period_id');
+    }
 }

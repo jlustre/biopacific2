@@ -176,7 +176,9 @@
 <!-- Modal for Verify Checklist Item -->
 @include('admin.facilities.checklist.employee-checklist-modal-ae')
 @include('admin.facilities.checklist.employee-checklist-modal-f')
+@include('admin.facilities.checklist.employee-assessment-period-modals')
 
 {{-- Scripts for Employee Checklist --}}
 @include('admin.facilities.checklist.employee-checklist-scripts_ae')
+@include('admin.facilities.checklist.employee-assessment-period-scripts')
 @include('admin.facilities.checklist.employee-checklist-scripts_f')

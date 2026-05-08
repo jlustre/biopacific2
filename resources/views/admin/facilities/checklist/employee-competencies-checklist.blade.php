@@ -50,10 +50,10 @@
                         disabled @endif>
                         @if(empty($item->disabled))
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Confirmation"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link text-xs text-pointer" title="Revoke Confirmation"
                             data-item-name="{{ $item->name }}" data-emp-id="{{ $employee->employee_num }}">Revoke</a>
                         <span>|</span>
-                        <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Confirmation Details"
+                        <a href="#" class="text-teal-600 underline ml-1 view-link text-xs text-pointer" title="View Confirmation Details"
                             data-item-name="{{ $item->name }}" data-emp-id="{{ $employee->employee_num }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Confirm Item"

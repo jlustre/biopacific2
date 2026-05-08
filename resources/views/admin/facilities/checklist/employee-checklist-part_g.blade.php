@@ -2,56 +2,179 @@
     <div class="overflow-x-auto">
         @php
         $partGSections = $employeeCompetencyItems->groupBy('section');
+        $partGPosition = $employee->currentAssignment?->position?->title ?? 'No Position Assigned';
+        $partGSubmissionStatus = $selectedCompetencyAssessment?->status;
+        $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
+        $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
+           
         @endphp
-        <h2 class="text-xl font-bold mb-4">COMPETENCIES CHECKLIST: {{ $employee->currentAssignment?->position?->position_title ?? 'No Position Assigned' }}</h2>
-        <div class="mb-5 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold">COMPETENCIES CHECKLIST: {{ $partGPosition }}</h2>
+            @if($partGSubmissionStatusLabel)
+            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $partGAssessmentLocked ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}">{{ $partGAssessmentLocked ? 'Read Only' : $partGSubmissionStatusLabel }}</span>
+            @endif
+        </div>
+        <div class="mb-4 grid gap-3 xl:grid-cols-2 xl:items-stretch">
+            <div>
+                @include('admin.facilities.checklist.employee-assessment-subject-summary', [
+                    'managerId' => 'partG',
+                ])
+            </div>
+
+            <div>
+                @include('admin.facilities.checklist.employee-assessment-period-manager', [
+                    'managerId' => 'partG',
+                    'contextLabel' => 'Competency Assessment',
+                ])
+            </div>
+        </div>
+
+        <div class="mb-4 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
             Rating Legend: 3 = Excellent &nbsp;&nbsp;&nbsp; 2 = Satisfactory &nbsp;&nbsp;&nbsp; 1 = Unsatisfactory &nbsp;&nbsp;&nbsp; N = Not Applicable
         </div>
+        @if($partGSubmissionStatusLabel)
+        <div class="mb-4 rounded-md border {{ $partGAssessmentLocked ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-sky-300 bg-sky-50 text-sky-900' }} px-3 py-2 text-[11px] shadow-sm">
+            <strong>Warning:</strong>
+            @if($partGAssessmentLocked)
+            A competency assessment already exists for this employee in the selected period with status <strong>{{ $partGSubmissionStatusLabel }}</strong>. This loaded assessment is read-only.
+            @else
+            A competency assessment already exists for this employee in the selected period with status <strong>{{ $partGSubmissionStatusLabel }}</strong>. The reviewer can still update it until it is completed.
+            @endif
+        </div>
+        @endif
         <div id="partGTableContainer">
-        <table class="min-w-full overflow-hidden rounded-lg border border-teal-300 text-xs shadow-sm md:text-sm">
+        <table class="min-w-full table-fixed overflow-hidden rounded-md border border-slate-500 text-[11px] text-slate-900 shadow-sm md:text-xs">
             <thead>
-                <tr class="bg-teal-700 text-white">
-                    <th class="border border-teal-500 px-3 py-2 text-left font-semibold tracking-wide">COMPETENCIES/ITEMS</th>
-                    <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide w-1/6">RATING</th>
-                    <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide w-1/6">ASSESSED DATE</th>
-                    <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide w-1/6">ASSESSED BY</th>
-                    <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide w-1/6">ACTIONS</th>
+                <tr class="bg-slate-200 text-slate-900">
+                    <th class="border border-slate-500 px-2 py-1.5 text-left font-semibold tracking-wide">COMPETENCIES/ITEMS</th>
+                    <th class="w-14 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">RATING</th>
+                    <th class="w-20 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">ASSESSED DATE</th>
+                    <th class="w-20 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">ASSESSED BY</th>
+                    <th class="w-16 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">ACTIONS</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($partGSections as $sectionLabel => $items)
-                <tr class="bg-teal-200 text-teal-950">
-                    <td colspan="5" class="border border-teal-300 px-3 py-2 font-bold uppercase tracking-wide">{{ $sectionLabel }}</td>
+                <tr class="bg-slate-100 text-slate-900">
+                    <td colspan="5" class="border border-slate-500 px-2 py-1.5 font-bold uppercase tracking-wide">{{ $sectionLabel }}</td>
                 </tr>
-                @foreach ($items as $item)
+                @foreach ($items->values() as $item)
                 @php
                 $itemKey = 'G_' . $item->id;
                 $empChecklist = $empCompetencyAssessments[$itemKey] ?? null;
+                $bloodTransfusionContinuationItem = '-If no transfusion reaction noted, dispose of blood bag and tubing in biohazard container.';
                 $ratingText = $empChecklist['rating'] ?? '';
                 $rowClasses = $loop->odd
-                    ? 'bg-teal-50 text-teal-950'
-                    : 'bg-teal-100/70 text-teal-950';
+                    ? 'bg-white text-slate-900'
+                    : 'bg-slate-50 text-slate-900';
+                preg_match('/^(-+)/', $item->item, $itemIndentMatches);
+                $indentLevel = min(strlen($itemIndentMatches[1] ?? ''), 2);
+                $displayItem = ltrim(preg_replace('/^(-+)/', '', $item->item) ?? $item->item);
+                $nextItem = $items->values()->get($loop->index + 1);
+                preg_match('/^(-+)/', $nextItem?->item ?? '', $nextItemIndentMatches);
+                $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
+                $hasChildItems = $nextItem && $nextIndentLevel > $indentLevel;
+                $collapsibleParentItems = ['PERINEAL CARE', 'CNA SKILLS CHECKLIST'];
+                $isMainParentItem = $indentLevel === 0 && $hasChildItems && in_array($displayItem, $collapsibleParentItems, true);
+                $isAssessableItem = !$hasChildItems;
+                $indentClass = match ($indentLevel) {
+                    1 => 'pl-8',
+                    2 => 'pl-12',
+                    default => 'pl-4',
+                };
                 @endphp
-                <tr class="{{ $rowClasses }} transition-colors hover:bg-teal-100">
-                    <td class="border border-teal-200 px-3 py-2">
-                        <span class="text-sm inline-block pl-4">{{ $item->item }}</span>
+                @if($sectionLabel === 'BLOOD TRANSFUSION COMPETENCY' && $item->item === $bloodTransfusionContinuationItem)
+                <tr class="bg-white text-slate-900">
+                    <td colspan="5" class="border border-slate-500 px-2 py-2">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-slate-500 text-[10px] leading-tight text-slate-900 md:text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-200 text-center font-bold">
+                                        <th colspan="3" class="border border-slate-500 px-1.5 py-1">Non-emergent Blood Component Transfusions</th>
+                                    </tr>
+                                    <tr class="bg-slate-50 text-center font-semibold">
+                                        <th rowspan="3" class="border border-slate-500 px-1.5 py-1 align-bottom">Blood Component</th>
+                                        <th colspan="2" class="border border-slate-500 px-1.5 py-1">Suggested Adult Flow Rate<br>Reference: AABB Technical Manual, 19th Edition, 2017, Bethesda, MD</th>
+                                    </tr>
+                                    <tr class="bg-slate-50 text-center font-semibold">
+                                        <th class="border border-slate-500 px-1.5 py-1">First 15 minutes</th>
+                                        <th class="border border-slate-500 px-1.5 py-1">After first 15 minutes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Red Blood Cells (RBCs)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">1-2 mL/min (60-120 mL/hr)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">As rapidly as tolerated; approximately 4 mL/min or 240 mL/hour</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Platelets</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">2-5 mL/min (120-300 mL/hr)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">300 mL/hour or as tolerated</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Plasma</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">2-5 mL/min (120-300 mL/hr)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">As rapidly as tolerated; approximately 300 mL/hour</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Cryoprecipitate</td>
+                                        <td colspan="2" class="border border-slate-500 px-1.5 py-1 text-center font-semibold">As rapidly as tolerated</td>
+                                    </tr>
+                                    <tr class="bg-slate-100">
+                                        <td colspan="3" class="border border-slate-500 px-1.5 py-1 text-center font-semibold">Note: For patients at risk for fluid overload, use slower flow.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </td>
-                    <td class="border border-teal-200 px-3 py-2 text-center font-semibold">{{ $ratingText }}</td>
-                    <td class="border border-teal-200 px-3 py-2 text-center">{{ $empChecklist['verified_dt'] ?? '' }}</td>
-                    <td class="border border-teal-200 px-3 py-2 text-center">
+                </tr>
+                @endif
+                <tr class="{{ $rowClasses }} transition-colors hover:bg-slate-100" data-item-key="{{ $itemKey }}" data-summary-exclude="{{ $isAssessableItem ? '0' : '1' }}" data-indent-level="{{ $indentLevel }}" data-has-child-items="{{ $hasChildItems ? '1' : '0' }}" data-assessable-item="{{ $isAssessableItem ? '1' : '0' }}" data-current-rating="{{ $empChecklist['rating'] ?? '' }}">
+                    @if($isMainParentItem)
+                    <td colspan="5" class="border border-slate-500 px-2 py-1.5 font-semibold text-slate-900">
+                        <span class="inline-flex items-center gap-2 text-sm">
+                            <button type="button" class="hierarchy-toggle inline-flex h-5 w-5 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100" data-expanded="1" aria-label="Collapse child items">▲</button>
+                            <span>{{ $displayItem }}</span>
+                        </span>
+                    </td>
+                    @else
+                    <td class="border border-slate-500 px-2 py-1.5 align-top">
+                        <span class="{{ $indentClass }} inline-flex items-center gap-2 text-[11px] leading-tight md:text-xs">
+                            <span>{{ $displayItem }}</span>
+                        </span>
+                    </td>
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top font-semibold whitespace-nowrap">{{ $ratingText }}</td>
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">{{ $empChecklist['verified_dt'] ?? '' }}</td>
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">
                         @if(!empty($empChecklist['verified_by']))
                         {{ $empChecklist['verified_by_name'] ?? (optional($users->firstWhere('id', $empChecklist['verified_by']))->name ?? $empChecklist['verified_by']) }}
                         @endif
                     </td>
-                    <td class="border border-teal-200 px-3 py-2 text-center">
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">
+                        @if($partGAssessmentLocked)
                         @if(!empty($empChecklist['verified_by']))
-                        <a href="#" class="text-red-600 underline mr-1 unverify-link cursor-pointer text-sm" title="Revoke Assessment"
+                        <a href="#" class="text-teal-600 underline ml-1 view-link cursor-pointer text-sm" title="View Assessment Details"
+                            data-item-key="{{ $itemKey }}"
+                            data-emp-id="{{ $employee->employee_num }}"
+                            data-item-label="{{ $item->item }}"
+                            data-source-item-id="{{ $item->id }}"
+                            data-rating="{{ $empChecklist['rating'] ?? '' }}"
+                            data-assessment-date="{{ $empChecklist['verified_dt'] ?? '' }}"
+                            data-comments="{{ $empChecklist['comments'] ?? '' }}"
+                            data-assessed-by-id="{{ $empChecklist['verified_by'] ?? '' }}">View</a>
+                        @else
+                        <span class="text-slate-400">Locked</span>
+                        @endif
+                        @elseif(!$isAssessableItem && empty($empChecklist['verified_by']))
+                        @elseif(!empty($empChecklist['verified_by']))
+                        <a href="#" class="text-red-600 underline mr-1 unverify-link cursor-pointer text-xs" title="Revoke Assessment"
                             data-item-key="{{ $itemKey }}"
                             data-emp-id="{{ $employee->employee_num }}"
                             data-item-label="{{ $item->item }}"
                             data-source-item-id="{{ $item->id }}">Revoke</a>
                         <span>|</span>
-                        <a href="#" class="text-teal-600 underline ml-1 view-link cursor-pointer text-sm" title="View Assessment Details"
+                        <a href="#" class="text-teal-600 underline ml-1 view-link cursor-pointer text-xs" title="View Assessment Details"
                             data-item-key="{{ $itemKey }}"
                             data-emp-id="{{ $employee->employee_num }}"
                             data-item-label="{{ $item->item }}"
@@ -72,11 +195,12 @@
                             data-assessed-by-id="{{ $empChecklist['verified_by'] ?? '' }}">Assess</a>
                         @endif
                     </td>
+                    @endif
                 </tr>
                 @endforeach
                 @empty
                 <tr>
-                    <td colspan="5" class="border border-teal-200 bg-teal-50 px-4 py-6 text-center text-teal-700">
+                    <td colspan="5" class="border border-slate-500 bg-slate-50 px-4 py-6 text-center text-slate-700">
                         No competency checklist items apply to this employee's current position.
                     </td>
                 </tr>
@@ -85,114 +209,61 @@
         </table>
         </div>
 
-        <div class="mt-6 rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-teal-100/60 p-4 shadow-sm">
-            <div class="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-                <div>
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-teal-900">Competency Evaluation Summary</h3>
-                    <p class="text-xs text-teal-700">Review the calculated result, add notes, and complete the signatures.</p>
-                </div>
-            </div>
+        @include('admin.facilities.checklist.employee-assessment-summary-form', [
+            'assessmentSummaryMode' => 'competency',
+            'assessmentWord' => 'Competency',
+            'assessmentSummaryTitle' => 'Competency Evaluation Summary',
+            'assessmentSummaryDescription' => 'Review the calculated result, add notes, and complete the signatures.',
+        ])
 
-            <div class="mb-4 rounded-lg border border-teal-200 bg-white px-4 py-2 text-xs font-semibold text-teal-800 shadow-sm">
-                Average Legend: Below 1.5 = Unsatisfactory &nbsp;&nbsp; 1.5 to 2.49 = Satisfactory &nbsp;&nbsp; 2.5 and above = Excellent
-            </div>
-
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-lg border border-teal-200 bg-white px-4 py-3 shadow-sm">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-teal-600">Total</div>
-                    <input id="partGTotalScore" type="text" class="mt-2 w-full border-0 bg-transparent p-0 text-2xl font-bold text-teal-900 focus:outline-none focus:ring-0" readonly>
-                </div>
-                <div class="rounded-lg border border-teal-200 bg-white px-4 py-3 shadow-sm">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-teal-600">Average</div>
-                    <input id="partGAverageScore" type="text" class="mt-2 w-full border-0 bg-transparent p-0 text-2xl font-bold text-teal-900 focus:outline-none focus:ring-0" readonly>
-                </div>
-                <label id="partGExcellentOption" class="flex items-center gap-3 rounded-lg border border-teal-200 bg-white px-4 py-3 font-semibold text-teal-700 shadow-sm transition-colors">
-                    <input id="partGExcellentToggle" type="checkbox" class="h-4 w-4 rounded border-teal-400 text-teal-600 focus:ring-teal-500 pointer-events-none" tabindex="-1">
-                    <span>Excellent</span>
-                </label>
-                <label id="partGSatisfactoryOption" class="flex items-center gap-3 rounded-lg border border-teal-200 bg-white px-4 py-3 font-semibold text-teal-700 shadow-sm transition-colors">
-                    <input id="partGSatisfactoryToggle" type="checkbox" class="h-4 w-4 rounded border-teal-400 text-teal-600 focus:ring-teal-500 pointer-events-none" tabindex="-1">
-                    <span>Satisfactory</span>
-                </label>
-            </div>
-
-            <div class="mt-3">
-                <label id="partGUnsatisfactoryOption" class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-semibold text-amber-800 shadow-sm transition-colors">
-                    <input id="partGUnsatisfactoryToggle" type="checkbox" class="mt-1 h-4 w-4 rounded border-amber-400 text-teal-600 focus:ring-teal-500 pointer-events-none" tabindex="-1">
-                    <span>Unsatisfactory; Requires Further Action Required</span>
-                </label>
-                <div id="partGUnsatisfactoryDetailsWrapper" class="mt-2 rounded-lg border border-dashed border-teal-300 bg-teal-50 px-3 py-3 opacity-60 transition-opacity">
-                    <textarea id="partGUnsatisfactoryDetails" class="min-h-[64px] w-full resize-y rounded-md border border-teal-200 bg-white px-3 py-2 text-sm text-teal-900 placeholder:text-teal-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-teal-50" placeholder="Describe the further action required..." disabled></textarea>
-                </div>
-            </div>
-
-            <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
-                <div class="rounded-lg border border-teal-200 bg-white p-4 shadow-sm">
-                    <label class="mb-2 block text-[11px] font-semibold uppercase tracking-wide text-teal-600">Comments</label>
-                    <textarea class="min-h-[110px] w-full resize-y rounded-md border border-teal-200 bg-teal-50/60 px-3 py-3 text-sm text-teal-900 placeholder:text-teal-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" placeholder="Enter comments here..."></textarea>
-                </div>
-
-                <div class="rounded-lg border border-teal-200 bg-white p-4 shadow-sm">
-                    <div class="grid gap-3">
-                        <div>
-                            <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-teal-600">DSD Signature</label>
-                            <input type="text" class="w-full rounded-md border border-teal-200 bg-teal-50/60 px-3 py-2 text-sm text-teal-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-teal-600">DSD Date</label>
-                            <input type="date" class="w-full rounded-md border border-teal-200 bg-teal-50/60 px-3 py-2 text-sm text-teal-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-teal-600">Evaluator Signature/Title</label>
-                            <input type="text" class="w-full rounded-md border border-teal-200 bg-teal-50/60 px-3 py-2 text-sm text-teal-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-teal-600">Evaluator Date</label>
-                            <input type="date" class="w-full rounded-md border border-teal-200 bg-teal-50/60 px-3 py-2 text-sm text-teal-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-4 rounded-xl border border-teal-200 bg-white p-4 shadow-sm">
+        <div class="mt-4 rounded-md border border-slate-400 bg-white p-3 shadow-sm">
             <div class="mb-3 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-teal-900">Competency Assessment History</h3>
-                    <p class="text-xs text-teal-700">Compare prior overall competency results by assessment period, and use the item View action above to inspect item-level history across periods.</p>
+                    <h3 class="text-[11px] font-bold uppercase tracking-wide text-slate-900">Competency Assessment History</h3>
+                    <p class="text-[11px] text-slate-700">Compare prior overall competency results by assessment period, and use the item View action above to inspect item-level history across periods.</p>
                 </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full overflow-hidden rounded-lg border border-teal-200 text-xs text-teal-900 md:text-sm">
+                <table class="min-w-full overflow-hidden rounded-md border border-slate-500 text-[11px] text-slate-900 md:text-xs">
                     <thead>
-                        <tr class="bg-teal-700 text-white">
-                            <th class="border border-teal-500 px-3 py-2 text-left font-semibold tracking-wide">ASSESSMENT PERIOD</th>
-                            <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide">ASSESSED DATE</th>
-                            <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide">ITEMS RATED</th>
-                            <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide">TOTAL</th>
-                            <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide">AVERAGE</th>
-                            <th class="border border-teal-500 px-3 py-2 text-center font-semibold tracking-wide">OVERALL</th>
+                        <tr class="bg-slate-200 text-slate-900">
+                            <th class="w-[24rem] border border-slate-500 px-2 py-1.5 text-left font-semibold tracking-wide">ASSESSMENT PERIOD</th>
+                            <th class="w-24 border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">ASSESSED DATE</th>
+                            <th class="w-20 border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">ITEMS RATED</th>
+                            <th class="border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">TOTAL</th>
+                            <th class="border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">AVERAGE</th>
+                            <th class="border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">OVERALL</th>
+                            <th class="border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">STATUS</th>
+                            <th class="border border-slate-500 px-2 py-1.5 text-center font-semibold tracking-wide">ACTION</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($competencyAssessmentHistory as $historyRow)
-                        <tr class="bg-white odd:bg-teal-50 even:bg-teal-100/40">
-                            <td class="border border-teal-200 px-3 py-2">
+                        <tr class="bg-white odd:bg-white even:bg-slate-50">
+                            <td class="border border-slate-500 px-2 py-1.5 whitespace-nowrap">
                                 <div class="font-semibold">{{ $historyRow['period_label'] }}</div>
                                 @if((int) ($historyRow['assessment_period_id'] ?? 0) === (int) ($selectedAssessmentPeriodId ?? 0))
-                                <div class="mt-1 inline-flex rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-teal-700">Current Period</div>
+                                <div class="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">Current Period</div>
                                 @endif
                             </td>
-                            <td class="border border-teal-200 px-3 py-2 text-center">{{ $historyRow['assessment_date'] ?? '' }}</td>
-                            <td class="border border-teal-200 px-3 py-2 text-center">{{ $historyRow['items_count'] }}</td>
-                            <td class="border border-teal-200 px-3 py-2 text-center font-semibold">{{ $historyRow['total_score'] }}</td>
-                            <td class="border border-teal-200 px-3 py-2 text-center font-semibold">{{ $historyRow['average_score'] }}</td>
-                            <td class="border border-teal-200 px-3 py-2 text-center font-semibold">{{ $historyRow['overall_rating'] }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center">{{ $historyRow['assessment_date'] ?? '' }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center">{{ $historyRow['items_count'] }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['total_score'] }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['average_score'] }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['overall_rating'] }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['status'] ?? 'Draft' }}</td>
+                            <td class="border border-slate-500 px-2 py-1.5 text-center">
+                                @if(!empty($historyRow['pdf_available']) && !empty($historyRow['competency_assessment_id']))
+                                <a href="{{ route('admin.employees.competency-assessment.pdf', $historyRow['competency_assessment_id']) }}" target="_blank" class="text-slate-700 underline">View PDF</a>
+                                @else
+                                <span class="text-slate-400">-</span>
+                                @endif
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="border border-teal-200 bg-teal-50 px-4 py-6 text-center text-teal-700">
+                            <td colspan="8" class="border border-slate-500 bg-slate-50 px-4 py-6 text-center text-slate-700">
                                 No prior competency assessment history is available for this employee yet.
                             </td>
                         </tr>
@@ -205,17 +276,24 @@
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var excellentToggle = document.getElementById('partGExcellentToggle');
-        var satisfactoryToggle = document.getElementById('partGSatisfactoryToggle');
-        var unsatisfactoryToggle = document.getElementById('partGUnsatisfactoryToggle');
-        var excellentOption = document.getElementById('partGExcellentOption');
-        var satisfactoryOption = document.getElementById('partGSatisfactoryOption');
-        var unsatisfactoryOption = document.getElementById('partGUnsatisfactoryOption');
+        var overallRatingField = document.getElementById('partGOverallRating');
+        var overallRatingCard = document.getElementById('partGOverallRatingCard');
         var unsatisfactoryDetails = document.getElementById('partGUnsatisfactoryDetails');
         var unsatisfactoryWrapper = document.getElementById('partGUnsatisfactoryDetailsWrapper');
         var totalScoreField = document.getElementById('partGTotalScore');
         var averageScoreField = document.getElementById('partGAverageScore');
         var partGTableContainer = document.getElementById('partGTableContainer');
+        var partGSubmitAssessmentBtn = document.getElementById('partGSubmitAssessmentBtn');
+        var partGSaveDraftBtn = document.getElementById('partGSaveDraftBtn');
+        var partGSubmitAssessmentMessage = document.getElementById('partGSubmitAssessmentMessage');
+        var partGComments = document.getElementById('partGComments');
+        var partGReviewerName = document.getElementById('partGReviewerName');
+        var partGReviewerTitle = document.getElementById('partGReviewerTitle');
+        var partGReviewDate = document.getElementById('partGReviewDate');
+        var partGEmployeeName = document.getElementById('partGEmployeeName');
+        var partGEmployeeTitle = document.getElementById('partGEmployeeTitle');
+        var partGEmployeeDate = document.getElementById('partGEmployeeDate');
+        var partGWorkflowStatus = document.getElementById('partGWorkflowStatus');
 
         function parseCompetencyRating(rawRating) {
             var rating = (rawRating || '').trim().toUpperCase();
@@ -226,37 +304,28 @@
         }
 
         function syncOverallEvaluation(average) {
-            if (!excellentToggle || !satisfactoryToggle || !unsatisfactoryToggle) {
+            if (!overallRatingField || !overallRatingCard) {
                 return;
             }
 
-            var overall = null;
+            var overall = '';
             if (average >= 2.5) {
-                overall = 'excellent';
+                overall = 'Excellent';
             } else if (average >= 1.5) {
-                overall = 'satisfactory';
+                overall = 'Satisfactory';
             } else if (average > 0) {
-                overall = 'unsatisfactory';
+                overall = 'Unsatisfactory';
             }
 
-            excellentToggle.checked = overall === 'excellent';
-            satisfactoryToggle.checked = overall === 'satisfactory';
-            unsatisfactoryToggle.checked = overall === 'unsatisfactory';
+            overallRatingField.value = overall;
 
-            if (excellentOption) {
-                excellentOption.classList.toggle('ring-2', overall === 'excellent');
-                excellentOption.classList.toggle('ring-teal-400', overall === 'excellent');
-                excellentOption.classList.toggle('bg-teal-100', overall === 'excellent');
-            }
-            if (satisfactoryOption) {
-                satisfactoryOption.classList.toggle('ring-2', overall === 'satisfactory');
-                satisfactoryOption.classList.toggle('ring-teal-400', overall === 'satisfactory');
-                satisfactoryOption.classList.toggle('bg-teal-100', overall === 'satisfactory');
-            }
-            if (unsatisfactoryOption) {
-                unsatisfactoryOption.classList.toggle('ring-2', overall === 'unsatisfactory');
-                unsatisfactoryOption.classList.toggle('ring-amber-300', overall === 'unsatisfactory');
-                unsatisfactoryOption.classList.toggle('bg-amber-100', overall === 'unsatisfactory');
+            overallRatingCard.classList.remove('border-teal-400', 'bg-teal-100', 'border-amber-300', 'bg-amber-50', 'border-slate-400', 'bg-white');
+            if (overall === 'Excellent' || overall === 'Satisfactory') {
+                overallRatingCard.classList.add('border-teal-400', 'bg-teal-100');
+            } else if (overall === 'Unsatisfactory') {
+                overallRatingCard.classList.add('border-amber-300', 'bg-amber-50');
+            } else {
+                overallRatingCard.classList.add('border-slate-400', 'bg-white');
             }
 
             syncUnsatisfactoryState();
@@ -276,7 +345,11 @@
                     return;
                 }
 
-                var numericRating = parseCompetencyRating(cells[1].textContent);
+                if (row.getAttribute('data-summary-exclude') === '1') {
+                    return;
+                }
+
+                var numericRating = parseCompetencyRating(row.getAttribute('data-current-rating') || cells[1].textContent);
                 if (numericRating === null) {
                     return;
                 }
@@ -292,12 +365,14 @@
         }
 
         function syncUnsatisfactoryState() {
-            if (!unsatisfactoryToggle || !unsatisfactoryDetails || !unsatisfactoryWrapper) {
+            if (!overallRatingField || !unsatisfactoryDetails || !unsatisfactoryWrapper) {
                 return;
             }
 
-            var enabled = unsatisfactoryToggle.checked;
+            var enabled = overallRatingField.value === 'Unsatisfactory';
             unsatisfactoryDetails.disabled = !enabled;
+            unsatisfactoryDetails.required = enabled;
+            unsatisfactoryWrapper.classList.toggle('hidden', !enabled);
             unsatisfactoryWrapper.classList.toggle('opacity-60', !enabled);
             unsatisfactoryWrapper.classList.toggle('opacity-100', enabled);
 
@@ -307,6 +382,92 @@
             }
 
             unsatisfactoryDetails.value = '';
+        }
+
+        function setPartGSubmitMessage(type, message) {
+            if (!partGSubmitAssessmentMessage) {
+                return;
+            }
+
+            partGSubmitAssessmentMessage.className = 'mt-2 rounded-md border px-3 py-2 text-sm shadow-sm';
+
+            if (!message) {
+                partGSubmitAssessmentMessage.classList.add('hidden');
+                partGSubmitAssessmentMessage.textContent = '';
+                return;
+            }
+
+            if (type === 'error') {
+                partGSubmitAssessmentMessage.classList.add('border-red-300', 'bg-red-50', 'text-red-800');
+            } else {
+                partGSubmitAssessmentMessage.classList.add('border-slate-400', 'bg-slate-100', 'text-slate-800');
+            }
+
+            partGSubmitAssessmentMessage.classList.remove('hidden');
+            partGSubmitAssessmentMessage.textContent = message;
+        }
+
+        function getCsrfToken() {
+            var tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            return tokenMeta ? tokenMeta.getAttribute('content') : '';
+        }
+
+        function getPartGBasePayload() {
+            var requiredItemKeys = [];
+            if (partGTableContainer) {
+                partGTableContainer.querySelectorAll('tbody tr[data-assessable-item="1"]').forEach(function(row) {
+                    var itemKey = row.getAttribute('data-item-key');
+                    if (itemKey) {
+                        requiredItemKeys.push(itemKey);
+                    }
+                });
+            }
+
+            return {
+                employee_num: @json($employee->employee_num),
+                assessment_period_id: @json($selectedAssessmentPeriodId),
+                required_item_keys: requiredItemKeys,
+                comments: partGComments ? partGComments.value : '',
+                further_action_required: unsatisfactoryDetails ? unsatisfactoryDetails.value : '',
+                reviewer_name: partGReviewerName ? partGReviewerName.value : '',
+                reviewer_title: partGReviewerTitle ? partGReviewerTitle.value : '',
+                review_date: partGReviewDate ? partGReviewDate.value : '',
+                employee_name: partGEmployeeName ? partGEmployeeName.value : '',
+                employee_title: partGEmployeeTitle ? partGEmployeeTitle.value : ''
+            };
+        }
+
+        function setPartGActionButtonState(disabled) {
+            [partGSaveDraftBtn, partGSubmitAssessmentBtn].forEach(function(button) {
+                if (!button) {
+                    return;
+                }
+
+                button.disabled = disabled;
+                button.classList.toggle('opacity-60', disabled);
+                button.classList.toggle('cursor-not-allowed', disabled);
+            });
+        }
+
+        function getIncompletePartGAssessmentCount() {
+            if (!partGTableContainer) {
+                return 0;
+            }
+
+            var incompleteCount = 0;
+
+            partGTableContainer.querySelectorAll('tbody tr[data-assessable-item="1"]').forEach(function(row) {
+                var cells = row.querySelectorAll('td');
+                if (cells.length !== 5) {
+                    return;
+                }
+
+                if (parseCompetencyRating(row.getAttribute('data-current-rating')) === null) {
+                    incompleteCount += 1;
+                }
+            });
+
+            return incompleteCount;
         }
 
         window.updatePartGSummaryScores = updatePartGSummaryScores;
@@ -320,6 +481,137 @@
                 childList: true,
                 subtree: true,
                 characterData: true,
+            });
+        }
+
+        if (partGSubmitAssessmentBtn) {
+            partGSubmitAssessmentBtn.addEventListener('click', function() {
+                var workflowStatus = partGWorkflowStatus ? partGWorkflowStatus.value : 'draft';
+                var incompleteCount = getIncompletePartGAssessmentCount();
+
+                if ((workflowStatus === 'draft' || !workflowStatus) && incompleteCount > 0) {
+                    setPartGSubmitMessage('error', 'Complete all competency assessments before submitting. ' + incompleteCount + ' item(s) still need a rating.');
+                    return;
+                }
+
+                if (overallRatingField && overallRatingField.value === 'Unsatisfactory' && unsatisfactoryDetails && !unsatisfactoryDetails.value.trim()) {
+                    setPartGSubmitMessage('error', 'Describe the further action required before submitting an unsatisfactory assessment.');
+                    unsatisfactoryDetails.focus();
+                    return;
+                }
+
+                var csrfToken = getCsrfToken();
+                if (!csrfToken) {
+                    setPartGSubmitMessage('error', 'CSRF token missing. Refresh the page and try again.');
+                    return;
+                }
+
+                setPartGActionButtonState(true);
+                setPartGSubmitMessage('', '');
+
+                var requestUrl = '{{ route('admin.employees.competency-assessment.submit') }}';
+                var payload = getPartGBasePayload();
+
+                if (workflowStatus === 'for_employee_signature') {
+                    if (!partGEmployeeDate || !partGEmployeeDate.value) {
+                        setPartGSubmitMessage('error', 'Employee date is required before signing.');
+                        setPartGActionButtonState(false);
+                        return;
+                    }
+
+                    requestUrl = '{{ route('admin.employees.competency-assessment.employee-sign') }}';
+                    payload = {
+                        employee_num: @json($employee->employee_num),
+                        assessment_period_id: @json($selectedAssessmentPeriodId),
+                        employee_name: partGEmployeeName ? partGEmployeeName.value : '',
+                        employee_title: partGEmployeeTitle ? partGEmployeeTitle.value : '',
+                        employee_date: partGEmployeeDate.value
+                    };
+                } else if (workflowStatus === 'for_reviewer_signature') {
+                    requestUrl = '{{ route('admin.employees.competency-assessment.reviewer-sign') }}';
+                    payload = {
+                        employee_num: @json($employee->employee_num),
+                        assessment_period_id: @json($selectedAssessmentPeriodId),
+                        reviewer_name: partGReviewerName ? partGReviewerName.value : '',
+                        reviewer_title: partGReviewerTitle ? partGReviewerTitle.value : '',
+                        review_date: partGReviewDate ? partGReviewDate.value : ''
+                    };
+                }
+
+                fetch(requestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                    .then(function(response) {
+                        return response.json().then(function(data) {
+                            return { ok: response.ok, data: data };
+                        });
+                    })
+                    .then(function(result) {
+                        if (!result.ok || !result.data.success) {
+                            setPartGSubmitMessage('error', result.data.message || 'Failed to submit competency assessment.');
+                            return;
+                        }
+
+                        setPartGSubmitMessage('info', result.data.message || 'Competency assessment submitted successfully.');
+                        window.location.reload();
+                    })
+                    .catch(function() {
+                        setPartGSubmitMessage('error', 'Failed to submit competency assessment.');
+                    })
+                    .finally(function() {
+                        setPartGActionButtonState(false);
+                    });
+            });
+        }
+
+        if (partGSaveDraftBtn) {
+            partGSaveDraftBtn.addEventListener('click', function() {
+                var csrfToken = getCsrfToken();
+                if (!csrfToken) {
+                    setPartGSubmitMessage('error', 'CSRF token missing. Refresh the page and try again.');
+                    return;
+                }
+
+                setPartGActionButtonState(true);
+                setPartGSubmitMessage('', '');
+
+                fetch('{{ route('admin.employees.competency-assessment.draft') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(getPartGBasePayload())
+                })
+                    .then(function(response) {
+                        return response.json().then(function(data) {
+                            return { ok: response.ok, data: data };
+                        });
+                    })
+                    .then(function(result) {
+                        if (!result.ok || !result.data.success) {
+                            setPartGSubmitMessage('error', result.data.message || 'Failed to save competency assessment draft.');
+                            return;
+                        }
+
+                        setPartGSubmitMessage('info', result.data.message || 'Competency assessment draft saved successfully.');
+                        window.location.reload();
+                    })
+                    .catch(function() {
+                        setPartGSubmitMessage('error', 'Failed to save competency assessment draft.');
+                    })
+                    .finally(function() {
+                        setPartGActionButtonState(false);
+                    });
             });
         }
 

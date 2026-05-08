@@ -2,7 +2,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class Position extends Model
 {
@@ -10,28 +9,21 @@ class Position extends Model
         'title',
         'description',
         'department_id',
+        'reports_to_position_id',
         'supervisor_role',
         'legacy_position_id',
         'position_code',
-        'position_title',
-        'dept_code',
-        'has_supervisor_role',
         'is_active',
     ];
 
     protected $casts = [
         'supervisor_role' => 'boolean',
-        'has_supervisor_role' => 'boolean',
         'is_active' => 'boolean',
     ];
 
     public function scopeSupervisorRoles($query)
     {
-        $column = Schema::hasColumn($this->getTable(), 'has_supervisor_role')
-            ? 'has_supervisor_role'
-            : 'supervisor_role';
-
-        return $query->where($column, true);
+        return $query->where('supervisor_role', true);
     }
 
     public function getPositionIdAttribute(): int
@@ -41,12 +33,7 @@ class Position extends Model
 
     public function getPositionTitleAttribute($value): string
     {
-        return $value ?: $this->title;
-    }
-
-    public function getHasSupervisorRoleAttribute($value): bool
-    {
-        return (bool) ($value ?? $this->supervisor_role);
+        return $this->title;
     }
 
     public function getIsActiveAttribute($value): bool
@@ -57,6 +44,16 @@ class Position extends Model
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function reportsToPosition()
+    {
+        return $this->belongsTo(self::class, 'reports_to_position_id');
+    }
+
+    public function directReports()
+    {
+        return $this->hasMany(self::class, 'reports_to_position_id');
     }
 
     public function jobDescriptions()

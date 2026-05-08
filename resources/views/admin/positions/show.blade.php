@@ -37,6 +37,12 @@
                     </div>
                 </div>
                 <div>
+                    <p class="text-sm font-semibold text-gray-600">Reports To Position</p>
+                    <p class="text-gray-900 mt-1">
+                        {{ $position->reportsToPosition->title ?? 'No reporting position assigned' }}
+                    </p>
+                </div>
+                <div>
                     <p class="text-sm font-semibold text-gray-600">Description</p>
                     <p class="text-gray-900 mt-1">
                         @if($position->description)

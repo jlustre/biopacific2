@@ -26,7 +26,7 @@ $assignmentPositions = App\Models\Position::query()
             <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest Record</span>
         </template>
     </div>
-    <form method="POST" action="{{ route('admin.employees.update_assignment', $employee->id) }}">
+    <form method="POST" action="{{ route('admin.employees.update_assignment', $employee->id) }}" @submit="confirmAssignmentSubmit($event)">
         @csrf
         @method('PUT')
         @if(auth()->user() && auth()->user()->hasRole('facility-admin'))
@@ -36,11 +36,11 @@ $assignmentPositions = App\Models\Position::query()
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Position</label>
-                    <select name="job_code_id" x-model="currentAssignment.job_code_id" @change="syncDepartmentFromPosition()"
+                    <select name="job_code_id" x-model="currentAssignment.job_code_id" @change="handlePositionChange()"
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Position</option>
                         @foreach($assignmentPositions as $pos)
-                        <option value="{{ $pos->position_id }}">{{ $pos->position_title }}</option>
+                        <option value="{{ $pos->position_id }}">{{ $pos->title }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -69,8 +69,8 @@ $assignmentPositions = App\Models\Position::query()
                     <select name="reports_to" x-model="currentAssignment.reports_to"
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Supervisor</option>
-                        @foreach(App\Models\Position::query()->supervisorRoles()->get() as $supervisor)
-                        <option value="{{ $supervisor->position_id }}">{{ $supervisor->position_title }}</option>
+                        @foreach(App\Models\Position::query()->supervisorRoles()->orderBy('title')->get() as $supervisor)
+                            <option value="{{ $supervisor->position_id }}">{{ $supervisor->title }}</option>
                         @endforeach
                     </select>
                 </div>

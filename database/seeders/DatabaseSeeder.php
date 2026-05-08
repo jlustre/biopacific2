@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
             BPEmpAddressesTableSeeder::class,
             BPEmpHealthScreeningsTableSeeder::class,
             ChecklistItemsSeeder::class,
+            OrientationChecklistItemsSeeder::class,
             ChecklistItemPositionBackfillSeeder::class,
             BPEmpChecklistSeeder::class,
             EmployeePerformanceItemsSeeder::class,

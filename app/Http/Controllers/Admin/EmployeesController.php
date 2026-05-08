@@ -351,7 +351,7 @@ class EmployeesController extends Controller
         $facilities = \App\Models\Facility::all();
         $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
         $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
-            ->applicableToPosition($employee->currentAssignment?->job_code_id)
+            ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
             ->orderBy('order')
             ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
@@ -370,8 +370,54 @@ class EmployeesController extends Controller
         $assessmentItemHistories = [];
         $empPerformanceChecklist = [];
         $empCompetencyAssessments = [];
+        $performanceAssessmentHistory = [];
         $competencyAssessmentHistory = [];
+        $performanceAssessmentSubmissions = \App\Models\EmployeePerformanceAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->get()
+            ->keyBy('assessment_period_id');
+        $performanceAssessmentStatuses = $performanceAssessmentSubmissions
+            ->mapWithKeys(function ($submission, $assessmentPeriodId) {
+                $isCompleted = !empty($submission->finalized);
+
+                return [
+                    (int) $assessmentPeriodId => [
+                        'id' => $submission->id,
+                        'status' => $isCompleted ? 'completed' : 'in_progress',
+                        'status_label' => $isCompleted ? 'Completed' : 'In Progress',
+                        'is_completed' => $isCompleted,
+                        'can_edit' => !$isCompleted,
+                    ],
+                ];
+            })
+            ->all();
+        $competencyAssessmentSubmissions = \App\Models\EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->get()
+            ->keyBy('assessment_period_id');
+        $competencyAssessmentStatuses = $competencyAssessmentSubmissions
+            ->mapWithKeys(function ($submission, $assessmentPeriodId) {
+                $status = (string) ($submission->status ?? 'draft');
+
+                return [
+                    (int) $assessmentPeriodId => [
+                        'id' => $submission->id,
+                        'status' => $status,
+                        'status_label' => ucwords(str_replace('_', ' ', $status)),
+                        'is_completed' => $status === 'completed',
+                        'can_edit' => $status !== 'completed',
+                    ],
+                ];
+            })
+            ->all();
+        $selectedCompetencyAssessment = $selectedAssessmentPeriodId
+            ? $competencyAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
+            : null;
+        $selectedPerformanceAssessment = $selectedAssessmentPeriodId
+            ? $performanceAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
+            : null;
         $reviewDate = '';
+        $employeeAcknowledgeDt = '';
         $reviewerName = '';
         $reviewType = '';
         $assessmentPeriodLabels = $assessmentPeriods->keyBy('id');
@@ -405,10 +451,16 @@ class EmployeesController extends Controller
             })
             ->all();
 
-        $competencyAssessmentHistory = $allAssessmentEntries
+        $competencyEntriesByPeriod = $allAssessmentEntries
             ->filter(fn ($entry) => $entry->assessment_type === 'competency')
-            ->groupBy('assessment_period_id')
-            ->map(function ($entries, $assessmentPeriodId) use ($assessmentPeriodLabels) {
+            ->groupBy('assessment_period_id');
+
+        $competencyAssessmentHistory = $competencyEntriesByPeriod
+            ->keys()
+            ->merge($competencyAssessmentSubmissions->keys())
+            ->unique()
+            ->map(function ($assessmentPeriodId) use ($competencyEntriesByPeriod, $assessmentPeriodLabels, $competencyAssessmentSubmissions) {
+                $entries = $competencyEntriesByPeriod->get($assessmentPeriodId, collect());
                 $latestStates = $entries
                     ->filter(fn ($entry) => $entry->revoked_at === null)
                     ->groupBy('item_key')
@@ -447,15 +499,97 @@ class EmployeesController extends Controller
                 $latestAssessment = $entries
                     ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
                     ->first();
+                $submission = $competencyAssessmentSubmissions->get((int) $assessmentPeriodId);
+                $status = $submission?->status
+                    ? ucwords(str_replace('_', ' ', (string) $submission->status))
+                    : 'Draft';
+                $snapshotItems = collect($submission?->snapshot_json['items'] ?? []);
+                $snapshotRatedCount = $snapshotItems
+                    ->filter(fn ($item) => in_array(($item['rating'] ?? null), ['E', 'S', 'U'], true))
+                    ->count();
 
                 return [
                     'assessment_period_id' => (int) $assessmentPeriodId,
                     'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
-                    'assessment_date' => optional(optional($latestAssessment)->assessment_date)->toDateString(),
+                    'assessment_date' => optional($submission?->submitted_at)->toDateString()
+                        ?? optional($submission?->updated_at)->toDateString()
+                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
+                    'items_count' => $submission ? max($count, $snapshotRatedCount) : $count,
+                    'total_score' => $submission?->total_score ?? $total,
+                    'average_score' => $submission ? number_format((float) $submission->average_score, 2) : number_format($average, 2),
+                    'overall_rating' => $submission?->overall_rating ?? $overall,
+                    'status' => $status,
+                    'competency_assessment_id' => $submission?->id,
+                    'pdf_available' => !empty($submission?->pdf_path),
+                ];
+            })
+            ->sortByDesc('assessment_date')
+            ->values()
+            ->all();
+
+        $performanceEntriesByPeriod = $allAssessmentEntries
+            ->filter(fn ($entry) => $entry->assessment_type === 'performance')
+            ->groupBy('assessment_period_id');
+
+        $performanceAssessmentHistory = $performanceEntriesByPeriod
+            ->keys()
+            ->merge($performanceAssessmentSubmissions->keys())
+            ->unique()
+            ->map(function ($assessmentPeriodId) use ($performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions) {
+                $entries = $performanceEntriesByPeriod->get($assessmentPeriodId, collect());
+                $latestStates = $entries
+                    ->filter(fn ($entry) => $entry->revoked_at === null)
+                    ->groupBy('item_key')
+                    ->map(function ($groupedEntries) {
+                        return $groupedEntries
+                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                            ->first();
+                    })
+                    ->filter();
+
+                $total = 0;
+                $count = 0;
+                foreach ($latestStates as $state) {
+                    $score = match ($state->rating) {
+                        'E' => 3,
+                        'S' => 2,
+                        'U' => 1,
+                        default => null,
+                    };
+
+                    if ($score === null) {
+                        continue;
+                    }
+
+                    $total += $score;
+                    $count++;
+                }
+
+                $average = $count > 0 ? round($total / $count, 2) : 0;
+                $overall = $count === 0
+                    ? 'N/A'
+                    : ($average >= 2.5
+                        ? 'Excellent'
+                        : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
+                $latestAssessment = $entries
+                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                    ->first();
+                $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
+
+                return [
+                    'assessment_period_id' => (int) $assessmentPeriodId,
+                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
+                    'assessment_date' => optional($submission?->review_dt)->toDateString()
+                        ?? optional($submission?->updated_at)->toDateString()
+                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
                     'items_count' => $count,
                     'total_score' => $total,
                     'average_score' => number_format($average, 2),
                     'overall_rating' => $overall,
+                    'status' => $submission
+                        ? (!empty($submission->finalized) ? 'Completed' : 'In Progress')
+                        : 'Draft',
                 ];
             })
             ->sortByDesc('assessment_date')
@@ -463,9 +597,7 @@ class EmployeesController extends Controller
             ->all();
 
         if ($selectedAssessmentPeriodId) {
-            $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
-                ->where('assessment_period_id', $selectedAssessmentPeriodId)
-                ->first();
+            $assessment = $selectedPerformanceAssessment;
             $period = \App\Models\EmployeeAssessmentPeriod::find($selectedAssessmentPeriodId);
             if ($period) {
                 $reviewType = $period->review_type === 'Q' ? 'Quarterly' : 'Annual';
@@ -477,6 +609,28 @@ class EmployeesController extends Controller
 
             $assessmentItemStates = $assessmentEntries
                 ->filter(fn ($entry) => $entry->revoked_at === null)
+                ->groupBy(function ($entry) {
+                    if ($entry->assessment_type === 'performance' && !empty($entry->source_item_id)) {
+                        return 'F_' . $entry->source_item_id;
+                    }
+
+                    return $entry->item_key;
+                })
+                ->map(function ($entries) use ($users) {
+                    $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
+
+                    return [
+                        'rating' => $latest->rating,
+                        'verified_dt' => optional($latest->assessment_date)->toDateString(),
+                        'verified_by' => $latest->assessed_by,
+                        'verified_by_name' => optional($users->firstWhere('id', $latest->assessed_by))->name ?? $latest->assessed_by,
+                        'comments' => $latest->comments,
+                    ];
+                })
+                ->all();
+
+            $legacyPerformanceEntries = $assessmentEntries
+                ->filter(fn ($entry) => $entry->assessment_type === 'performance' && empty($entry->source_item_id) && str_starts_with((string) $entry->item_key, 'F_'))
                 ->groupBy('item_key')
                 ->map(function ($entries) use ($users) {
                     $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
@@ -490,6 +644,12 @@ class EmployeesController extends Controller
                     ];
                 })
                 ->all();
+
+            foreach ($legacyPerformanceEntries as $legacyItemKey => $legacyEntryState) {
+                if (!isset($assessmentItemStates[$legacyItemKey])) {
+                    $assessmentItemStates[$legacyItemKey] = $legacyEntryState;
+                }
+            }
 
             if ($assessment) {
                 if ($assessment->items) {
@@ -524,6 +684,7 @@ class EmployeesController extends Controller
                     }
                 }
                 $reviewDate = $assessment->review_dt;
+                $employeeAcknowledgeDt = $assessment->acknowledge_dt;
                 // Lookup reviewer name if assessed_by is set
                 if ($assessment->assessed_by) {
                     $reviewerUser = \App\Models\User::find($assessment->assessed_by);
@@ -583,7 +744,7 @@ class EmployeesController extends Controller
         // PART F: Load section comments for this employee and assessment period
         $sectionComments = [];
         if ($selectedAssessmentPeriodId) {
-            $comments = \App\Models\EmployeePerformanceSectionComment::where('employee_num', $employee_num)
+            $comments = \App\Models\EmployeePerformanceSectionComment::where('employee_num', $employee->employee_num)
                 ->where('assessment_period_id', $selectedAssessmentPeriodId)
                 ->get();
             foreach ($comments as $comment) {
@@ -641,7 +802,12 @@ class EmployeesController extends Controller
             'users',
             'empPerformanceChecklist',
             'empCompetencyAssessments',
+            'performanceAssessmentHistory',
+            'performanceAssessmentStatuses',
+            'selectedPerformanceAssessment',
             'competencyAssessmentHistory',
+            'competencyAssessmentStatuses',
+            'selectedCompetencyAssessment',
             'assessmentItemStates',
             'assessmentItemHistories',
             'assessmentPeriods',
@@ -652,6 +818,7 @@ class EmployeesController extends Controller
             'developmentPlans',
             'employeeComments',
             'reviewDate',
+            'employeeAcknowledgeDt',
             'reviewerName',
             'reviewType',
             'reviewDt',
@@ -929,6 +1096,7 @@ class EmployeesController extends Controller
         }
 
         $validated['dept_id'] = $position->department_id;
+        $validated['reports_to'] = $position->reports_to_position_id ?: null;
         $userId = Auth::id();
         $validated['created_by'] = $userId;
         $validated['updated_by'] = $userId;
@@ -1099,6 +1267,8 @@ class EmployeesController extends Controller
             'employee_name' => 'required|string|max:255',
             'review_dt' => ($request->input('action') === 'submit' ? 'required' : 'nullable') . '|date',
             'employee_acknowledge_dt' => 'nullable|date',
+            'overall_rating' => 'nullable|string|in:Excellent,Satisfactory,Unsatisfactory,Not Rated',
+            'overall_unsatisfactory_reason' => 'nullable|string',
         ];
         // Make areas_for_development required if submitting
         if ($request->input('action') === 'submit') {
@@ -1106,13 +1276,29 @@ class EmployeesController extends Controller
         }
         $validated = $request->validate($rules);
 
+        if (($validated['overall_rating'] ?? null) === 'Unsatisfactory' && blank($validated['overall_unsatisfactory_reason'] ?? null)) {
+            return back()
+                ->withErrors(['overall_unsatisfactory_reason' => 'Explain why the overall performance rating is unsatisfactory.'])
+                ->withInput();
+        }
+
         $assessmentPeriodId = $request->input('assessment_period_id');
         if (!$assessmentPeriodId) {
             return back()->with('error', 'Assessment period is required.');
         }
 
-        // Save Areas Requiring Further Development
         $employee = \App\Models\BPEmployee::findOrFail($employee_num);
+
+        $finalizedAssessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->where('finalized', 1)
+            ->first();
+
+        if ($finalizedAssessment) {
+            return back()->with('error', 'This performance assessment is already completed for the selected period and can no longer be changed.');
+        }
+
+        // Save Areas Requiring Further Development
         $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
         if ($areasDevDocType) {
             \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
@@ -1156,14 +1342,24 @@ class EmployeesController extends Controller
         }
 
         // Set review_dt and acknowledge_dt on EmployeePerformanceAssessment
-        $assessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
-            ->where('assessment_period_id', $assessmentPeriodId)
-            ->first();
+        $assessment = \App\Models\EmployeePerformanceAssessment::firstOrCreate(
+            [
+                'employee_num' => $employee->employee_num,
+                'assessment_period_id' => $assessmentPeriodId,
+            ],
+            [
+                'items' => json_encode([]),
+                'assessed_by' => auth()->id(),
+            ]
+        );
         if ($assessment) {
             $assessment->review_dt = $request->input('review_dt');
             if ($request->filled('employee_acknowledge_dt')) {
                 $assessment->acknowledge_dt = $request->input('employee_acknowledge_dt');
             }
+            $assessment->comments = ($validated['overall_rating'] ?? null) === 'Unsatisfactory'
+                ? ($validated['overall_unsatisfactory_reason'] ?? null)
+                : null;
             // If submitted, finalize and send email
             if ($request->input('action') === 'submit') {
                 $assessment->finalized = 1;

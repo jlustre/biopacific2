@@ -16,12 +16,6 @@ return new class extends Migration
             if (!Schema::hasColumn('positions', 'position_code')) {
                 $table->string('position_code')->nullable()->after('title');
             }
-            if (!Schema::hasColumn('positions', 'position_title')) {
-                $table->string('position_title')->nullable()->after('position_code');
-            }
-            if (!Schema::hasColumn('positions', 'dept_code')) {
-                $table->string('dept_code')->nullable()->after('department_id');
-            }
             if (!Schema::hasColumn('positions', 'has_supervisor_role')) {
                 $table->boolean('has_supervisor_role')->default(false)->after('supervisor_role');
             }
@@ -31,17 +25,14 @@ return new class extends Migration
         });
 
         DB::table('positions')
-            ->whereNull('position_title')
-            ->update(['position_title' => DB::raw('title')]);
-
-        DB::table('positions')
             ->update(['has_supervisor_role' => DB::raw('supervisor_role')]);
 
         $departmentMap = $this->departmentMap();
         $positionsByTitle = DB::table('positions')
             ->select('id', 'title')
             ->get()
-            ->mapWithKeys(fn ($position) => [mb_strtolower(trim($position->title)) => $position->id]);
+            ->mapWithKeys(fn ($position) => [mb_strtolower(trim($position->title)) => $position->id])
+            ->all();
 
         if (Schema::hasTable('bp_positions')) {
             $legacyPositions = DB::table('bp_positions')->orderBy('position_id')->get();
@@ -51,9 +42,7 @@ return new class extends Migration
 
                 $payload = [
                     'title' => $legacyPosition->position_title,
-                    'position_title' => $legacyPosition->position_title,
                     'position_code' => $legacyPosition->position_code,
-                    'dept_code' => $legacyPosition->dept_code,
                     'description' => $legacyPosition->description,
                     'supervisor_role' => (bool) $legacyPosition->has_supervisor_role,
                     'has_supervisor_role' => (bool) $legacyPosition->has_supervisor_role,
@@ -159,8 +148,8 @@ return new class extends Migration
                     DB::table('bp_positions')->insert([
                         'position_id' => $position->legacy_position_id,
                         'position_code' => $position->position_code,
-                        'position_title' => $position->position_title ?: $position->title,
-                        'dept_code' => $position->dept_code ?? 'ADMIN',
+                        'position_title' => $position->title,
+                        'dept_code' => 'ADMIN',
                         'has_supervisor_role' => (bool) $position->has_supervisor_role,
                         'description' => $position->description,
                         'is_active' => (bool) $position->is_active,
@@ -176,8 +165,6 @@ return new class extends Migration
             $table->dropColumn([
                 'legacy_position_id',
                 'position_code',
-                'position_title',
-                'dept_code',
                 'has_supervisor_role',
                 'is_active',
             ]);

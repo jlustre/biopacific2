@@ -2,12 +2,32 @@
 
 namespace Database\Seeders;
 
+use App\Models\EmployeePerformanceItem;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class EmployeePerformanceItemsSeeder extends Seeder
 {
-    public function run()
+    protected function seedPerformanceSet(array $performanceReviewItems, array $positionIds, int &$order): void
+    {
+        foreach ($performanceReviewItems as $section => $items) {
+            foreach ($items as $item) {
+                EmployeePerformanceItem::query()->updateOrCreate(
+                    [
+                        'section' => $section,
+                        'item' => $item,
+                        'order' => $order,
+                    ],
+                    [
+                        'position_ids' => $positionIds,
+                    ]
+                );
+
+                $order++;
+            }
+        }
+    }
+
+    public function run(): void
     {
         // Use plain section names for DB, Roman numerals for display only
         $performanceReviewItems = [
@@ -65,17 +85,6 @@ class EmployeePerformanceItemsSeeder extends Seeder
         ];
 
         $order = 0;
-        foreach ($performanceReviewItems as $section => $items) {
-            foreach ($items as $item) {
-                DB::table('employee_performance_items')->insert([
-                    'section' => $section,
-                    'item' => $item,
-                    'position_ids' => json_encode(['global']),
-                    'order' => $order++,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
+        $this->seedPerformanceSet($performanceReviewItems, ['global'], $order);
     }
 }

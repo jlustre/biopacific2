@@ -46,7 +46,7 @@
                     <option value="">All Positions</option>
                     @foreach($positions as $position)
                     <option value="{{ $position->position_id }}" @if(request('position')==$position->position_id)
-                        selected @endif>{{ $position->position_title }}</option>
+                        selected @endif>{{ $position->title }}</option>
                     @endforeach
                 </select>
             </div>
@@ -94,7 +94,7 @@
                 <tr class="sm:text-sm">
                     <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
                     <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->last_name }}, {{ $employee->first_name }}</td>
-                    <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->position_title ?? '-' }}</td>
+                    <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->title ?? '-' }}</td>
                     <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->dept_name ?? '-' }}</td>
                     <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ \Illuminate\Support\Str::limit($employee->current_facility?->name ?? '-', 16, '...') }}</td>
                     <td class="px-2 sm:px-4 py-2 whitespace-nowrap">

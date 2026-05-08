@@ -6,6 +6,7 @@
         <form id="verifyFormF">
             <input type="hidden" name="employee_num" id="verifyEmpIdF">
             <input type="hidden" name="item_key" id="verifyItemKeyF">
+            <input type="hidden" name="assessment_period_id" id="verifyAssessmentPeriodIdF">
             <input type="hidden" name="eff_date" id="verifyEffDateF">
             <input type="hidden" name="item_label" id="verifyItemLabelF">
             <input type="hidden" name="source_item_id" id="verifySourceItemIdF">
@@ -34,6 +35,7 @@
             <div class="mb-3">
                 <label class="block font-semibold mb-1">Comments</label>
                 <textarea name="comments" id="verifyCommentsF" class="border rounded px-2 py-1 w-full"></textarea>
+                <span id="commentsFError" class="text-red-600 text-sm hidden">Comments are required for an unsatisfactory rating.</span>
             </div>
             <div class="mb-3 border-t pt-3">
                 <div class="block font-semibold mb-1">Assessment History</div>

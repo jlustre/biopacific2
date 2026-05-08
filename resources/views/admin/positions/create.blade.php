@@ -40,6 +40,22 @@
                 @enderror
             </div>
 
+            <div>
+                <label for="reports_to_position_id" class="block text-sm font-semibold text-gray-900 mb-2">Reports To Position</label>
+                <select name="reports_to_position_id" id="reports_to_position_id"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">No reporting position</option>
+                    @foreach ($reportingPositions as $reportingPosition)
+                    <option value="{{ $reportingPosition->id }}" {{ old('reports_to_position_id') == $reportingPosition->id ? 'selected' : '' }}>
+                        {{ $reportingPosition->title }}
+                    </option>
+                    @endforeach
+                </select>
+                @error('reports_to_position_id')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Description Field -->
             <div>
                 <label for="description" class="block text-sm font-semibold text-gray-900 mb-2">Description</label>

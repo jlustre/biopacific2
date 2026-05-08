@@ -33,7 +33,7 @@ class ChecklistItemController extends Controller
             ->appends($request->query());
 
         $docTypes = DocType::query()->orderBy('name')->get();
-        $positions = Position::query()->where('is_active', true)->orderBy('position_title')->get();
+        $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
         $positionsById = $positions->keyBy('position_id');
         $sections = ChecklistItem::query()->select('section')->distinct()->whereNotNull('section')->orderBy('section')->pluck('section');
 
@@ -70,7 +70,7 @@ class ChecklistItemController extends Controller
     public function create()
     {
         $docTypes = DocType::query()->orderBy('name')->get();
-        $positions = Position::query()->where('is_active', true)->orderBy('position_title')->get();
+        $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
         $checklistItem = new ChecklistItem([
             'isExpiring' => false,
             'position_ids' => null,
@@ -91,7 +91,7 @@ class ChecklistItemController extends Controller
     public function edit(ChecklistItem $checklistItem)
     {
         $docTypes = DocType::query()->orderBy('name')->get();
-        $positions = Position::query()->where('is_active', true)->orderBy('position_title')->get();
+        $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
 
         return view('admin.checklist-items.edit', compact('checklistItem', 'docTypes', 'positions'));
     }

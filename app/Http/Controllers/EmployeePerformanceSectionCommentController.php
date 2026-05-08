@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 use Illuminate\Http\Request;
 use App\Models\EmployeePerformanceSectionComment;
+use App\Models\EmployeePerformanceAssessment;
 use Illuminate\Support\Facades\Auth;
 
 class EmployeePerformanceSectionCommentController extends Controller
@@ -25,6 +26,19 @@ class EmployeePerformanceSectionCommentController extends Controller
             'doc_type_id' => 'required|integer|exists:doc_types,id',
             'comment' => 'nullable|string',
         ]);
+
+        $finalizedAssessment = EmployeePerformanceAssessment::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->where('assessment_period_id', $validated['assessment_period_id'])
+            ->where('finalized', 1)
+            ->first();
+
+        if ($finalizedAssessment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This performance assessment is already completed for the selected period and can no longer be changed.',
+            ], 422);
+        }
 
         $comment = EmployeePerformanceSectionComment::updateOrCreate(
             [
