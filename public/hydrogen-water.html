@@ -521,7 +521,6 @@
         function testimonialCarousel() {
             return {
                 current: 0,
-                timer: null,
                 items: [
                     { quote: "We love how practical the education was. It gave our family a simple wellness routine we can actually keep.", name: "Maria L.", role: "Parent & Small Business Owner" },
                     { quote: "I appreciated the clear, non-hyped presentation. It helped me focus on consistency and healthy habits.", name: "James T.", role: "Active Retiree" },
@@ -532,15 +531,6 @@
                 },
                 prev() {
                     this.current = (this.current - 1 + this.items.length) % this.items.length;
-                },
-                init() {
-                    this.timer = setInterval(() => this.next(), 6000);
-                },
-                destroy() {
-                    if (this.timer) {
-                        clearInterval(this.timer);
-                        this.timer = null;
-                    }
                 }
             };
         }
@@ -557,7 +547,7 @@
 
         function faqAccordion() {
             return {
-                open: 0,
+                open: null,
                 items: [
                     { q: 'Is hydrogen water a medicine?', a: 'No. It is water with dissolved molecular hydrogen and is discussed here for educational wellness purposes only.' },
                     { q: 'How often should I use the machine?', a: 'Most families use it consistently as part of daily hydration habits. Routine and lifestyle context matter.' },
