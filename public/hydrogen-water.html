@@ -521,6 +521,7 @@
         function testimonialCarousel() {
             return {
                 current: 0,
+                timer: null,
                 items: [
                     { quote: "We love how practical the education was. It gave our family a simple wellness routine we can actually keep.", name: "Maria L.", role: "Parent & Small Business Owner" },
                     { quote: "I appreciated the clear, non-hyped presentation. It helped me focus on consistency and healthy habits.", name: "James T.", role: "Active Retiree" },
@@ -533,7 +534,13 @@
                     this.current = (this.current - 1 + this.items.length) % this.items.length;
                 },
                 init() {
-                    setInterval(() => this.next(), 6000);
+                    this.timer = setInterval(() => this.next(), 6000);
+                },
+                destroy() {
+                    if (this.timer) {
+                        clearInterval(this.timer);
+                        this.timer = null;
+                    }
                 }
             };
         }
