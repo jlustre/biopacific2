@@ -97,16 +97,46 @@ class EmployeePerformanceAssessmentController extends Controller {
         };
     }
 
-    protected function getAssessableCompetencyItems(BPEmployee $employee)
+    protected function getCompetencyItems(BPEmployee $employee)
     {
         $positionId = $employee->currentAssignment?->position_id;
-        $items = EmployeeCompetencyItem::query()
+
+        return EmployeeCompetencyItem::query()
             ->applicableToPosition($positionId)
             ->orderBy('order')
             ->get()
             ->values();
+    }
 
-        return $items->filter(function ($item, $index) use ($items) {
+    protected function getExcludedCompetencyItemKeys($items, array $excludedSectionLabels): array
+    {
+        $excludedSectionLookup = array_fill_keys(
+            collect($excludedSectionLabels)
+                ->filter(fn ($sectionLabel) => filled($sectionLabel))
+                ->map(fn ($sectionLabel) => (string) $sectionLabel)
+                ->unique()
+                ->values()
+                ->all(),
+            true
+        );
+
+        if ($excludedSectionLookup === []) {
+            return [];
+        }
+
+        return $items
+            ->filter(fn ($item) => isset($excludedSectionLookup[(string) $item->section]))
+            ->map(fn ($item) => 'G_' . $item->id)
+            ->values()
+            ->all();
+    }
+
+    protected function getAssessableCompetencyItems(BPEmployee $employee, array $excludedItemKeys = [])
+    {
+        $items = $this->getCompetencyItems($employee);
+        $excludedItemLookup = array_fill_keys($excludedItemKeys, true);
+
+        return $items->filter(function ($item, $index) use ($items, $excludedItemLookup) {
             $rawItemText = trim((string) $item->item);
             preg_match('/^(-+)/', $rawItemText, $itemIndentMatches);
             $indentLevel = min(strlen($itemIndentMatches[1] ?? ''), 2);
@@ -116,7 +146,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             preg_match('/^(-+)/', $nextRawItemText, $nextItemIndentMatches);
             $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
 
-            return !($nextItem && $nextIndentLevel > $indentLevel);
+            return !($nextItem && $nextIndentLevel > $indentLevel)
+                && !isset($excludedItemLookup['G_' . $item->id]);
         })->values();
     }
 
@@ -176,11 +207,19 @@ class EmployeePerformanceAssessmentController extends Controller {
     protected function syncCompetencyAssessmentSnapshot(EmployeeCompetencyAssessment $assessment, array $formData = []): void
     {
         $snapshot = $assessment->snapshot_json ?? [];
+        $excludedSectionLabels = collect($formData['excluded_section_labels'] ?? ($snapshot['excluded_section_labels'] ?? []))
+            ->filter(fn ($sectionLabel) => filled($sectionLabel))
+            ->map(fn ($sectionLabel) => (string) $sectionLabel)
+            ->unique()
+            ->values()
+            ->all();
+
         $snapshot['status'] = $assessment->status;
         $snapshot['submitted_at'] = optional($assessment->submitted_at)->toDateTimeString();
         $snapshot['employee_signed_at'] = optional($assessment->employee_signed_at)->toDateTimeString();
         $snapshot['reviewer_signed_at'] = optional($assessment->reviewer_signed_at)->toDateTimeString();
         $snapshot['completed_at'] = optional($assessment->completed_at)->toDateTimeString();
+        $snapshot['excluded_section_labels'] = $excludedSectionLabels;
         $snapshot['summary'] = [
             'total_score' => $assessment->total_score,
             'average_score' => number_format((float) $assessment->average_score, 2, '.', ''),
@@ -429,6 +468,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'required_item_keys' => 'nullable|array',
             'required_item_keys.*' => 'string',
+            'excluded_section_labels' => 'nullable|array',
+            'excluded_section_labels.*' => 'string',
             'comments' => 'nullable|string',
             'further_action_required' => 'nullable|string',
             'reviewer_name' => 'required|string|max:255',
@@ -449,16 +490,18 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->where('employee_num', $validated['employee_num'])
             ->firstOrFail();
 
-        $assessableItems = $this->getAssessableCompetencyItems($employee);
-        $requiredItemKeys = collect($validated['required_item_keys'] ?? [])
-            ->filter(fn ($itemKey) => filled($itemKey))
+        $allCompetencyItems = $this->getCompetencyItems($employee);
+        $excludedSectionLabels = collect($validated['excluded_section_labels'] ?? [])
+            ->filter(fn ($sectionLabel) => filled($sectionLabel))
+            ->map(fn ($sectionLabel) => (string) $sectionLabel)
+            ->unique()
+            ->values()
+            ->all();
+        $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
+        $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
+        $requiredItemKeys = $assessableItems
+            ->map(fn ($item) => 'G_' . $item->id)
             ->values();
-
-        if ($requiredItemKeys->isEmpty()) {
-            $requiredItemKeys = $assessableItems
-                ->map(fn ($item) => 'G_' . $item->id)
-                ->values();
-        }
 
         $latestEntries = $this->latestCompetencyEntries(
             (string) $validated['employee_num'],
@@ -562,12 +605,15 @@ class EmployeePerformanceAssessmentController extends Controller {
                         'employee_name' => $validated['employee_name'],
                         'employee_title' => $validated['employee_title'] ?? null,
                     ],
+                    'excluded_section_labels' => $excludedSectionLabels,
                     'items' => $snapshotItems,
                 ],
             ]
         );
 
-        $this->syncCompetencyAssessmentSnapshot($assessment);
+        $this->syncCompetencyAssessmentSnapshot($assessment, [
+            'excluded_section_labels' => $excludedSectionLabels,
+        ]);
         $assessment->save();
 
         return response()->json([
@@ -585,6 +631,8 @@ class EmployeePerformanceAssessmentController extends Controller {
         $validated = $request->validate([
             'employee_num' => 'required|string',
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
+            'excluded_section_labels' => 'nullable|array',
+            'excluded_section_labels.*' => 'string',
             'comments' => 'nullable|string',
             'further_action_required' => 'nullable|string',
             'reviewer_name' => 'required|string|max:255',
@@ -605,7 +653,15 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->where('employee_num', $validated['employee_num'])
             ->firstOrFail();
 
-        $assessableItems = $this->getAssessableCompetencyItems($employee);
+        $allCompetencyItems = $this->getCompetencyItems($employee);
+        $excludedSectionLabels = collect($validated['excluded_section_labels'] ?? [])
+            ->filter(fn ($sectionLabel) => filled($sectionLabel))
+            ->map(fn ($sectionLabel) => (string) $sectionLabel)
+            ->unique()
+            ->values()
+            ->all();
+        $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
+        $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
         $latestEntries = $this->latestCompetencyEntries(
             (string) $validated['employee_num'],
             (int) $validated['assessment_period_id']
@@ -685,12 +741,15 @@ class EmployeePerformanceAssessmentController extends Controller {
                         'employee_name' => $validated['employee_name'],
                         'employee_title' => $validated['employee_title'] ?? null,
                     ],
+                    'excluded_section_labels' => $excludedSectionLabels,
                     'items' => $snapshotItems,
                 ],
             ]
         );
 
-        $this->syncCompetencyAssessmentSnapshot($assessment);
+        $this->syncCompetencyAssessmentSnapshot($assessment, [
+            'excluded_section_labels' => $excludedSectionLabels,
+        ]);
         $assessment->save();
 
         return response()->json([
@@ -699,6 +758,60 @@ class EmployeePerformanceAssessmentController extends Controller {
             'data' => [
                 'id' => $assessment->id,
                 'status' => $assessment->status,
+            ],
+        ]);
+    }
+
+    public function saveCompetencyAssessmentPreferences(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_num' => 'required|string',
+            'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
+            'excluded_section_labels' => 'nullable|array',
+            'excluded_section_labels.*' => 'string',
+        ]);
+
+        if ($this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This competency assessment is already completed for the selected period and can no longer be changed.',
+            ], 422);
+        }
+
+        $excludedSectionLabels = collect($validated['excluded_section_labels'] ?? [])
+            ->filter(fn ($sectionLabel) => filled($sectionLabel))
+            ->map(fn ($sectionLabel) => (string) $sectionLabel)
+            ->unique()
+            ->values()
+            ->all();
+
+        $assessment = EmployeeCompetencyAssessment::query()->firstOrNew([
+            'employee_num' => $validated['employee_num'],
+            'assessment_period_id' => $validated['assessment_period_id'],
+        ]);
+
+        if (!$assessment->exists) {
+            $assessment->status = 'draft';
+            $assessment->submitted_by = Auth::id();
+            $assessment->total_score = 0;
+            $assessment->average_score = 0;
+            $assessment->overall_rating = null;
+        } elseif (!$assessment->submitted_by) {
+            $assessment->submitted_by = Auth::id();
+        }
+
+        $this->syncCompetencyAssessmentSnapshot($assessment, [
+            'excluded_section_labels' => $excludedSectionLabels,
+        ]);
+        $assessment->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Competency assessment preferences saved.',
+            'data' => [
+                'id' => $assessment->id,
+                'status' => $assessment->status,
+                'excluded_section_labels' => $excludedSectionLabels,
             ],
         ]);
     }

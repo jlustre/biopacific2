@@ -772,6 +772,7 @@ Route::get('/admin/facilities/test_livewire_validation', function() {
 // Save employee performance assessment
 Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/performance-assessment', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'store'])->name('admin.employees.performance-assessment.store');
+    Route::post('/employees/competency-assessment/preferences', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'saveCompetencyAssessmentPreferences'])->name('admin.employees.competency-assessment.preferences');
     Route::post('/employees/competency-assessment/draft', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'saveCompetencyAssessmentDraft'])->name('admin.employees.competency-assessment.draft');
     Route::post('/employees/competency-assessment/submit', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'submitCompetencyAssessment'])->name('admin.employees.competency-assessment.submit');
     Route::post('/employees/competency-assessment/employee-sign', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'employeeSignCompetencyAssessment'])->name('admin.employees.competency-assessment.employee-sign');

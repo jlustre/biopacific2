@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('employee_competency_items', function (Blueprint $table) {
             $table->id();
             $table->string('section');
-            $table->string('item');
+            $table->text('item');
             $table->json('position_ids')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();

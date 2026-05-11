@@ -68,6 +68,48 @@
         return incompleteSubitems;
     }
 
+    function setPartEHierarchyRowExpansion(parentRow, expanded) {
+        if (!parentRow) {
+            return;
+        }
+
+        var toggle = parentRow.querySelector('.partE-hierarchy-toggle');
+        var parentLevel = getChecklistRowLevel(parentRow);
+        var nextRow = parentRow.nextElementSibling;
+
+        while (nextRow) {
+            if (!nextRow.hasAttribute('data-item-level')) {
+                nextRow = nextRow.nextElementSibling;
+                continue;
+            }
+
+            var nextLevel = getChecklistRowLevel(nextRow);
+            if (nextLevel <= parentLevel) {
+                break;
+            }
+
+            nextRow.classList.toggle('hidden', !expanded);
+            nextRow = nextRow.nextElementSibling;
+        }
+
+        if (toggle) {
+            toggle.setAttribute('data-expanded', expanded ? '1' : '0');
+            toggle.setAttribute('aria-label', expanded ? 'Collapse child items' : 'Expand child items');
+            toggle.textContent = expanded ? '▲' : '▼';
+        }
+    }
+
+    function initializePartEHierarchy() {
+        var container = document.getElementById('partE');
+        if (!container) {
+            return;
+        }
+
+        container.querySelectorAll('tr[data-has-child-items="1"]').forEach(function(row) {
+            setPartEHierarchyRowExpansion(row, true);
+        });
+    }
+
     // Opens the PART A-E modal and populates its fields for the selected item/employee
     function findChecklistLink(itemName, empId, itemId = null, checklistKey = null) {
         return Array.from(document.querySelectorAll('.verify-link, .view-link')).find((link) => {
@@ -295,6 +337,7 @@
         setActiveTab(lastTab);
         // Always bind PART A-E links on load
         bindChecklistLinks();
+        initializePartEHierarchy();
     });
 
     function bindChecklistLinksAE() {
@@ -362,6 +405,18 @@
             };
         });
     }
+
+    document.addEventListener('click', function(e) {
+        var toggleButton = e.target.closest('.partE-hierarchy-toggle');
+        if (!toggleButton) {
+            return;
+        }
+
+        e.preventDefault();
+        var parentRow = toggleButton.closest('tr');
+        var expanded = toggleButton.getAttribute('data-expanded') !== '1';
+        setPartEHierarchyRowExpansion(parentRow, expanded);
+    });
 
     // Handles the form submission for checklist verification modal
     function handleChecklistFormSubmit(e) {

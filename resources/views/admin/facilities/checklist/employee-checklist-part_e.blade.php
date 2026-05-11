@@ -55,7 +55,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($partEItems as $item)
+                @forelse ($partEItems->values() as $itemIdx => $item)
                 @php
                 $empChecklist = $resolveChecklistEntry($item);
                 $checklistKey = $resolveChecklistKey($item);
@@ -76,12 +76,30 @@
                     $displayIndentClass = 'inline-block pl-4';
                     $itemLevel = 1;
                 }
+                $nextItem = $partEItems->values()->get($itemIdx + 1);
+                $nextIsChildItem = $nextItem ? in_array($nextItem->name, $partEChildItems, true) : false;
+                $nextItemLevel = 0;
+                if ($nextItem) {
+                    if (str_starts_with($nextItem->name, '--')) {
+                        $nextItemLevel = 2;
+                    } elseif (str_starts_with($nextItem->name, '-')) {
+                        $nextItemLevel = 1;
+                    } elseif ($nextIsChildItem) {
+                        $nextItemLevel = 1;
+                    }
+                }
+                $hasChildItems = $nextItem && $nextItemLevel > $itemLevel;
                 $rowClasses = $loop->odd ? 'bg-white text-slate-900' : 'bg-slate-50 text-slate-900';
                 @endphp
                 <tr class="{{ $rowClasses }} hover:bg-slate-100 transition-colors" data-doc-type-id="{{ $item->doc_type_id ?? 5 }}" data-item-name="{{ $item->name }}"
-                    data-item-level="{{ $itemLevel }}" data-item-disabled="{{ !empty($item->disabled) ? 1 : 0 }}">
+                    data-item-level="{{ $itemLevel }}" data-has-child-items="{{ $hasChildItems ? '1' : '0' }}" data-item-disabled="{{ !empty($item->disabled) ? 1 : 0 }}">
                     <td class="border border-slate-500 px-2 py-1.5 align-top @if(isset($item->disabled) && $item->disabled) line-through @endif">
-                        <span class="text-[11px] leading-tight {{ $displayIndentClass }} {{ $itemLevel === 0 ? 'font-bold' : '' }}">{{ $displayName }}</span>
+                        <span class="text-[11px] leading-tight {{ $displayIndentClass }} {{ $itemLevel === 0 ? 'font-bold' : '' }}">
+                            @if($hasChildItems)
+                            <button type="button" class="partE-hierarchy-toggle mr-2 inline-flex h-5 w-5 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100" data-expanded="1" aria-label="Collapse child items">▲</button>
+                            @endif
+                            <span>{{ $displayName }}</span>
+                        </span>
                     </td>
                     <td class="border border-slate-500 px-1.5 py-1.5 align-top text-center whitespace-nowrap">
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ? 'checked' : '' }} readonly

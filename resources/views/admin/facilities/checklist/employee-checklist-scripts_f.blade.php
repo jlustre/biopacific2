@@ -30,10 +30,62 @@
         }
     }
 
+    function getSectionBodyRows(sectionHeaderRow) {
+        var rows = [];
+        if (!sectionHeaderRow) {
+            return rows;
+        }
+
+        var nextRow = sectionHeaderRow.nextElementSibling;
+        while (nextRow) {
+            if (nextRow.getAttribute('data-section-header') === '1') {
+                break;
+            }
+
+            rows.push(nextRow);
+            nextRow = nextRow.nextElementSibling;
+        }
+
+        return rows;
+    }
+
+    function setSectionRowExpansion(sectionHeaderRow, expanded) {
+        if (!sectionHeaderRow) {
+            return;
+        }
+
+        var toggle = sectionHeaderRow.querySelector('.section-toggle');
+        var sectionRows = getSectionBodyRows(sectionHeaderRow);
+
+        sectionRows.forEach(function(row) {
+            row.classList.toggle('hidden', !expanded);
+        });
+
+        if (expanded) {
+            sectionRows.forEach(function(row) {
+                if (row.getAttribute('data-has-child-items') === '1' && row.getAttribute('data-indent-level') === '0') {
+                    var hierarchyToggle = row.querySelector('.hierarchy-toggle');
+                    var isExpanded = !hierarchyToggle || hierarchyToggle.getAttribute('data-expanded') !== '0';
+                    setHierarchyRowExpansion(row, isExpanded);
+                }
+            });
+        }
+
+        if (toggle) {
+            toggle.setAttribute('data-expanded', expanded ? '1' : '0');
+            toggle.setAttribute('aria-label', expanded ? 'Collapse section items' : 'Expand section items');
+            toggle.textContent = expanded ? '▲' : '▼';
+        }
+    }
+
     function initializeHierarchyToggles(container) {
         if (!container) {
             return;
         }
+
+        container.querySelectorAll('tr[data-section-header="1"]').forEach(function(row) {
+            setSectionRowExpansion(row, true);
+        });
 
         container.querySelectorAll('tr[data-has-child-items="1"][data-indent-level="0"]').forEach(function(row) {
             setHierarchyRowExpansion(row, true);
@@ -413,6 +465,9 @@
             window.assessmentItemHistories[itemKey] = history || [];
         }
         if (isCompetencyRow && typeof window.updatePartGSummaryScores === 'function') {
+            if (typeof window.syncPartGExcludedRows === 'function') {
+                window.syncPartGExcludedRows();
+            }
             window.updatePartGSummaryScores();
         } else {
             updatePartFSummaryScores();
@@ -425,6 +480,14 @@
     [document.querySelector('#partFTableContainer'), document.querySelector('#partGTableContainer')].filter(Boolean).forEach(function(container) {
     container.addEventListener('click', function(e) {
         var target = e.target;
+        var sectionToggleButton = target.closest('.section-toggle');
+        if (sectionToggleButton) {
+            e.preventDefault();
+            var sectionHeaderRow = sectionToggleButton.closest('tr');
+            var sectionExpanded = sectionToggleButton.getAttribute('data-expanded') !== '1';
+            setSectionRowExpansion(sectionHeaderRow, sectionExpanded);
+            return;
+        }
         var toggleButton = target.closest('.hierarchy-toggle');
         if (toggleButton) {
             e.preventDefault();
@@ -514,6 +577,9 @@
         var target = e.target;
         if ((target.classList.contains('verify-link') || target.classList.contains('view-link')) && target.hasAttribute('data-item-key')) {
             e.preventDefault();
+            if (target.classList.contains('verify-link') && target.getAttribute('aria-disabled') === 'true') {
+                return;
+            }
             if (!window.selectedAssessmentPeriodId) {
                 alert('Please select or create an assessment period before making changes.');
                 return;

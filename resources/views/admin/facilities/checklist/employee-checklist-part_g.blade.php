@@ -6,6 +6,18 @@
         $partGSubmissionStatus = $selectedCompetencyAssessment?->status;
         $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
         $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
+        $partGDontIncludeSections = [
+            'BLOOD TRANSFUSION COMPETENCY',
+            'BLOOD GLUCOSE MONITORING COMPETENCY',
+            'TRACHEOSTOMY CARE COMPETENCY',
+            'TREATMENT NURSE SKILLS COMPETENCY',
+            'MEDICATION ADMINISTRATION COMPETENCY',
+        ];
+        $partGExcludedSectionLabels = collect($selectedCompetencyAssessment?->snapshot_json['excluded_section_labels'] ?? [])
+            ->filter(fn ($sectionLabel) => filled($sectionLabel))
+            ->map(fn ($sectionLabel) => (string) $sectionLabel)
+            ->values()
+            ->all();
            
         @endphp
         <div class="mb-4 flex flex-wrap items-center gap-2">
@@ -55,14 +67,37 @@
             </thead>
             <tbody>
                 @forelse ($partGSections as $sectionLabel => $items)
-                <tr class="bg-slate-100 text-slate-900">
-                    <td colspan="5" class="border border-slate-500 px-2 py-1.5 font-bold uppercase tracking-wide">{{ $sectionLabel }}</td>
+                <tr class="bg-slate-100 text-slate-900" data-section-header="1" data-section-label="{{ $sectionLabel }}">
+                    <td colspan="5" class="border border-slate-500 px-2 py-1.5 font-bold uppercase tracking-wide">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <span class="inline-flex items-center gap-2 text-sm">
+                                <button type="button" class="section-toggle inline-flex h-5 w-5 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100" data-expanded="1" aria-label="Collapse section items">▲</button>
+                                <span>{{ $sectionLabel }}</span>
+                            </span>
+                            @if(in_array($sectionLabel, $partGDontIncludeSections, true))
+                            <label class="partg-dont-include-control inline-flex items-center gap-2 text-[11px] font-medium normal-case tracking-normal text-slate-700 {{ $partGAssessmentLocked ? 'opacity-60' : '' }}">
+                                <input type="checkbox" class="partg-section-dont-include-checkbox h-4 w-4 rounded border-slate-400 text-slate-700 focus:ring-slate-400" data-section-label="{{ $sectionLabel }}" data-locked="{{ $partGAssessmentLocked ? '1' : '0' }}" @checked(in_array($sectionLabel, $partGExcludedSectionLabels, true))>
+                                <span>Exclude</span>
+                            </label>
+                            @endif
+                        </div>
+                    </td>
                 </tr>
+                @if($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY')
+                <tr class="bg-white text-slate-900" data-section-body="1">
+                    <td colspan="5" class="border border-slate-500 px-3 py-1.5 text-[11px] leading-snug md:text-xs">
+                        <p>Tracheostomy care maintains a patient&rsquo;s airway by evacuating secretions, thereby preventing or reducing infections.</p>
+                        <p class="mt-1 font-semibold">Rationale</p>
+                        <p>Tracheostomy care maintains a patent airway by evacuating secretions, thereby preventing or reducing infections.</p>
+                    </td>
+                </tr>
+                @endif
                 @foreach ($items->values() as $item)
                 @php
                 $itemKey = 'G_' . $item->id;
                 $empChecklist = $empCompetencyAssessments[$itemKey] ?? null;
                 $bloodTransfusionContinuationItem = '-If no transfusion reaction noted, dispose of blood bag and tubing in biohazard container.';
+                $tracheostomyProcedureTableLastItem = '-Personal Protective equipment (i.e. face mask, face shield, eyewear)';
                 $ratingText = $empChecklist['rating'] ?? '';
                 $rowClasses = $loop->odd
                     ? 'bg-white text-slate-900'
@@ -74,8 +109,6 @@
                 preg_match('/^(-+)/', $nextItem?->item ?? '', $nextItemIndentMatches);
                 $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
                 $hasChildItems = $nextItem && $nextIndentLevel > $indentLevel;
-                $collapsibleParentItems = ['PERINEAL CARE', 'CNA SKILLS CHECKLIST'];
-                $isMainParentItem = $indentLevel === 0 && $hasChildItems && in_array($displayItem, $collapsibleParentItems, true);
                 $isAssessableItem = !$hasChildItems;
                 $indentClass = match ($indentLevel) {
                     1 => 'pl-8',
@@ -84,7 +117,7 @@
                 };
                 @endphp
                 @if($sectionLabel === 'BLOOD TRANSFUSION COMPETENCY' && $item->item === $bloodTransfusionContinuationItem)
-                <tr class="bg-white text-slate-900">
+                <tr class="bg-white text-slate-900" data-section-body="1">
                     <td colspan="5" class="border border-slate-500 px-2 py-2">
                         <div class="overflow-x-auto">
                             <table class="min-w-full border border-slate-500 text-[10px] leading-tight text-slate-900 md:text-[11px]">
@@ -130,15 +163,7 @@
                     </td>
                 </tr>
                 @endif
-                <tr class="{{ $rowClasses }} transition-colors hover:bg-slate-100" data-item-key="{{ $itemKey }}" data-summary-exclude="{{ $isAssessableItem ? '0' : '1' }}" data-indent-level="{{ $indentLevel }}" data-has-child-items="{{ $hasChildItems ? '1' : '0' }}" data-assessable-item="{{ $isAssessableItem ? '1' : '0' }}" data-current-rating="{{ $empChecklist['rating'] ?? '' }}">
-                    @if($isMainParentItem)
-                    <td colspan="5" class="border border-slate-500 px-2 py-1.5 font-semibold text-slate-900">
-                        <span class="inline-flex items-center gap-2 text-sm">
-                            <button type="button" class="hierarchy-toggle inline-flex h-5 w-5 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100" data-expanded="1" aria-label="Collapse child items">▲</button>
-                            <span>{{ $displayItem }}</span>
-                        </span>
-                    </td>
-                    @else
+                <tr class="{{ $rowClasses }} transition-colors hover:bg-slate-100" data-section-body="1" data-item-key="{{ $itemKey }}" data-summary-exclude="{{ $isAssessableItem ? '0' : '1' }}" data-indent-level="{{ $indentLevel }}" data-has-child-items="{{ $hasChildItems ? '1' : '0' }}" data-assessable-item="{{ $isAssessableItem ? '1' : '0' }}" data-current-rating="{{ $empChecklist['rating'] ?? '' }}">
                     <td class="border border-slate-500 px-2 py-1.5 align-top">
                         <span class="{{ $indentClass }} inline-flex items-center gap-2 text-[11px] leading-tight md:text-xs">
                             <span>{{ $displayItem }}</span>
@@ -195,8 +220,66 @@
                             data-assessed-by-id="{{ $empChecklist['verified_by'] ?? '' }}">Assess</a>
                         @endif
                     </td>
-                    @endif
                 </tr>
+                @if($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $item->item === $tracheostomyProcedureTableLastItem)
+                <tr class="bg-white text-slate-900" data-section-body="1">
+                    <td colspan="5" class="border border-slate-500 px-2 py-2">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-slate-500 text-[10px] leading-tight text-slate-900 md:text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-900">
+                                        <th rowspan="2" class="border border-slate-500 px-2 py-2 text-center font-bold">Procedure</th>
+                                        <th colspan="3" class="border border-slate-500 px-2 py-2 text-left font-semibold">Date of Review</th>
+                                    </tr>
+                                    <tr class="bg-slate-50 text-slate-900">
+                                        <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">E</th>
+                                        <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">S</th>
+                                        <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">U</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-slate-500 px-3 py-2">1. Assemble equipment &amp; bring to the bedside.</td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-3 py-2">2. Identify &amp; explain procedure to resident &amp; provide privacy.</td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-3 py-2">3. Wash hands, put on personal protective equipment to protect face &amp; eyes if appropriate.</td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-3 py-2">4. Place resident in semi-Fowler position unless medically contraindicated.</td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-3 py-2">5. Open sterile catheter using aseptic technique.</td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-3 py-2">6. Put on sterile gloves.</td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                @endif
                 @endforeach
                 @empty
                 <tr>
@@ -274,6 +357,17 @@
         </div>
     </div>
 </div>
+<style>
+    @media print {
+        #partGTableContainer tr[data-print-excluded="1"] {
+            display: none !important;
+        }
+
+        #partGTableContainer .partg-dont-include-control {
+            display: none !important;
+        }
+    }
+</style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var overallRatingField = document.getElementById('partGOverallRating');
@@ -301,6 +395,11 @@
             if (rating === 'S' || rating === 'SATISFACTORY' || rating === '2') return 2;
             if (rating === 'U' || rating === 'UNSATISFACTORY' || rating === '1') return 1;
             return null;
+        }
+
+        function hasCompetencySelection(rawRating) {
+            var rating = (rawRating || '').trim().toUpperCase();
+            return ['E', 'EXCELLENT', '3', 'S', 'SATISFACTORY', '2', 'U', 'UNSATISFACTORY', '1', 'N', 'NOT APPLICABLE'].includes(rating);
         }
 
         function syncOverallEvaluation(average) {
@@ -331,6 +430,84 @@
             syncUnsatisfactoryState();
         }
 
+        function getPartGExcludedSectionLabels() {
+            if (!partGTableContainer) {
+                return [];
+            }
+
+            return Array.from(partGTableContainer.querySelectorAll('.partg-section-dont-include-checkbox:checked'))
+                .map(function(checkbox) {
+                    return checkbox.getAttribute('data-section-label') || '';
+                })
+                .filter(function(sectionLabel) {
+                    return sectionLabel !== '';
+                });
+        }
+
+        function syncPartGExcludedRows() {
+            if (!partGTableContainer) {
+                return;
+            }
+
+            partGTableContainer.querySelectorAll('tbody tr[data-item-key]').forEach(function(row) {
+                row.removeAttribute('data-parent-excluded');
+                row.removeAttribute('data-print-excluded');
+                row.classList.remove('opacity-60');
+
+                var existingBadge = row.querySelector('.partg-excluded-badge');
+                if (existingBadge) {
+                    existingBadge.remove();
+                }
+
+                var assessLink = row.querySelector('.verify-link');
+                if (assessLink) {
+                    assessLink.classList.remove('pointer-events-none', 'opacity-50', 'text-slate-400', 'no-underline');
+                    assessLink.classList.add('text-teal-600', 'underline', 'cursor-pointer');
+                    assessLink.removeAttribute('aria-disabled');
+                    assessLink.removeAttribute('tabindex');
+                    assessLink.title = 'Assess Item';
+                }
+            });
+
+            partGTableContainer.querySelectorAll('tbody tr[data-section-header="1"]').forEach(function(sectionHeaderRow) {
+                var checkbox = sectionHeaderRow.querySelector('.partg-section-dont-include-checkbox');
+                if (!checkbox || !checkbox.checked) {
+                    return;
+                }
+
+                var nextRow = sectionHeaderRow.nextElementSibling;
+
+                while (nextRow) {
+                    if (nextRow.getAttribute('data-section-header') === '1') {
+                        break;
+                    }
+
+                    nextRow.setAttribute('data-parent-excluded', '1');
+                    nextRow.setAttribute('data-print-excluded', '1');
+                    nextRow.classList.add('opacity-60');
+
+                    var firstCellContent = nextRow.querySelector('td:first-child > span');
+                    if (firstCellContent && !firstCellContent.querySelector('.partg-excluded-badge')) {
+                        var excludedBadge = document.createElement('span');
+                        excludedBadge.className = 'partg-excluded-badge inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800';
+                        excludedBadge.textContent = 'Excluded';
+                        firstCellContent.appendChild(excludedBadge);
+                    }
+
+                    var excludedAssessLink = nextRow.querySelector('.verify-link');
+                    if (excludedAssessLink) {
+                        excludedAssessLink.classList.remove('text-teal-600', 'underline', 'cursor-pointer');
+                        excludedAssessLink.classList.add('pointer-events-none', 'opacity-50', 'text-slate-400', 'no-underline');
+                        excludedAssessLink.setAttribute('aria-disabled', 'true');
+                        excludedAssessLink.setAttribute('tabindex', '-1');
+                        excludedAssessLink.title = 'Excluded items cannot be assessed while this section is marked Don\'t Include.';
+                    }
+
+                    nextRow = nextRow.nextElementSibling;
+                }
+            });
+        }
+
         function updatePartGSummaryScores() {
             if (!totalScoreField || !averageScoreField || !partGTableContainer) {
                 return;
@@ -346,6 +523,10 @@
                 }
 
                 if (row.getAttribute('data-summary-exclude') === '1') {
+                    return;
+                }
+
+                if (row.getAttribute('data-parent-excluded') === '1') {
                     return;
                 }
 
@@ -412,10 +593,135 @@
             return tokenMeta ? tokenMeta.getAttribute('content') : '';
         }
 
+        function getPartGCurrentAssessmentPeriodId() {
+            return window.selectedAssessmentPeriodId || @json($selectedAssessmentPeriodId) || '';
+        }
+
+        function getPartGExcludeStorageKey() {
+            var assessmentPeriodId = getPartGCurrentAssessmentPeriodId();
+            if (!assessmentPeriodId) {
+                return '';
+            }
+
+            return ['partg-excluded-sections', @json($employee->employee_num), assessmentPeriodId].join(':');
+        }
+
+        function persistPartGExcludedSectionsLocal() {
+            var storageKey = getPartGExcludeStorageKey();
+            if (!storageKey) {
+                return;
+            }
+
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify(getPartGExcludedSectionLabels()));
+            } catch (error) {
+                console.warn('Unable to persist Part G excluded sections locally.', error);
+            }
+        }
+
+        function loadPartGExcludedSectionsLocal() {
+            var storageKey = getPartGExcludeStorageKey();
+            if (!storageKey || !partGTableContainer) {
+                return;
+            }
+
+            try {
+                var rawValue = window.localStorage.getItem(storageKey);
+                if (!rawValue) {
+                    return;
+                }
+
+                var excludedSectionLabels = JSON.parse(rawValue);
+                if (!Array.isArray(excludedSectionLabels)) {
+                    return;
+                }
+
+                partGTableContainer.querySelectorAll('.partg-section-dont-include-checkbox').forEach(function(checkbox) {
+                    checkbox.checked = excludedSectionLabels.includes(checkbox.getAttribute('data-section-label') || '');
+                });
+            } catch (error) {
+                console.warn('Unable to load Part G excluded sections locally.', error);
+            }
+        }
+
+        function getPartGSectionRows(sectionHeaderRow) {
+            var rows = [];
+            if (!sectionHeaderRow) {
+                return rows;
+            }
+
+            var nextRow = sectionHeaderRow.nextElementSibling;
+            while (nextRow) {
+                if (nextRow.getAttribute('data-section-header') === '1') {
+                    break;
+                }
+
+                rows.push(nextRow);
+                nextRow = nextRow.nextElementSibling;
+            }
+
+            return rows;
+        }
+
+        function getPartGActiveAssessedRows(sectionHeaderRow) {
+            return getPartGSectionRows(sectionHeaderRow).filter(function(row) {
+                if (!row.hasAttribute('data-item-key')) {
+                    return false;
+                }
+
+                return hasCompetencySelection(row.getAttribute('data-current-rating'));
+            });
+        }
+
+        function revokePartGAssessmentItem(row) {
+            var itemKey = row ? row.getAttribute('data-item-key') : '';
+            var empId = @json($employee->employee_num);
+            var assessmentPeriodId = window.selectedAssessmentPeriodId || @json($selectedAssessmentPeriodId);
+            var token = getCsrfToken();
+
+            if (!itemKey || !empId || !assessmentPeriodId || !token) {
+                return Promise.reject(new Error('Missing revoke payload data.'));
+            }
+
+            return fetch('/admin/employees/performance-assessment/revoke', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    employee_num: empId,
+                    item_key: itemKey,
+                    assessment_period_id: assessmentPeriodId
+                })
+            })
+                .then(function(response) {
+                    return response.text().then(function(rawText) {
+                        var data = {};
+                        try {
+                            data = JSON.parse(rawText);
+                        } catch (error) {
+                            throw new Error('Failed to parse revoke response.');
+                        }
+
+                        if (!response.ok || !data.success || !data.data) {
+                            throw new Error(data.message || 'Failed to revoke assessment.');
+                        }
+
+                        updateAssessmentRow(itemKey, empId, data.data.latest, data.data.history || []);
+                    });
+                });
+        }
+
         function getPartGBasePayload() {
             var requiredItemKeys = [];
             if (partGTableContainer) {
                 partGTableContainer.querySelectorAll('tbody tr[data-assessable-item="1"]').forEach(function(row) {
+                    if (row.getAttribute('data-parent-excluded') === '1') {
+                        return;
+                    }
+
                     var itemKey = row.getAttribute('data-item-key');
                     if (itemKey) {
                         requiredItemKeys.push(itemKey);
@@ -427,6 +733,7 @@
                 employee_num: @json($employee->employee_num),
                 assessment_period_id: @json($selectedAssessmentPeriodId),
                 required_item_keys: requiredItemKeys,
+                excluded_section_labels: getPartGExcludedSectionLabels(),
                 comments: partGComments ? partGComments.value : '',
                 further_action_required: unsatisfactoryDetails ? unsatisfactoryDetails.value : '',
                 reviewer_name: partGReviewerName ? partGReviewerName.value : '',
@@ -435,6 +742,42 @@
                 employee_name: partGEmployeeName ? partGEmployeeName.value : '',
                 employee_title: partGEmployeeTitle ? partGEmployeeTitle.value : ''
             };
+        }
+
+        function persistPartGExcludedSections() {
+            var csrfToken = getCsrfToken();
+            var assessmentPeriodId = getPartGCurrentAssessmentPeriodId();
+            if (!csrfToken) {
+                return Promise.reject(new Error('CSRF token missing. Refresh the page and try again.'));
+            }
+
+            if (!assessmentPeriodId) {
+                return Promise.reject(new Error('Please select an assessment period before excluding a section.'));
+            }
+
+            return fetch('{{ route('admin.employees.competency-assessment.preferences') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    employee_num: @json($employee->employee_num),
+                    assessment_period_id: assessmentPeriodId,
+                    excluded_section_labels: getPartGExcludedSectionLabels()
+                })
+            })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Failed to save section exclusions.');
+                        }
+
+                        return data;
+                    });
+                });
         }
 
         function setPartGActionButtonState(disabled) {
@@ -457,12 +800,16 @@
             var incompleteCount = 0;
 
             partGTableContainer.querySelectorAll('tbody tr[data-assessable-item="1"]').forEach(function(row) {
+                if (row.getAttribute('data-parent-excluded') === '1') {
+                    return;
+                }
+
                 var cells = row.querySelectorAll('td');
                 if (cells.length !== 5) {
                     return;
                 }
 
-                if (parseCompetencyRating(row.getAttribute('data-current-rating')) === null) {
+                if (!hasCompetencySelection(row.getAttribute('data-current-rating'))) {
                     incompleteCount += 1;
                 }
             });
@@ -470,7 +817,102 @@
             return incompleteCount;
         }
 
+        window.syncPartGExcludedRows = syncPartGExcludedRows;
         window.updatePartGSummaryScores = updatePartGSummaryScores;
+
+        if (partGTableContainer) {
+            partGTableContainer.addEventListener('change', function(event) {
+                if (!event.target.classList.contains('partg-section-dont-include-checkbox')) {
+                    return;
+                }
+
+                var checkbox = event.target;
+                if (checkbox.dataset.busy === '1') {
+                    return;
+                }
+
+                if (checkbox.getAttribute('data-locked') === '1') {
+                    checkbox.checked = !checkbox.checked;
+                    setPartGSubmitMessage('error', 'This competency assessment is already completed for the selected period and can no longer be changed.');
+                    return;
+                }
+
+                var sectionHeaderRow = checkbox.closest('tr[data-section-header="1"]');
+
+                if (!checkbox.checked) {
+                    checkbox.dataset.busy = '1';
+                    syncPartGExcludedRows();
+                    updatePartGSummaryScores();
+                    persistPartGExcludedSectionsLocal();
+                    persistPartGExcludedSections()
+                        .then(function() {
+                            setPartGSubmitMessage('info', 'Section exclusion preference saved.');
+                        })
+                        .catch(function(error) {
+                            setPartGSubmitMessage('error', (error && error.message ? error.message : 'Failed to save section exclusion preference.') + ' The change is kept locally for this employee and assessment period.');
+                        })
+                        .finally(function() {
+                            delete checkbox.dataset.busy;
+                        });
+                    return;
+                }
+
+                var assessedRows = getPartGActiveAssessedRows(sectionHeaderRow);
+                if (!assessedRows.length) {
+                    checkbox.dataset.busy = '1';
+                    syncPartGExcludedRows();
+                    updatePartGSummaryScores();
+                    persistPartGExcludedSectionsLocal();
+                    persistPartGExcludedSections()
+                        .then(function() {
+                            setPartGSubmitMessage('info', 'Section exclusion preference saved.');
+                        })
+                        .catch(function(error) {
+                            setPartGSubmitMessage('error', (error && error.message ? error.message : 'Failed to save section exclusion preference.') + ' The change is kept locally for this employee and assessment period.');
+                        })
+                        .finally(function() {
+                            delete checkbox.dataset.busy;
+                        });
+                    return;
+                }
+
+                var sectionLabel = checkbox.getAttribute('data-section-label') || 'this section';
+                var confirmed = confirm(
+                    'This section already has ' + assessedRows.length + ' assessed item(s). Continuing will automatically revoke those assessed items under ' + sectionLabel + '. Do you want to continue?'
+                );
+
+                if (!confirmed) {
+                    checkbox.checked = false;
+                    return;
+                }
+
+                checkbox.dataset.busy = '1';
+                setPartGSubmitMessage('info', 'Revoking assessed items under ' + sectionLabel + '...');
+
+                assessedRows.reduce(function(promise, row) {
+                    return promise.then(function() {
+                        return revokePartGAssessmentItem(row);
+                    });
+                }, Promise.resolve())
+                    .then(function() {
+                        syncPartGExcludedRows();
+                        updatePartGSummaryScores();
+                        persistPartGExcludedSectionsLocal();
+                        return persistPartGExcludedSections().then(function() {
+                            setPartGSubmitMessage('info', 'Assessed items under ' + sectionLabel + ' were revoked and excluded successfully.');
+                        });
+                    })
+                    .catch(function(error) {
+                        checkbox.checked = false;
+                        syncPartGExcludedRows();
+                        updatePartGSummaryScores();
+                        setPartGSubmitMessage('error', error && error.message ? error.message : 'Failed to revoke assessed items for this section.');
+                    })
+                    .finally(function() {
+                        delete checkbox.dataset.busy;
+                    });
+            });
+        }
 
         if (partGTableContainer && typeof MutationObserver !== 'undefined') {
             var observer = new MutationObserver(function() {
@@ -615,7 +1057,9 @@
             });
         }
 
+        loadPartGExcludedSectionsLocal();
         syncUnsatisfactoryState();
+        syncPartGExcludedRows();
         updatePartGSummaryScores();
     });
 </script>
