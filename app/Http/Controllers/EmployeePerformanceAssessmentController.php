@@ -213,6 +213,12 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->unique()
             ->values()
             ->all();
+        $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks(
+            $formData['tracheostomy_equipment_checks'] ?? ($snapshot['tracheostomy_equipment_checks'] ?? [])
+        );
+        $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews(
+            $formData['tracheostomy_procedure_reviews'] ?? ($snapshot['tracheostomy_procedure_reviews'] ?? [])
+        );
 
         $snapshot['status'] = $assessment->status;
         $snapshot['submitted_at'] = optional($assessment->submitted_at)->toDateTimeString();
@@ -220,6 +226,8 @@ class EmployeePerformanceAssessmentController extends Controller {
         $snapshot['reviewer_signed_at'] = optional($assessment->reviewer_signed_at)->toDateTimeString();
         $snapshot['completed_at'] = optional($assessment->completed_at)->toDateTimeString();
         $snapshot['excluded_section_labels'] = $excludedSectionLabels;
+        $snapshot['tracheostomy_equipment_checks'] = $tracheostomyEquipmentChecks;
+        $snapshot['tracheostomy_procedure_reviews'] = $tracheostomyProcedureReviews;
         $snapshot['summary'] = [
             'total_score' => $assessment->total_score,
             'average_score' => number_format((float) $assessment->average_score, 2, '.', ''),
@@ -297,6 +305,32 @@ class EmployeePerformanceAssessmentController extends Controller {
             'latest' => $this->serializeEntry($latest),
             'history' => $entries->map(fn ($entry) => $this->serializeEntry($entry))->values()->all(),
         ];
+    }
+
+    protected function normalizeTracheostomyChecks($checks): array
+    {
+        return collect(is_array($checks) ? $checks : [])
+            ->map(fn ($value) => trim((string) $value))
+            ->filter(fn ($value) => $value !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function normalizeTracheostomyProcedureReviews($reviews): array
+    {
+        return collect(is_array($reviews) ? $reviews : [])
+            ->mapWithKeys(function ($rating, $procedureKey) {
+                $normalizedProcedureKey = trim((string) $procedureKey);
+                $normalizedRating = strtoupper(trim((string) $rating));
+
+                if ($normalizedProcedureKey === '' || !in_array($normalizedRating, ['E', 'S', 'U'], true)) {
+                    return [];
+                }
+
+                return [$normalizedProcedureKey => $normalizedRating];
+            })
+            ->all();
     }
 
 
@@ -470,6 +504,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'required_item_keys.*' => 'string',
             'excluded_section_labels' => 'nullable|array',
             'excluded_section_labels.*' => 'string',
+            'tracheostomy_equipment_checks' => 'nullable|array',
+            'tracheostomy_equipment_checks.*' => 'string',
+            'tracheostomy_procedure_reviews' => 'nullable|array',
+            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
             'comments' => 'nullable|string',
             'further_action_required' => 'nullable|string',
             'reviewer_name' => 'required|string|max:255',
@@ -497,6 +535,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->unique()
             ->values()
             ->all();
+        $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
+        $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
         $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
         $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
         $requiredItemKeys = $assessableItems
@@ -606,6 +646,8 @@ class EmployeePerformanceAssessmentController extends Controller {
                         'employee_title' => $validated['employee_title'] ?? null,
                     ],
                     'excluded_section_labels' => $excludedSectionLabels,
+                    'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
+                    'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
                     'items' => $snapshotItems,
                 ],
             ]
@@ -613,6 +655,8 @@ class EmployeePerformanceAssessmentController extends Controller {
 
         $this->syncCompetencyAssessmentSnapshot($assessment, [
             'excluded_section_labels' => $excludedSectionLabels,
+            'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
+            'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
         ]);
         $assessment->save();
 
@@ -633,6 +677,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'excluded_section_labels' => 'nullable|array',
             'excluded_section_labels.*' => 'string',
+            'tracheostomy_equipment_checks' => 'nullable|array',
+            'tracheostomy_equipment_checks.*' => 'string',
+            'tracheostomy_procedure_reviews' => 'nullable|array',
+            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
             'comments' => 'nullable|string',
             'further_action_required' => 'nullable|string',
             'reviewer_name' => 'required|string|max:255',
@@ -660,6 +708,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->unique()
             ->values()
             ->all();
+        $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
+        $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
         $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
         $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
         $latestEntries = $this->latestCompetencyEntries(
@@ -742,6 +792,8 @@ class EmployeePerformanceAssessmentController extends Controller {
                         'employee_title' => $validated['employee_title'] ?? null,
                     ],
                     'excluded_section_labels' => $excludedSectionLabels,
+                    'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
+                    'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
                     'items' => $snapshotItems,
                 ],
             ]
@@ -749,6 +801,8 @@ class EmployeePerformanceAssessmentController extends Controller {
 
         $this->syncCompetencyAssessmentSnapshot($assessment, [
             'excluded_section_labels' => $excludedSectionLabels,
+            'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
+            'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
         ]);
         $assessment->save();
 
@@ -769,6 +823,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'excluded_section_labels' => 'nullable|array',
             'excluded_section_labels.*' => 'string',
+            'tracheostomy_equipment_checks' => 'nullable|array',
+            'tracheostomy_equipment_checks.*' => 'string',
+            'tracheostomy_procedure_reviews' => 'nullable|array',
+            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
         ]);
 
         if ($this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
@@ -784,6 +842,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->unique()
             ->values()
             ->all();
+        $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
+        $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
 
         $assessment = EmployeeCompetencyAssessment::query()->firstOrNew([
             'employee_num' => $validated['employee_num'],
@@ -802,6 +862,8 @@ class EmployeePerformanceAssessmentController extends Controller {
 
         $this->syncCompetencyAssessmentSnapshot($assessment, [
             'excluded_section_labels' => $excludedSectionLabels,
+            'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
+            'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
         ]);
         $assessment->save();
 
@@ -812,6 +874,8 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'id' => $assessment->id,
                 'status' => $assessment->status,
                 'excluded_section_labels' => $excludedSectionLabels,
+                'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
+                'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
             ],
         ]);
     }

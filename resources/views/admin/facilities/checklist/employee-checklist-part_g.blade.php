@@ -3,11 +3,20 @@
         @php
         $partGSections = $employeeCompetencyItems->groupBy('section');
         $partGPosition = $employee->currentAssignment?->position?->title ?? 'No Position Assigned';
+        $partGLicensedNurseGuidancePositions = [
+            'Director of Nursing',
+            'Registered Nurse',
+            'Licensed Vocational Nurse',
+            'Licensed Nurse',
+            'Charge Nurse',
+            'IP Nurse',
+        ];
+        $partGShowLicensedNurseGuidance = in_array($partGPosition, $partGLicensedNurseGuidancePositions, true);
         $partGSubmissionStatus = $selectedCompetencyAssessment?->status;
         $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
         $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
         $partGDontIncludeSections = [
-            'BLOOD TRANSFUSION COMPETENCY',
+            'BLOOD ADMINISTRATION COMPETENCY',
             'BLOOD GLUCOSE MONITORING COMPETENCY',
             'TRACHEOSTOMY CARE COMPETENCY',
             'TREATMENT NURSE SKILLS COMPETENCY',
@@ -17,6 +26,15 @@
             ->filter(fn ($sectionLabel) => filled($sectionLabel))
             ->map(fn ($sectionLabel) => (string) $sectionLabel)
             ->values()
+            ->all();
+        $partGTracheostomyEquipmentChecks = collect($selectedCompetencyAssessment?->snapshot_json['tracheostomy_equipment_checks'] ?? [])
+            ->map(fn ($itemLabel) => (string) $itemLabel)
+            ->filter(fn ($itemLabel) => filled($itemLabel))
+            ->values()
+            ->all();
+        $partGTracheostomyProcedureReviews = collect($selectedCompetencyAssessment?->snapshot_json['tracheostomy_procedure_reviews'] ?? [])
+            ->mapWithKeys(fn ($rating, $procedureKey) => [(string) $procedureKey => strtoupper((string) $rating)])
+            ->filter(fn ($rating) => in_array($rating, ['E', 'S', 'U'], true))
             ->all();
            
         @endphp
@@ -41,9 +59,14 @@
             </div>
         </div>
 
-        <div class="mb-4 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
+        <div class="mb-2 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
             Rating Legend: 3 = Excellent &nbsp;&nbsp;&nbsp; 2 = Satisfactory &nbsp;&nbsp;&nbsp; 1 = Unsatisfactory &nbsp;&nbsp;&nbsp; N = Not Applicable
         </div>
+        @if($partGShowLicensedNurseGuidance)
+        <p class="mb-1 text-[11px] leading-relaxed text-slate-700 md:text-xs">
+            These competencies checklists are intended for all licensed nurses. If a section does not apply to the employee&rsquo;s position, check that checkbox <strong>Exclude</strong> so it is not counted in the assessment.
+        </p>
+        @endif
         @if($partGSubmissionStatusLabel)
         <div class="mb-4 rounded-md border {{ $partGAssessmentLocked ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-sky-300 bg-sky-50 text-sky-900' }} px-3 py-2 text-[11px] shadow-sm">
             <strong>Warning:</strong>
@@ -67,6 +90,36 @@
             </thead>
             <tbody>
                 @forelse ($partGSections as $sectionLabel => $items)
+                @php
+                $partGSectionItems = $items->values();
+                $partGSectionRenderItems = $partGSectionItems;
+                $partGSectionTracheostomyProcedureRows = collect();
+
+                if ($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY') {
+                    $partGSectionTracheostomyProcedureRows = $partGSectionItems
+                        ->filter(fn ($item) => preg_match('/^-\d+\./', (string) $item->item) === 1)
+                        ->map(function ($item) {
+                            $rawValue = (string) $item->item;
+                            if (!preg_match('/^-(\d+)\.\s*(.+)$/', $rawValue, $matches)) {
+                                return null;
+                            }
+
+                            $segments = array_map('trim', explode('||', $matches[2], 2));
+
+                            return [
+                                'key' => (string) $matches[1],
+                                'text' => $segments[0] ?? '',
+                                'note' => $segments[1] ?? null,
+                            ];
+                        })
+                        ->filter()
+                        ->values();
+
+                    $partGSectionRenderItems = $partGSectionItems
+                        ->reject(fn ($item) => preg_match('/^-\d+\./', (string) $item->item) === 1)
+                        ->values();
+                }
+                @endphp
                 <tr class="bg-slate-100 text-slate-900" data-section-header="1" data-section-label="{{ $sectionLabel }}">
                     <td colspan="5" class="border border-slate-500 px-2 py-1.5 font-bold uppercase tracking-wide">
                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -92,12 +145,11 @@
                     </td>
                 </tr>
                 @endif
-                @foreach ($items->values() as $item)
+                @foreach ($partGSectionRenderItems as $item)
                 @php
                 $itemKey = 'G_' . $item->id;
                 $empChecklist = $empCompetencyAssessments[$itemKey] ?? null;
-                $bloodTransfusionContinuationItem = '-If no transfusion reaction noted, dispose of blood bag and tubing in biohazard container.';
-                $tracheostomyProcedureTableLastItem = '-Personal Protective equipment (i.e. face mask, face shield, eyewear)';
+                $bloodTransfusionTableInsertAfterItem = '-See blood transfusion policy for usual lengths of transfusion. (for whole blood 2-4 hours, must be infused within 4 hours of leaving Blood Bank)';
                 $ratingText = $empChecklist['rating'] ?? '';
                 $rowClasses = $loop->odd
                     ? 'bg-white text-slate-900'
@@ -105,65 +157,44 @@
                 preg_match('/^(-+)/', $item->item, $itemIndentMatches);
                 $indentLevel = min(strlen($itemIndentMatches[1] ?? ''), 2);
                 $displayItem = ltrim(preg_replace('/^(-+)/', '', $item->item) ?? $item->item);
-                $nextItem = $items->values()->get($loop->index + 1);
+                $nextItem = $partGSectionRenderItems->get($loop->index + 1);
                 preg_match('/^(-+)/', $nextItem?->item ?? '', $nextItemIndentMatches);
                 $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
                 $hasChildItems = $nextItem && $nextIndentLevel > $indentLevel;
-                $isAssessableItem = !$hasChildItems;
+                $isTracheostomyEquipmentHeader = $sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $indentLevel === 1 && $hasChildItems;
+                $isTracheostomyEquipmentItem = $sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $indentLevel >= 2;
+                $isAssessableItem = !$hasChildItems && !$isTracheostomyEquipmentItem;
                 $indentClass = match ($indentLevel) {
                     1 => 'pl-8',
                     2 => 'pl-12',
                     default => 'pl-4',
                 };
                 @endphp
-                @if($sectionLabel === 'BLOOD TRANSFUSION COMPETENCY' && $item->item === $bloodTransfusionContinuationItem)
-                <tr class="bg-white text-slate-900" data-section-body="1">
-                    <td colspan="5" class="border border-slate-500 px-2 py-2">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full border border-slate-500 text-[10px] leading-tight text-slate-900 md:text-[11px]">
-                                <thead>
-                                    <tr class="bg-slate-200 text-center font-bold">
-                                        <th colspan="3" class="border border-slate-500 px-1.5 py-1">Non-emergent Blood Component Transfusions</th>
-                                    </tr>
-                                    <tr class="bg-slate-50 text-center font-semibold">
-                                        <th rowspan="3" class="border border-slate-500 px-1.5 py-1 align-bottom">Blood Component</th>
-                                        <th colspan="2" class="border border-slate-500 px-1.5 py-1">Suggested Adult Flow Rate<br>Reference: AABB Technical Manual, 19th Edition, 2017, Bethesda, MD</th>
-                                    </tr>
-                                    <tr class="bg-slate-50 text-center font-semibold">
-                                        <th class="border border-slate-500 px-1.5 py-1">First 15 minutes</th>
-                                        <th class="border border-slate-500 px-1.5 py-1">After first 15 minutes</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Red Blood Cells (RBCs)</td>
-                                        <td class="border border-slate-500 px-1.5 py-1 text-center">1-2 mL/min (60-120 mL/hr)</td>
-                                        <td class="border border-slate-500 px-1.5 py-1 text-center">As rapidly as tolerated; approximately 4 mL/min or 240 mL/hour</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Platelets</td>
-                                        <td class="border border-slate-500 px-1.5 py-1 text-center">2-5 mL/min (120-300 mL/hr)</td>
-                                        <td class="border border-slate-500 px-1.5 py-1 text-center">300 mL/hour or as tolerated</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Plasma</td>
-                                        <td class="border border-slate-500 px-1.5 py-1 text-center">2-5 mL/min (120-300 mL/hr)</td>
-                                        <td class="border border-slate-500 px-1.5 py-1 text-center">As rapidly as tolerated; approximately 300 mL/hour</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Cryoprecipitate</td>
-                                        <td colspan="2" class="border border-slate-500 px-1.5 py-1 text-center font-semibold">As rapidly as tolerated</td>
-                                    </tr>
-                                    <tr class="bg-slate-100">
-                                        <td colspan="3" class="border border-slate-500 px-1.5 py-1 text-center font-semibold">Note: For patients at risk for fluid overload, use slower flow.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </td>
-                </tr>
-                @endif
                 <tr class="{{ $rowClasses }} transition-colors hover:bg-slate-100" data-section-body="1" data-item-key="{{ $itemKey }}" data-summary-exclude="{{ $isAssessableItem ? '0' : '1' }}" data-indent-level="{{ $indentLevel }}" data-has-child-items="{{ $hasChildItems ? '1' : '0' }}" data-assessable-item="{{ $isAssessableItem ? '1' : '0' }}" data-current-rating="{{ $empChecklist['rating'] ?? '' }}">
+                    @if($isTracheostomyEquipmentHeader)
+                    <td colspan="5" class="border border-slate-500 px-2 py-1.5 align-top font-semibold">
+                        <span class="{{ $indentClass }} inline-flex items-center gap-2 text-[11px] leading-tight md:text-xs">
+                            <span>{{ $displayItem }}</span>
+                        </span>
+                    </td>
+                    @elseif($isTracheostomyEquipmentItem)
+                    <td colspan="4" class="border border-slate-500 px-2 py-1.5 align-top">
+                        <span class="{{ $indentClass }} inline-flex items-center gap-2 text-[11px] leading-tight md:text-xs">
+                            <span>{{ $displayItem }}</span>
+                        </span>
+                    </td>
+                    <td class="border border-slate-500 px-1.5 py-1.5 text-center align-top whitespace-nowrap">
+                        <input
+                            type="checkbox"
+                            class="partg-trach-equipment-checkbox h-4 w-4 rounded border-slate-400 text-slate-700 focus:ring-slate-400"
+                            data-item-label="{{ $item->item }}"
+                            data-locked="{{ $partGAssessmentLocked ? '1' : '0' }}"
+                            aria-label="Mark {{ $displayItem }} as checked"
+                            @checked(in_array($item->item, $partGTracheostomyEquipmentChecks, true))
+                            @disabled($partGAssessmentLocked)
+                        >
+                    </td>
+                    @else
                     <td class="border border-slate-500 px-2 py-1.5 align-top">
                         <span class="{{ $indentClass }} inline-flex items-center gap-2 text-[11px] leading-tight md:text-xs">
                             <span>{{ $displayItem }}</span>
@@ -220,8 +251,56 @@
                             data-assessed-by-id="{{ $empChecklist['verified_by'] ?? '' }}">Assess</a>
                         @endif
                     </td>
+                    @endif
                 </tr>
-                @if($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $item->item === $tracheostomyProcedureTableLastItem)
+                @if($sectionLabel === 'BLOOD ADMINISTRATION COMPETENCY' && $item->item === $bloodTransfusionTableInsertAfterItem)
+                <tr class="bg-white text-slate-900" data-section-body="1">
+                    <td colspan="5" class="border border-slate-500 px-2 py-2">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-slate-500 text-[10px] leading-tight text-slate-900 md:text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-200 text-center font-bold">
+                                        <th colspan="3" class="border border-slate-500 px-1.5 py-1">Non-emergent Blood Component Transfusions</th>
+                                    </tr>
+                                    <tr class="bg-slate-50 text-center font-semibold">
+                                        <th rowspan="3" class="border border-slate-500 px-1.5 py-1 align-bottom">Blood Component</th>
+                                        <th colspan="2" class="border border-slate-500 px-1.5 py-1">Suggested Adult Flow Rate<br>Reference: AABB Technical Manual, 19th Edition, 2017, Bethesda, MD</th>
+                                    </tr>
+                                    <tr class="bg-slate-50 text-center font-semibold">
+                                        <th class="border border-slate-500 px-1.5 py-1">First 15 minutes</th>
+                                        <th class="border border-slate-500 px-1.5 py-1">After first 15 minutes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Red Blood Cells (RBCs)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">1-2 mL/min (60-120 mL/hr)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">As rapidly as tolerated; approximately 4 mL/min or 240 mL/hour</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Platelets</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">2-5 mL/min (120-300 mL/hr)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">300 mL/hour or as tolerated</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Plasma</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">2-5 mL/min (120-300 mL/hr)</td>
+                                        <td class="border border-slate-500 px-1.5 py-1 text-center">As rapidly as tolerated; approximately 300 mL/hour</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-500 px-1.5 py-1 font-semibold">Cryoprecipitate</td>
+                                        <td colspan="2" class="border border-slate-500 px-1.5 py-1 text-center font-semibold">As rapidly as tolerated</td>
+                                    </tr>
+                                    <tr class="bg-slate-100">
+                                        <td colspan="3" class="border border-slate-500 px-1.5 py-1 text-center font-semibold">Note: For patients at risk for fluid overload, use slower flow.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                @endif
+                @if($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $loop->last && $partGSectionTracheostomyProcedureRows->isNotEmpty())
                 <tr class="bg-white text-slate-900" data-section-body="1">
                     <td colspan="5" class="border border-slate-500 px-2 py-2">
                         <div class="overflow-x-auto">
@@ -229,7 +308,7 @@
                                 <thead>
                                     <tr class="bg-slate-50 text-slate-900">
                                         <th rowspan="2" class="border border-slate-500 px-2 py-2 text-center font-bold">Procedure</th>
-                                        <th colspan="3" class="border border-slate-500 px-2 py-2 text-left font-semibold">Date of Review</th>
+                                        <th colspan="3" class="border border-slate-500 px-2 py-2 text-center font-semibold">Check if</th>
                                     </tr>
                                     <tr class="bg-slate-50 text-slate-900">
                                         <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">E</th>
@@ -238,42 +317,31 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @foreach($partGSectionTracheostomyProcedureRows as $procedureRow)
                                     <tr>
-                                        <td class="border border-slate-500 px-3 py-2">1. Assemble equipment &amp; bring to the bedside.</td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
+                                        <td class="border border-slate-500 px-3 py-2">
+                                            {{ $procedureRow['key'] }}. {{ $procedureRow['text'] }}
+                                            @if(!empty($procedureRow['note']))
+                                            <br><span class="italic">({{ $procedureRow['note'] }})</span>
+                                            @endif
+                                        </td>
+                                        @foreach(['E', 'S', 'U'] as $procedureRating)
+                                        <td class="border border-slate-500 px-2 py-2 text-center align-middle">
+                                            <input
+                                                type="radio"
+                                                class="partg-trach-procedure-rating h-4 w-4 border-slate-400 text-slate-700 focus:ring-slate-400"
+                                                name="partg-trach-procedure-{{ $procedureRow['key'] }}"
+                                                value="{{ $procedureRating }}"
+                                                data-procedure-key="{{ $procedureRow['key'] }}"
+                                                data-locked="{{ $partGAssessmentLocked ? '1' : '0' }}"
+                                                aria-label="Procedure {{ $procedureRow['key'] }} rating {{ $procedureRating }}"
+                                                @checked(($partGTracheostomyProcedureReviews[$procedureRow['key']] ?? null) === $procedureRating)
+                                                @disabled($partGAssessmentLocked)
+                                            >
+                                        </td>
+                                        @endforeach
                                     </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-3 py-2">2. Identify &amp; explain procedure to resident &amp; provide privacy.</td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-3 py-2">3. Wash hands, put on personal protective equipment to protect face &amp; eyes if appropriate.</td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-3 py-2">4. Place resident in semi-Fowler position unless medically contraindicated.</td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-3 py-2">5. Open sterile catheter using aseptic technique.</td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-slate-500 px-3 py-2">6. Put on sterile gloves.</td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                        <td class="border border-slate-500 px-2 py-2"></td>
-                                    </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -467,6 +535,14 @@
                     assessLink.removeAttribute('tabindex');
                     assessLink.title = 'Assess Item';
                 }
+
+                row.querySelectorAll('.partg-trach-equipment-checkbox, .partg-trach-procedure-rating').forEach(function(input) {
+                    input.disabled = input.getAttribute('data-locked') === '1';
+                });
+            });
+
+            partGTableContainer.querySelectorAll('tbody tr[data-section-body="1"] .partg-trach-procedure-rating').forEach(function(input) {
+                input.disabled = input.getAttribute('data-locked') === '1';
             });
 
             partGTableContainer.querySelectorAll('tbody tr[data-section-header="1"]').forEach(function(sectionHeaderRow) {
@@ -502,6 +578,14 @@
                         excludedAssessLink.setAttribute('tabindex', '-1');
                         excludedAssessLink.title = 'Excluded items cannot be assessed while this section is marked Don\'t Include.';
                     }
+
+                    nextRow.querySelectorAll('.partg-trach-equipment-checkbox, .partg-trach-procedure-rating').forEach(function(input) {
+                        if (input.getAttribute('data-locked') === '1') {
+                            return;
+                        }
+
+                        input.disabled = true;
+                    });
 
                     nextRow = nextRow.nextElementSibling;
                 }
@@ -606,6 +690,57 @@
             return ['partg-excluded-sections', @json($employee->employee_num), assessmentPeriodId].join(':');
         }
 
+        function getPartGTracheostomyEquipmentStorageKey() {
+            var assessmentPeriodId = getPartGCurrentAssessmentPeriodId();
+            if (!assessmentPeriodId) {
+                return '';
+            }
+
+            return ['partg-trach-equipment-checks', @json($employee->employee_num), assessmentPeriodId].join(':');
+        }
+
+        function getPartGTracheostomyProcedureStorageKey() {
+            var assessmentPeriodId = getPartGCurrentAssessmentPeriodId();
+            if (!assessmentPeriodId) {
+                return '';
+            }
+
+            return ['partg-trach-procedure-reviews', @json($employee->employee_num), assessmentPeriodId].join(':');
+        }
+
+        function getPartGTracheostomyEquipmentChecks() {
+            if (!partGTableContainer) {
+                return [];
+            }
+
+            return Array.from(partGTableContainer.querySelectorAll('.partg-trach-equipment-checkbox:checked'))
+                .map(function(checkbox) {
+                    return checkbox.getAttribute('data-item-label') || '';
+                })
+                .filter(function(itemLabel) {
+                    return itemLabel !== '';
+                });
+        }
+
+        function getPartGTracheostomyProcedureReviews() {
+            var reviews = {};
+            if (!partGTableContainer) {
+                return reviews;
+            }
+
+            partGTableContainer.querySelectorAll('.partg-trach-procedure-rating:checked').forEach(function(radio) {
+                var procedureKey = radio.getAttribute('data-procedure-key') || '';
+                var rating = (radio.value || '').toUpperCase();
+                if (!procedureKey || ['E', 'S', 'U'].indexOf(rating) === -1) {
+                    return;
+                }
+
+                reviews[procedureKey] = rating;
+            });
+
+            return reviews;
+        }
+
         function persistPartGExcludedSectionsLocal() {
             var storageKey = getPartGExcludeStorageKey();
             if (!storageKey) {
@@ -616,6 +751,32 @@
                 window.localStorage.setItem(storageKey, JSON.stringify(getPartGExcludedSectionLabels()));
             } catch (error) {
                 console.warn('Unable to persist Part G excluded sections locally.', error);
+            }
+        }
+
+        function persistPartGTracheostomyEquipmentChecksLocal() {
+            var storageKey = getPartGTracheostomyEquipmentStorageKey();
+            if (!storageKey) {
+                return;
+            }
+
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify(getPartGTracheostomyEquipmentChecks()));
+            } catch (error) {
+                console.warn('Unable to persist Part G tracheostomy equipment checks locally.', error);
+            }
+        }
+
+        function persistPartGTracheostomyProcedureReviewsLocal() {
+            var storageKey = getPartGTracheostomyProcedureStorageKey();
+            if (!storageKey) {
+                return;
+            }
+
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify(getPartGTracheostomyProcedureReviews()));
+            } catch (error) {
+                console.warn('Unable to persist Part G tracheostomy procedure reviews locally.', error);
             }
         }
 
@@ -641,6 +802,57 @@
                 });
             } catch (error) {
                 console.warn('Unable to load Part G excluded sections locally.', error);
+            }
+        }
+
+        function loadPartGTracheostomyEquipmentChecksLocal() {
+            var storageKey = getPartGTracheostomyEquipmentStorageKey();
+            if (!storageKey || !partGTableContainer) {
+                return;
+            }
+
+            try {
+                var rawValue = window.localStorage.getItem(storageKey);
+                if (!rawValue) {
+                    return;
+                }
+
+                var checkedItems = JSON.parse(rawValue);
+                if (!Array.isArray(checkedItems)) {
+                    return;
+                }
+
+                partGTableContainer.querySelectorAll('.partg-trach-equipment-checkbox').forEach(function(checkbox) {
+                    checkbox.checked = checkedItems.includes(checkbox.getAttribute('data-item-label') || '');
+                });
+            } catch (error) {
+                console.warn('Unable to load Part G tracheostomy equipment checks locally.', error);
+            }
+        }
+
+        function loadPartGTracheostomyProcedureReviewsLocal() {
+            var storageKey = getPartGTracheostomyProcedureStorageKey();
+            if (!storageKey || !partGTableContainer) {
+                return;
+            }
+
+            try {
+                var rawValue = window.localStorage.getItem(storageKey);
+                if (!rawValue) {
+                    return;
+                }
+
+                var reviews = JSON.parse(rawValue);
+                if (!reviews || typeof reviews !== 'object') {
+                    return;
+                }
+
+                partGTableContainer.querySelectorAll('.partg-trach-procedure-rating').forEach(function(radio) {
+                    var procedureKey = radio.getAttribute('data-procedure-key') || '';
+                    radio.checked = procedureKey !== '' && reviews[procedureKey] === radio.value;
+                });
+            } catch (error) {
+                console.warn('Unable to load Part G tracheostomy procedure reviews locally.', error);
             }
         }
 
@@ -734,6 +946,8 @@
                 assessment_period_id: @json($selectedAssessmentPeriodId),
                 required_item_keys: requiredItemKeys,
                 excluded_section_labels: getPartGExcludedSectionLabels(),
+                tracheostomy_equipment_checks: getPartGTracheostomyEquipmentChecks(),
+                tracheostomy_procedure_reviews: getPartGTracheostomyProcedureReviews(),
                 comments: partGComments ? partGComments.value : '',
                 further_action_required: unsatisfactoryDetails ? unsatisfactoryDetails.value : '',
                 reviewer_name: partGReviewerName ? partGReviewerName.value : '',
@@ -766,7 +980,9 @@
                 body: JSON.stringify({
                     employee_num: @json($employee->employee_num),
                     assessment_period_id: assessmentPeriodId,
-                    excluded_section_labels: getPartGExcludedSectionLabels()
+                    excluded_section_labels: getPartGExcludedSectionLabels(),
+                    tracheostomy_equipment_checks: getPartGTracheostomyEquipmentChecks(),
+                    tracheostomy_procedure_reviews: getPartGTracheostomyProcedureReviews()
                 })
             })
                 .then(function(response) {
@@ -822,6 +1038,19 @@
 
         if (partGTableContainer) {
             partGTableContainer.addEventListener('change', function(event) {
+                if (event.target.classList.contains('partg-trach-equipment-checkbox') || event.target.classList.contains('partg-trach-procedure-rating')) {
+                    persistPartGTracheostomyEquipmentChecksLocal();
+                    persistPartGTracheostomyProcedureReviewsLocal();
+                    persistPartGExcludedSections()
+                        .then(function() {
+                            setPartGSubmitMessage('info', 'Tracheostomy checklist preferences saved.');
+                        })
+                        .catch(function(error) {
+                            setPartGSubmitMessage('error', (error && error.message ? error.message : 'Failed to save tracheostomy checklist preferences.') + ' The change is kept locally for this employee and assessment period.');
+                        });
+                    return;
+                }
+
                 if (!event.target.classList.contains('partg-section-dont-include-checkbox')) {
                     return;
                 }
@@ -1058,6 +1287,8 @@
         }
 
         loadPartGExcludedSectionsLocal();
+    loadPartGTracheostomyEquipmentChecksLocal();
+    loadPartGTracheostomyProcedureReviewsLocal();
         syncUnsatisfactoryState();
         syncPartGExcludedRows();
         updatePartGSummaryScores();
