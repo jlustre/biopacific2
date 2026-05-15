@@ -287,106 +287,145 @@
         }
     });
  
-    // This block initializes the tab navigation for the employee checklist UI.
-    // It sets up click handlers for each tab, manages the active tab's styling,
-    // shows/hides the correct content, and remembers the last active tab in localStorage.
+    // When the checklist uses Alpine (data-checklist-tabs="alpine"), only wire PART A–E helpers;
+    // do not toggle .hidden on #partA…#partG (those sit inside x-show wrappers and would stay blank).
+    function initAlpineEmployeeChecklistSupportingScripts() {
+        if (! document.querySelector('[data-checklist-tabs="alpine"]')) {
+            return;
+        }
+        ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('hidden');
+            }
+        });
+        bindChecklistLinks();
+        initializePartEHierarchy();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        // Get all tab link elements
         const tabLinks = document.querySelectorAll('#employeeFileTabs .tab-link');
-        // Use the rendered tab panes so stale localStorage values cannot blank the checklist.
+        const usesAlpineChecklistTabs = document.querySelector('[data-checklist-tabs="alpine"]');
+
+        if (usesAlpineChecklistTabs) {
+            initAlpineEmployeeChecklistSupportingScripts();
+            return;
+        }
+
+        // Legacy: tab buttons must expose data-tab="partA" etc., and panes are toggled without Alpine.
         const tabContents = document.querySelectorAll('#employeeFileTabs ~ div.tab-content, #partA, #partB, #partC, #partD, #partE, #partF, #partG');
-        const validTabIds = Array.from(tabLinks).map(link => link.getAttribute('data-tab'));
+        const validTabIds = Array.from(tabLinks).map(link => link.getAttribute('data-tab')).filter(Boolean);
 
-        // Function to activate a tab by its ID
         function setActiveTab(tabId) {
-            const resolvedTabId = validTabIds.includes(tabId) ? tabId : 'partA';
-            const activeTabId = resolvedTabId;
-
-            // Loop through all tab links and update their classes for active/inactive state
+            const resolvedTabId = validTabIds.includes(tabId) ? tabId : (validTabIds[0] || 'partA');
             tabLinks.forEach(link => {
-                // Remove all possible state classes first
                 link.classList.remove('text-white', 'bg-teal-600', 'border-teal-600', 'bg-white');
-                // If this link matches the active tab, add active classes
-                if (link.getAttribute('data-tab') === activeTabId) {
+                if (link.getAttribute('data-tab') === resolvedTabId) {
                     link.classList.add('text-white', 'bg-teal-600', 'border-teal-600');
                 } else {
-                    // Otherwise, make it look inactive
                     link.classList.add('bg-white');
                 }
             });
-            // Hide all tab content sections
             tabContents.forEach(tc => {
                 if (tc) tc.classList.add('hidden');
             });
-            // Show the selected tab's content
-            const activeContent = document.getElementById(activeTabId);
+            const activeContent = document.getElementById(resolvedTabId);
             if (activeContent) activeContent.classList.remove('hidden');
-            // Remember the selected tab in localStorage for persistence
-            localStorage.setItem('employeeChecklistActiveTab', activeTabId);
+            localStorage.setItem('employeeChecklistActiveTab', resolvedTabId);
         }
-        
-        // Add click event listeners to each tab link to activate the correct tab
+
         tabLinks.forEach(link => {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
                 setActiveTab(this.getAttribute('data-tab'));
             });
         });
-        // On page load, restore the last active tab from localStorage, or default to partA
         const lastTab = localStorage.getItem('employeeChecklistActiveTab') || 'partA';
         setActiveTab(lastTab);
-        // Always bind PART A-E links on load
         bindChecklistLinks();
         initializePartEHierarchy();
     });
 
-    function bindChecklistLinksAE() {
-        // For each 'Verify' link in PART A-E, bind click to open the modal in edit mode
-        document.querySelectorAll('.verify-link[data-item-name]').forEach(function(link) {
-            link.onclick = function(e) {
-                e.preventDefault();
-                var itemName = this.getAttribute('data-item-name');
-                var empId = this.getAttribute('data-emp-id');
-                var itemId = this.getAttribute('data-item-id');
-                var checklistKey = this.getAttribute('data-checklist-key');
-                openVerifyModalAE(itemName, empId, itemId, checklistKey, false); // false = not view-only
-            };
-        });
-        // For each 'View' link in PART A-E, bind click to open the modal in view-only mode
-        document.querySelectorAll('.view-link[data-item-name]').forEach(function(link) {
-            link.onclick = function(e) {
-                e.preventDefault();
-                var itemName = this.getAttribute('data-item-name');
-                var empId = this.getAttribute('data-emp-id');
-                var itemId = this.getAttribute('data-item-id');
-                var checklistKey = this.getAttribute('data-checklist-key');
-                openVerifyModalAE(itemName, empId, itemId, checklistKey, true); // true = view-only
-            };
-        });
-        document.querySelectorAll('.unverify-link[data-item-name]').forEach(function(link) {
-            link.onclick = function(e) {
-                e.preventDefault();
-                var itemName = this.getAttribute('data-item-name');
-                var itemId = this.getAttribute('data-item-id');
-                var empId = this.getAttribute('data-emp-id');
-                var row = this.closest('tr');
-                var itemLabel = this.getAttribute('data-item-label') || itemName;
-                if (!window.confirm(`Warning: this will unconfirm "${itemLabel}". Continue?`)) {
-                    return;
+    document.addEventListener('livewire:navigated', initAlpineEmployeeChecklistSupportingScripts);
+
+    /**
+     * PART A–E confirm/view/unconfirm links live inside Livewire/Alpine regions; per-element onclick
+     * is lost when nodes are morphed. Use a single delegated listener on document instead.
+     */
+    function aeChecklistTabPaneForLink(link) {
+        return link && link.closest && link.closest('#partA, #partB, #partC, #partD, #partE');
+    }
+
+    function ensureAeChecklistDelegation() {
+        if (window.__aeChecklistDelegationBound) {
+            return;
+        }
+        window.__aeChecklistDelegationBound = true;
+
+        document.addEventListener('click', function (e) {
+            // Part E: the checkbox is non-interactive for toggling; clicking it opens the same Confirm flow.
+            if (e.target && e.target.matches && e.target.matches('input.part-e-confirm-checkbox[type="checkbox"]')) {
+                var rowCb = e.target.closest('tr');
+                if (rowCb && rowCb.closest('#partE')) {
+                    var verifyFromRow = rowCb.querySelector('.verify-link[data-item-name]');
+                    if (verifyFromRow) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openVerifyModalAE(
+                            verifyFromRow.getAttribute('data-item-name'),
+                            verifyFromRow.getAttribute('data-emp-id'),
+                            verifyFromRow.getAttribute('data-item-id'),
+                            verifyFromRow.getAttribute('data-checklist-key'),
+                            false
+                        );
+                        return;
+                    }
                 }
-                var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                fetch(`/admin/employees/${empId}/checklist/unverify`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ doc_name: itemName, checklist_item_id: itemId || null })
-                })
-                .then(async response => {
-                    let data;
-                    let rawText = await response.text();
+            }
+
+            var link = e.target.closest('.verify-link[data-item-name], .view-link[data-item-name], .unverify-link[data-item-name]');
+            if (!link) {
+                return;
+            }
+            if (!aeChecklistTabPaneForLink(link)) {
+                return;
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            var itemName = link.getAttribute('data-item-name');
+            var empId = link.getAttribute('data-emp-id');
+            var itemId = link.getAttribute('data-item-id');
+            var checklistKey = link.getAttribute('data-checklist-key');
+
+            if (link.classList.contains('verify-link')) {
+                openVerifyModalAE(itemName, empId, itemId, checklistKey, false);
+                return;
+            }
+            if (link.classList.contains('view-link')) {
+                openVerifyModalAE(itemName, empId, itemId, checklistKey, true);
+                return;
+            }
+
+            var row = link.closest('tr');
+            var itemLabel = link.getAttribute('data-item-label') || itemName;
+            if (!window.confirm('Warning: this will unconfirm "' + itemLabel + '". Continue?')) {
+                return;
+            }
+            var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/admin/employees/' + empId + '/checklist/unverify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ doc_name: itemName, checklist_item_id: itemId || null })
+            })
+                .then(async function (response) {
+                    var data;
+                    var rawText = await response.text();
                     try {
                         data = JSON.parse(rawText);
                     } catch (err) {
@@ -394,16 +433,19 @@
                         return;
                     }
                     if (data.success && data.data && data.data.item) {
-                        updateChecklistRow(row, data.data.item, itemName, empId);
+                        updateChecklistRow(row, data.data.item, itemName, empId, itemId, checklistKey);
                     } else {
                         alert('Confirmation failed.');
                     }
                 })
-                .catch(err => {
+                .catch(function () {
                     alert('Confirmation failed.');
                 });
-            };
         });
+    }
+
+    function bindChecklistLinksAE() {
+        ensureAeChecklistDelegation();
     }
 
     document.addEventListener('click', function(e) {
@@ -581,19 +623,22 @@
         bindChecklistLinks();
     }
 
-    // Legacy/fallback tab navigation logic for checklist tabs (may be redundant with Alpine.js or other tab logic)
-    document.querySelectorAll('.tab-link').forEach(link => {
+    // Legacy: anchor-based tabs only. Never blanket-hide .tab-content when Alpine owns the checklist.
+    document.querySelectorAll('a.tab-link[href^="#"]').forEach(link => {
         link.addEventListener('click', function(e) {
+            if (document.querySelector('[data-checklist-tabs="alpine"]')) {
+                return;
+            }
             e.preventDefault();
-            // Remove 'active' class from all tab links
+            const targetSel = this.getAttribute('href');
+            const pane = targetSel ? document.querySelector(targetSel) : null;
+            if (!pane) {
+                return;
+            }
             document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
-            // Add 'active' class to the clicked tab
             this.classList.add('active');
-            // Hide all tab content sections
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-            // Show the selected tab's content
-            const target = this.getAttribute('href');
-            document.querySelector(target).classList.remove('hidden');
+            pane.classList.remove('hidden');
         });
     });
 
@@ -601,6 +646,8 @@
     function bindChecklistLinks() {
         bindChecklistLinksAE();
     }
+
+    ensureAeChecklistDelegation();
 
     // Edit button logic for modal (global, always attaches)
     document.addEventListener('DOMContentLoaded', function() {
@@ -652,5 +699,22 @@
         }
         });
         }
-    });    
+    });
+
+    document.addEventListener('livewire:init', function () {
+        ensureAeChecklistDelegation();
+        if (typeof Livewire === 'undefined' || typeof Livewire.hook !== 'function') {
+            return;
+        }
+        Livewire.hook('morph.updated', function (payload) {
+            var el = payload.el;
+            if (!el || typeof el.closest !== 'function') {
+                return;
+            }
+            if (el.matches('[data-part-e-orientation-checklist]') || el.closest('[data-part-e-orientation-checklist]')) {
+                bindChecklistLinks();
+                initializePartEHierarchy();
+            }
+        });
+    });
 </script>

@@ -52,7 +52,7 @@
         </div>
     </div>
 
-    @include('partials.screen-size-indicator')
+    {{-- @include('partials.screen-size-indicator') --}}
 
     @stack('scripts')
     @livewireScripts(['vite' => true])

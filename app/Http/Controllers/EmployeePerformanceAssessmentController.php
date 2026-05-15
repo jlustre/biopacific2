@@ -219,6 +219,15 @@ class EmployeePerformanceAssessmentController extends Controller {
         $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews(
             $formData['tracheostomy_procedure_reviews'] ?? ($snapshot['tracheostomy_procedure_reviews'] ?? [])
         );
+        $handHygieneObservation = $this->normalizeHandHygieneObservation(
+            $formData['hand_hygiene_observation'] ?? ($snapshot['hand_hygiene_observation'] ?? [])
+        );
+        $medicationAdministrationComments = isset($formData['medication_administration_comments'])
+            ? trim((string) $formData['medication_administration_comments'])
+            : trim((string) ($snapshot['medication_administration_comments'] ?? ''));
+        $hoyerLiftTrainingComments = isset($formData['hoyer_lift_training_comments'])
+            ? trim((string) $formData['hoyer_lift_training_comments'])
+            : trim((string) ($snapshot['hoyer_lift_training_comments'] ?? ''));
 
         $snapshot['status'] = $assessment->status;
         $snapshot['submitted_at'] = optional($assessment->submitted_at)->toDateTimeString();
@@ -228,6 +237,9 @@ class EmployeePerformanceAssessmentController extends Controller {
         $snapshot['excluded_section_labels'] = $excludedSectionLabels;
         $snapshot['tracheostomy_equipment_checks'] = $tracheostomyEquipmentChecks;
         $snapshot['tracheostomy_procedure_reviews'] = $tracheostomyProcedureReviews;
+        $snapshot['hand_hygiene_observation'] = $handHygieneObservation;
+        $snapshot['medication_administration_comments'] = $medicationAdministrationComments;
+        $snapshot['hoyer_lift_training_comments'] = $hoyerLiftTrainingComments;
         $snapshot['summary'] = [
             'total_score' => $assessment->total_score,
             'average_score' => number_format((float) $assessment->average_score, 2, '.', ''),
@@ -236,6 +248,8 @@ class EmployeePerformanceAssessmentController extends Controller {
         $snapshot['form'] = array_merge($snapshot['form'] ?? [], $formData, [
             'comments' => $assessment->comments,
             'further_action_required' => $assessment->further_action_required,
+            'medication_administration_comments' => $medicationAdministrationComments,
+            'hoyer_lift_training_comments' => $hoyerLiftTrainingComments,
             'reviewer_name' => $assessment->reviewer_name,
             'reviewer_title' => $assessment->reviewer_title,
             'review_date' => optional($assessment->review_date)->toDateString(),
@@ -331,6 +345,57 @@ class EmployeePerformanceAssessmentController extends Controller {
                 return [$normalizedProcedureKey => $normalizedRating];
             })
             ->all();
+    }
+
+    protected function normalizeHandHygieneObservation($observation): array
+    {
+        $allowedCheckKeys = [
+            'random',
+            'unannounced',
+            'enter_the_room',
+            'leave_the_room',
+            'touch_resident',
+            'touch_equipment_in_the_room',
+            'remove_gloves',
+            'before_med_pass',
+            'after_med_pass',
+            'before_treatment_pass',
+            'after_treatment_pass',
+            'before_feeding',
+            'after_feeding',
+            'other',
+        ];
+        $allowedNoteKeys = [
+            'other_text',
+            'other_line_1',
+            'other_line_2',
+            'comments',
+        ];
+
+        $normalizedObservation = is_array($observation) ? $observation : [];
+        $checks = collect($normalizedObservation['checks'] ?? [])
+            ->map(fn ($value) => trim((string) $value))
+            ->filter(fn ($value) => $value !== '' && in_array($value, $allowedCheckKeys, true))
+            ->unique()
+            ->values()
+            ->all();
+        $notes = collect(is_array($normalizedObservation['notes'] ?? null) ? $normalizedObservation['notes'] : [])
+            ->mapWithKeys(function ($value, $key) use ($allowedNoteKeys) {
+                $normalizedKey = trim((string) $key);
+
+                if (!in_array($normalizedKey, $allowedNoteKeys, true)) {
+                    return [];
+                }
+
+                return [$normalizedKey => trim((string) $value)];
+            })
+            ->filter(fn ($value) => $value !== '')
+            ->all();
+
+        return [
+            'checks' => $checks,
+            'notes' => $notes,
+        ];
     }
 
 
@@ -434,11 +499,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 ], 422);
             }
 
-            if (($validated['rating'] ?? null) === 'U' && blank($validated['comments'] ?? null)) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'comments' => ['Comments are required when the rating is Unsatisfactory.'],
-                ]);
-            }
+            // Removed requirement for comments when rating is Unsatisfactory ('U')
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->expectsJson() || $request->isJson() || $request->wantsJson()) {
                 return response()->json([
@@ -508,6 +569,13 @@ class EmployeePerformanceAssessmentController extends Controller {
             'tracheostomy_equipment_checks.*' => 'string',
             'tracheostomy_procedure_reviews' => 'nullable|array',
             'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
+            'hand_hygiene_observation' => 'nullable|array',
+            'hand_hygiene_observation.checks' => 'nullable|array',
+            'hand_hygiene_observation.checks.*' => 'string',
+            'hand_hygiene_observation.notes' => 'nullable|array',
+            'hand_hygiene_observation.notes.*' => 'nullable|string',
+            'medication_administration_comments' => 'nullable|string',
+            'hoyer_lift_training_comments' => 'nullable|string',
             'comments' => 'nullable|string',
             'further_action_required' => 'nullable|string',
             'reviewer_name' => 'required|string|max:255',
@@ -537,6 +605,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->all();
         $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
         $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
+        $handHygieneObservation = $this->normalizeHandHygieneObservation($validated['hand_hygiene_observation'] ?? []);
+        $medicationAdministrationComments = trim((string) ($validated['medication_administration_comments'] ?? ''));
+        $hoyerLiftTrainingComments = trim((string) ($validated['hoyer_lift_training_comments'] ?? ''));
         $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
         $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
         $requiredItemKeys = $assessableItems
@@ -648,6 +719,9 @@ class EmployeePerformanceAssessmentController extends Controller {
                     'excluded_section_labels' => $excludedSectionLabels,
                     'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
                     'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
+                    'hand_hygiene_observation' => $handHygieneObservation,
+                    'medication_administration_comments' => $medicationAdministrationComments,
+                    'hoyer_lift_training_comments' => $hoyerLiftTrainingComments,
                     'items' => $snapshotItems,
                 ],
             ]
@@ -657,6 +731,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             'excluded_section_labels' => $excludedSectionLabels,
             'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
             'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
+            'hand_hygiene_observation' => $handHygieneObservation,
+            'medication_administration_comments' => $medicationAdministrationComments,
+            'hoyer_lift_training_comments' => $hoyerLiftTrainingComments,
         ]);
         $assessment->save();
 
@@ -681,6 +758,13 @@ class EmployeePerformanceAssessmentController extends Controller {
             'tracheostomy_equipment_checks.*' => 'string',
             'tracheostomy_procedure_reviews' => 'nullable|array',
             'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
+            'hand_hygiene_observation' => 'nullable|array',
+            'hand_hygiene_observation.checks' => 'nullable|array',
+            'hand_hygiene_observation.checks.*' => 'string',
+            'hand_hygiene_observation.notes' => 'nullable|array',
+            'hand_hygiene_observation.notes.*' => 'nullable|string',
+            'medication_administration_comments' => 'nullable|string',
+            'hoyer_lift_training_comments' => 'nullable|string',
             'comments' => 'nullable|string',
             'further_action_required' => 'nullable|string',
             'reviewer_name' => 'required|string|max:255',
@@ -710,6 +794,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->all();
         $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
         $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
+        $handHygieneObservation = $this->normalizeHandHygieneObservation($validated['hand_hygiene_observation'] ?? []);
+        $medicationAdministrationComments = trim((string) ($validated['medication_administration_comments'] ?? ''));
+        $hoyerLiftTrainingComments = trim((string) ($validated['hoyer_lift_training_comments'] ?? ''));
         $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
         $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
         $latestEntries = $this->latestCompetencyEntries(
@@ -794,6 +881,9 @@ class EmployeePerformanceAssessmentController extends Controller {
                     'excluded_section_labels' => $excludedSectionLabels,
                     'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
                     'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
+                    'hand_hygiene_observation' => $handHygieneObservation,
+                    'medication_administration_comments' => $medicationAdministrationComments,
+                    'hoyer_lift_training_comments' => $hoyerLiftTrainingComments,
                     'items' => $snapshotItems,
                 ],
             ]
@@ -803,6 +893,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             'excluded_section_labels' => $excludedSectionLabels,
             'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
             'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
+            'hand_hygiene_observation' => $handHygieneObservation,
+            'medication_administration_comments' => $medicationAdministrationComments,
+            'hoyer_lift_training_comments' => $hoyerLiftTrainingComments,
         ]);
         $assessment->save();
 
@@ -827,6 +920,13 @@ class EmployeePerformanceAssessmentController extends Controller {
             'tracheostomy_equipment_checks.*' => 'string',
             'tracheostomy_procedure_reviews' => 'nullable|array',
             'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
+            'hand_hygiene_observation' => 'nullable|array',
+            'hand_hygiene_observation.checks' => 'nullable|array',
+            'hand_hygiene_observation.checks.*' => 'string',
+            'hand_hygiene_observation.notes' => 'nullable|array',
+            'hand_hygiene_observation.notes.*' => 'nullable|string',
+            'medication_administration_comments' => 'nullable|string',
+            'hoyer_lift_training_comments' => 'nullable|string',
         ]);
 
         if ($this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
@@ -844,6 +944,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->all();
         $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
         $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
+        $handHygieneObservation = $this->normalizeHandHygieneObservation($validated['hand_hygiene_observation'] ?? []);
+        $medicationAdministrationComments = trim((string) ($validated['medication_administration_comments'] ?? ''));
+        $hoyerLiftTrainingComments = trim((string) ($validated['hoyer_lift_training_comments'] ?? ''));
 
         $assessment = EmployeeCompetencyAssessment::query()->firstOrNew([
             'employee_num' => $validated['employee_num'],
@@ -864,6 +967,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             'excluded_section_labels' => $excludedSectionLabels,
             'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
             'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
+            'hand_hygiene_observation' => $handHygieneObservation,
+            'medication_administration_comments' => $medicationAdministrationComments,
+            'hoyer_lift_training_comments' => $hoyerLiftTrainingComments,
         ]);
         $assessment->save();
 
@@ -876,6 +982,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'excluded_section_labels' => $excludedSectionLabels,
                 'tracheostomy_equipment_checks' => $tracheostomyEquipmentChecks,
                 'tracheostomy_procedure_reviews' => $tracheostomyProcedureReviews,
+                'hand_hygiene_observation' => $handHygieneObservation,
             ],
         ]);
     }

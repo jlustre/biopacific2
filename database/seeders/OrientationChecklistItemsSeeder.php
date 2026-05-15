@@ -16,10 +16,43 @@ class OrientationChecklistItemsSeeder extends Seeder
         $donPositionIds = [DB::table('positions')->where('title', 'Director of Nursing')->value('id') ?? 2];
         $dsdPositionIds = [DB::table('positions')->where('title', 'Director of Staff Development')->value('id') ?? 41];
         $ssdPositionIds = [DB::table('positions')->where('title', 'Social Services Director')->value('id') ?? 42];
+        $dietaryDeptId = DB::table('departments')
+            ->where('name', 'Dietary')
+            ->where('type', 'facility')
+            ->value('id');
+
+        $dietaryPositionIds = $dietaryDeptId
+            ? DB::table('positions')
+                ->where('department_id', (int) $dietaryDeptId)
+                ->orderBy('title')
+                ->pluck('id')
+                ->map(static fn ($id) => (int) $id)
+                ->values()
+                ->all()
+            : DB::table('positions')
+                ->whereIn('title', [
+                    'Food Services Director',
+                    'Dietary Manager',
+                    'Dietary Aide',
+                    'Cook',
+                ])
+                ->orderBy('title')
+                ->pluck('id')
+                ->map(static fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+        if ($dietaryPositionIds === []) {
+            throw new \RuntimeException(
+                'OrientationChecklistItemsSeeder: no positions found for the Dietary department. Run DepartmentSeeder and PositionsSeeder first.'
+            );
+        }
+
         $administratorOrientationDocTypeId = $this->resolveOrientationDocTypeId('Administrator');
         $donOrientationDocTypeId = $this->resolveOrientationDocTypeId('Director of Nursing');
         $dsdOrientationDocTypeId = $this->resolveOrientationDocTypeId('Director of Staff Development');
         $ssdOrientationDocTypeId = $this->resolveOrientationDocTypeId('Social Services Director');
+        $dietaryOrientationDocTypeId = $this->resolveOrientationDocTypeId('Dietary');
 
         $AdminOrientationChecklistItems = [
             'Facility Tour',
@@ -530,6 +563,90 @@ class OrientationChecklistItemsSeeder extends Seeder
             'Scavenger Hunt (see separate checklist)',
         ];
 
+        $dietaryOrientationChecklistItems = [
+            '-A. GENERAL',
+            '--Philosophy and Accountability of the Dietary Department',
+            '--Dietary Department\'s personnel guidelines',
+            '--Dietary Department\'s in-service education requirements',
+            '--Security of the Dietary Department',
+            '-B. FOOD PRODUCTION AND MEAL SERVICE',
+            '--Food Temperature Monitoring and Control',
+            '--Preparation of Foods',
+            '--Thawing Foods',
+            '--Left-over Foods',
+            '--Safe Cooling Process',
+            '--Resident Meal Service',
+            '--Nursing Responsibilities at Meal Service',
+            '--Tray Sequencing',
+            '--HS Snacks and Par Levels',
+            '--Calorie Controlled Snacks/No Concentrated Sweets/No Added Salt/Renal',
+            '--Resident Menus',
+            '--Special Events and Holiday Meals',
+            '--Guest Trays',
+            '--Meal Service Testing',
+            '--Resident Opinion Survey',
+            '-C. SAFETY',
+            '--Kitchen Safety-Employee Standards',
+            '--Emergency and Disaster Procedures',
+            '--Fire and Safety Regulations',
+            '--Equipment Safety',
+            '--Material Safety Data Sheets (MSDS)',
+            '--Lifting Techniques',
+            '--Safety Inspection Checklist',
+            '-D. INFECTION CONTROL/SANITATION',
+            '--Hand washing',
+            '--Sanitizing Agents-Acceptable Levels and Testing',
+            '--Methods',
+            '--Equipment Sanitation',
+            '--Cleaning All Surfaces',
+            '--Resident Water Pitcher Sanitation',
+            '--Ice Containers Sanitation',
+            '--Dishwashing Preparation and Dishwashing',
+            '--Manual Dishwashing',
+            '--Food Safety',
+            '--Handling of Potentially Hazardous Foods',
+            '--Food Storage- Refrigerators and Freezers',
+            '--Food Storage- Dry Storage and Supplies',
+            '--Isolation Procedures',
+            '--Insect and Rodent Control',
+            '--Waste Control and Disposal',
+            '-E. CLINICAL SERVICES',
+            '--Diet Orders/Diet Manual',
+            '--House Supplements',
+            '--Serving Guide/Sample Rotation/Supplement List',
+            '--Large Portions Diet',
+            '--Small Portions Diet',
+            '--Adaptive Eating Devices',
+            '--Consistency Modification',
+            '--Thickened Liquids',
+            '--Fluid Restricted Diet',
+            '--The Dietary Department Employee:',
+            '--Can locate the following and explain their purposes:',
+            '--A. Diet Manual',
+            '--B. Menus',
+            '--C. Standardized Recipes',
+            '--Can set up a tray for following Dietary Regimen: Regular, Renal, No Added Salt, No Concentrated Sweets, Large/Small Portions, and High Caloric. Should include all condiments, flatware and tray card.',
+            '--Can verbalize proper refrigerator storage of eggs, raw meats, cooked foods, produce, and milk.',
+            '--Demonstrates how to label “pulled” date and “use by” date of frozen foods placed in the refrigerator to thaw.',
+            '--Read a standardized recipe and demonstrate what measuring tools are used to make the recipe (measuring cups and spoons, food scales, etc.).',
+            '--Demonstrates how to cover, label and date food for refrigerator or freezer storage.',
+            '--Demonstrates how to label snacks and supplements with resident\'s name and room number, the date and time.',
+            '--Can verbalize proper routes of transportation for clean and dirty dishes to avoid cross contamination.',
+            '--Can accurately read and document temperatures registered on thermometers, located in various storage areas (i.e. freezer, refrigerators, milk dispenser, and dry storage).',
+            '--Can accurately verbalize and return demonstrates proper calibration of thermometer.',
+            '--Can verbalize the proper method of sticking storeroom, rotating foods and keeping foods off the floor.',
+            '--Demonstrates the reading of dish machine temperature and chemical sanitizer concentration (parts per million-ppm) and record on form provided.',
+            '--Demonstrates scraping, pre-rinsing, racking and washing of dishes and utensils.',
+            '--Demonstrates how to store glassware, plates, bowls, pots and flatware.',
+            '--Demonstrates how to set up the 2 or 3-compartment sink and record temperature and chemical sanitizer concentration (ppm) on form provided.',
+            '--Demonstrates how to set up and breakdown the dish machine and clean the area.',
+            '--Can locate the MSDS and needed supplies for cleaning large equipments and appliances in the kitchen.',
+            '--Demonstrates how to clean and sanitize worktable, and verbalize other areas similarly cleaned.',
+            '--Demonstrate proper hand washing techniques and verbalize when to wash hands, when to wear gloves, and when to change gloves.',
+            '--Demonstrates how to sanitize food thermometer, test 3 food items, and record on form provided.',
+            '--Demonstrates competency in the Safe Cooling Process using the Cool Down Log.',
+        ];
+
         $items = [
             ...array_map(static fn (string $name): array => [
                 'name' => $name,
@@ -555,6 +672,12 @@ class OrientationChecklistItemsSeeder extends Seeder
                 'doc_type_id' => $ssdOrientationDocTypeId,
                 'position_ids' => $ssdPositionIds,
             ], $ssdOrientationChecklistItems),
+            ...array_map(static fn (string $name): array => [
+                'name' => $name,
+                'section' => 'PART E',
+                'doc_type_id' => $dietaryOrientationDocTypeId,
+                'position_ids' => $dietaryPositionIds,
+            ], $dietaryOrientationChecklistItems),
         ];
 
         $order = (int) DB::table('checklist_items')->max('order') + 1;
@@ -583,6 +706,7 @@ class OrientationChecklistItemsSeeder extends Seeder
             stripos($positionName, 'dsd') !== false => 'New DSD Orientation Checklist',
             stripos($positionName, 'social services director') !== false,
             stripos($positionName, 'ssd') !== false => 'SSD Orientation Checklist',
+            stripos($positionName, 'dietary') !== false => 'Dietary Orientation Checklist',
             default => throw new \InvalidArgumentException("Unsupported orientation position: {$positionName}"),
         };
 

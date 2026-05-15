@@ -83,9 +83,11 @@
             return;
         }
 
-        container.querySelectorAll('tr[data-section-header="1"]').forEach(function(row) {
-            setSectionRowExpansion(row, true);
-        });
+        if (container.id !== 'partGTableContainer') {
+            container.querySelectorAll('tr[data-section-header="1"]').forEach(function(row) {
+                setSectionRowExpansion(row, true);
+            });
+        }
 
         container.querySelectorAll('tr[data-has-child-items="1"][data-indent-level="0"]').forEach(function(row) {
             setHierarchyRowExpansion(row, true);
@@ -228,17 +230,14 @@
         var saveBtn = document.getElementById('verifySaveBtnF');
 
         function syncUnsatisfactoryCommentRequirement() {
-            var requiresComments = ratingField && ratingField.value === 'U' && !viewOnly;
+            // No longer require comments for Unsatisfactory (No) rating for any item
             if (commentsField) {
-                commentsField.required = requiresComments;
-                commentsField.placeholder = requiresComments
-                    ? 'Required: explain why this item is unsatisfactory.'
-                    : '';
+                commentsField.required = false;
+                commentsField.placeholder = '';
             }
 
             if (commentsError) {
-                var hasComments = commentsField && commentsField.value.trim() !== '';
-                commentsError.classList.toggle('hidden', !requiresComments || hasComments);
+                commentsError.classList.add('hidden');
             }
         }
         // Find the row for this itemKey/empId to get any existing data
@@ -384,6 +383,9 @@
             else if (item.rating === 'N') ratingText = 'Not Applicable';
         }
         row.setAttribute('data-current-rating', item && item.rating ? item.rating : '');
+        if (row.hasAttribute('data-current-comments')) {
+            row.setAttribute('data-current-comments', item && item.comments ? item.comments : '');
+        }
         row.children[ratingIndex].textContent = ratingText;
         // Update Assessed Date and Assessed By
         if (item && item.rating) {
@@ -468,6 +470,9 @@
             if (typeof window.syncPartGExcludedRows === 'function') {
                 window.syncPartGExcludedRows();
             }
+            if (typeof window.syncPartGMedicationSelections === 'function') {
+                window.syncPartGMedicationSelections();
+            }
             window.updatePartGSummaryScores();
         } else {
             updatePartFSummaryScores();
@@ -482,6 +487,10 @@
         var target = e.target;
         var sectionToggleButton = target.closest('.section-toggle');
         if (sectionToggleButton) {
+            if (container.id === 'partGTableContainer') {
+                return;
+            }
+
             e.preventDefault();
             var sectionHeaderRow = sectionToggleButton.closest('tr');
             var sectionExpanded = sectionToggleButton.getAttribute('data-expanded') !== '1';

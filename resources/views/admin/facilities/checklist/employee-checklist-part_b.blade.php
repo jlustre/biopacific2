@@ -1,4 +1,4 @@
-<div id="partB" class="tab-content hidden">
+<div id="partB" class="tab-content ">
     <h2 class="text-xl font-bold mb-4">PART B - ACKNOWLEDGEMENT OF RECEIPTS</h2>
     <div class="overflow-x-auto">
         <table class="min-w-full border text-xs md:text-sm mb-6">

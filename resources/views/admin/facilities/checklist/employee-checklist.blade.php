@@ -84,7 +84,17 @@
         background-color: #115e59;
     }
 </style>
-<div x-show="tab === 'checklist'">
+<div x-show="tab === 'checklist'" data-checklist-tabs="alpine" x-data="{
+    checklistTab: localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab') || 'partA',
+    init() {
+        localStorage.setItem('checklistTab', this.checklistTab);
+        localStorage.setItem('employeeChecklistActiveTab', this.checklistTab);
+        this.$watch('checklistTab', value => {
+            localStorage.setItem('checklistTab', value);
+            localStorage.setItem('employeeChecklistActiveTab', value);
+        });
+    }
+}">
     <div class="bg-white p-4 rounded shadow">
         @php
         $empChecklistItems = optional($empChecklists->firstWhere('employee_num', $employee->employee_num))->items ?? [];
@@ -121,62 +131,70 @@
         <!-- Tabs -->
         <ul class="flex border-b mb-6" id="employeeFileTabs">
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partA" data-tab="partA">PART A</a>
+                <button type="button" @click="checklistTab = 'partA'" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART A</button>
             </li>
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partB" data-tab="partB">PART B</a>
+                <button type="button" @click="checklistTab = 'partB'" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART B</button>
             </li>
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partC" data-tab="partC">PART C</a>
+                <button type="button" @click="checklistTab = 'partC'" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART C</button>
             </li>
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partD" data-tab="partD">PART D</a>
+                <button type="button" @click="checklistTab = 'partD'" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART D</button>
             </li>
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partE" data-tab="partE">PART E</a>
+                <button type="button" @click="checklistTab = 'partE'" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART E</button>
             </li>
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partF" data-tab="partF">PART F</a>
+                <button type="button" @click="checklistTab = 'partF'" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART F</button>
             </li>
             <li class="-mb-px mr-1">
-                <a class="tab-link bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-700 hover:border-blue-500"
-                    href="#partG" data-tab="partG">PART G</a>
+                <button type="button" @click="checklistTab = 'partG'" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART G</button>
             </li>
         </ul>
 
         <!-- PART A -->
-        @include('admin.facilities.checklist.employee-checklist-part_a')
+        <div x-show="checklistTab === 'partA'">
+            @include('admin.facilities.checklist.employee-checklist-part_a')
+        </div>
 
         <!-- PART B -->
-        @include('admin.facilities.checklist.employee-checklist-part_b')
+        <div x-show="checklistTab === 'partB'">
+            @include('admin.facilities.checklist.employee-checklist-part_b')
+        </div>
 
         <!-- PART C -->
-        @include('admin.facilities.checklist.employee-checklist-part_c')
+        <div x-show="checklistTab === 'partC'">
+            @include('admin.facilities.checklist.employee-checklist-part_c')
+        </div>
 
         <!-- PART D -->
-        @include('admin.facilities.checklist.employee-checklist-part_d')
+        <div x-show="checklistTab === 'partD'">
+            @include('admin.facilities.checklist.employee-checklist-part_d')
+        </div>
 
         <!-- PART E -->
-        @include('admin.facilities.checklist.employee-checklist-part_e')
+        <div x-show="checklistTab === 'partE'">
+            @include('admin.facilities.checklist.employee-checklist-part_e')
+        </div>
 
         <!-- PART F: Performance Appraisal -->
-        @include('admin.facilities.checklist.employee-checklist-part_f')
+        <div x-show="checklistTab === 'partF'">
+            @include('admin.facilities.checklist.employee-checklist-part_f')
+        </div>
 
         <!-- PART G: Competencies Checklist -->
-        @include('admin.facilities.checklist.employee-checklist-part_g')
+        <div x-show="checklistTab === 'partG'">
+            @include('admin.facilities.checklist.employee-checklist-part_g')
+        </div>
     </div>
 </div>
+
 
 <!-- Modal for Verify Checklist Item -->
 @include('admin.facilities.checklist.employee-checklist-modal-ae')
 @include('admin.facilities.checklist.employee-checklist-modal-f')
-@include('admin.facilities.checklist.employee-assessment-period-modals')
+@include('admin.facilities.checklist.employee-assessment-period-modals') 
 
 {{-- Scripts for Employee Checklist --}}
 @include('admin.facilities.checklist.employee-checklist-scripts_ae')

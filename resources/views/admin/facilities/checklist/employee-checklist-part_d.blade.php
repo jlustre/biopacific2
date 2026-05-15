@@ -1,4 +1,4 @@
-<div id="partD" class="tab-content hidden">
+<div id="partD" class="tab-content">
     <h2 class="text-xl font-bold mb-4">PART D - ACKNOWLEDGEMENT OF RECEIPTS</h2>
     <div class="overflow-x-auto">
         @php

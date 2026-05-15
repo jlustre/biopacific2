@@ -30,6 +30,7 @@ class DocTypesTableSeeder extends Seeder
             'CNA Competency Perineal Care Checklist',
             'CNA skills checklist',
             'DON Orientation Checklist',
+            'Dietary Orientation Checklist',
             'Dietary_Department-Skills Checklist',
             'Housekeeper\'s Skills Checklist',
             'Licensed Nurse Competency Checklist',

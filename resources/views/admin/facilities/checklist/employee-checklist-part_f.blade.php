@@ -1,4 +1,4 @@
-<div id="partF" class="tab-content hidden">
+<div id="partF" class="tab-content">
     @php
         $partFSelectedAssessment = $selectedPerformanceAssessment ?? ($assessment ?? null);
         $partFAssessmentLocked = !empty(optional($partFSelectedAssessment)->finalized);

@@ -30,6 +30,8 @@ class EmployeeCompetencyAssessment extends Model
         'pdf_generated_at',
         'snapshot_json',
         'completed_at',
+        'responses', // <-- allow mass assignment for draft responses
+        'employee_comments',
     ];
 
     protected $casts = [
@@ -40,6 +42,7 @@ class EmployeeCompetencyAssessment extends Model
         'reviewer_signed_at' => 'datetime',
         'pdf_generated_at' => 'datetime',
         'snapshot_json' => 'array',
+        'responses' => 'array',
         'completed_at' => 'datetime',
     ];
 

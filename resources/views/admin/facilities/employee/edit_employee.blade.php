@@ -59,10 +59,10 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
         </span>
     </div>
     <h1 class="text-2xl font-bold mb-1 text-center">{{ $isAddMode ? 'Add Employee' : 'View/Edit Employee' }}</h1>
+
     <div class="text-lg font-semibold text-gray-800 mb-4 text-center">
         @if(!$isAddMode)
-            {{ $employee->last_name }}, {{ $employee->first_name }}@if($employee->middle_name), {{
-            $employee->middle_name }}@endif / {{ $employee->employee_num }}
+            {{ $employee->last_name }}, {{ $employee->first_name }}@if($employee->middle_name), {{ $employee->middle_name }}@endif / {{ $employee->employee_num }} / {{ $employee->currentAssignment?->position?->title ?? 'No Position' }}
         @endif
     </div>
 
@@ -70,8 +70,6 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
 
     @include('admin.facilities.employee.tab-navigation')
 
-    @include('admin.facilities.checklist.employee-checklist')
-    
     @include('admin.facilities.employee.employee-profile')
     
     @include('admin.facilities.employee.employee-address')
@@ -79,6 +77,8 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
     @include('admin.facilities.employee.employee-assignment')
 
     @include('admin.facilities.employee.employee-documents')
+
+    @include('admin.facilities.checklist.employee-checklist')
     
 </div>
 @endsection

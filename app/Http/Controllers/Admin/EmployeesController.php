@@ -9,7 +9,7 @@ use App\Models\Upload;
 use App\Models\Facility;
 use App\Models\State;
 use Illuminate\Support\Facades\Auth;
-// use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\SelectOption;
 use App\Models\Optionstype;
@@ -256,6 +256,7 @@ class EmployeesController extends Controller
         $user->save();
         return redirect()->back()->with('success', 'Email updated successfully.');
     }
+    
     public function index(Request $request)
     {
         $facilities = Facility::all();
@@ -340,497 +341,6 @@ class EmployeesController extends Controller
         ])->findOrFail($employee_num); // $employee_num is PK id
         return view('admin.facilities.employee-details', compact('employee'));
     }
-    /**
-     * Show the form for editing the specified employee.
-     */
-    public function edit($employee_num)
-    {
-        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment', 'currentAssignment.position'])->findOrFail($employee_num); // $employee_num is PK id
-        $departments = \App\Models\Department::all();
-        $positions = \App\Models\Position::all();
-        $facilities = \App\Models\Facility::all();
-        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
-        $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
-            ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
-            ->orderBy('order')
-            ->get();
-        $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
-        $users = \App\Models\User::all();
-        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
-
-        // Load all states for address select dropdown
-        $states = State::orderBy('name')->get();
-
-        // PART F: Load all assessment periods for this employee
-        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
-        $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
-
-        // Load assessment item states and history for this employee and selected assessment period.
-        $assessmentItemStates = [];
-        $assessmentItemHistories = [];
-        $empPerformanceChecklist = [];
-        $empCompetencyAssessments = [];
-        $performanceAssessmentHistory = [];
-        $competencyAssessmentHistory = [];
-        $performanceAssessmentSubmissions = \App\Models\EmployeePerformanceAssessment::query()
-            ->where('employee_num', $employee->employee_num)
-            ->get()
-            ->keyBy('assessment_period_id');
-        $performanceAssessmentStatuses = $performanceAssessmentSubmissions
-            ->mapWithKeys(function ($submission, $assessmentPeriodId) {
-                $isCompleted = !empty($submission->finalized);
-
-                return [
-                    (int) $assessmentPeriodId => [
-                        'id' => $submission->id,
-                        'status' => $isCompleted ? 'completed' : 'in_progress',
-                        'status_label' => $isCompleted ? 'Completed' : 'In Progress',
-                        'is_completed' => $isCompleted,
-                        'can_edit' => !$isCompleted,
-                    ],
-                ];
-            })
-            ->all();
-        $competencyAssessmentSubmissions = \App\Models\EmployeeCompetencyAssessment::query()
-            ->where('employee_num', $employee->employee_num)
-            ->get()
-            ->keyBy('assessment_period_id');
-        $competencyAssessmentStatuses = $competencyAssessmentSubmissions
-            ->mapWithKeys(function ($submission, $assessmentPeriodId) {
-                $status = (string) ($submission->status ?? 'draft');
-
-                return [
-                    (int) $assessmentPeriodId => [
-                        'id' => $submission->id,
-                        'status' => $status,
-                        'status_label' => ucwords(str_replace('_', ' ', $status)),
-                        'is_completed' => $status === 'completed',
-                        'can_edit' => $status !== 'completed',
-                    ],
-                ];
-            })
-            ->all();
-        $selectedCompetencyAssessment = $selectedAssessmentPeriodId
-            ? $competencyAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
-            : null;
-        $selectedPerformanceAssessment = $selectedAssessmentPeriodId
-            ? $performanceAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
-            : null;
-        $reviewDate = '';
-        $employeeAcknowledgeDt = '';
-        $reviewerName = '';
-        $reviewType = '';
-        $assessmentPeriodLabels = $assessmentPeriods->keyBy('id');
-        $allAssessmentEntries = \App\Models\EmployeeAssessmentItemEntry::query()
-            ->where('employee_num', $employee->employee_num)
-            ->orderByDesc('assessment_date')
-            ->orderByDesc('id')
-            ->get();
-
-        $assessmentItemHistories = $allAssessmentEntries
-            ->groupBy('item_key')
-            ->map(function ($entries) use ($users, $assessmentPeriodLabels, $selectedAssessmentPeriodId) {
-                return $entries->map(function ($entry) use ($users, $assessmentPeriodLabels, $selectedAssessmentPeriodId) {
-                    $period = $assessmentPeriodLabels->get($entry->assessment_period_id);
-
-                    return [
-                        'id' => $entry->id,
-                        'rating' => $entry->rating,
-                        'verified_dt' => optional($entry->assessment_date)->toDateString(),
-                        'verified_by' => $entry->assessed_by,
-                        'verified_by_name' => optional($users->firstWhere('id', $entry->assessed_by))->name ?? $entry->assessed_by,
-                        'comments' => $entry->comments,
-                        'assessment_period_id' => $entry->assessment_period_id,
-                        'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $entry->assessment_period_id),
-                        'is_selected_period' => (int) $entry->assessment_period_id === (int) $selectedAssessmentPeriodId,
-                        'revoked_at' => optional($entry->revoked_at)->format('Y-m-d H:i:s'),
-                        'revoked_by' => $entry->revoked_by,
-                        'revoked_by_name' => optional($users->firstWhere('id', $entry->revoked_by))->name ?? $entry->revoked_by,
-                    ];
-                })->values()->all();
-            })
-            ->all();
-
-        $competencyEntriesByPeriod = $allAssessmentEntries
-            ->filter(fn ($entry) => $entry->assessment_type === 'competency')
-            ->groupBy('assessment_period_id');
-
-        $competencyAssessmentHistory = $competencyEntriesByPeriod
-            ->keys()
-            ->merge($competencyAssessmentSubmissions->keys())
-            ->unique()
-            ->map(function ($assessmentPeriodId) use ($competencyEntriesByPeriod, $assessmentPeriodLabels, $competencyAssessmentSubmissions) {
-                $entries = $competencyEntriesByPeriod->get($assessmentPeriodId, collect());
-                $latestStates = $entries
-                    ->filter(fn ($entry) => $entry->revoked_at === null)
-                    ->groupBy('item_key')
-                    ->map(function ($groupedEntries) {
-                        return $groupedEntries
-                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
-                            ->first();
-                    })
-                    ->filter();
-
-                $total = 0;
-                $count = 0;
-                foreach ($latestStates as $state) {
-                    $score = match ($state->rating) {
-                        'E' => 3,
-                        'S' => 2,
-                        'U' => 1,
-                        default => null,
-                    };
-
-                    if ($score === null) {
-                        continue;
-                    }
-
-                    $total += $score;
-                    $count++;
-                }
-
-                $average = $count > 0 ? round($total / $count, 2) : 0;
-                $overall = $count === 0
-                    ? 'N/A'
-                    : ($average >= 2.5
-                        ? 'Excellent'
-                        : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
-                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
-                $latestAssessment = $entries
-                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
-                    ->first();
-                $submission = $competencyAssessmentSubmissions->get((int) $assessmentPeriodId);
-                $status = $submission?->status
-                    ? ucwords(str_replace('_', ' ', (string) $submission->status))
-                    : 'Draft';
-                $snapshotItems = collect($submission?->snapshot_json['items'] ?? []);
-                $snapshotRatedCount = $snapshotItems
-                    ->filter(fn ($item) => in_array(($item['rating'] ?? null), ['E', 'S', 'U'], true))
-                    ->count();
-
-                return [
-                    'assessment_period_id' => (int) $assessmentPeriodId,
-                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
-                    'assessment_date' => optional($submission?->submitted_at)->toDateString()
-                        ?? optional($submission?->updated_at)->toDateString()
-                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
-                    'items_count' => $submission ? max($count, $snapshotRatedCount) : $count,
-                    'total_score' => $submission?->total_score ?? $total,
-                    'average_score' => $submission ? number_format((float) $submission->average_score, 2) : number_format($average, 2),
-                    'overall_rating' => $submission?->overall_rating ?? $overall,
-                    'status' => $status,
-                    'competency_assessment_id' => $submission?->id,
-                    'pdf_available' => !empty($submission?->pdf_path),
-                ];
-            })
-            ->sortByDesc('assessment_date')
-            ->values()
-            ->all();
-
-        $performanceEntriesByPeriod = $allAssessmentEntries
-            ->filter(fn ($entry) => $entry->assessment_type === 'performance')
-            ->groupBy('assessment_period_id');
-
-        $performanceAssessmentHistory = $performanceEntriesByPeriod
-            ->keys()
-            ->merge($performanceAssessmentSubmissions->keys())
-            ->unique()
-            ->map(function ($assessmentPeriodId) use ($performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions) {
-                $entries = $performanceEntriesByPeriod->get($assessmentPeriodId, collect());
-                $latestStates = $entries
-                    ->filter(fn ($entry) => $entry->revoked_at === null)
-                    ->groupBy('item_key')
-                    ->map(function ($groupedEntries) {
-                        return $groupedEntries
-                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
-                            ->first();
-                    })
-                    ->filter();
-
-                $total = 0;
-                $count = 0;
-                foreach ($latestStates as $state) {
-                    $score = match ($state->rating) {
-                        'E' => 3,
-                        'S' => 2,
-                        'U' => 1,
-                        default => null,
-                    };
-
-                    if ($score === null) {
-                        continue;
-                    }
-
-                    $total += $score;
-                    $count++;
-                }
-
-                $average = $count > 0 ? round($total / $count, 2) : 0;
-                $overall = $count === 0
-                    ? 'N/A'
-                    : ($average >= 2.5
-                        ? 'Excellent'
-                        : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
-                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
-                $latestAssessment = $entries
-                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
-                    ->first();
-                $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
-
-                return [
-                    'assessment_period_id' => (int) $assessmentPeriodId,
-                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
-                    'assessment_date' => optional($submission?->review_dt)->toDateString()
-                        ?? optional($submission?->updated_at)->toDateString()
-                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
-                    'items_count' => $count,
-                    'total_score' => $total,
-                    'average_score' => number_format($average, 2),
-                    'overall_rating' => $overall,
-                    'status' => $submission
-                        ? (!empty($submission->finalized) ? 'Completed' : 'In Progress')
-                        : 'Draft',
-                ];
-            })
-            ->sortByDesc('assessment_date')
-            ->values()
-            ->all();
-
-        if ($selectedAssessmentPeriodId) {
-            $assessment = $selectedPerformanceAssessment;
-            $period = \App\Models\EmployeeAssessmentPeriod::find($selectedAssessmentPeriodId);
-            if ($period) {
-                $reviewType = $period->review_type === 'Q' ? 'Quarterly' : 'Annual';
-            }
-
-            $assessmentEntries = $allAssessmentEntries
-                ->where('assessment_period_id', (int) $selectedAssessmentPeriodId)
-                ->values();
-
-            $assessmentItemStates = $assessmentEntries
-                ->filter(fn ($entry) => $entry->revoked_at === null)
-                ->groupBy(function ($entry) {
-                    if ($entry->assessment_type === 'performance' && !empty($entry->source_item_id)) {
-                        return 'F_' . $entry->source_item_id;
-                    }
-
-                    return $entry->item_key;
-                })
-                ->map(function ($entries) use ($users) {
-                    $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
-
-                    return [
-                        'rating' => $latest->rating,
-                        'verified_dt' => optional($latest->assessment_date)->toDateString(),
-                        'verified_by' => $latest->assessed_by,
-                        'verified_by_name' => optional($users->firstWhere('id', $latest->assessed_by))->name ?? $latest->assessed_by,
-                        'comments' => $latest->comments,
-                    ];
-                })
-                ->all();
-
-            $legacyPerformanceEntries = $assessmentEntries
-                ->filter(fn ($entry) => $entry->assessment_type === 'performance' && empty($entry->source_item_id) && str_starts_with((string) $entry->item_key, 'F_'))
-                ->groupBy('item_key')
-                ->map(function ($entries) use ($users) {
-                    $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
-
-                    return [
-                        'rating' => $latest->rating,
-                        'verified_dt' => optional($latest->assessment_date)->toDateString(),
-                        'verified_by' => $latest->assessed_by,
-                        'verified_by_name' => optional($users->firstWhere('id', $latest->assessed_by))->name ?? $latest->assessed_by,
-                        'comments' => $latest->comments,
-                    ];
-                })
-                ->all();
-
-            foreach ($legacyPerformanceEntries as $legacyItemKey => $legacyEntryState) {
-                if (!isset($assessmentItemStates[$legacyItemKey])) {
-                    $assessmentItemStates[$legacyItemKey] = $legacyEntryState;
-                }
-            }
-
-            if ($assessment) {
-                if ($assessment->items) {
-                    $legacyItems = json_decode($assessment->items, true) ?: [];
-                    foreach ($legacyItems as $itemKey => $itemData) {
-                        if (!isset($assessmentItemStates[$itemKey])) {
-                            $assessmentItemStates[$itemKey] = [
-                                'rating' => $itemData['rating'] ?? null,
-                                'verified_dt' => $itemData['verified_dt'] ?? null,
-                                'verified_by' => $itemData['verified_by'] ?? null,
-                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
-                                'comments' => $itemData['comments'] ?? null,
-                            ];
-                        }
-
-                        if (!isset($assessmentItemHistories[$itemKey])) {
-                            $assessmentItemHistories[$itemKey] = [[
-                                'id' => null,
-                                'rating' => $itemData['rating'] ?? null,
-                                'verified_dt' => $itemData['verified_dt'] ?? null,
-                                'verified_by' => $itemData['verified_by'] ?? null,
-                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
-                                'comments' => $itemData['comments'] ?? null,
-                                'assessment_period_id' => (int) $selectedAssessmentPeriodId,
-                                'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
-                                'is_selected_period' => true,
-                                'revoked_at' => null,
-                                'revoked_by' => null,
-                                'revoked_by_name' => null,
-                            ]];
-                        }
-                    }
-                }
-                $reviewDate = $assessment->review_dt;
-                $employeeAcknowledgeDt = $assessment->acknowledge_dt;
-                // Lookup reviewer name if assessed_by is set
-                if ($assessment->assessed_by) {
-                    $reviewerUser = \App\Models\User::find($assessment->assessed_by);
-                    $reviewerName = $reviewerUser ? $reviewerUser->name : '';
-                }
-            }
-
-            $legacyChecklistItems = optional($empChecklists->firstWhere('employee_num', $employee->employee_num))->items ?? [];
-            foreach ($legacyChecklistItems as $legacyKey => $legacyItem) {
-                if (!str_starts_with((string) $legacyKey, 'competency::')) {
-                    continue;
-                }
-
-                $competencyItemId = (int) \Illuminate\Support\Str::after((string) $legacyKey, 'competency::');
-                if ($competencyItemId <= 0) {
-                    continue;
-                }
-
-                $itemKey = 'G_' . $competencyItemId;
-                if (isset($assessmentItemStates[$itemKey])) {
-                    continue;
-                }
-
-                $assessmentItemStates[$itemKey] = [
-                    'rating' => 'S',
-                    'verified_dt' => $legacyItem['verified_dt'] ?? null,
-                    'verified_by' => $legacyItem['verified_by'] ?? null,
-                    'verified_by_name' => optional($users->firstWhere('id', $legacyItem['verified_by'] ?? null))->name ?? ($legacyItem['verified_by'] ?? null),
-                    'comments' => $legacyItem['comments'] ?? null,
-                ];
-
-                $assessmentItemHistories[$itemKey] = [[
-                    'id' => null,
-                    'rating' => 'S',
-                    'verified_dt' => $legacyItem['verified_dt'] ?? null,
-                    'verified_by' => $legacyItem['verified_by'] ?? null,
-                    'verified_by_name' => optional($users->firstWhere('id', $legacyItem['verified_by'] ?? null))->name ?? ($legacyItem['verified_by'] ?? null),
-                    'comments' => $legacyItem['comments'] ?? null,
-                    'assessment_period_id' => (int) $selectedAssessmentPeriodId,
-                    'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
-                    'is_selected_period' => true,
-                    'revoked_at' => null,
-                    'revoked_by' => null,
-                    'revoked_by_name' => null,
-                ]];
-            }
-        }
-
-        $empPerformanceChecklist = collect($assessmentItemStates)
-            ->filter(fn ($item, $itemKey) => str_starts_with((string) $itemKey, 'F_'))
-            ->all();
-
-        $empCompetencyAssessments = collect($assessmentItemStates)
-            ->filter(fn ($item, $itemKey) => str_starts_with((string) $itemKey, 'G_'))
-            ->all();
-
-        // PART F: Load section comments for this employee and assessment period
-        $sectionComments = [];
-        if ($selectedAssessmentPeriodId) {
-            $comments = \App\Models\EmployeePerformanceSectionComment::where('employee_num', $employee->employee_num)
-                ->where('assessment_period_id', $selectedAssessmentPeriodId)
-                ->get();
-            foreach ($comments as $comment) {
-                $sectionComments[$comment->doc_type_id] = $comment->comment;
-            }
-        }
-
-        // Supervisor name logic: use Reports To if available, else logged-in user
-        $supervisorName = '';
-        $assignment = $employee->currentAssignment;
-        if ($assignment && $assignment->reports_to) {
-            $supervisorEmp = \App\Models\BPEmployee::where('id', $assignment->reports_to)->first();
-            if ($supervisorEmp && $supervisorEmp->user) {
-                $supervisorName = $supervisorEmp->user->name;
-            } elseif ($supervisorEmp) {
-                $supervisorName = trim($supervisorEmp->last_name . ', ' . $supervisorEmp->first_name . ($supervisorEmp->middle_name ? ' ' . $supervisorEmp->middle_name : ''));
-            }
-        }
-        if (!$supervisorName && auth()->check()) {
-            $supervisorName = auth()->user()->name;
-        }
-
-        // Get doc_type_id for each section
-        $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
-        $devPlansDocType = \App\Models\DocType::where('name', 'Development Plans')->first();
-        $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
-
-        $areasForDevelopment = $areasDevDocType && isset($sectionComments[$areasDevDocType->id]) ? $sectionComments[$areasDevDocType->id] : '';
-        $developmentPlans = $devPlansDocType && isset($sectionComments[$devPlansDocType->id]) ? $sectionComments[$devPlansDocType->id] : '';
-        $employeeComments = $empCommentsDocType && isset($sectionComments[$empCommentsDocType->id]) ? $sectionComments[$empCommentsDocType->id] : '';
-
-        $reviewDt = $reviewDate; // For PART F form field
-        $isAddMode = false;
-        $maritalOptions = DB::table('selectoptions')
-            ->where('type_id', DB::table('optionstypes')->where('name', 'Marital Status')->value('id'))
-            ->orderBy('sort_order')->get();
-        $ethnicOptions = DB::table('selectoptions')
-            ->where('type_id', DB::table('optionstypes')->where('name', 'Ethnic Group')->value('id'))
-            ->orderBy('sort_order')->get();
-        $militaryOptions = DB::table('selectoptions')
-            ->where('type_id', DB::table('optionstypes')->where('name', 'Military Status')->value('id'))
-            ->orderBy('sort_order')->get();
-        $citizenOptions = DB::table('selectoptions')
-            ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
-            ->orderBy('sort_order')->get();
-
-        return view('admin.facilities.employee.edit_employee', compact(
-            'employee',
-            'departments',
-            'positions',
-            'facilities',
-            'checklistItems',
-            'employeeCompetencyItems',
-            'empChecklists',
-            'users',
-            'empPerformanceChecklist',
-            'empCompetencyAssessments',
-            'performanceAssessmentHistory',
-            'performanceAssessmentStatuses',
-            'selectedPerformanceAssessment',
-            'competencyAssessmentHistory',
-            'competencyAssessmentStatuses',
-            'selectedCompetencyAssessment',
-            'assessmentItemStates',
-            'assessmentItemHistories',
-            'assessmentPeriods',
-            'selectedAssessmentPeriodId',
-            'sectionComments',
-            'supervisorName',
-            'areasForDevelopment',
-            'developmentPlans',
-            'employeeComments',
-            'reviewDate',
-            'employeeAcknowledgeDt',
-            'reviewerName',
-            'reviewType',
-            'reviewDt',
-            'states',
-            'isAddMode',
-            'maritalOptions',
-            'ethnicOptions',
-            'militaryOptions',
-            'citizenOptions',
-            'uploadTypes'
-        ));
-    }
 
     /**
      * Update the specified employee's personal info (tabbed form).
@@ -903,65 +413,65 @@ class EmployeesController extends Controller
         }
     }
 
-        /**
-         * Add a phone to an employee, ensuring only one primary phone.
-         */
-        public function addPhone(Request $request, $employee)
-        {
-            $validated = $request->validate([
-                'phone_type' => 'required|string|max:50',
-                'phone_number' => 'required|string|max:50',
-                'is_primary' => 'nullable', // Remove boolean rule
-            ]);
+    /**
+     * Add a phone to an employee, ensuring only one primary phone.
+     */
+    public function addPhone(Request $request, $employee)
+    {
+        $validated = $request->validate([
+            'phone_type' => 'required|string|max:50',
+            'phone_number' => 'required|string|max:50',
+            'is_primary' => 'nullable', // Remove boolean rule
+        ]);
 
-            // Checkbox submits as 'on' if checked, so use has()
-            $isPrimary = $request->has('is_primary');
+        // Checkbox submits as 'on' if checked, so use has()
+        $isPrimary = $request->has('is_primary');
 
-            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
-            if ($isPrimary) {
-                \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
-                    ->where('is_primary', 1)
-                    ->update(['is_primary' => 0]);
-            }
-
-            $phone = new \App\Models\BPEmpPhone();
-            $phone->employee_num = $employeeModel->employee_num;
-            $phone->phone_type = $validated['phone_type'];
-            $phone->phone_number = $validated['phone_number'];
-            $phone->is_primary = $isPrimary ? 1 : 0;
-            $phone->save();
-
-            return back()->with('success', 'Phone added successfully.');
+        $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
+        if ($isPrimary) {
+            \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
+                ->where('is_primary', 1)
+                ->update(['is_primary' => 0]);
         }
 
-        /**
-         * Update a phone for an employee.
-         */
-        public function updatePhone(Request $request, $employee, $phone)
-        {
-            $validated = $request->validate([
-                'phone_type' => 'required|string|max:50',
-                'phone_number' => 'required|string|max:50',
-                'is_primary' => 'nullable',
-            ]);
+        $phone = new \App\Models\BPEmpPhone();
+        $phone->employee_num = $employeeModel->employee_num;
+        $phone->phone_type = $validated['phone_type'];
+        $phone->phone_number = $validated['phone_number'];
+        $phone->is_primary = $isPrimary ? 1 : 0;
+        $phone->save();
 
-            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
-            $phoneModel = \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
+        return back()->with('success', 'Phone added successfully.');
+    }
 
-            $isPrimary = $request->has('is_primary');
-            if ($isPrimary) {
-                \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
-                    ->where('is_primary', 1)
-                    ->update(['is_primary' => 0]);
-            }
+    /**
+     * Update a phone for an employee.
+     */
+    public function updatePhone(Request $request, $employee, $phone)
+    {
+        $validated = $request->validate([
+            'phone_type' => 'required|string|max:50',
+            'phone_number' => 'required|string|max:50',
+            'is_primary' => 'nullable',
+        ]);
 
-            $phoneModel->phone_type = $validated['phone_type'];
-            $phoneModel->phone_number = $validated['phone_number'];
-            $phoneModel->is_primary = $isPrimary ? 1 : 0;
-            $phoneModel->save();
+        $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
+        $phoneModel = \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
 
-            return back()->with('success', 'Phone updated successfully.');
+        $isPrimary = $request->has('is_primary');
+        if ($isPrimary) {
+            \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
+                ->where('is_primary', 1)
+                ->update(['is_primary' => 0]);
         }
+
+        $phoneModel->phone_type = $validated['phone_type'];
+        $phoneModel->phone_number = $validated['phone_number'];
+        $phoneModel->is_primary = $isPrimary ? 1 : 0;
+        $phoneModel->save();
+
+        return back()->with('success', 'Phone updated successfully.');
+    }
     /**
      * Add or update an address for an employee (tabbed form).
      */
@@ -1518,4 +1028,598 @@ class EmployeesController extends Controller
             return redirect()->back()->withInput()->withErrors(['error' => 'Failed to create employee: ' . $e->getMessage()]);
         }
     }
-}
+
+    /**
+     * Show the form for editing the specified employee.
+     */
+    public function edit($employee_num) {
+        // Always define draft responses and raw draft row for Part G
+        $draftResponses = [];
+        $rawDraftRow = null;
+        // PART F: Load all assessment periods for this employee
+        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
+        $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
+        
+        // Load draft competency responses for Part G (if any)
+
+        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment', 'currentAssignment.position'])->findOrFail($employee_num); // $employee_num is PK id
+
+        $departments = \App\Models\Department::all();
+        $positions = \App\Models\Position::all();
+        $facilities = \App\Models\Facility::all();
+        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
+        $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
+            ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
+            ->orderBy('order')
+            ->get();
+        $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
+        $users = \App\Models\User::all();
+        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $jsonRow = \App\Models\EmployeeCompetencyAssessment::where('employee_num', $employee->employee_num)
+            ->where('assessment_period_id', $selectedAssessmentPeriodId)
+            ->where('status', 'draft')
+            ->first();
+        $rawDraftRow = $jsonRow;
+       
+        if ($jsonRow && $jsonRow->responses) {
+            $decoded = is_array($jsonRow->responses)
+                ? $jsonRow->responses
+                : json_decode($jsonRow->responses, true);
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+            if (is_array($decoded)) {
+                foreach ($decoded as $itemId => $data) {
+                    $draftResponses[$itemId] = is_array($data)
+                        ? ($data['response'] ?? null)
+                        : $data;
+                }
+            }
+        }
+        $departments = \App\Models\Department::all();
+        $positions = \App\Models\Position::all();
+        $facilities = \App\Models\Facility::all();
+        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
+        $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
+            ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
+            ->orderBy('order')
+            ->get();
+        $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
+        $users = \App\Models\User::all();
+        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+
+
+        // PART F: Load all assessment periods for this employee
+        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
+        $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
+        // --- END: Load draft competency responses for Part G ---
+
+        // --- END: Load draft competency responses for Part G ---
+        // Extract LICENSED NURSE COMPETENCY SKILLS summary for current period (must be after $competencyAssessmentHistory is built)
+        $lnSummary = null;
+        if (!empty($competencyAssessmentHistory)) {
+            foreach ($competencyAssessmentHistory as $row) {
+                if ((int)($row['assessment_period_id'] ?? 0) === (int)$selectedAssessmentPeriodId) {
+                    $lnSummary = $row;
+                    break;
+                }
+            }
+        }
+        $lnTotalPoints = $lnSummary['total_score'] ?? null;
+        $lnAverage = $lnSummary['average_score'] ?? null;
+        $lnOverallRating = $lnSummary['overall_rating'] ?? null;
+
+        // Load all states for address select dropdown
+        $states = State::orderBy('name')->get();
+
+        // Load assessment item states and history for this employee and selected assessment period.
+        $assessmentItemStates = [];
+        $assessmentItemHistories = [];
+        $empPerformanceChecklist = [];
+        $empCompetencyAssessments = [];
+        $performanceAssessmentHistory = [];
+        $competencyAssessmentHistory = [];
+        $performanceAssessmentSubmissions = \App\Models\EmployeePerformanceAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->get()
+            ->keyBy('assessment_period_id');
+        $performanceAssessmentStatuses = $performanceAssessmentSubmissions
+            ->mapWithKeys(function ($submission, $assessmentPeriodId) {
+                $isCompleted = !empty($submission->finalized);
+
+                return [
+                    (int) $assessmentPeriodId => [
+                        'id' => $submission->id,
+                        'status' => $isCompleted ? 'completed' : 'in_progress',
+                        'status_label' => $isCompleted ? 'Completed' : 'In Progress',
+                        'is_completed' => $isCompleted,
+                        'can_edit' => !$isCompleted,
+                    ],
+                ];
+            })
+            ->all();
+        $competencyAssessmentSubmissions = \App\Models\EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->get()
+            ->keyBy('assessment_period_id');
+        $competencyAssessmentStatuses = $competencyAssessmentSubmissions
+            ->mapWithKeys(function ($submission, $assessmentPeriodId) {
+                $status = (string) ($submission->status ?? 'draft');
+
+                return [
+                    (int) $assessmentPeriodId => [
+                        'id' => $submission->id,
+                        'status' => $status,
+                        'status_label' => ucwords(str_replace('_', ' ', $status)),
+                        'is_completed' => $status === 'completed',
+                        'can_edit' => $status !== 'completed',
+                    ],
+                ];
+            })
+            ->all();
+        $selectedCompetencyAssessment = $selectedAssessmentPeriodId
+            ? $competencyAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
+            : null;
+        $selectedPerformanceAssessment = $selectedAssessmentPeriodId
+            ? $performanceAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
+            : null;
+        $reviewDate = '';
+        $employeeAcknowledgeDt = '';
+        $reviewerName = '';
+        $reviewType = '';
+        $assessmentPeriodLabels = $assessmentPeriods->keyBy('id');
+        $allAssessmentEntries = \App\Models\EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $employee->employee_num)
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $assessmentItemHistories = $allAssessmentEntries
+            ->groupBy('item_key')
+            ->map(function ($entries) use ($users, $assessmentPeriodLabels, $selectedAssessmentPeriodId) {
+                return $entries->map(function ($entry) use ($users, $assessmentPeriodLabels, $selectedAssessmentPeriodId) {
+                    $period = $assessmentPeriodLabels->get($entry->assessment_period_id);
+
+                    return [
+                        'id' => $entry->id,
+                        'rating' => $entry->rating,
+                        'verified_dt' => optional($entry->assessment_date)->toDateString(),
+                        'verified_by' => $entry->assessed_by,
+                        'verified_by_name' => optional($users->firstWhere('id', $entry->assessed_by))->name ?? $entry->assessed_by,
+                        'comments' => $entry->comments,
+                        'assessment_period_id' => $entry->assessment_period_id,
+                        'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $entry->assessment_period_id),
+                        'is_selected_period' => (int) $entry->assessment_period_id === (int) $selectedAssessmentPeriodId,
+                        'revoked_at' => optional($entry->revoked_at)->format('Y-m-d H:i:s'),
+                        'revoked_by' => $entry->revoked_by,
+                        'revoked_by_name' => optional($users->firstWhere('id', $entry->revoked_by))->name ?? $entry->revoked_by,
+                    ];
+                })->values()->all();
+            })
+            ->all();
+
+        $competencyEntriesByPeriod = $allAssessmentEntries
+            ->filter(fn ($entry) => $entry->assessment_type === 'competency')
+            ->groupBy('assessment_period_id');
+
+        $competencyAssessmentHistory = $competencyEntriesByPeriod
+            ->keys()
+            ->merge($competencyAssessmentSubmissions->keys())
+            ->unique()
+            ->map(function ($assessmentPeriodId) use ($competencyEntriesByPeriod, $assessmentPeriodLabels, $competencyAssessmentSubmissions, $selectedAssessmentPeriodId, $draftResponses, $employeeCompetencyItems) {
+                $entries = $competencyEntriesByPeriod->get($assessmentPeriodId, collect());
+                $latestStates = $entries
+                    ->filter(fn ($entry) => $entry->revoked_at === null)
+                    ->groupBy('item_key')
+                    ->map(function ($groupedEntries) {
+                        return $groupedEntries
+                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                            ->first();
+                    })
+                    ->filter();
+
+                $submission = $competencyAssessmentSubmissions->get((int) $assessmentPeriodId);
+                $status = $submission?->status
+                    ? ucwords(str_replace('_', ' ', (string) $submission->status))
+                    : 'Draft';
+                $snapshotItems = collect($submission?->snapshot_json['items'] ?? []);
+                $snapshotRatedCount = $snapshotItems
+                    ->filter(fn ($item) => in_array(($item['rating'] ?? null), ['E', 'S', 'U'], true))
+                    ->count();
+
+                // --- Fix: For current period and no finalized submission, use draft responses for summary ---
+                $useDraft = !$submission || ($status === 'Draft' && (int)$assessmentPeriodId === (int)$selectedAssessmentPeriodId);
+                if ($useDraft && !empty($draftResponses)) {
+                    $total = 0;
+                    $count = 0;
+                    foreach ($employeeCompetencyItems as $item) {
+                        $id = $item->id;
+                        $resp = $draftResponses[$id] ?? null;
+                        $score = match ($resp) {
+                            'E' => 3,
+                            'S' => 2,
+                            'U' => 1,
+                            default => null,
+                        };
+                        if ($score === null) continue;
+                        $total += $score;
+                        $count++;
+                    }
+                    $average = $count > 0 ? round($total / $count, 2) : 0;
+                    $overall = $count === 0
+                        ? 'N/A'
+                        : ($average >= 2.5
+                            ? 'Excellent'
+                            : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+                } else {
+                    $total = 0;
+                    $count = 0;
+                    foreach ($latestStates as $state) {
+                        $score = match ($state->rating) {
+                            'E' => 3,
+                            'S' => 2,
+                            'U' => 1,
+                            default => null,
+                        };
+                        if ($score === null) continue;
+                        $total += $score;
+                        $count++;
+                    }
+                    $average = $count > 0 ? round($total / $count, 2) : 0;
+                    $overall = $count === 0
+                        ? 'N/A'
+                        : ($average >= 2.5
+                            ? 'Excellent'
+                            : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+                }
+
+                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
+                $latestAssessment = $entries
+                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                    ->first();
+
+                return [
+                    'assessment_period_id' => (int) $assessmentPeriodId,
+                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
+                    'assessment_date' => optional($submission?->submitted_at)->toDateString()
+                        ?? optional($submission?->updated_at)->toDateString()
+                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
+                    'items_count' => $submission ? max($count, $snapshotRatedCount) : $count,
+                    'total_score' => $submission?->total_score ?? $total,
+                    'average_score' => $submission ? number_format((float) $submission->average_score, 2) : number_format($average, 2),
+                    'overall_rating' => $submission?->overall_rating ?? $overall,
+                    'status' => $status,
+                    'competency_assessment_id' => $submission?->id,
+                    'pdf_available' => !empty($submission?->pdf_path),
+                ];
+            })
+            ->sortByDesc('assessment_date')
+            ->values()
+            ->all();
+
+        // Extract LICENSED NURSE COMPETENCY SKILLS summary for current period (must be after $competencyAssessmentHistory is built)
+        $lnSummary = null;
+        if (!empty($competencyAssessmentHistory)) {
+            foreach ($competencyAssessmentHistory as $row) {
+                if ((int)($row['assessment_period_id'] ?? 0) === (int)$selectedAssessmentPeriodId) {
+                    $lnSummary = $row;
+                    break;
+                }
+            }
+        }
+        $lnTotalPoints = $lnSummary['total_score'] ?? null;
+        $lnAverage = $lnSummary['average_score'] ?? null;
+        $lnOverallRating = $lnSummary['overall_rating'] ?? null;
+
+        $performanceEntriesByPeriod = $allAssessmentEntries
+            ->filter(fn ($entry) => $entry->assessment_type === 'performance')
+            ->groupBy('assessment_period_id');
+
+        $performanceAssessmentHistory = $performanceEntriesByPeriod
+            ->keys()
+            ->merge($performanceAssessmentSubmissions->keys())
+            ->unique()
+            ->map(function ($assessmentPeriodId) use ($performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions) {
+                $entries = $performanceEntriesByPeriod->get($assessmentPeriodId, collect());
+                $latestStates = $entries
+                    ->filter(fn ($entry) => $entry->revoked_at === null)
+                    ->groupBy('item_key')
+                    ->map(function ($groupedEntries) {
+                        return $groupedEntries
+                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                            ->first();
+                    })
+                    ->filter();
+
+                $total = 0;
+                $count = 0;
+                foreach ($latestStates as $state) {
+                    $score = match ($state->rating) {
+                        'E' => 3,
+                        'S' => 2,
+                        'U' => 1,
+                        default => null,
+                    };
+
+                    if ($score === null) {
+                        continue;
+                    }
+
+                    $total += $score;
+                    $count++;
+                }
+
+                $average = $count > 0 ? round($total / $count, 2) : 0;
+                $overall = $count === 0
+                    ? 'N/A'
+                    : ($average >= 2.5
+                        ? 'Excellent'
+                        : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
+                $latestAssessment = $entries
+                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
+                    ->first();
+                $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
+
+                return [
+                    'assessment_period_id' => (int) $assessmentPeriodId,
+                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
+                    'assessment_date' => optional($submission?->review_dt)->toDateString()
+                        ?? optional($submission?->updated_at)->toDateString()
+                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
+                    'items_count' => $count,
+                    'total_score' => $total,
+                    'average_score' => number_format($average, 2),
+                    'overall_rating' => $overall,
+                    'status' => $submission
+                        ? (!empty($submission->finalized) ? 'Completed' : 'In Progress')
+                        : 'Draft',
+                ];
+            })
+            ->sortByDesc('assessment_date')
+            ->values()
+            ->all();
+
+        if ($selectedAssessmentPeriodId) {
+            $assessment = $selectedPerformanceAssessment;
+            $period = \App\Models\EmployeeAssessmentPeriod::find($selectedAssessmentPeriodId);
+            if ($period) {
+                $reviewType = $period->review_type === 'Q' ? 'Quarterly' : 'Annual';
+            }
+
+            $assessmentEntries = $allAssessmentEntries
+                ->where('assessment_period_id', (int) $selectedAssessmentPeriodId)
+                ->values();
+
+            $assessmentItemStates = $assessmentEntries
+                ->filter(fn ($entry) => $entry->revoked_at === null)
+                ->groupBy(function ($entry) {
+                    if ($entry->assessment_type === 'performance' && !empty($entry->source_item_id)) {
+                        return 'F_' . $entry->source_item_id;
+                    }
+
+                    return $entry->item_key;
+                })
+                ->map(function ($entries) use ($users) {
+                    $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
+
+                    return [
+                        'rating' => $latest->rating,
+                        'verified_dt' => optional($latest->assessment_date)->toDateString(),
+                        'verified_by' => $latest->assessed_by,
+                        'verified_by_name' => optional($users->firstWhere('id', $latest->assessed_by))->name ?? $latest->assessed_by,
+                        'comments' => $latest->comments,
+                    ];
+                })
+                ->all();
+
+            $legacyPerformanceEntries = $assessmentEntries
+                ->filter(fn ($entry) => $entry->assessment_type === 'performance' && empty($entry->source_item_id) && str_starts_with((string) $entry->item_key, 'F_'))
+                ->groupBy('item_key')
+                ->map(function ($entries) use ($users) {
+                    $latest = $entries->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first();
+
+                    return [
+                        'rating' => $latest->rating,
+                        'verified_dt' => optional($latest->assessment_date)->toDateString(),
+                        'verified_by' => $latest->assessed_by,
+                        'verified_by_name' => optional($users->firstWhere('id', $latest->assessed_by))->name ?? $latest->assessed_by,
+                        'comments' => $latest->comments,
+                    ];
+                })
+                ->all();
+
+            foreach ($legacyPerformanceEntries as $legacyItemKey => $legacyEntryState) {
+                if (!isset($assessmentItemStates[$legacyItemKey])) {
+                    $assessmentItemStates[$legacyItemKey] = $legacyEntryState;
+                }
+            }
+
+            if ($assessment) {
+                if ($assessment->items) {
+                    $legacyItems = json_decode($assessment->items, true) ?: [];
+                    foreach ($legacyItems as $itemKey => $itemData) {
+                        if (!isset($assessmentItemStates[$itemKey])) {
+                            $assessmentItemStates[$itemKey] = [
+                                'rating' => $itemData['rating'] ?? null,
+                                'verified_dt' => $itemData['verified_dt'] ?? null,
+                                'verified_by' => $itemData['verified_by'] ?? null,
+                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
+                                'comments' => $itemData['comments'] ?? null,
+                            ];
+                        }
+
+                        if (!isset($assessmentItemHistories[$itemKey])) {
+                            $assessmentItemHistories[$itemKey] = [[
+                                'id' => null,
+                                'rating' => $itemData['rating'] ?? null,
+                                'verified_dt' => $itemData['verified_dt'] ?? null,
+                                'verified_by' => $itemData['verified_by'] ?? null,
+                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
+                                'comments' => $itemData['comments'] ?? null,
+                                'assessment_period_id' => (int) $selectedAssessmentPeriodId,
+                                'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
+                                'is_selected_period' => true,
+                                'revoked_at' => null,
+                                'revoked_by' => null,
+                                'revoked_by_name' => null,
+                            ]];
+                        }
+                    }
+                }
+                $reviewDate = $assessment->review_dt;
+                $employeeAcknowledgeDt = $assessment->acknowledge_dt;
+                // Lookup reviewer name if assessed_by is set
+                if ($assessment->assessed_by) {
+                    $reviewerUser = \App\Models\User::find($assessment->assessed_by);
+                    $reviewerName = $reviewerUser ? $reviewerUser->name : '';
+                }
+            }
+
+            $legacyChecklistItems = optional($empChecklists->firstWhere('employee_num', $employee->employee_num))->items ?? [];
+            foreach ($legacyChecklistItems as $legacyKey => $legacyItem) {
+                if (!str_starts_with((string) $legacyKey, 'competency::')) {
+                    continue;
+                }
+
+                $competencyItemId = (int) \Illuminate\Support\Str::after((string) $legacyKey, 'competency::');
+                if ($competencyItemId <= 0) {
+                    continue;
+                }
+
+                $itemKey = 'G_' . $competencyItemId;
+                if (isset($assessmentItemStates[$itemKey])) {
+                    continue;
+                }
+
+                $assessmentItemStates[$itemKey] = [
+                    'rating' => 'S',
+                    'verified_dt' => $legacyItem['verified_dt'] ?? null,
+                    'verified_by' => $legacyItem['verified_by'] ?? null,
+                    'verified_by_name' => optional($users->firstWhere('id', $legacyItem['verified_by'] ?? null))->name ?? ($legacyItem['verified_by'] ?? null),
+                    'comments' => $legacyItem['comments'] ?? null,
+                ];
+
+                $assessmentItemHistories[$itemKey] = [[
+                    'id' => null,
+                    'rating' => 'S',
+                    'verified_dt' => $legacyItem['verified_dt'] ?? null,
+                    'verified_by' => $legacyItem['verified_by'] ?? null,
+                    'verified_by_name' => optional($users->firstWhere('id', $legacyItem['verified_by'] ?? null))->name ?? ($legacyItem['verified_by'] ?? null),
+                    'comments' => $legacyItem['comments'] ?? null,
+                    'assessment_period_id' => (int) $selectedAssessmentPeriodId,
+                    'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
+                    'is_selected_period' => true,
+                    'revoked_at' => null,
+                    'revoked_by' => null,
+                    'revoked_by_name' => null,
+                ]];
+            }
+        }
+
+        $empPerformanceChecklist = collect($assessmentItemStates)
+            ->filter(fn ($item, $itemKey) => str_starts_with((string) $itemKey, 'F_'))
+            ->all();
+
+        $empCompetencyAssessments = collect($assessmentItemStates)
+            ->filter(fn ($item, $itemKey) => str_starts_with((string) $itemKey, 'G_'))
+            ->all();
+
+        // PART F: Load section comments for this employee and assessment period
+        $sectionComments = [];
+        if ($selectedAssessmentPeriodId) {
+            $comments = \App\Models\EmployeePerformanceSectionComment::where('employee_num', $employee->employee_num)
+                ->where('assessment_period_id', $selectedAssessmentPeriodId)
+                ->get();
+            foreach ($comments as $comment) {
+                $sectionComments[$comment->doc_type_id] = $comment->comment;
+            }
+        }
+
+        // Supervisor name logic: use Reports To if available, else logged-in user
+        $supervisorName = '';
+        $assignment = $employee->currentAssignment;
+        if ($assignment && $assignment->reports_to) {
+            $supervisorEmp = \App\Models\BPEmployee::where('id', $assignment->reports_to)->first();
+            if ($supervisorEmp && $supervisorEmp->user) {
+                $supervisorName = $supervisorEmp->user->name;
+            } elseif ($supervisorEmp) {
+                $supervisorName = trim($supervisorEmp->last_name . ', ' . $supervisorEmp->first_name . ($supervisorEmp->middle_name ? ' ' . $supervisorEmp->middle_name : ''));
+            }
+        }
+        if (!$supervisorName && auth()->check()) {
+            $supervisorName = auth()->user()->name;
+        }
+
+        // Get doc_type_id for each section
+        $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
+        $devPlansDocType = \App\Models\DocType::where('name', 'Development Plans')->first();
+        $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
+
+        $areasForDevelopment = $areasDevDocType && isset($sectionComments[$areasDevDocType->id]) ? $sectionComments[$areasDevDocType->id] : '';
+        $developmentPlans = $devPlansDocType && isset($sectionComments[$devPlansDocType->id]) ? $sectionComments[$devPlansDocType->id] : '';
+        $employeeComments = $empCommentsDocType && isset($sectionComments[$empCommentsDocType->id]) ? $sectionComments[$empCommentsDocType->id] : '';
+
+        $reviewDt = $reviewDate; // For PART F form field
+        $isAddMode = false;
+        $maritalOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Marital Status')->value('id'))
+            ->orderBy('sort_order')->get();
+        $ethnicOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Ethnic Group')->value('id'))
+            ->orderBy('sort_order')->get();
+        $militaryOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Military Status')->value('id'))
+            ->orderBy('sort_order')->get();
+        $citizenOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
+            ->orderBy('sort_order')->get();
+
+        return view('admin.facilities.employee.edit_employee', compact(
+            'employee',
+            'departments',
+            'positions',
+            'facilities',
+            'checklistItems',
+            'employeeCompetencyItems',
+            'empChecklists',
+            'users',
+            'empPerformanceChecklist',
+            'empCompetencyAssessments',
+            'performanceAssessmentHistory',
+            'performanceAssessmentStatuses',
+            'selectedPerformanceAssessment',
+            'competencyAssessmentHistory',
+            'competencyAssessmentStatuses',
+            'selectedCompetencyAssessment',
+            'assessmentItemStates',
+            'assessmentItemHistories',
+            'assessmentPeriods',
+            'selectedAssessmentPeriodId',
+            'sectionComments',
+            'supervisorName',
+            'areasForDevelopment',
+            'developmentPlans',
+            'employeeComments',
+            'reviewDate',
+            'employeeAcknowledgeDt',
+            'reviewerName',
+            'reviewType',
+            'reviewDt',
+            'states',
+            'isAddMode',
+            'maritalOptions',
+            'ethnicOptions',
+            'militaryOptions',
+            'citizenOptions',
+            'uploadTypes',
+            // Add draft competency responses for Part G
+            'draftResponses',
+            'rawDraftRow',
+            // LN Competency summary for current period
+            'lnTotalPoints',
+            'lnAverage',
+		'lnOverallRating'
+        ));
+    }
+    }

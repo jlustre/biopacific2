@@ -39,12 +39,20 @@ use App\Http\Controllers\HireApplicantController;
 use App\Http\Controllers\EmployeeApplicationController;
 use App\Http\Controllers\EmployeePerformanceSectionCommentController;
 use App\Http\Controllers\Admin\Facilities\UploadController;
+use App\Http\Controllers\LnCompetencySkillsController;
+use App\Http\Controllers\LnCompetencySkillsSubmitController;
 
 use App\Models\Facility;
 use App\Models\Position;
 
 // Debug route to confirm routing works
 Route::get('/debug-upload-view', function() { dd('global route hit'); });
+
+   // Licensed Nurse Competency Skills section
+Route::get('/admin/facilities/checklist/partg/ln-competency-skills', [LnCompetencySkillsController::class, 'show'])->name('partg.ln_competency_skills.show');
+Route::post('/admin/facilities/checklist/partg/ln-competency-skills/save', [LnCompetencySkillsSubmitController::class, 'save'])->name('partg.ln_competency_skills.save');
+Route::post('/admin/facilities/checklist/partg/ln-competency-skills/save-draft', [LnCompetencySkillsSubmitController::class, 'saveDraft'])->name('partg.ln_competency_skills.saveDraft');
+Route::get('/admin/test-competency-skills', [LnCompetencySkillsController::class, 'show']);
 
 // Temporarily remove middleware for debugging
 Route::get('/admin/facility/{facility}/uploads/{upload}/download', [UploadController::class, 'download'])
@@ -355,7 +363,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::get('/facilities/{facility}/hipaa-interactive', function (Facility $facility) {
         return view('admin.facilities.hipaa-interactive', compact('facility'));
     })->name('facilities.hipaa.interactive');
-    
+
     // HIPAA Toggle route (admin version) - handle both ID and slug
     Route::post('/facilities/{facility}/hipaa/toggle', [FacilityController::class, 'toggleHipaaFlag'])->name('facilities.hipaa.toggle');
     
@@ -782,16 +790,6 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
 });
 
-
-// Alpine.js Facility Uploads Demo
-Route::get('/test-facility-uploads-alpine', function () {
-    return view('test-facility-uploads-alpine');
-});
-Route::post('/test-facility-uploads-alpine', function (\Illuminate\Http\Request $request) {
-    // Handle file upload logic here (validate, store, etc.)
-    // For demo, just redirect back with success
-    return back()->with('success', 'File uploaded (demo, not saved).');
-});
 
 // AJAX endpoints for Alpine.js demo
 Route::get('/admin/facilities/all', function () {

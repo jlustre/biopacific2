@@ -562,5 +562,15 @@
                     });
             });
         });
+
+        // Attach handler for New Period button to open modal
+        // (Fixes: New Assessment Period popup not showing)
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.js-assessment-period-action[data-action="new-period"]').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    window.openNewPeriodModal();
+                });
+            });
+        });
     })();
 </script>
