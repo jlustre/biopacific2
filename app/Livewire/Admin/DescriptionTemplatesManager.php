@@ -666,14 +666,17 @@ class DescriptionTemplatesManager extends Component
             $this->addedJobDescriptions = json_decode($template->job_descriptions, true) ?? [];
         }
 
-        // Show all blocks
+        // Show all blocks and open the rich-text editor with loaded content
         $this->showPositionBlock = true;
+        $this->showFinalDescriptionEditor = true;
 
         // Use position_id from template
         if ($template->position_id) {
             $this->selectedPositionId = $template->position_id;
             $this->syncDepartmentForPosition();
         }
+
+        $this->dispatch('template-loaded', contents: $this->finalDescription);
     }
 
     public function createPosition(): void

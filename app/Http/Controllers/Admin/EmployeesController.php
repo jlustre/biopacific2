@@ -12,11 +12,86 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\SelectOption;
+use App\Models\EmployeePerformanceAssessment;
 use App\Models\Optionstype;
+use App\Support\PartFPerformanceScoring;
 
 
 class EmployeesController extends Controller
 {
+    protected function scopedFacilityId(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if ($user && $user->hasRole(['facility-admin', 'facility-dsd']) && $user->facility_id) {
+            return (int) $user->facility_id;
+        }
+
+        return null;
+    }
+
+    protected function facilitiesForUser(Request $request)
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId) {
+            return Facility::where('id', $scopedFacilityId)->orderBy('name')->get();
+        }
+
+        return Facility::orderBy('name')->get();
+    }
+
+    protected function resolveFacilityFromRoute($facility): ?Facility
+    {
+        if ($facility instanceof Facility) {
+            return $facility;
+        }
+
+        if ($facility === null || $facility === '') {
+            return null;
+        }
+
+        return Facility::query()
+            ->where('id', $facility)
+            ->orWhere('slug', $facility)
+            ->first();
+    }
+
+    protected function resolveFacilityFilterId(Request $request, $facility = null): ?int
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId) {
+            return $scopedFacilityId;
+        }
+
+        $routeFacility = $this->resolveFacilityFromRoute($facility);
+
+        if ($routeFacility) {
+            return (int) $routeFacility->id;
+        }
+
+        if ($request->filled('facility')) {
+            return (int) $request->facility;
+        }
+
+        return null;
+    }
+
+    protected function authorizeEmployeeFacilityAccess(Request $request, BPEmployee $employee): void
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if (! $scopedFacilityId) {
+            return;
+        }
+
+        $employeeFacilityId = $employee->currentAssignment?->facility_id;
+
+        if ($employeeFacilityId && (int) $employeeFacilityId !== $scopedFacilityId) {
+            abort(403, 'You do not have access to employees at this facility.');
+        }
+    }
 
     /**
      * Handle employee document upload.
@@ -257,9 +332,12 @@ class EmployeesController extends Controller
         return redirect()->back()->with('success', 'Email updated successfully.');
     }
     
-    public function index(Request $request)
+    public function index(Request $request, $facility = null)
     {
-        $facilities = Facility::all();
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $facilityFilterId = $this->resolveFacilityFilterId($request, $facility);
+        $facilities = $this->facilitiesForUser($request);
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
         $departments = \App\Models\Department::all();
         $positions = \App\Models\Position::all();
         $supervisorPositions = \App\Models\Position::query()->supervisorRoles()->get();
@@ -272,9 +350,9 @@ class EmployeesController extends Controller
         }
 
         // Filter by facility (current assignment only)
-        if ($request->filled('facility')) {
-            $query->whereHas('currentAssignment', function ($q) use ($request) {
-                $q->where('facility_id', $request->facility);
+        if ($facilityFilterId) {
+            $query->whereHas('currentAssignment', function ($q) use ($facilityFilterId) {
+                $q->where('facility_id', $facilityFilterId);
             });
         }
 
@@ -326,7 +404,17 @@ class EmployeesController extends Controller
 
         // dd($employees->toArray());
 
-        return view('admin.facilities.employees', compact('employees', 'facilities', 'departments', 'positions', 'supervisorPositions', 'perPage'));
+        return view('admin.facilities.employees', compact(
+            'employees',
+            'facilities',
+            'departments',
+            'positions',
+            'supervisorPositions',
+            'perPage',
+            'facilityFilterId',
+            'scopedFacility',
+            'scopedFacilityId'
+        ));
     }
     /**
      * Display the specified employee details for modal.
@@ -648,19 +736,35 @@ class EmployeesController extends Controller
             //     'employee' => $employee,
             //     'request' => $request->all(),
             // ]);
+            $checklistItem = null;
+            if ($request->filled('checklist_item_id')) {
+                $checklistItem = \App\Models\ChecklistItem::find($request->input('checklist_item_id'));
+            }
+            if (!$checklistItem && $request->filled('doc_name')) {
+                $checklistItem = \App\Models\ChecklistItem::where('name', $request->input('doc_name'))->first();
+            }
+
             $validated = $request->validate([
                 'checklist_item_id' => 'nullable|integer|exists:checklist_items,id',
                 'doc_name' => 'required|string|max:255',
                 'doc_type_id' => 'required|integer',
                 'on_file' => 'required|boolean',
                 'verified_dt' => 'nullable|date',
-                'exp_dt' => 'nullable|date',
+                'exp_dt' => [
+                    $checklistItem && $checklistItem->isExpiring ? 'required' : 'nullable',
+                    'date',
+                ],
                 'comments' => 'nullable|string|max:1000',
                 'exp_dt_not_required' => 'nullable|boolean',
             ]);
 
             $userId = Auth::id();
             $employeeModel = \App\Models\BPEmployee::where('employee_num', $employee)->firstOrFail();
+
+            if ($response = \App\Support\PreventsSelfAssessment::jsonDenyIfSelf(Auth::user(), $employeeModel)) {
+                return $response;
+            }
+
             $checklist = \App\Models\BPEmpChecklist::firstOrNew(['employee_num' => $employeeModel->employee_num]);
             $items = $checklist->items ?? [];
             $docName = $validated['doc_name'];
@@ -729,6 +833,11 @@ class EmployeesController extends Controller
             ]);
             $docName = $validated['doc_name'];
             $checklistKey = !empty($validated['checklist_item_id']) ? 'item_' . $validated['checklist_item_id'] : $docName;
+
+            if ($response = \App\Support\PreventsSelfAssessment::jsonDenyIfSelf(Auth::user(), (string) $employee)) {
+                return $response;
+            }
+
             $checklist = \App\Models\BPEmpChecklist::where('employee_num', $employee)->first();
             $itemData = null;
             if ($checklist && is_array($checklist->items) && array_key_exists($checklistKey, $checklist->items)) {
@@ -798,6 +907,11 @@ class EmployeesController extends Controller
         }
 
         $employee = \App\Models\BPEmployee::findOrFail($employee_num);
+        $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
+
+        if ($isSelfAssessment && $request->input('action') === 'submit') {
+            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+        }
 
         $finalizedAssessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
             ->where('assessment_period_id', $assessmentPeriodId)
@@ -808,46 +922,63 @@ class EmployeesController extends Controller
             return back()->with('error', 'This performance assessment is already completed for the selected period and can no longer be changed.');
         }
 
-        // Save Areas Requiring Further Development
-        $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
-        if ($areasDevDocType) {
-            \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
+        if ($isSelfAssessment) {
+            $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
+            if ($empCommentsDocType) {
+                \App\Models\EmployeePerformanceSectionComment::syncForSection(
+                    $employee->employee_num,
+                    (int) $assessmentPeriodId,
+                    (int) $empCommentsDocType->id,
+                    $request->input('employee_comments'),
+                );
+            }
+
+            $assessment = \App\Models\EmployeePerformanceAssessment::firstOrCreate(
                 [
                     'employee_num' => $employee->employee_num,
                     'assessment_period_id' => $assessmentPeriodId,
-                    'doc_type_id' => $areasDevDocType->id,
                 ],
                 [
-                    'comment' => $request->input('areas_for_development', ''),
+                    'items' => [],
                 ]
+            );
+
+            if ($request->filled('employee_acknowledge_dt')) {
+                $assessment->acknowledge_dt = $request->input('employee_acknowledge_dt');
+                $assessment->save();
+            }
+
+            return back()->with('success', 'Employee acknowledgment saved.');
+        }
+
+        // Save Areas Requiring Further Development
+        $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
+        if ($areasDevDocType) {
+            \App\Models\EmployeePerformanceSectionComment::syncForSection(
+                $employee->employee_num,
+                (int) $assessmentPeriodId,
+                (int) $areasDevDocType->id,
+                $request->input('areas_for_development'),
             );
         }
         // Save Development Plans
         $devPlansDocType = \App\Models\DocType::where('name', 'Development Plans')->first();
         if ($devPlansDocType) {
-            \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
-                [
-                    'employee_num' => $employee->employee_num,
-                    'assessment_period_id' => $assessmentPeriodId,
-                    'doc_type_id' => $devPlansDocType->id,
-                ],
-                [
-                    'comment' => $request->input('development_plans', ''),
-                ]
+            \App\Models\EmployeePerformanceSectionComment::syncForSection(
+                $employee->employee_num,
+                (int) $assessmentPeriodId,
+                (int) $devPlansDocType->id,
+                $request->input('development_plans'),
             );
         }
         // Save Employee Comments
         $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
         if ($empCommentsDocType) {
-            \App\Models\EmployeePerformanceSectionComment::updateOrCreate(
-                [
-                    'employee_num' => $employee->employee_num,
-                    'assessment_period_id' => $assessmentPeriodId,
-                    'doc_type_id' => $empCommentsDocType->id,
-                ],
-                [
-                    'comment' => $request->input('employee_comments', ''),
-                ]
+            \App\Models\EmployeePerformanceSectionComment::syncForSection(
+                $employee->employee_num,
+                (int) $assessmentPeriodId,
+                (int) $empCommentsDocType->id,
+                $request->input('employee_comments'),
             );
         }
 
@@ -858,7 +989,7 @@ class EmployeesController extends Controller
                 'assessment_period_id' => $assessmentPeriodId,
             ],
             [
-                'items' => json_encode([]),
+                'items' => [],
                 'assessed_by' => auth()->id(),
             ]
         );
@@ -866,6 +997,10 @@ class EmployeesController extends Controller
             $assessment->review_dt = $request->input('review_dt');
             if ($request->filled('employee_acknowledge_dt')) {
                 $assessment->acknowledge_dt = $request->input('employee_acknowledge_dt');
+            }
+            $this->syncPerformanceAssessmentSummary($assessment);
+            if (filled($validated['overall_rating'] ?? null)) {
+                $assessment->overall_rating = $validated['overall_rating'];
             }
             $assessment->comments = ($validated['overall_rating'] ?? null) === 'Unsatisfactory'
                 ? ($validated['overall_unsatisfactory_reason'] ?? null)
@@ -1029,20 +1164,68 @@ class EmployeesController extends Controller
         }
     }
 
+    private function syncPerformanceAssessmentSummary(EmployeePerformanceAssessment $assessment): void
+    {
+        $ratings = [];
+        foreach ($assessment->itemsArray() as $itemKey => $itemData) {
+            if (! preg_match('/^F_(\d+)$/', (string) $itemKey, $matches)) {
+                continue;
+            }
+
+            $rating = EmployeePerformanceAssessment::itemRating($itemData);
+            if ($rating !== null) {
+                $ratings[(int) $matches[1]] = $rating;
+            }
+        }
+
+        $summary = PartFPerformanceScoring::summarize($ratings, PartFPerformanceScoring::scorableItemIds());
+        $assessment->total_score = $summary['total_score'];
+        $assessment->average_score = $summary['average_score'];
+        $assessment->overall_rating = $summary['overall_rating'];
+    }
+
+    /**
+     * Resolve the active assessment period from the request.
+     * Defaults to none so Part F/G start on "Select/Create Assessment Period".
+     */
+    private function resolveSelectedAssessmentPeriodId($assessmentPeriods): ?int
+    {
+        if (request()->has('assessment_period_id')) {
+            return filled(request('assessment_period_id'))
+                ? (int) request('assessment_period_id')
+                : null;
+        }
+
+        return null;
+    }
+
     /**
      * Show the form for editing the specified employee.
      */
-    public function edit($employee_num) {
+    public function edit(Request $request, $employee_num) {
         // Always define draft responses and raw draft row for Part G
         $draftResponses = [];
         $rawDraftRow = null;
         // PART F: Load all assessment periods for this employee
         $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
-        $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
-        
+        $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodId($assessmentPeriods);
+
         // Load draft competency responses for Part G (if any)
 
-        $employee = \App\Models\BPEmployee::with(['phones', 'addresses', 'user', 'currentAssignment', 'currentAssignment.position'])->findOrFail($employee_num); // $employee_num is PK id
+        $employee = \App\Models\BPEmployee::with([
+            'phones',
+            'addresses',
+            'user',
+            'currentAssignment',
+            'currentAssignment.facility',
+            'currentAssignment.position',
+            'currentAssignment.position.reportsToPosition',
+        ])->findOrFail($employee_num); // $employee_num is PK id
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
+        $employeesListFacilityId = $this->resolveFacilityFilterId($request);
+        $employeesListFacility = $employeesListFacilityId
+            ? Facility::find($employeesListFacilityId)
+            : $employee->currentAssignment?->facility;
 
         $departments = \App\Models\Department::all();
         $positions = \App\Models\Position::all();
@@ -1091,7 +1274,7 @@ class EmployeesController extends Controller
 
         // PART F: Load all assessment periods for this employee
         $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
-        $selectedAssessmentPeriodId = request('assessment_period_id') ?: ($assessmentPeriods->first()->id ?? null);
+        $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodId($assessmentPeriods);
         // --- END: Load draft competency responses for Part G ---
 
         // --- END: Load draft competency responses for Part G ---
@@ -1319,7 +1502,7 @@ class EmployeesController extends Controller
             ->keys()
             ->merge($performanceAssessmentSubmissions->keys())
             ->unique()
-            ->map(function ($assessmentPeriodId) use ($performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions) {
+            ->map(function ($assessmentPeriodId) use ($performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions, $selectedAssessmentPeriodId) {
                 $entries = $performanceEntriesByPeriod->get($assessmentPeriodId, collect());
                 $latestStates = $entries
                     ->filter(fn ($entry) => $entry->revoked_at === null)
@@ -1361,19 +1544,27 @@ class EmployeesController extends Controller
                     ->first();
                 $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
 
+                $isFinalized = ! empty($submission?->finalized);
+
                 return [
                     'assessment_period_id' => (int) $assessmentPeriodId,
                     'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
+                    'period_year' => $period?->period_year,
                     'assessment_date' => optional($submission?->review_dt)->toDateString()
                         ?? optional($submission?->updated_at)->toDateString()
                         ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
                     'items_count' => $count,
-                    'total_score' => $total,
-                    'average_score' => number_format($average, 2),
-                    'overall_rating' => $overall,
+                    'total_score' => $submission?->total_score ?? $total,
+                    'average_score' => $submission
+                        ? number_format((float) $submission->average_score, 2)
+                        : number_format($average, 2),
+                    'overall_rating' => $submission?->overall_rating ?? $overall,
                     'status' => $submission
-                        ? (!empty($submission->finalized) ? 'Completed' : 'In Progress')
+                        ? ($isFinalized ? 'Completed' : 'In Progress')
                         : 'Draft',
+                    'is_finalized' => $isFinalized,
+                    'is_current' => (int) $assessmentPeriodId === (int) $selectedAssessmentPeriodId,
+                    'performance_assessment_id' => $submission?->id,
                 ];
             })
             ->sortByDesc('assessment_date')
@@ -1437,26 +1628,26 @@ class EmployeesController extends Controller
 
             if ($assessment) {
                 if ($assessment->items) {
-                    $legacyItems = json_decode($assessment->items, true) ?: [];
+                    $legacyItems = $assessment->itemsArray();
                     foreach ($legacyItems as $itemKey => $itemData) {
                         if (!isset($assessmentItemStates[$itemKey])) {
                             $assessmentItemStates[$itemKey] = [
-                                'rating' => $itemData['rating'] ?? null,
-                                'verified_dt' => $itemData['verified_dt'] ?? null,
-                                'verified_by' => $itemData['verified_by'] ?? null,
-                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
-                                'comments' => $itemData['comments'] ?? null,
+                                'rating' => \App\Models\EmployeePerformanceAssessment::itemRating($itemData),
+                                'verified_dt' => optional($assessment->assessment_date)->toDateString(),
+                                'verified_by' => $assessment->assessed_by,
+                                'verified_by_name' => optional($users->firstWhere('id', $assessment->assessed_by))->name ?? $assessment->assessed_by,
+                                'comments' => null,
                             ];
                         }
 
                         if (!isset($assessmentItemHistories[$itemKey])) {
                             $assessmentItemHistories[$itemKey] = [[
                                 'id' => null,
-                                'rating' => $itemData['rating'] ?? null,
-                                'verified_dt' => $itemData['verified_dt'] ?? null,
-                                'verified_by' => $itemData['verified_by'] ?? null,
-                                'verified_by_name' => optional($users->firstWhere('id', $itemData['verified_by'] ?? null))->name ?? ($itemData['verified_by'] ?? null),
-                                'comments' => $itemData['comments'] ?? null,
+                                'rating' => \App\Models\EmployeePerformanceAssessment::itemRating($itemData),
+                                'verified_dt' => optional($assessment->assessment_date)->toDateString(),
+                                'verified_by' => $assessment->assessed_by,
+                                'verified_by_name' => optional($users->firstWhere('id', $assessment->assessed_by))->name ?? $assessment->assessed_by,
+                                'comments' => null,
                                 'assessment_period_id' => (int) $selectedAssessmentPeriodId,
                                 'period_label' => optional($assessmentPeriodLabels->get($selectedAssessmentPeriodId), fn ($period) => $period->date_from . ' to ' . $period->date_to) ?? ('Period #' . $selectedAssessmentPeriodId),
                                 'is_selected_period' => true,
@@ -1536,20 +1727,8 @@ class EmployeesController extends Controller
             }
         }
 
-        // Supervisor name logic: use Reports To if available, else logged-in user
-        $supervisorName = '';
-        $assignment = $employee->currentAssignment;
-        if ($assignment && $assignment->reports_to) {
-            $supervisorEmp = \App\Models\BPEmployee::where('id', $assignment->reports_to)->first();
-            if ($supervisorEmp && $supervisorEmp->user) {
-                $supervisorName = $supervisorEmp->user->name;
-            } elseif ($supervisorEmp) {
-                $supervisorName = trim($supervisorEmp->last_name . ', ' . $supervisorEmp->first_name . ($supervisorEmp->middle_name ? ' ' . $supervisorEmp->middle_name : ''));
-            }
-        }
-        if (!$supervisorName && auth()->check()) {
-            $supervisorName = auth()->user()->name;
-        }
+        // Part F supervisor signature defaults to the logged-in reviewer.
+        $supervisorName = auth()->check() ? auth()->user()->name : '';
 
         // Get doc_type_id for each section
         $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
@@ -1575,8 +1754,16 @@ class EmployeesController extends Controller
             ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
             ->orderBy('sort_order')->get();
 
+        $evaluatorActionsDisabled = \App\Support\PreventsSelfAssessment::isSelfAssessment(
+            auth()->user(),
+            $employee->employee_num
+        );
+
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
+            'employeesListFacility',
+            'employeesListFacilityId',
+            'evaluatorActionsDisabled',
             'departments',
             'positions',
             'facilities',

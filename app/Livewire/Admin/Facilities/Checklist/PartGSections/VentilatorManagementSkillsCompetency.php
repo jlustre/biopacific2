@@ -261,6 +261,10 @@ class VentilatorManagementSkillsCompetency extends Component
 
     protected function persistResponses(string $status): void
     {
+        if ($this->abortPersistIfSelfAssessment()) {
+            return;
+        }
+
         $existing = [];
         $row = EmployeeCompetencyAssessment::query()
             ->where('employee_num', $this->employeeNum)
@@ -407,6 +411,14 @@ class VentilatorManagementSkillsCompetency extends Component
 
     public function render()
     {
-        return view('livewire.admin.facilities.checklist.part-g-sections.ventilator-management-skills-competency');
+        $path = resource_path('views/livewire/admin/facilities/checklist/part-g-sections/ventilator-management-skills-competency.blade.php');
+
+        if (! is_file($path)) {
+            throw new \RuntimeException(
+                "Ventilator competency view missing at [{$path}]. Restore the blade file or run from the application root, then `php artisan view:clear`."
+            );
+        }
+
+        return view()->file($path);
     }
 }

@@ -4,7 +4,7 @@
     $assessmentEmployeeName = trim($employee->last_name . ', ' . $employee->first_name . ($employee->middle_name ? ' ' . $employee->middle_name : ''));
     $assessmentPosition = $assessmentAssignment?->position?->title ?? 'No Position Assigned';
     $assessmentDepartment = $assessmentAssignment?->department?->dept_name ?? $assessmentAssignment?->department?->name ?? 'N/A';
-    $assessmentReportsTo = $supervisorName ?? 'N/A';
+    $assessmentReportsTo = $assessmentAssignment?->reportsToPositionTitle() ?: '—';
     $assessmentReviewer = !empty($reviewDate)
         ? ($reviewerName ?? (auth()->user()->name ?? ''))
         : (auth()->user()->name ?? ($reviewerName ?? ''));

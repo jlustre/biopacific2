@@ -109,4 +109,25 @@ class PositionController extends Controller
 
         return redirect()->route('admin.positions.index')->with('success', 'Position deleted successfully.');
     }
+
+    /**
+     * Lookup department and reporting position for a job opening title.
+     */
+    public function lookup(Request $request)
+    {
+        $title = trim((string) $request->query('title', ''));
+
+        if ($title === '' || $title === 'Other') {
+            return response()->json(['department' => null, 'reporting_to' => null]);
+        }
+
+        $position = Position::with(['department', 'reportsToPosition'])
+            ->where('title', $title)
+            ->first();
+
+        return response()->json([
+            'department' => $position?->department?->name,
+            'reporting_to' => $position?->reportsToPosition?->title,
+        ]);
+    }
 }

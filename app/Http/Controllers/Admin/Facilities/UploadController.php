@@ -3,16 +3,151 @@ namespace App\Http\Controllers\Admin\Facilities;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\BPEmployee;
 use App\Models\Upload;
 use App\Models\UploadType;
 use App\Models\Facility;
+use App\Mail\FacilityUploadNotificationMail;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\EmployeeHelper;
 
 
 class UploadController extends Controller {
+
+    protected function authorizeFacilityAccess(Facility $facility): void
+    {
+        $user = Auth::user();
+        if ($user->hasRole('admin') || $user->hasRole('hrrd')) {
+            return;
+        }
+        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
+            if (isset($user->facility_id) && (int) $user->facility_id === (int) $facility->id) {
+                return;
+            }
+            if (method_exists($user, 'facilities') && $user->facilities->contains('id', $facility->id)) {
+                return;
+            }
+        }
+        abort(403, 'Unauthorized facility access.');
+    }
+
+    protected function resolveEmployeeNotificationEmail(BPEmployee $employee): ?string
+    {
+        foreach ([$employee->email, $employee->user?->email] as $candidate) {
+            $email = trim((string) $candidate);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{upload: Upload, email: string, expiryTier: string}
+     */
+    protected function resolveUploadNotificationContext(Facility $facility, Upload $upload): array
+    {
+        $this->authorizeFacilityAccess($facility);
+
+        $upload->load(['employee.user', 'facility', 'uploadType']);
+
+        if ((int) $upload->facility_id !== (int) $facility->id) {
+            abort(403, 'Upload does not belong to this facility.');
+        }
+
+        if (!$upload->employee) {
+            abort(422, 'No employee is linked to this upload.');
+        }
+
+        $email = $this->resolveEmployeeNotificationEmail($upload->employee);
+        if (!$email) {
+            abort(422, 'Employee has no valid email address on file.');
+        }
+
+        $expiryTier = $upload->expiryNotificationTier();
+        if ($expiryTier === null) {
+            abort(403, 'Notifications can only be sent for documents with an expiry date within the next 120 days.');
+        }
+
+        return [
+            'upload' => $upload,
+            'email' => $email,
+            'expiryTier' => $expiryTier,
+        ];
+    }
+
+    public function previewUploadNotification(Facility $facility, Upload $upload)
+    {
+        try {
+            $context = $this->resolveUploadNotificationContext($facility, $upload);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
+
+        return response()->json(
+            FacilityUploadNotificationMail::previewPayload(
+                $context['upload'],
+                $facility,
+                Auth::user(),
+                $context['expiryTier'],
+                $context['email'],
+            )
+        );
+    }
+
+    public function sendUploadNotification(Request $request, Facility $facility, Upload $upload)
+    {
+        try {
+            $context = $this->resolveUploadNotificationContext($facility, $upload);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        $upload = $context['upload'];
+        $email = $context['email'];
+        $expiryTier = $context['expiryTier'];
+
+        $validated = $request->validate([
+            'subject' => 'nullable|string|max:255',
+            'message' => 'nullable|string|max:10000',
+        ]);
+
+        $customSubject = trim((string) ($validated['subject'] ?? ''));
+        $customMessage = trim((string) ($validated['message'] ?? ''));
+
+        try {
+            Mail::to($email)->send(new FacilityUploadNotificationMail(
+                $upload,
+                $facility,
+                Auth::user(),
+                $expiryTier,
+                $customSubject !== '' ? $customSubject : null,
+                $customMessage !== '' ? $customMessage : null,
+            ));
+
+            return redirect()->back()->with(
+                'success',
+                'Notification sent to ' . $upload->employee->last_name . ', ' . $upload->employee->first_name . ' (' . $email . ').'
+            );
+        } catch (\Throwable $e) {
+            Log::error('Facility upload notification failed', [
+                'upload_id' => $upload->id,
+                'facility_id' => $facility->id,
+                'email' => $email,
+                'exception' => $e,
+            ]);
+
+            $message = config('app.debug')
+                ? 'Failed to send notification: ' . $e->getMessage()
+                : 'Failed to send notification. Please try again.';
+
+            return redirect()->back()->with('error', $message);
+        }
+    }
 
     public function update(Request $request, $facility, $upload)
     {

@@ -16,11 +16,21 @@ $error = $errors->any();
 <section id="careers" x-data="{ 
     openApply: false, 
     applyRole: '', 
+    applyRoleTitle: '',
     toastOpen: false, 
     toastMsg: '',
     infoModalOpen: false,
     infoModalJobId: null,
-    selectedJobData: {}
+    selectedJobData: {},
+    openJobApplication(jobOpeningId, jobTitle = '') {
+        this.openApply = true;
+        this.applyRole = jobOpeningId ? String(jobOpeningId) : '';
+        this.applyRoleTitle = jobTitle || '';
+        if (window.Livewire) {
+            Livewire.dispatch('setJobOpening', { jobOpeningId: jobOpeningId || null });
+        }
+        setTimeout(() => window.initJobApplicationCoverLetter?.(0), 400);
+    }
   }" x-init="applyRole = '{{ old('job_opening_id') ?? '' }}'"
   @close-apply-modal.window="openApply=false; applyRole=''; applyRoleTitle=''; if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: null }); }"
   class="py-16 sm:py-24 bg-gradient-to-br from-slate-50"
@@ -112,12 +122,7 @@ $error = $errors->any();
 
           <!-- Action Buttons -->
           <div class="flex gap-2 mt-4">
-            <button @click="
-                openApply=true; 
-                applyRole='{{ $job->id }}'; 
-                applyRoleTitle='{{ addslashes($job->title) }}';
-                if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: {{ $job->id }} }); }
-              "
+            <button @click="openJobApplication({{ $job->id }}, @js($job->title))"
               class="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center gap-1"
               style="min-width: 0; background: linear-gradient(to right, {{ $primary }}, {{ $secondary }}); &:hover { background: linear-gradient(to right, {{ $secondary }}, {{ $primary }}); }"
               onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
@@ -154,7 +159,7 @@ $error = $errors->any();
           indicate your desired position or title. We'll keep your application on file and reach out if a suitable
           opportunity arises.</p>
         <button
-          @click="openApply=true; applyRole=''; applyRoleTitle=''; if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: null }); }"
+          @click="openJobApplication(null)"
           class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200"
           style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
           onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
@@ -253,7 +258,7 @@ $error = $errors->any();
             Close
           </button>
           <button
-            @click="infoModalOpen=false; openApply=true; applyRole=selectedJobData.id; applyRoleTitle=selectedJobData.title; if (window.Livewire) { Livewire.dispatch('setJobOpening', { jobOpeningId: selectedJobData.id }); }"
+            @click="infoModalOpen=false; openJobApplication(selectedJobData.id, selectedJobData.title)"
             class="px-6 py-2 rounded-lg text-white font-semibold transition-all duration-200 cursor-pointer"
             style="background: linear-gradient(to right, {{ $primary }}, {{ $secondary }});"
             onmouseover="this.style.background='linear-gradient(to right, {{ $secondary }}, {{ $primary }})'"
@@ -265,7 +270,9 @@ $error = $errors->any();
     </div>
 
     <!-- Application Modal -->
-    <div x-cloak x-show="openApply" x-transition:enter="transition ease-out duration-300"
+    <div x-cloak x-show="openApply"
+      x-effect="openApply ? setTimeout(() => window.initJobApplicationCoverLetter?.(0), 300) : window.destroyJobApplicationCoverLetter?.()"
+      x-transition:enter="transition ease-out duration-300"
       x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
       x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
       x-transition:leave-end="opacity-0" style="display: none;"
@@ -300,3 +307,8 @@ $error = $errors->any();
     </div>
   </div>
 </section>
+
+@push('scripts')
+<script src="https://cdn.tiny.cloud/1/hggcx7g2kfrgugocare6vapc39m9hxb4unvnk9nui4od2ftg/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="/js/job-application-cover-letter.js?v=2"></script>
+@endpush

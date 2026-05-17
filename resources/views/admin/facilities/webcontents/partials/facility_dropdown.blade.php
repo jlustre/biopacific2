@@ -1,3 +1,22 @@
+@if(!empty($scopedFacility) && empty($canFilterFacilities))
+<div class="mb-8 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3">
+    <p class="text-sm text-teal-900">
+        Managing testimonials for <strong>{{ $scopedFacility->name }}</strong>
+        @if($scopedFacility->city)
+        <span class="text-teal-700">({{ $scopedFacility->city }}, {{ $scopedFacility->state }})</span>
+        @endif
+    </p>
+</div>
+<select id="facilitySelect" name="facility_id" class="hidden" aria-hidden="true">
+    <option value="{{ $scopedFacility->id }}" selected
+        data-name="{{ $scopedFacility->name }}"
+        data-city="{{ $scopedFacility->city }}"
+        data-state="{{ $scopedFacility->state }}"
+        data-phone="{{ $scopedFacility->phone }}">
+        {{ $scopedFacility->name }}
+    </option>
+</select>
+@else
 <div class="mb-8">
     <label for="facilitySelect" class="block text-sm font-semibold text-gray-700 mb-2">Select Facility</label>
     <div class="relative">
@@ -18,3 +37,4 @@
         </div>
     </div>
 </div>
+@endif

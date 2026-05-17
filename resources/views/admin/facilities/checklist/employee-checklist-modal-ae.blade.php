@@ -13,11 +13,10 @@
                 <label class="block font-semibold mb-1">Confirmed Date</label>
                 <input type="date" id="verifyVerifiedDt" class="border rounded px-2 py-1 w-full">
             </div>
-            <div class="mb-3">
-                <label class="block font-semibold mb-1">Expiration Date</label>
-                <input type="date" id="verifyExpDt" class="border rounded px-2 py-1 w-full">
-                <span id="expDtRequiredMsg" class="text-red-600 text-xs hidden">Expiration Date is required for expiring
-                    items.</span>
+            <div id="verifyExpDtWrapper" class="mb-3 hidden">
+                <label for="verifyExpDt" class="mb-1 block font-semibold">Date of Expiration <span class="text-red-600">*</span></label>
+                <input type="date" id="verifyExpDt" class="w-full rounded border px-2 py-1">
+                <span id="expDtRequiredMsg" class="mt-1 hidden text-xs text-red-600">Date of Expiration is required for this item.</span>
             </div>
             <div class="mb-3">
                 <label class="block font-semibold mb-1">Confirmed By</label>

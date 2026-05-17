@@ -1,4 +1,9 @@
 <div class="overflow-x-auto" data-part-e-orientation-checklist>
+    @if($evaluatorActionsDisabled)
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+            {{ \App\Support\PreventsSelfAssessment::DEFAULT_MESSAGE }}
+        </div>
+    @endif
     <div class="mb-4 flex flex-wrap items-center gap-2">
         <h2 class="text-xl font-bold">ORIENTATION CHECKLIST: {{ $positionTitle }}</h2>
         @if(! $jobCodeId)
@@ -25,7 +30,7 @@
                     <th class="border border-slate-500 px-2 py-1.5 text-left font-semibold tracking-wide">ORIENTATION ITEMS</th>
                     <th class="w-28 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">CONFIRMATION</th>
                     <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">CONFIRMED DATE</th>
-                    <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">EXPIRED DATE</th>
+                    <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">EXPIRY DATE</th>
                     <th class="w-24 border border-slate-500 px-1.5 py-1.5 text-center font-semibold tracking-wide">CONFIRMED BY</th>
                 </tr>
             </thead>
@@ -56,12 +61,14 @@
                         <td class="border border-slate-500 px-2 py-1.5 align-top @if(!empty($row['disabled'])) line-through @endif">
                             <span class="text-[11px] leading-tight {{ $displayIndentClass }} {{ $itemLevel === 0 ? 'font-bold' : '' }}">
                                 @if($isParent)
-                                    <button
-                                        type="button"
-                                        class="partE-hierarchy-toggle mr-2 inline-flex h-5 w-5 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100"
-                                        data-expanded="1"
-                                        aria-label="Collapse child items"
-                                    >▲</button>
+                                    <span wire:ignore>
+                                        <button
+                                            type="button"
+                                            class="partE-hierarchy-toggle bp-checklist-expand-toggle mr-2 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100"
+                                            data-expanded="1"
+                                            aria-label="Collapse child items"
+                                        >▲</button>
+                                    </span>
                                 @endif
                                 <span>{{ $row['displayName'] }}</span>
                             </span>
@@ -76,7 +83,7 @@
                                         class="part-e-confirm-checkbox pointer-events-auto"
                                         tabindex="0"
                                         aria-label="Open confirmation for this item"
-                                        @if(!empty($row['disabled'])) disabled @endif
+                                        @if(!empty($row['disabled']) || $evaluatorActionsDisabled) disabled @endif
                                     >
                                 @if(empty($row['disabled']))
                                     @if($empChecklist && $empChecklist->verified_by)
@@ -284,7 +291,7 @@
             </div>
 
             <div class="flex flex-col md:flex-row justify-end gap-2 mt-2 flex-wrap">
-                @if($orientationWorkflowStatus === \App\Livewire\Admin\Facilities\Checklist\PartEOrientationChecklist::WORKFLOW_DRAFT)
+                @if($orientationWorkflowStatus === \App\Livewire\Admin\Facilities\Checklist\PartEOrientationChecklist::WORKFLOW_DRAFT && ! $evaluatorActionsDisabled)
                     <button
                         type="button"
                         wire:click="saveOrientationDraft"
@@ -313,7 +320,7 @@
                         <span wire:loading.remove wire:target="completeEmployeeSignatureStep">Record employee signature</span>
                         <span wire:loading wire:target="completeEmployeeSignatureStep">Saving…</span>
                     </button>
-                @elseif($orientationWorkflowStatus === \App\Livewire\Admin\Facilities\Checklist\PartEOrientationChecklist::WORKFLOW_REVIEWER_SIGNATURE)
+                @elseif($orientationWorkflowStatus === \App\Livewire\Admin\Facilities\Checklist\PartEOrientationChecklist::WORKFLOW_REVIEWER_SIGNATURE && ! $evaluatorActionsDisabled)
                     <button
                         type="button"
                         wire:click="completeReviewerSignatureStep"

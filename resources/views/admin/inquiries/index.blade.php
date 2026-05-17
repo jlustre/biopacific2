@@ -15,6 +15,12 @@
     </div>
     @endif
 
+    @if(isset($scopedFacility) && $scopedFacility)
+    <div class="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+        Showing inquiries for <strong>{{ $scopedFacility->name }}</strong> only.
+    </div>
+    @endif
+
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
         <form method="GET" action="{{ route('admin.inquiries.index') }}"
@@ -26,6 +32,7 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" />
             </div>
 
+            @if(!empty($canFilterFacilities))
             <!-- Facility Filter -->
             <div class="w-full lg:w-48">
                 <select name="facility"
@@ -38,6 +45,7 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
             <!-- Actions -->
             <div class="flex gap-2">

@@ -1,86 +1,247 @@
-@extends('layouts.dashboard')
+@extends('layouts.dashboard', ['title' => 'Careers Management'])
+
+@section('header')
+<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Careers Management</h1>
+        <p class="text-gray-600 mt-2">Manage job openings and applications shown on facility websites.</p>
+    </div>
+    @if($facility ?? null)
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ route('admin.facility.job_openings', $facility) }}"
+            class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition">
+            <i class="fas fa-plus mr-2"></i> New Job Opening
+        </a>
+        <a href="{{ route('admin.facilities.webcontents.careers.templates', ['facility_id' => $facility->id]) }}"
+            class="inline-flex items-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2.5 rounded-lg font-semibold transition">
+            <i class="fas fa-file-alt mr-2"></i> Templates
+        </a>
+    </div>
+    @endif
+</div>
+@endsection
 
 @section('content')
-<div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('admin.dashboard.index') }}" class="text-gray-500 hover:text-gray-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </a>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">Careers Management</h1>
-                        <p class="text-gray-600">Manage career opportunities for your facilities</p>
-                    </div>
-                </div>
+<div class="space-y-6">
+    @if(session('success'))
+    <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 flex items-center">
+        <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center">
+        <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
+    </div>
+    @endif
+
+    @if(isset($scopedFacility) && $scopedFacility)
+    <div class="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+        Showing careers for <strong>{{ $scopedFacility->name }}</strong> only.
+    </div>
+    @endif
+
+    @if(!empty($canFilterFacilities))
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <form method="GET" action="{{ route('admin.facilities.webcontents.careers') }}" class="flex flex-wrap items-end gap-3">
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Facility</label>
+                <select name="facility_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    onchange="this.form.submit()">
+                    <option value="">Choose a facility…</option>
+                    @foreach($facilities as $f)
+                    <option value="{{ $f->id }}" {{ (string) ($facilityId ?? '') === (string) $f->id ? 'selected' : '' }}>
+                        {{ $f->name }} — {{ $f->city ?? 'N/A' }}, {{ $f->state ?? 'N/A' }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+        </form>
+    </div>
+    @endif
+
+    @if(!($facility ?? null))
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm py-16 px-6 text-center">
+        <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <i class="fas fa-briefcase text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Select a facility</h3>
+        <p class="text-gray-500 max-w-md mx-auto">Choose a facility above to view job openings and manage applications.</p>
+    </div>
+    @else
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center">
+                <i class="fas fa-briefcase text-slate-600"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Total openings</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['total'] }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center">
+                <i class="fas fa-door-open text-green-600"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Open positions</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['open'] }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-teal-100 flex items-center justify-center">
+                <i class="fas fa-check-circle text-teal-600"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Active listings</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['active'] }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center">
+                <i class="fas fa-users text-amber-600"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Applications</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $stats['applications'] }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Facility Selection Dropdown -->
-        <div class="mb-8 bg-white rounded-lg shadow p-6">
-            <form method="GET" action="{{ route('admin.facilities.webcontents.careers') }}">
-                <div class="mb-6">
-                    <label for="facilitySelect" class="block text-sm font-semibold text-gray-700 mb-3">Select
-                        Facility:</label>
-                    <div class="relative w-full max-w-md">
-                        <select id="facilitySelect" name="facility_id"
-                            class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl bg-white text-gray-700 font-medium focus:ring-3 focus:ring-teal-200 focus:border-teal-500 hover:border-gray-300 transition-all duration-200 appearance-none cursor-pointer shadow-sm text-sm sm:text-base"
-                            onchange="this.form.submit()">
-                            <option value="" class="text-gray-500">Choose a facility...</option>
-                            @foreach($facilities as $facility)
-                            <option value="{{ $facility->id }}" @if(($facilityId ?? null)==$facility->id) selected
-                                @endif>
-                                {{ $facility->name }} - {{ $facility->city ?? 'N/A' }}, {{ $facility->state ?? 'N/A' }}
-                            </option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-400 transition-colors duration-200" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                            </svg>
-                        </div>
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                            <i class="fas fa-building text-gray-400 text-sm"></i>
-                        </div>
-                    </div>
-                    <p class="mt-2 text-xs text-gray-500 max-w-md">Select a facility to view and manage its career
-                        opportunities</p>
-
-
-                </div>
-            </form>
-        </div>
-
-        <!-- Job Openings Management with Livewire -->
-        @if(($facilityId ?? null))
-        @php
-        $facility = \App\Models\Facility::find($facilityId);
-        @endphp
-
-        @if($facility)
-        @livewire('job-openings-manager', ['facilityId' => $facilityId])
-        @else
-        <div class="text-center text-red-500 py-12 bg-white rounded-lg shadow">
-            <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
-            <p class="text-xl">Facility not found. Please select a valid facility.</p>
-        </div>
-        @endif
-        @else
-        <div class="text-center text-gray-500 py-12 bg-white rounded-lg shadow">
-            <i class="fas fa-building text-6xl mb-4"></i>
-            <p class="text-xl">Please select a facility to manage job openings</p>
-        </div>
-        @endif
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <form method="GET" action="{{ route('admin.facilities.webcontents.careers') }}"
+            class="flex flex-col lg:flex-row lg:items-end gap-3">
+            <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+            <div class="flex-1 min-w-0">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Search title, department, or description…"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+            </div>
+            <div class="w-full lg:w-36">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">All</option>
+                    <option value="open" {{ request('status') === 'open' ? 'selected' : '' }}>Open</option>
+                    <option value="closed" {{ request('status') === 'closed' ? 'selected' : '' }}>Closed</option>
+                    <option value="filled" {{ request('status') === 'filled' ? 'selected' : '' }}>Filled</option>
+                </select>
+            </div>
+            <div class="w-full lg:w-36">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Listing</label>
+                <select name="active" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">All</option>
+                    <option value="1" {{ request('active') === '1' ? 'selected' : '' }}>Active</option>
+                    <option value="0" {{ request('active') === '0' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit"
+                    class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold">
+                    <i class="fas fa-search mr-1"></i> Filter
+                </button>
+                <a href="{{ route('admin.facilities.webcontents.careers', ['facility_id' => $facility->id]) }}"
+                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">
+                    Reset
+                </a>
+            </div>
+        </form>
     </div>
+
+    @if($jobOpenings->isEmpty())
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm py-16 px-6 text-center">
+        <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <i class="fas fa-briefcase text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">No job openings found</h3>
+        <p class="text-gray-500 max-w-md mx-auto mb-6">
+            @if(request()->hasAny(['search', 'status', 'active']))
+            Try adjusting your filters, or create a new job opening.
+            @else
+            Get started by posting the first career opportunity for {{ $facility->name }}.
+            @endif
+        </p>
+        <a href="{{ route('admin.facility.job_openings', $facility) }}"
+            class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg font-semibold">
+            <i class="fas fa-plus mr-2"></i> New Job Opening
+        </a>
+    </div>
+    @else
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        @foreach($jobOpenings as $job)
+        @php
+            $statusColors = [
+                'open' => 'bg-green-500',
+                'closed' => 'bg-gray-600',
+                'filled' => 'bg-blue-500',
+            ];
+            $statusClass = $statusColors[$job->status] ?? 'bg-gray-500';
+        @endphp
+        <article class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+            <div class="p-5 flex flex-col flex-1">
+                <div class="flex flex-wrap gap-1.5 mb-3">
+                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold text-white {{ $statusClass }}">
+                        {{ ucfirst($job->status ?? 'open') }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $job->active ? 'bg-teal-100 text-teal-800' : 'bg-gray-200 text-gray-600' }}">
+                        {{ $job->active ? 'Active' : 'Inactive' }}
+                    </span>
+                    @if($job->applications_count > 0)
+                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                        {{ $job->applications_count }} {{ \Illuminate\Support\Str::plural('application', $job->applications_count) }}
+                    </span>
+                    @endif
+                </div>
+
+                <h3 class="text-lg font-bold text-gray-900 leading-snug mb-2">{{ $job->title }}</h3>
+
+                <div class="space-y-1.5 text-sm text-gray-600 mb-4">
+                    @if($job->department)
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-sitemap text-gray-400 w-4"></i>
+                        <span>{{ $job->department }}</span>
+                    </div>
+                    @endif
+                    @if($job->employment_type)
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-clock text-gray-400 w-4"></i>
+                        <span>{{ $job->employment_type }}</span>
+                    </div>
+                    @endif
+                    @if($job->posted_at)
+                    <div class="flex items-center gap-2">
+                        <i class="far fa-calendar-alt text-gray-400 w-4"></i>
+                        <span>Posted {{ $job->posted_at->format('M j, Y') }}</span>
+                    </div>
+                    @endif
+                </div>
+
+                @if($job->description)
+                <p class="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">
+                    {{ \Illuminate\Support\Str::limit(strip_tags($job->description), 140) }}
+                </p>
+                @endif
+
+                <div class="flex flex-wrap items-center gap-2 pt-4 border-t border-gray-100 mt-auto">
+                    <a href="{{ route('admin.facility.job_openings.show', [$facility, $job]) }}"
+                        class="flex-1 text-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition min-w-[4.5rem]">
+                        <i class="fas fa-eye mr-1"></i> View
+                    </a>
+                    <a href="{{ route('admin.facility.job_openings.edit', [$facility, $job]) }}"
+                        class="flex-1 text-center px-3 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition min-w-[4.5rem]">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                    </a>
+                    @if($job->applications_count > 0)
+                    <a href="{{ route('admin.facilities.webcontents.careers.applications', $job) }}"
+                        class="flex-1 text-center px-3 py-2 text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition min-w-[4.5rem]">
+                        <i class="fas fa-inbox mr-1"></i> Apps
+                    </a>
+                    @endif
+                </div>
+            </div>
+        </article>
+        @endforeach
+    </div>
+    @endif
+    @endif
 </div>
 @endsection

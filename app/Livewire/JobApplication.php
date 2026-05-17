@@ -9,6 +9,7 @@ use App\Models\JobApplication as JobApplicationModel;
 use App\Models\JobOpening;
 use App\Models\Facility;
 use App\Models\Department;
+use App\Mail\JobApplicationConfirmationMail;
 use App\Mail\SecureJobApplicationMail;
 use App\Helpers\FacilityDataHelper;
 use Illuminate\Support\Facades\Storage;
@@ -57,7 +58,7 @@ class JobApplication extends Component
         'last_name' => 'required|string|max:100',
         'email' => 'required|email|max:255',
         'phone' => 'required|string|max:30',
-        'cover_letter' => 'nullable|string|max:2000',
+        'cover_letter' => 'nullable|string|max:50000',
         'resume' => 'required|file|mimes:pdf,doc,docx|max:10240',
         'consent' => 'accepted',
         'hipaa_consent' => 'accepted',
@@ -70,7 +71,7 @@ class JobApplication extends Component
         'last_name' => 'required|string|max:100',
         'email' => 'required|email|max:255',
         'phone' => 'required|string|max:30',
-        'cover_letter' => 'nullable|string|max:2000',
+        'cover_letter' => 'nullable|string|max:50000',
         'resume' => 'required|file|mimes:pdf,doc,docx|max:10240',
         'consent' => 'accepted',
         'hipaa_consent' => 'accepted',
@@ -199,7 +200,9 @@ class JobApplication extends Component
                 // Don't fail the application if email fails
             }
 
-            $this->successMessage = 'Your application has been submitted successfully! We\'ll review your application and get back to you soon.';
+            $this->sendApplicantConfirmationEmail($application, $this->facility, $this->desired_position);
+
+            $this->successMessage = 'Your application has been submitted successfully! A confirmation email has been sent to your inbox. We\'ll review your application and get back to you soon.';
 
             Log::info('General application success message set', ['message' => $this->successMessage]);
 
@@ -295,6 +298,7 @@ class JobApplication extends Component
         $this->job_opening_id = null;
         $this->successMessage = '';
         $this->errorMessage = '';
+        $this->dispatch('job-application-form-ready');
     }
     
     public function setJobOpening($jobOpeningId)
@@ -320,6 +324,8 @@ class JobApplication extends Component
                 'job_title' => $this->jobOpening->title,
                 'facility_name' => $this->facility->name
             ]);
+
+            $this->dispatch('job-application-form-ready');
         } catch (\Exception $e) {
             Log::error('Failed to set job opening', [
                 'job_id' => $jobOpeningId,
@@ -333,7 +339,7 @@ class JobApplication extends Component
         $this->successMessage = '';
         $this->errorMessage = '';
         $this->isSubmitting = true;
-        
+
         Log::info('JobApplication submit called', [
             'job_opening_id' => $this->job_opening_id,
             'form_data' => [
@@ -423,8 +429,10 @@ class JobApplication extends Component
                 ]);
                 // Don't fail the application if email fails
             }
+
+            $this->sendApplicantConfirmationEmail($application, $this->facility, $this->jobOpening?->title);
             
-            $this->successMessage = 'Your application has been submitted successfully! We\'ll review your application and get back to you soon.';
+            $this->successMessage = 'Your application has been submitted successfully! A confirmation email has been sent to your inbox. We\'ll review your application and get back to you soon.';
             
             Log::info('Success message set', ['message' => $this->successMessage]);
             
@@ -459,6 +467,32 @@ class JobApplication extends Component
         }
     }
     
+    protected function sendApplicantConfirmationEmail(
+        JobApplicationModel $application,
+        ?Facility $facility = null,
+        ?string $positionTitle = null
+    ): void {
+        if (empty($application->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($application->email)->send(
+                new JobApplicationConfirmationMail($application, $facility, $positionTitle)
+            );
+
+            Log::info('Job application confirmation email sent to applicant', [
+                'application_id' => $application->id,
+                'email' => $application->email,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send job application confirmation email to applicant', [
+                'error' => $e->getMessage(),
+                'application_id' => $application->id,
+            ]);
+        }
+    }
+
     public function clearForm()
     {
         $this->reset([
@@ -474,6 +508,7 @@ class JobApplication extends Component
             'hipaa_consent'
         ]);
         $this->resetErrorBag();
+        $this->dispatch('job-application-form-cleared');
     }
     
     public function updated($propertyName)

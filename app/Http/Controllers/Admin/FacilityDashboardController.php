@@ -17,7 +17,16 @@ class FacilityDashboardController extends Controller
                 abort(403, 'Unauthorized: You do not have access to this facility.');
             }
         }
-        // Other roles (web-admin, admin, etc.) can access any facility
-        return view('admin.facilities.dashboard', compact('facility'));
+        $facilityKey = $facility->getRouteKey();
+
+        $stats = [
+            'job_openings' => $facility->jobOpenings()->count(),
+            'testimonials' => $facility->testimonials()->count(),
+            'gallery_images' => $facility->galleryImages()->count(),
+            'news_items' => $facility->news()->count(),
+            'services' => $facility->services()->count(),
+        ];
+
+        return view('admin.facilities.dashboard', compact('facility', 'facilityKey', 'stats'));
     }
 }

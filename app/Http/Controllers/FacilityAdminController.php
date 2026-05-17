@@ -22,6 +22,59 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 class FacilityAdminController extends Controller
 {
+    protected function scopedFacilityId(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if ($user && ! $user->hasRole('admin') && $user->facility_id) {
+            return (int) $user->facility_id;
+        }
+
+        return null;
+    }
+
+    protected function facilitiesForUser(Request $request)
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId) {
+            return Facility::where('id', $scopedFacilityId)->orderBy('name')->get();
+        }
+
+        return Facility::orderBy('name')->get();
+    }
+
+    protected function authorizeFacilityAccess(Request $request, int $facilityId): void
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId && $scopedFacilityId !== $facilityId) {
+            abort(403, 'You do not have access to testimonials for this facility.');
+        }
+    }
+
+    protected function authorizeTestimonialAccess(Request $request, Testimonial $testimonial): void
+    {
+        $this->authorizeFacilityAccess($request, (int) $testimonial->facility_id);
+    }
+
+    protected function authorizeFaqAccess(Request $request, Faq $faq): void
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if (! $scopedFacilityId) {
+            return;
+        }
+
+        if ($faq->isDefault()) {
+            abort(403, 'You cannot modify shared default FAQs.');
+        }
+
+        if ((int) $faq->facility_id !== $scopedFacilityId) {
+            abort(403, 'You do not have access to this FAQ.');
+        }
+    }
+
     /**
      * Show the admin dashboard page.
      */
@@ -305,15 +358,25 @@ class FacilityAdminController extends Controller
     }
 
     // Web Content Methods
-    public function testimonials()
+    public function testimonials(Request $request)
     {
-        $facilities = Facility::orderBy('name')->get();
-        return view('admin.facilities.webcontents.testimonials', compact('facilities'));
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $facilities = $this->facilitiesForUser($request);
+        $canFilterFacilities = $scopedFacilityId === null;
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
+
+        return view('admin.facilities.webcontents.testimonials', compact(
+            'facilities',
+            'scopedFacilityId',
+            'canFilterFacilities',
+            'scopedFacility'
+        ));
     }
 
-    public function getTestimonials($facilityId)
+    public function getTestimonials(Request $request, $facilityId)
     {
         try {
+            $this->authorizeFacilityAccess($request, (int) $facilityId);
             $facility = Facility::findOrFail($facilityId);
             $testimonials = $facility->testimonials()
                 ->orderByDesc('is_featured')
@@ -340,6 +403,8 @@ class FacilityAdminController extends Controller
 
     public function storeTestimonial(Request $request)
     {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
         $validated = $request->validate([
             'facility_id' => 'required|exists:facilities,id',
             'name' => 'required|string|max:255',
@@ -353,6 +418,12 @@ class FacilityAdminController extends Controller
             'is_featured' => 'boolean'
         ]);
 
+        if ($scopedFacilityId) {
+            $validated['facility_id'] = $scopedFacilityId;
+        }
+
+        $this->authorizeFacilityAccess($request, (int) $validated['facility_id']);
+
         $testimonial = Testimonial::create($validated);
 
         return response()->json([
@@ -362,7 +433,7 @@ class FacilityAdminController extends Controller
         ]);
     }
 
-    public function showTestimonial($testimonialId)
+    public function showTestimonial(Request $request, $testimonialId)
     {
         // Find testimonial without global scope constraints
         $testimonial = Testimonial::withoutGlobalScope('tenant')->find($testimonialId);
@@ -373,6 +444,8 @@ class FacilityAdminController extends Controller
                 'message' => 'Testimonial not found'
             ], 404);
         }
+
+        $this->authorizeTestimonialAccess($request, $testimonial);
 
         return response()->json([
             'success' => true,
@@ -391,6 +464,8 @@ class FacilityAdminController extends Controller
                 'message' => 'Testimonial not found'
             ], 404);
         }
+
+        $this->authorizeTestimonialAccess($request, $testimonial);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -429,7 +504,7 @@ class FacilityAdminController extends Controller
         ]);
     }
 
-    public function destroyTestimonial($testimonialId)
+    public function destroyTestimonial(Request $request, $testimonialId)
     {
         // Find testimonial without global scope constraints
         $testimonial = Testimonial::withoutGlobalScope('tenant')->find($testimonialId);
@@ -441,6 +516,8 @@ class FacilityAdminController extends Controller
             ], 404);
         }
 
+        $this->authorizeTestimonialAccess($request, $testimonial);
+
         $testimonial->delete();
 
         return response()->json([
@@ -449,14 +526,25 @@ class FacilityAdminController extends Controller
         ]);
     }
 
-    public function faqs()
+    public function faqs(Request $request)
     {
-        $facilities = Facility::orderBy('name')->get();
-        return view('admin.facilities.webcontents.faqs', compact('facilities'));
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $facilities = $this->facilitiesForUser($request);
+        $canFilterFacilities = $scopedFacilityId === null;
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
+
+        return view('admin.facilities.webcontents.faqs', compact(
+            'facilities',
+            'scopedFacilityId',
+            'canFilterFacilities',
+            'scopedFacility'
+        ));
     }
 
-    public function getFaqs($facilityId)
+    public function getFaqs(Request $request, $facilityId)
     {
+        $this->authorizeFacilityAccess($request, (int) $facilityId);
+
         // Get both facility-specific FAQs and default FAQs available to this facility
         $faqs = Faq::availableForFacility($facilityId)
             ->where('is_active', true)
@@ -471,7 +559,7 @@ class FacilityAdminController extends Controller
         ]);
     }
 
-    public function showFaq($faqId)
+    public function showFaq(Request $request, $faqId)
     {
         // Find FAQ without any scope constraints for editing
         $faq = Faq::find($faqId);
@@ -483,6 +571,8 @@ class FacilityAdminController extends Controller
             ], 404);
         }
 
+        $this->authorizeFaqAccess($request, $faq);
+
         return response()->json([
             'success' => true,
             'faq' => $faq
@@ -491,6 +581,8 @@ class FacilityAdminController extends Controller
 
     public function storeFaq(Request $request)
     {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
         $validated = $request->validate([
             'facility_id' => 'nullable|exists:facilities,id',
             'question' => 'required|string',
@@ -503,9 +595,15 @@ class FacilityAdminController extends Controller
             'sort_order' => 'integer|min:0'
         ]);
 
-        // If it's a default FAQ, facility_id should be null
-        if ($validated['is_default'] ?? false) {
+        if ($scopedFacilityId) {
+            $validated['facility_id'] = $scopedFacilityId;
+            $validated['is_default'] = false;
+        } elseif ($validated['is_default'] ?? false) {
             $validated['facility_id'] = null;
+        }
+
+        if (! empty($validated['facility_id'])) {
+            $this->authorizeFacilityAccess($request, (int) $validated['facility_id']);
         }
 
         $faq = Faq::create($validated);
@@ -529,6 +627,10 @@ class FacilityAdminController extends Controller
             ], 404);
         }
 
+        $this->authorizeFaqAccess($request, $faq);
+
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
         $validated = $request->validate([
             'facility_id' => 'nullable|exists:facilities,id',
             'question' => 'required|string',
@@ -541,8 +643,10 @@ class FacilityAdminController extends Controller
             'sort_order' => 'integer|min:0'
         ]);
 
-        // If it's a default FAQ, facility_id should be null
-        if ($validated['is_default'] ?? false) {
+        if ($scopedFacilityId) {
+            $validated['facility_id'] = $scopedFacilityId;
+            $validated['is_default'] = false;
+        } elseif ($validated['is_default'] ?? false) {
             $validated['facility_id'] = null;
         }
 
@@ -555,7 +659,7 @@ class FacilityAdminController extends Controller
         ]);
     }
 
-    public function destroyFaq($faqId)
+    public function destroyFaq(Request $request, $faqId)
     {
         // Find FAQ without scope constraints
         $faq = Faq::find($faqId);
@@ -566,6 +670,8 @@ class FacilityAdminController extends Controller
                 'message' => 'FAQ not found'
             ], 404);
         }
+
+        $this->authorizeFaqAccess($request, $faq);
 
         $faq->delete();
 

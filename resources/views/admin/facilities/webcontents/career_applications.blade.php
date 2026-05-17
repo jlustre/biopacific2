@@ -1,121 +1,144 @@
-@extends('layouts.dashboard')
+@extends('layouts.dashboard', ['title' => 'Job Applications'])
+
+@section('header')
+<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Applications</h1>
+        <p class="text-gray-600 mt-2">{{ $jobOpening->title }} · {{ $jobOpening->facility?->name }}</p>
+    </div>
+    <a href="{{ route('admin.facilities.webcontents.careers', ['facility_id' => $jobOpening->facility_id]) }}"
+        class="inline-flex items-center text-gray-600 hover:text-gray-900 font-semibold">
+        <i class="fas fa-arrow-left mr-2"></i> Back to careers
+    </a>
+</div>
+@endsection
 
 @section('content')
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8 bg-white rounded-lg shadow p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Job Applications for: {{ $jobOpening->title }}</h2>
-            <a href="{{ route('admin.facilities.webcontents.careers') }}"
-                class="text-blue-600 hover:underline mb-4 inline-block">&larr; Back to Careers</a>
+<div class="space-y-6">
+    @if(session('success'))
+    <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 flex items-center">
+        <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+    </div>
+    @endif
+
+    @if($applications->isEmpty())
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm py-16 px-6 text-center">
+        <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <i class="fas fa-inbox text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">No applications yet</h3>
+        <p class="text-gray-500">Applicants will appear here when they apply for this position.</p>
+    </div>
+    @else
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead>
+                <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Applicant</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Submitted</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($applications as $app)
-                    <tr>
+                <tbody class="divide-y divide-gray-200">
+                    @foreach($applications as $app)
+                    <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4">
-                            <div>
-                                <div class="text-sm font-medium text-gray-900">{{ $app->first_name }} {{ $app->last_name
-                                    }}</div>
-                                <div class="text-sm text-gray-500">{{ $app->email }}</div>
-                            </div>
+                            <div class="text-sm font-medium text-gray-900">{{ $app->first_name }} {{ $app->last_name }}</div>
+                            <div class="text-sm text-gray-500">{{ $app->email }}</div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $app->phone }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ ucfirst($app->status) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $app->created_at->format('Y-m-d') }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap flex gap-2">
-                            <!-- View Details Modal Trigger -->
-                            <button type="button" class="text-blue-600 hover:underline"
-                                onclick="showAppModal({{ $app->id }})">View</button>
-                            <!-- Resume Actions -->
-                            @if($app->resume_path)
-                            <div class="flex gap-1">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $app->phone }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+                                @if($app->status === 'accepted') bg-green-100 text-green-800
+                                @elseif($app->status === 'rejected') bg-red-100 text-red-800
+                                @elseif($app->status === 'reviewed') bg-blue-100 text-blue-800
+                                @else bg-amber-100 text-amber-800 @endif">
+                                {{ ucfirst($app->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $app->created_at->format('M j, Y') }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <button type="button" onclick="showAppModal({{ $app->id }})"
+                                    class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                                    View
+                                </button>
+                                @if($app->resume_path)
                                 <a href="{{ route('admin.facilities.webcontents.careers.applications.preview-resume', [$jobOpening, $app]) }}"
-                                    target="_blank" class="text-green-600 hover:underline text-xs">Preview</a>
-                                <span class="text-gray-400">|</span>
+                                    target="_blank" class="px-3 py-1.5 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg">
+                                    Resume
+                                </a>
                                 <a href="{{ route('admin.facilities.webcontents.careers.applications.download-resume', [$jobOpening, $app]) }}"
-                                    class="text-indigo-600 hover:underline text-xs">Download</a>
+                                    class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                                    Download
+                                </a>
+                                @endif
+                                <form method="POST"
+                                    action="{{ route('admin.facilities.webcontents.careers.applications.update', [$jobOpening, $app]) }}"
+                                    class="inline">
+                                    @csrf
+                                    @method('PUT')
+                                    <select name="status" onchange="this.form.submit()"
+                                        class="text-sm border border-gray-300 rounded-lg px-2 py-1.5">
+                                        <option value="pending" @selected($app->status === 'pending')>Pending</option>
+                                        <option value="reviewed" @selected($app->status === 'reviewed')>Reviewed</option>
+                                        <option value="accepted" @selected($app->status === 'accepted')>Accepted</option>
+                                        <option value="rejected" @selected($app->status === 'rejected')>Rejected</option>
+                                    </select>
+                                </form>
+                                <form method="POST"
+                                    action="{{ route('admin.facilities.webcontents.careers.applications.destroy', [$jobOpening, $app]) }}"
+                                    onsubmit="return confirm('Delete this application?')" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg">
+                                        Delete
+                                    </button>
+                                </form>
                             </div>
-                            @endif
-                            <!-- Update Status Form -->
-                            <form method="POST"
-                                action="{{ route('admin.facilities.webcontents.careers.applications.update', [$jobOpening, $app]) }}"
-                                class="inline">
-                                @csrf
-                                @method('PUT')
-                                <select name="status" onchange="this.form.submit()"
-                                    class="text-xs rounded border-gray-300">
-                                    <option value="pending" @if($app->status=='pending') selected @endif>Pending
-                                    </option>
-                                    <option value="reviewed" @if($app->status=='reviewed') selected @endif>Reviewed
-                                    </option>
-                                    <option value="accepted" @if($app->status=='accepted') selected @endif>Accepted
-                                    </option>
-                                    <option value="rejected" @if($app->status=='rejected') selected @endif>Rejected
-                                    </option>
-                                </select>
-                            </form>
-                            <!-- Delete Form -->
-                            <form method="POST"
-                                action="{{ route('admin.facilities.webcontents.careers.applications.destroy', [$jobOpening, $app]) }}"
-                                onsubmit="return confirm('Delete this application?')" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:underline">Delete</button>
-                            </form>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">No applications found.</td>
-                    </tr>
-                    @endforelse
-                    <!-- Application Details Modal (hidden by default, shown via JS) -->
-                    <div id="appModal"
-                        class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
-                        <div class="bg-white rounded-lg shadow-lg p-8 max-w-lg mx-auto">
-                            <h3 class="text-xl font-bold mb-4">Application Details</h3>
-                            <div id="appModalContent"></div>
-                            <button onclick="closeAppModal()"
-                                class="mt-4 bg-primary text-white px-4 py-2 rounded">Close</button>
-                        </div>
-                    </div>
-                    <script>
-                        function showAppModal(appId) {
-                    // Fetch details via AJAX (or inline if you prefer)
-                    fetch(`/admin/facilities/webcontents/careers/applications/${appId}/details`)
-                        .then(res => res.text())
-                        .then(html => {
-                            document.getElementById('appModalContent').innerHTML = html;
-                            document.getElementById('appModal').classList.remove('hidden');
-                            document.getElementById('appModal').classList.add('flex');
-                        });
-                }
-                function closeAppModal() {
-                    document.getElementById('appModal').classList.add('hidden');
-                    document.getElementById('appModal').classList.remove('flex');
-                }
-                    </script>
+                    @endforeach
                 </tbody>
             </table>
         </div>
     </div>
+    @endif
 </div>
-<script>
-    ClassicEditor.create(document.querySelector('textarea.rtf-editor'), {
-        toolbar: [
-            'heading', '|', 'bold', 'italic', 'underline', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo'
-        ],
-        table: {
-            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-        }
-    }).catch(error => { console.error(error); });
-</script>
+
+<div id="appModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative">
+        <button type="button" onclick="closeAppModal()"
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Application Details</h3>
+        <div id="appModalContent"></div>
+        <button type="button" onclick="closeAppModal()"
+            class="mt-6 w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold">
+            Close
+        </button>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+function showAppModal(appId) {
+    fetch(`/admin/facilities/webcontents/careers/applications/${appId}/details`)
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('appModalContent').innerHTML = html;
+            const modal = document.getElementById('appModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+}
+function closeAppModal() {
+    const modal = document.getElementById('appModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
+@endpush

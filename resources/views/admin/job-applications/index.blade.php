@@ -21,6 +21,12 @@
     </div>
     @endif
 
+    @if(isset($scopedFacility) && $scopedFacility)
+    <div class="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+        Showing applications for <strong>{{ $scopedFacility->name }}</strong> only.
+    </div>
+    @endif
+
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
         <form id="filterForm" method="GET" action="{{ route('admin.job-applications.index') }}"
@@ -34,7 +40,8 @@
 
             <!-- Filters Row -->
             <div class="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:gap-4">
-                <!-- Facility Filter -->
+                @if(!empty($canFilterFacilities))
+                <!-- Facility Filter (global admins only) -->
                 <div class="w-full sm:w-48">
                     <select name="facility" id="facilityFilter"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
@@ -46,6 +53,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
 
                 <!-- Status Filter -->
                 <div class="w-full sm:w-48">
@@ -256,9 +264,11 @@
     });
 
     // Auto-submit form when filters change
-    facilityFilter.addEventListener('change', function() {
-        filterForm.submit();
-    });
+    if (facilityFilter) {
+        facilityFilter.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    }
 
     statusFilter.addEventListener('change', function() {
         filterForm.submit();
@@ -270,7 +280,9 @@
         
         // Clear all form fields
         searchInput.value = '';
-        facilityFilter.selectedIndex = 0;
+        if (facilityFilter) {
+            facilityFilter.selectedIndex = 0;
+        }
         statusFilter.selectedIndex = 0;
         
         // Submit the cleared form

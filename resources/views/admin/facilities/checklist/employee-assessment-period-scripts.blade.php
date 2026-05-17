@@ -292,8 +292,8 @@
             modal.classList.add('flex');
         }
 
-        function requestDeleteAssessmentPeriod(periodId, token, forceDelete) {
-            var url = '/admin/employees/performance-assessment/period/' + periodId + (forceDelete ? '?force=1' : '');
+        function requestDeleteAssessmentPeriod(periodId, token) {
+            var url = '/admin/employees/performance-assessment/period/' + periodId;
             return fetch(url, {
                 method: 'DELETE',
                 headers: {
@@ -312,35 +312,18 @@
             });
         }
 
-        window.showDeleteAffectedModal = function(affected, periodId, token) {
-            var modal = document.getElementById('deleteAffectedModal');
-            var list = document.getElementById('deleteAffectedList');
-            var confirmBtn = document.getElementById('confirmDeletePeriodBtn');
-            if (!modal || !list || !confirmBtn) {
-                return;
+        function showAssessmentPeriodDeleteBlockedMessage(data) {
+            var message = (data && data.message)
+                ? data.message
+                : 'This assessment period cannot be deleted because employees are already assigned to it.';
+            if (data && Array.isArray(data.assigned_employees) && data.assigned_employees.length > 0) {
+                var names = data.assigned_employees.map(function(item) {
+                    return item.employee_name || item.employee_num;
+                }).join(', ');
+                message += '\n\nAssigned employees: ' + names;
             }
-
-            list.innerHTML = '<ul class="list-disc pl-5">' + affected.map(function(item) {
-                return '<li><strong>' + (item.employee_name || ('Employee ID: ' + item.employee_num)) + '</strong> (' + (item.assessment_date || 'No date') + ')</li>';
-            }).join('') + '</ul>';
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            confirmBtn.onclick = function() {
-                requestDeleteAssessmentPeriod(periodId, token, true)
-                    .then(function(data) {
-                        if (data.success) {
-                            alert('Assessment period deleted.');
-                            window.location.reload();
-                            return;
-                        }
-                        alert(data.message || 'Delete failed.');
-                    })
-                    .catch(function(err) {
-                        alert(err && err.message ? err.message : 'Delete failed.');
-                    });
-            };
-        };
+            alert(message);
+        }
 
         function bindAssessmentPeriodManager(root) {
             var elements = getManagerElements(root);
@@ -349,17 +332,23 @@
             }
 
             function filterPeriodsByYear(selectedYear) {
+                var previousValue = elements.periodSelect.value;
+
                 Array.from(elements.periodSelect.options).forEach(function(option) {
-                    option.style.display = (String(option.getAttribute('data-year')) === String(selectedYear)) ? '' : 'none';
+                    if (option.value === '') {
+                        option.style.display = '';
+                        return;
+                    }
+                    var optionYear = option.getAttribute('data-year');
+                    option.style.display = (String(optionYear) === String(selectedYear)) ? '' : 'none';
                 });
 
-                if (elements.periodSelect.selectedOptions.length && elements.periodSelect.selectedOptions[0].style.display === 'none') {
+                var selectedOption = elements.periodSelect.options[elements.periodSelect.selectedIndex];
+                if (previousValue !== '' && selectedOption && selectedOption.style.display === 'none') {
                     var firstVisible = Array.from(elements.periodSelect.options).find(function(option) {
-                        return option.style.display !== 'none';
+                        return option.value !== '' && option.style.display !== 'none';
                     });
-                    if (firstVisible) {
-                        elements.periodSelect.value = firstVisible.value;
-                    }
+                    elements.periodSelect.value = firstVisible ? firstVisible.value : '';
                 }
 
                 syncSelectedAssessmentPeriod(elements.periodSelect.value);
@@ -410,15 +399,15 @@
                             alert('CSRF token missing.');
                             return;
                         }
-                        requestDeleteAssessmentPeriod(selectedId, token, false)
+                        requestDeleteAssessmentPeriod(selectedId, token)
                             .then(function(data) {
                                 if (data.success) {
                                     alert('Assessment period deleted.');
                                     window.location.reload();
                                     return;
                                 }
-                                if (data.affected && Array.isArray(data.affected) && data.affected.length > 0) {
-                                    window.showDeleteAffectedModal(data.affected, selectedId, token);
+                                if (data.blocked) {
+                                    showAssessmentPeriodDeleteBlockedMessage(data);
                                     return;
                                 }
                                 alert(data.message || 'Delete failed.');
@@ -550,7 +539,13 @@
                         }
                         if (data.success) {
                             window.closeNewPeriodModal();
-                            window.location.reload();
+                            var savedPeriod = data.data || data.period || null;
+                            if (savedPeriod && savedPeriod.id) {
+                                var periodYear = savedPeriod.period_year || (dateFrom ? String(dateFrom).slice(0, 4) : '');
+                                navigateToAssessmentPeriod(savedPeriod.id, periodYear);
+                            } else {
+                                window.location.reload();
+                            }
                             return;
                         }
                         alert(data.message || 'Save failed.');

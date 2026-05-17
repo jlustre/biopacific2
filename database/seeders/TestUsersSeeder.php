@@ -18,7 +18,7 @@ class TestUsersSeeder extends Seeder
         $hrrd = User::firstOrCreate([
             'email' => 'hrrd@example.com',
         ], [
-            'name' => 'HR Regional Director',
+            'name' => 'Liszel Justice',
             'password' => Hash::make('password'),
             'facility_id' => 99,
         ]);
@@ -29,9 +29,9 @@ class TestUsersSeeder extends Seeder
         $facilityAdmin = User::firstOrCreate([
             'email' => 'facilityadmin@example.com',
         ], [
-            'name' => 'Facility Admin',
+            'name' => 'Michael Monroe',
             'password' => Hash::make('password'),
-            'facility_id' => $facility ? $facility->id : null,
+            'facility_id' => 14,
         ]);
         $facilityAdmin->syncRoles(['facility-admin']);
 
@@ -39,9 +39,9 @@ class TestUsersSeeder extends Seeder
         $facilityDsd = User::firstOrCreate([
             'email' => 'facilitydsd@example.com',
         ], [
-            'name' => 'Facility DSD',
+            'name' => 'Chimere Randell',
             'password' => Hash::make('password'),
-            'facility_id' => 1,
+            'facility_id' => 17,
         ]);
         $facilityDsd->syncRoles(['facility-dsd']);
 
@@ -59,7 +59,7 @@ class TestUsersSeeder extends Seeder
         $regularUser = User::firstOrCreate([
             'email' => 'regularuser@example.com',
         ], [
-            'name' => 'Regular User',
+            'name' => 'John Doe',
             'password' => Hash::make('password'),
             'facility_id' => 1,
         ]);

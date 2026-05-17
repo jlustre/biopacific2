@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ProvidesMemberPortalContext;
+use App\Services\MemberDashboardService;
 use Illuminate\Http\Request;
 use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
@@ -20,6 +22,8 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
+    use ProvidesMemberPortalContext;
+
     public function index()
     {
 
@@ -44,13 +48,137 @@ class DashboardController extends Controller
             return view('dashboard.hr-portal-dashboard');
         }
 
-        // Member dashboard placeholder (for basic users)
-        if ($routeName === 'user.dashboard' && $hasRole('user')) {
-            return view('dashboard.member-placeholder');
+        // Member / employee dashboard (static UI — refactor with live data later)
+        if (in_array($routeName, ['user.dashboard', 'dashboard.index'], true)) {
+            if (!$hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd', 'facility-editor'])) {
+                return $this->memberDashboard($user);
+            }
         }
 
         // Fallback for any other roles/routes
-        return view('dashboard.member-placeholder')->with('message', 'No dashboard available for your role.');
+        return $this->memberDashboard($user);
+    }
+
+    protected function memberDashboard($user)
+    {
+        $context = $this->memberPortalContext($user);
+        $dashboardData = app(MemberDashboardService::class)->build($user);
+
+        return view('dashboard.member.index', array_merge($context, $dashboardData, [
+            'newsEventsCount' => $context['newsEventsCount'] ?? $this->countMemberNewsEvents($context['facility'] ?? null),
+            'todayLabel' => now()->format('l, F j, Y'),
+            'portalActive' => 'dashboard',
+            'portalTitle' => 'Bio Pacific HR Portal | Employee Dashboard',
+            'portalEyebrow' => 'Employee Dashboard',
+            'portalPageTitle' => 'Welcome back, ' . ($context['firstNameOnly'] ?? 'there'),
+            'showPortalSearch' => true,
+            'showPortalNotifications' => true,
+        ]));
+    }
+
+    public function memberSchedule()
+    {
+        $user = Auth::user();
+        $scheduleData = app(MemberDashboardService::class)->buildSchedulePage($user);
+
+        return view('dashboard.member.schedule', array_merge($this->memberPortalContext($user), $scheduleData, [
+            'portalActive' => 'schedule',
+            'portalTitle' => 'Schedule | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Work Schedule',
+            'portalPageTitle' => 'My Schedule',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+        ]));
+    }
+
+    public function memberDocuments()
+    {
+        $user = Auth::user();
+        $documentsData = app(MemberDashboardService::class)->buildDocumentsPage($user);
+        $isFacilityDocumentsAdmin = $user->hasRole(['facility-admin', 'facility-dsd'])
+            && !empty($documentsData['facilityComplianceReport']);
+
+        return view('dashboard.member.documents', array_merge($this->memberPortalContext($user), $documentsData, [
+            'portalActive' => 'documents',
+            'portalTitle' => 'Documents | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Document Center',
+            'portalPageTitle' => 'Documents',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+            'isFacilityDocumentsAdmin' => $isFacilityDocumentsAdmin,
+        ]));
+    }
+
+    public function memberCertifications()
+    {
+        $user = Auth::user();
+        $certificationsData = app(MemberDashboardService::class)->buildCertificationsPage($user);
+        $isFacilityCertificationsAdmin = $user->hasRole(['facility-admin', 'facility-dsd'])
+            && !empty($certificationsData['facilityCertificationsReport']);
+
+        return view('dashboard.member.certifications', array_merge($this->memberPortalContext($user), $certificationsData, [
+            'portalActive' => 'certifications',
+            'portalTitle' => 'Certifications | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Licenses & Certifications',
+            'portalPageTitle' => 'Certifications',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+            'isFacilityCertificationsAdmin' => $isFacilityCertificationsAdmin,
+        ]));
+    }
+
+    public function memberTrainings()
+    {
+        $user = Auth::user();
+        $trainingsData = app(MemberDashboardService::class)->buildTrainingsPage($user);
+        $isFacilityTrainingsAdmin = $user->hasRole(['facility-admin', 'facility-dsd'])
+            && !empty($trainingsData['facilityTrainingsReport']);
+
+        return view('dashboard.member.trainings', array_merge($this->memberPortalContext($user), $trainingsData, [
+            'portalActive' => 'trainings',
+            'portalTitle' => 'Trainings | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Learning & Compliance',
+            'portalPageTitle' => 'Trainings',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+            'isFacilityTrainingsAdmin' => $isFacilityTrainingsAdmin,
+        ]));
+    }
+
+    public function memberNewsEvents()
+    {
+        $user = Auth::user();
+        $employee = method_exists($user, 'resolvedBpEmployee')
+            ? $user->resolvedBpEmployee(['currentAssignment.position', 'currentAssignment.facility'])
+            : null;
+        $facility = $this->resolveMemberFacility($user, $employee);
+        $newsItems = $facility
+            ? FacilityDataHelper::getNews($facility)
+            : News::query()->where('status', true)->where('is_global', true)->orderByDesc('published_at')->get();
+
+        return view('dashboard.member.news-events', array_merge($this->memberPortalContext($user), [
+            'newsItems' => $newsItems,
+            'portalActive' => 'news',
+            'portalTitle' => 'News & Events | Bio Pacific HR Portal',
+            'portalEyebrow' => 'News & Events',
+            'portalPageTitle' => $facility?->name ?? 'Company updates',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+        ]));
+    }
+
+    public function memberProfile(Request $request)
+    {
+        $context = $this->memberPortalContext($request->user());
+
+        return view('dashboard.member.profile', array_merge($context, [
+            'portalActive' => 'profile',
+            'portalTitle' => 'Bio Pacific HR Portal | Employee Profile',
+            'portalEyebrow' => 'Employee Record',
+            'portalPageTitle' => 'Personal Profile',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => false,
+        ]));
     }
 
     /**

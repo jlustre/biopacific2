@@ -301,6 +301,10 @@ class TracheostomyCareCompetency extends Component
 
     protected function persistAssessment(string $status): void
     {
+        if ($this->abortPersistIfSelfAssessment()) {
+            return;
+        }
+
         $row = EmployeeCompetencyAssessment::query()
             ->where('employee_num', $this->employeeNum)
             ->where('assessment_period_id', $this->assessmentPeriodId)

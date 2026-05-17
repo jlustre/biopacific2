@@ -26,13 +26,9 @@
                         <th id="trach-section-heading" tabindex="-1" colspan="5" class="scroll-mt-4 bg-blue-100 text-gray-700 font-bold text-base border border-gray-300 px-4 py-1 text-left outline-none">
                             <div class="flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-2 min-w-0">
-                                    <button type="button"
-                                        class="section-toggle inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100"
-                                        x-text="$store.partGAccordion.openSection === 'tracheostomy' ? '▲' : '▼'"
-                                        x-bind:aria-label="$store.partGAccordion.openSection === 'tracheostomy' ? 'Collapse section items' : 'Expand section items'"
-                                        x-on:click="$store.partGAccordion.openSection = $store.partGAccordion.openSection === 'tracheostomy' ? null : 'tracheostomy'"
-                                        x-bind:data-expanded="$store.partGAccordion.openSection === 'tracheostomy' ? '1' : '0'"
-                                    ></button>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
+                                        'accordionKey' => 'tracheostomy',
+                                    ])
                                     <span class="truncate">TRACHEOSTOMY CARE COMPETENCY</span>
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
@@ -268,13 +264,13 @@
 @script
 <script>
     const registerPartGAccordionStore = () => {
-        if (Alpine.store('partGAccordion')) {
-            return;
+        if (!Alpine.store('partGAccordion')) {
+            Alpine.store('partGAccordion', { openSection: null });
         }
 
-        Alpine.store('partGAccordion', {
-            openSection: 'ln',
-        });
+        if (!Alpine.store('partGAccordion').openSection) {
+            Alpine.store('partGAccordion').openSection = 'tracheostomy';
+        }
     };
 
     const registerTrachSummaryComponent = () => Alpine.data('trachSummary', () => ({

@@ -90,12 +90,14 @@
             @enderror
         </div>
         <div>
-            <label for="cover_letter" class="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
-            <textarea id="cover_letter" wire:model="cover_letter" rows="4"
-                class="block w-full rounded-lg border border-teal-300 shadow-sm custom-focus px-2 py-1"
-                placeholder="Tell us about yourself and your interest in working here..."></textarea>
+            <label for="job-application-cover-letter" class="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
+            <div wire:ignore>
+                <textarea id="job-application-cover-letter" rows="8"
+                    class="block w-full rounded-lg border border-teal-300 shadow-sm custom-focus px-2 py-1"
+                    placeholder="Tell us about yourself and your interest in working here..."></textarea>
+            </div>
             @error('cover_letter')
-            <p class="text-red-500 text-sm -mt-2">{{ $message }}</p>
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
         </div>
         <div class="flex items-start space-x-3">
@@ -253,12 +255,14 @@
             @enderror
         </div>
         <div>
-            <label for="cover_letter" class="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
-            <textarea id="cover_letter" wire:model="cover_letter" rows="4"
-                class="block w-full rounded-lg border border-teal-300 shadow-sm custom-focus px-2 py-1"
-                placeholder="Tell us about yourself and your interest in working here..."></textarea>
+            <label for="job-application-cover-letter" class="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
+            <div wire:ignore>
+                <textarea id="job-application-cover-letter" rows="8"
+                    class="block w-full rounded-lg border border-teal-300 shadow-sm custom-focus px-2 py-1"
+                    placeholder="Tell us about yourself and your interest in working here..."></textarea>
+            </div>
             @error('cover_letter')
-            <p class="text-red-500 text-sm -mt-2">{{ $message }}</p>
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
         </div>
         <div class="flex items-start space-x-3">
@@ -300,14 +304,3 @@
         <p class="text-gray-500">Please select a job opening to apply for.</p>
     </div>
     @endif
-
-    <script>
-        document.addEventListener('livewire:init', () => {
-        Livewire.on('scrollToTop', () => {
-            document.getElementById('success-message')?.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'center' 
-            });
-        });
-    });
-    </script>

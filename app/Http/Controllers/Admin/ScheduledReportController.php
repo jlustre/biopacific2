@@ -1,59 +1,293 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\ScheduledReport;
+use App\Models\Facility;
 use App\Models\Report;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use App\Models\ScheduledReport;
 use App\Models\ScheduledReportRun;
-use Illuminate\Support\Facades\Storage;
+use App\Models\ScheduledReportTemplate;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log;
 
 class ScheduledReportController extends Controller
 {
+    protected function scopedFacilityId(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if ($user && ! $user->hasRole('admin') && $user->facility_id) {
+            return (int) $user->facility_id;
+        }
+
+        return null;
+    }
+
+    protected function canManageScheduledReports(Request $request): bool
+    {
+        return (bool) $request->user()?->hasAnyRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+    }
+
+    protected function ensureCanManage(Request $request): void
+    {
+        if (! $this->canManageScheduledReports($request)) {
+            abort(403, 'You do not have permission to manage scheduled reports.');
+        }
+    }
+
+    protected function reportsForUser(Request $request)
+    {
+        $user = $request->user();
+        $isAdmin = $user->hasRole('admin');
+        $isHrrd = $user->hasRole('hrrd');
+        $roles = $user->getRoleNames()->toArray();
+        $userFacilityIds = collect();
+
+        if (method_exists($user, 'facilities')) {
+            $userFacilityIds = $user->facilities->pluck('id');
+        } elseif ($user->facility_id) {
+            $userFacilityIds = collect([$user->facility_id]);
+        }
+
+        if ($isAdmin) {
+            return Report::orderBy('name')->get();
+        }
+
+        return Report::where('is_active', true)
+            ->where(function ($q) use ($roles, $userFacilityIds, $isHrrd) {
+                $q->where('visibility', 'all');
+                if (! empty($roles)) {
+                    $q->orWhere(function ($q2) use ($roles) {
+                        $q2->where('visibility', 'roles');
+                        foreach ($roles as $role) {
+                            $q2->orWhereJsonContains('visible_roles', $role);
+                        }
+                    });
+                }
+                $q->orWhere(function ($q2) use ($userFacilityIds) {
+                    $q2->where('visibility', 'facilities');
+                    foreach ($userFacilityIds as $fid) {
+                        $q2->orWhereJsonContains('visible_facilities', $fid);
+                    }
+                });
+                if ($isHrrd) {
+                    $q->orWhere('visibility', 'admin');
+                }
+            })
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function applyFacilityScopeToScheduledReportsQuery($query, Request $request)
+    {
+        $facilityId = $this->scopedFacilityId($request);
+
+        if (! $facilityId) {
+            return $query;
+        }
+
+        $visibleReportIds = $this->reportsForUser($request)->pluck('id');
+
+        return $query->where(function ($q) use ($facilityId, $visibleReportIds) {
+            $q->where(function ($pq) use ($facilityId) {
+                $pq->where('parameters->facility_id', $facilityId)
+                    ->orWhere('parameters->facility_id', (string) $facilityId);
+            })
+                ->orWhereHas('creator', fn ($uq) => $uq->where('facility_id', $facilityId))
+                ->orWhereIn('report_id', $visibleReportIds);
+        });
+    }
+
+    public function authorizeScheduledReport(Request $request, ScheduledReport $scheduledReport): void
+    {
+        $facilityId = $this->scopedFacilityId($request);
+
+        if (! $facilityId) {
+            return;
+        }
+
+        $scheduledReport->loadMissing(['report', 'creator']);
+        $visibleReportIds = $this->reportsForUser($request)->pluck('id');
+        $parameters = $scheduledReport->parameters ?? [];
+        $paramFacilityId = $parameters['facility_id'] ?? null;
+
+        $allowed = ($paramFacilityId && (int) $paramFacilityId === $facilityId)
+            || ($scheduledReport->creator && (int) $scheduledReport->creator->facility_id === $facilityId)
+            || $visibleReportIds->contains($scheduledReport->report_id);
+
+        if (! $allowed) {
+            abort(403, 'You do not have access to this scheduled report.');
+        }
+    }
+
     public function index(Request $request)
     {
-        $query = ScheduledReport::with('report');
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $canManageScheduledReports = $this->canManageScheduledReports($request);
 
-        // Search by name or report name
+        $query = ScheduledReport::with(['report', 'creator']);
+
+        $this->applyFacilityScopeToScheduledReportsQuery($query, $request);
+
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%$search%")
-                  ->orWhereHas('report', function($qr) use ($search) {
-                      $qr->where('name', 'like', "%$search%");
-                  });
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('report', function ($qr) use ($search) {
+                        $qr->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
-        // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
-        // Filter by report
         if ($request->filled('report_id')) {
             $query->where('report_id', $request->input('report_id'));
         }
 
-        $scheduledReports = $query->orderByDesc('created_at')->paginate(15)->appends($request->all());
-        $reports = \App\Models\Report::orderBy('name')->get();
-        return view('admin.scheduled-reports.index', compact('scheduledReports', 'reports'));
+        $scheduledReports = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
+        $reports = $this->reportsForUser($request);
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
+
+        $templatesQuery = ScheduledReportTemplate::with(['report', 'facility', 'creator']);
+        $this->applyFacilityScopeToTemplatesQuery($templatesQuery, $request);
+        $templates = $templatesQuery->orderByDesc('created_at')->get();
+
+        $facilities = $scopedFacilityId
+            ? Facility::where('id', $scopedFacilityId)->orderBy('name')->get()
+            : Facility::orderBy('name')->get();
+
+        return view('admin.scheduled-reports.index', compact(
+            'scheduledReports',
+            'reports',
+            'scopedFacility',
+            'scopedFacilityId',
+            'canManageScheduledReports',
+            'templates',
+            'facilities'
+        ));
     }
 
-    public function create()
+    public function applyFacilityScopeToTemplatesQuery($query, Request $request)
     {
-        $reports = Report::all();
-        return view('admin.scheduled-reports.create', compact('reports'));
+        $facilityId = $this->scopedFacilityId($request);
+
+        if (! $facilityId) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($facilityId) {
+            $q->where('facility_id', $facilityId)
+                ->orWhereNull('facility_id');
+        });
+    }
+
+    protected function validateTemplatePayload(Request $request): array
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'report_id' => 'required|exists:reports,id',
+            'facility_id' => 'nullable|exists:facilities,id',
+            'parameters' => 'nullable|string',
+            'cron_expression' => 'required|string|max:255',
+            'status' => 'required|in:active,paused',
+            'notify_roles' => 'nullable|array',
+            'notify_roles.*' => 'string',
+            'notify_emails' => 'nullable|string',
+            'start_at' => 'nullable|date',
+            'end_at' => 'nullable|date|after_or_equal:start_at',
+            'notifications_enabled' => 'nullable|boolean',
+            'report_format' => 'required|in:csv,pdf,html',
+            'pdf_orientation' => 'nullable|in:P,L',
+        ]);
+
+        if (! empty($validated['parameters'])) {
+            $decoded = json_decode($validated['parameters'], true);
+            $validated['parameters'] = is_array($decoded) ? $decoded : [];
+        } else {
+            $validated['parameters'] = [];
+        }
+
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        if ($scopedFacilityId) {
+            $validated['facility_id'] = $scopedFacilityId;
+            $validated['parameters']['facility_id'] = $scopedFacilityId;
+        }
+
+        $validated['notify_roles'] = $request->input('notify_roles', []);
+        $validated['notify_emails'] = $request->input('notify_emails', '');
+        $validated['notifications_enabled'] = $request->boolean('notifications_enabled');
+        $validated['created_by'] = Auth::id();
+
+        if (empty($validated['facility_id'])) {
+            $validated['facility_id'] = null;
+        }
+
+        return $validated;
+    }
+
+    public function storeTemplate(Request $request)
+    {
+        $validated = $this->validateTemplatePayload($request);
+
+        ScheduledReportTemplate::create($validated);
+
+        return redirect()
+            ->route('admin.scheduled-reports.index')
+            ->with('success', 'Scheduled report template saved successfully.');
+    }
+
+    public function destroyTemplate(Request $request, ScheduledReportTemplate $scheduledReportTemplate)
+    {
+        $facilityId = $this->scopedFacilityId($request);
+
+        if ($facilityId && $scheduledReportTemplate->facility_id && (int) $scheduledReportTemplate->facility_id !== $facilityId) {
+            abort(403, 'You do not have access to this template.');
+        }
+
+        if (! $this->canManageScheduledReports($request) && (int) $scheduledReportTemplate->created_by !== (int) $request->user()->id) {
+            abort(403, 'You can only delete templates you created.');
+        }
+
+        $scheduledReportTemplate->delete();
+
+        return redirect()
+            ->route('admin.scheduled-reports.index')
+            ->with('success', 'Template deleted successfully.');
+    }
+
+    public function create(Request $request)
+    {
+        $this->ensureCanManage($request);
+        $reports = $this->reportsForUser($request);
+        $template = null;
+
+        if ($request->filled('template')) {
+            $template = ScheduledReportTemplate::with('report')->find($request->input('template'));
+            if ($template) {
+                $facilityId = $this->scopedFacilityId($request);
+                if ($facilityId && $template->facility_id && (int) $template->facility_id !== $facilityId) {
+                    abort(403, 'You do not have access to this template.');
+                }
+            }
+        }
+
+        $prefillFacilityId = $request->integer('facility_id') ?: $this->scopedFacilityId($request);
+
+        return view('admin.scheduled-reports.create', compact('reports', 'template', 'prefillFacilityId'));
     }
 
     public function store(Request $request)
     {
+        $this->ensureCanManage($request);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'report_id' => 'required|exists:reports,id',
@@ -70,18 +304,20 @@ class ScheduledReportController extends Controller
             'pdf_orientation' => 'nullable|in:P,L',
         ]);
 
-
         $validated['created_by'] = Auth::id();
 
-        // Convert parameters to array if JSON
-        if (!empty($validated['parameters'])) {
+        if (! empty($validated['parameters'])) {
             $decoded = json_decode($validated['parameters'], true);
             $validated['parameters'] = is_array($decoded) ? $decoded : [];
         } else {
             $validated['parameters'] = [];
         }
 
-        // Store notify_roles and notify_emails as JSON fields (add to fillable/model/migration if needed)
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        if ($scopedFacilityId && empty($validated['parameters']['facility_id'])) {
+            $validated['parameters']['facility_id'] = $scopedFacilityId;
+        }
+
         $validated['notify_roles'] = $request->input('notify_roles', []);
         $validated['notify_emails'] = $request->input('notify_emails', '');
         $validated['start_at'] = $request->input('start_at');
@@ -91,38 +327,42 @@ class ScheduledReportController extends Controller
 
         try {
             ScheduledReport::create($validated);
+
             return redirect()->route('admin.scheduled-reports.index')->with('success', 'Scheduled report created successfully.');
         } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => 'Failed to save scheduled report: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Failed to save scheduled report: '.$e->getMessage()]);
         }
     }
 
-        /**
-     * Show history of generated reports for a scheduled report
-     */
-    public function history(ScheduledReport $scheduledReport)
+    public function history(Request $request, ScheduledReport $scheduledReport)
     {
+        $scheduledReport->load(['report', 'creator']);
+        $this->authorizeScheduledReport($request, $scheduledReport);
         $runs = $scheduledReport->runs()->orderByDesc('executed_at')->get();
-        return view('admin.scheduled-reports.history', compact('scheduledReport', 'runs'));
+        $canManageScheduledReports = $this->canManageScheduledReports($request);
+
+        return view('admin.scheduled-reports.history', compact('scheduledReport', 'runs', 'canManageScheduledReports'));
     }
 
-    /**
-     * Download a generated report CSV
-     */
-    public function download(ScheduledReport $scheduledReport, $runId)
+    public function download(Request $request, ScheduledReport $scheduledReport, $runId)
     {
-        // For in-memory streaming, just redirect to runNow (or show error)
+        $this->authorizeScheduledReport($request, $scheduledReport);
+
         return back()->with('error', 'Download not available. Please re-run the report.');
     }
 
-    public function edit(ScheduledReport $scheduledReport)
+    public function edit(Request $request, ScheduledReport $scheduledReport)
     {
-        $reports = Report::all();
+        $this->ensureCanManage($request);
+        $reports = $this->reportsForUser($request);
+
         return view('admin.scheduled-reports.edit', compact('scheduledReport', 'reports'));
     }
 
     public function update(Request $request, ScheduledReport $scheduledReport)
     {
+        $this->ensureCanManage($request);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'report_id' => 'required|exists:reports,id',
@@ -133,8 +373,7 @@ class ScheduledReportController extends Controller
             'pdf_orientation' => 'nullable|in:P,L',
         ]);
 
-        // Convert parameters to array if JSON
-        if (!empty($validated['parameters'])) {
+        if (! empty($validated['parameters'])) {
             $decoded = json_decode($validated['parameters'], true);
             $validated['parameters'] = is_array($decoded) ? $decoded : [];
         } else {
@@ -144,27 +383,28 @@ class ScheduledReportController extends Controller
         $validated['pdf_orientation'] = $request->input('pdf_orientation');
 
         $scheduledReport->update($validated);
+
         return redirect()->route('admin.scheduled-reports.index')->with('success', 'Scheduled report updated successfully.');
     }
 
-    public function destroy(ScheduledReport $scheduledReport)
+    public function destroy(Request $request, ScheduledReport $scheduledReport)
     {
+        $this->ensureCanManage($request);
         $scheduledReport->delete();
+
         return redirect()->route('admin.scheduled-reports.index')->with('success', 'Scheduled report deleted.');
     }
 
-    /**
-     * Manually run a scheduled report ("Run Now" action)
-     */
-    public function runNow(ScheduledReport $scheduledReport)
+    public function runNow(Request $request, ScheduledReport $scheduledReport)
     {
+        $this->ensureCanManage($request);
+
         $now = now();
         $report = $scheduledReport->report;
-        if (!$report) {
+        if (! $report) {
             return back()->with('error', 'Report not found for this schedule.');
         }
         try {
-            // 1. Run the report SQL and get results
             $parameters = $scheduledReport->parameters ?? [];
             foreach ($parameters as $key => $value) {
                 if (is_array($value)) {
@@ -172,21 +412,22 @@ class ScheduledReportController extends Controller
                         $parameters[$key] = $value[0];
                     } else {
                         $first = array_values($value);
-                        $parameters[$key] = isset($first[0]) ? $first[0] : null;
+                        $parameters[$key] = $first[0] ?? null;
                     }
                 }
             }
             $sql = $report->sql_template;
             $results = DB::select($sql, $parameters);
             $format = $scheduledReport->report_format ?? 'csv';
-            // Generate file content in memory
             if ($format === 'csv') {
                 $csv = '';
-                if (!empty($results)) {
-                    $header = array_keys((array)$results[0]);
-                    $csv .= implode(',', $header) . "\n";
+                if (! empty($results)) {
+                    $header = array_keys((array) $results[0]);
+                    $csv .= implode(',', $header)."\n";
                     foreach ($results as $row) {
-                        $csv .= implode(',', array_map(function($v) { return '"'.str_replace('"','""',$v).'"'; }, (array)$row)) . "\n";
+                        $csv .= implode(',', array_map(function ($v) {
+                            return '"'.str_replace('"', '""', $v).'"';
+                        }, (array) $row))."\n";
                     }
                 } else {
                     $csv .= "No results found.\n";
@@ -215,10 +456,10 @@ class ScheduledReportController extends Controller
                 $mime = 'text/html';
                 $ext = 'html';
             } else {
-                throw new \Exception('Unsupported report format: ' . $format);
+                throw new \Exception('Unsupported report format: '.$format);
             }
-            // Log run in ScheduledReportRun (no file path)
-            $run = ScheduledReportRun::create([
+
+            ScheduledReportRun::create([
                 'scheduled_report_id' => $scheduledReport->id,
                 'executed_at' => $now,
                 'result_path' => null,
@@ -226,15 +467,16 @@ class ScheduledReportController extends Controller
                 'status' => 'success',
                 'error_message' => null,
             ]);
-            // Update last_run_at and next_run_at
+
             $scheduledReport->last_run_at = $now;
             $scheduledReport->next_run_at = $this->getNextRunAt($scheduledReport->cron_expression, $now);
             $scheduledReport->save();
-            // Stream file to browser
-            $filename = 'scheduled_report_' . $scheduledReport->id . '_' . $now->format('Ymd_His') . '.' . $ext;
+
+            $filename = 'scheduled_report_'.$scheduledReport->id.'_'.$now->format('Ymd_His').'.'.$ext;
+
             return response($content)
                 ->header('Content-Type', $mime)
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+                ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
         } catch (\Exception $e) {
             Log::error('Manual scheduled report run failed', ['id' => $scheduledReport->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             $scheduledReport->status = 'error';
@@ -247,16 +489,16 @@ class ScheduledReportController extends Controller
                 'status' => 'error',
                 'error_message' => $e->getMessage(),
             ]);
-            return back()->with('error', 'Failed to run scheduled report: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to run scheduled report: '.$e->getMessage());
         }
     }
-    /**
-     * Get the next run date for a CRON expression (copied from command)
-     */
+
     protected function getNextRunAt($cron, $from)
     {
         try {
             $cron = \Cron\CronExpression::factory($cron);
+
             return $cron->getNextRunDate($from)->format('Y-m-d H:i:s');
         } catch (\Exception $e) {
             return null;

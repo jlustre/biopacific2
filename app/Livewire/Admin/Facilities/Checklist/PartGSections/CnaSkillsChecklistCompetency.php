@@ -261,6 +261,10 @@ class CnaSkillsChecklistCompetency extends Component
 
     protected function persistResponses(string $status): void
     {
+        if ($this->abortPersistIfSelfAssessment()) {
+            return;
+        }
+
         $existing = [];
         $row = EmployeeCompetencyAssessment::query()
             ->where('employee_num', $this->employeeNum)

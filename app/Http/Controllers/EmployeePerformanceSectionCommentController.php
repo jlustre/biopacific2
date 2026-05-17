@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\EmployeePerformanceSectionComment;
 use App\Models\EmployeePerformanceAssessment;
 use Illuminate\Support\Facades\Auth;
+use App\Support\PreventsSelfAssessment;
 
 class EmployeePerformanceSectionCommentController extends Controller
 {
@@ -27,6 +28,10 @@ class EmployeePerformanceSectionCommentController extends Controller
             'comment' => 'nullable|string',
         ]);
 
+        if ($response = PreventsSelfAssessment::jsonDenyIfSelf(Auth::user(), (string) $validated['employee_num'])) {
+            return $response;
+        }
+
         $finalizedAssessment = EmployeePerformanceAssessment::query()
             ->where('employee_num', $validated['employee_num'])
             ->where('assessment_period_id', $validated['assessment_period_id'])
@@ -40,21 +45,24 @@ class EmployeePerformanceSectionCommentController extends Controller
             ], 422);
         }
 
-        $comment = EmployeePerformanceSectionComment::updateOrCreate(
-            [
-                'employee_num' => $validated['employee_num'],
-                'assessment_period_id' => $validated['assessment_period_id'],
-                'doc_type_id' => $validated['doc_type_id'],
-            ],
-            [
-                'comment' => $validated['comment'],
-            ]
+        $result = EmployeePerformanceSectionComment::syncForSection(
+            $validated['employee_num'],
+            (int) $validated['assessment_period_id'],
+            (int) $validated['doc_type_id'],
+            $validated['comment'] ?? null,
         );
+
+        $message = match ($result['action']) {
+            'created', 'updated' => 'Section comment saved.',
+            'deleted' => 'Section comment cleared.',
+            default => 'No comment to save.',
+        };
 
         return response()->json([
             'success' => true,
-            'message' => 'Section comment saved.',
-            'data' => $comment,
+            'message' => $message,
+            'action' => $result['action'],
+            'data' => $result['record'],
             'input' => $validated,
         ]);
     }
@@ -74,27 +82,17 @@ class EmployeePerformanceSectionCommentController extends Controller
             'item_key' => 'required|string',
         ]);
 
-        // Fetch from employee_performance_assessments table
-        $assessment = \App\Models\EmployeePerformanceAssessment::where([
-            'employee_num' => $validated['employee_num'],
-            'assessment_period_id' => $validated['assessment_period_id'],
-        ])->first();
+        $sectionComment = EmployeePerformanceSectionComment::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->where('assessment_period_id', $validated['assessment_period_id'])
+            ->where('doc_type_id', $validated['doc_type_id'])
+            ->first();
 
-        $comment = null;
-        $items = null;
-        if ($assessment && $assessment->items) {
-            $items = json_decode($assessment->items, true);
-            if (is_array($items)) {
-                $itemKey = $validated['item_key'];
-                if (isset($items[$itemKey]) && isset($items[$itemKey]['comments'])) {
-                    $comment = $items[$itemKey]['comments'];
-                }
-            }
-        }
+        $comment = $sectionComment?->comment;
 
         return response()->json([
             'success' => true,
-            'data' => $comment ? ['comment' => $comment] : null,
+            'data' => filled($comment) ? ['comment' => $comment] : null,
             'input' => $validated,
         ]);
     }

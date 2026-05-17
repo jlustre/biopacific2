@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Models\Facility;
+use App\Mail\JobApplicationConfirmationMail;
 use App\Mail\JobApplicationMail;
 use App\Helpers\FacilityDataHelper;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +23,7 @@ class CareersPublicController extends Controller
                 'last_name' => 'required|string|max:100',
                 'email' => 'required|email|max:255',
                 'phone' => 'required|string|max:30',
-                'cover_letter' => 'nullable|string|max:2000',
+                'cover_letter' => 'nullable|string|max:50000',
                 'resume' => 'required|file|mimes:pdf,doc,docx|max:10240',
                 'consent' => 'accepted',
             ]);
@@ -107,7 +108,18 @@ class CareersPublicController extends Controller
                 return back()->with('warning', 'Your application has been submitted successfully, but there was an issue sending email notifications. Our team will still review your application.');
             }
 
-            return back()->with('success', 'Your application has been submitted successfully! Our hiring team will review it and contact you soon.');
+            try {
+                Mail::to($application->email)->send(
+                    new JobApplicationConfirmationMail($application, $facility, $jobOpening->title)
+                );
+            } catch (\Exception $e) {
+                Log::warning('Applicant confirmation email failed', [
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return back()->with('success', 'Your application has been submitted successfully! A confirmation email has been sent to your inbox. Our hiring team will review it and contact you soon.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Laravel will automatically handle validation errors and redirect back with errors

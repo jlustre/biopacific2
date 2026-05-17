@@ -7,11 +7,11 @@
         <table class="min-w-full border text-xs md:text-sm">
             <thead>
                 <tr class="bg-gray-100">
-                    <th class="border px-2 py-1 text-left w-1/4">ACKNOWLEDGEMENT OF RECEIPTS</th>
-                    <th class="border px-2 py-1 text-center w-1/8">ON FILE</th>
-                    <th class="border px-2 py-1 text-center w-1/6">VERIFIED DATE</th>
-                    <th class="border px-2 py-1 text-center w-1/6">EXPIRED DATE</th>
-                    <th class="border px-2 py-1 text-center w-1/4">VERIFIED BY</th>
+                    <th class="border px-2 py-1 text-left">ACKNOWLEDGEMENT OF RECEIPTS</th>
+                    <th class="border px-2 py-1 text-center">ON FILE</th>
+                    <th class="border px-2 py-1 text-center">VERIFIED DATE</th>
+                    <th class="border px-2 py-1 text-center">EXPIRY DATE</th>
+                    <th class="border px-2 py-1 text-center">VERIFIED BY</th>
                 </tr>
             </thead>
             <tbody>

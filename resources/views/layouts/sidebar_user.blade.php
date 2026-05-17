@@ -24,11 +24,6 @@
                 <i class="fas fa-clipboard-check mr-2"></i> Pre-Employment
             </a>
 
-            <a href="{{ route('pre-employment2.portal') }}"
-                class="flex items-center px-4 py-2 text-green-700 hover:bg-green-50 rounded {{ request()->routeIs('pre-employment2.portal') ? 'bg-green-100 font-bold' : '' }}">
-                <i class="fas fa-clipboard-check mr-2"></i> Pre-Employment 2
-            </a>
-
             <a href="{{ route('employment.portal') }}"
                 class="flex items-center px-4 py-2 text-green-700 hover:bg-green-50 rounded {{ request()->routeIs('employment.portal') ? 'bg-green-100 font-bold' : '' }}">
                 <i class="fas fa-clipboard-check mr-2"></i> Employment Portal
@@ -91,7 +86,7 @@
                         class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-blog mr-2"></i> Blogs Management
                     </a>
-                    <a href="{{ route('admin.facilities.webcontents.careers') }}"
+                    <a href="{{ auth()->user()?->facility_id ? route('admin.facilities.webcontents.careers', ['facility_id' => auth()->user()->facility_id]) : route('admin.facilities.webcontents.careers') }}"
                         class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-briefcase mr-2"></i> Careers Management
                     </a>

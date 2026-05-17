@@ -20,6 +20,7 @@ class ChecklistItem extends Model
 
     protected $casts = [
         'position_ids' => 'array',
+        'isExpiring' => 'boolean',
     ];
 
     public function scopeApplicableToPosition($query, ?int $positionId)

@@ -56,7 +56,10 @@
             ->mapWithKeys(fn ($rating, $procedureKey) => [(string) $procedureKey => strtoupper((string) $rating)])
             ->filter(fn ($rating) => in_array($rating, ['E', 'S', 'U'], true))
             ->all();
-           
+        $hasAssessmentPeriod = !empty($selectedAssessmentPeriodId);
+        $partGHasCompetenciesForPosition = $employeeCompetencyItems->isNotEmpty();
+        $partGHasPositionAssigned = filled($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id);
+
         @endphp
         {{-- $partGSections, $partGPosition, $partGLicensedNurseGuidancePositions, $partGShowLicensedNurseGuidance, $partGSubmissionStatus, $partGAssessmentLocked, $partGSubmissionStatusLabel, $partGDontIncludeSections, $partGExcludedSectionLabels, $partGTracheostomyEquipmentChecks, $partGTracheostomyProcedureReviews --}}
         <div class="mb-4 flex flex-wrap items-center gap-2">
@@ -80,6 +83,23 @@
             </div>
         </div>
 
+        @if(!$partGHasPositionAssigned)
+        <p class="mb-4 rounded-md border border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
+            Assign a position to this employee to load the competencies checklist.
+        </p>
+        @elseif(!$partGHasCompetenciesForPosition)
+        <p class="mb-4 rounded-md border border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
+            No competency checklist items apply to &ldquo;{{ $partGPosition }}&rdquo; for this employee.
+            Competency assessments are configured per position; assign a different position or contact an administrator if this role should have a checklist.
+        </p>
+        @endif
+
+        @if(!$hasAssessmentPeriod)
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 shadow-sm" role="alert">
+            <strong>No assessment period selected.</strong> Please create or select an assessment period above to enable
+            competency assessment actions.
+        </div>
+        @elseif($partGHasCompetenciesForPosition)
         <div class="mb-2 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
             Rating Legend: E = Excellent (3) &nbsp;&nbsp;&nbsp; S = Satisfactory (2) &nbsp;&nbsp;&nbsp; U = Unsatisfactory (1) &nbsp;&nbsp;&nbsp; N = Not Applicable
         </div>
@@ -199,6 +219,7 @@
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('director-of-staff-development-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif
         @endif
 
     </div>

@@ -40,22 +40,24 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
     }">
     
     <div class="mb-4 flex justify-between items-center">
-        <a href="{{ route('admin.facility.employees', ['facility' => (isset($employee->currentAssignment) && isset($employee->currentAssignment->facility) ? ($employee->currentAssignment->facility->slug ?? $employee->currentAssignment->facility_id) : ($facilities->first()->slug ?? $facilities->first()->id ?? 1))]) }}@if(request('facility'))?facility={{ request('facility') }}@endif"
+        @php
+            $listFacility = $employeesListFacility
+                ?? (isset($employee->currentAssignment) ? $employee->currentAssignment->facility : null)
+                ?? $facilities->first();
+            $listFacilityId = $employeesListFacilityId
+                ?? request('facility')
+                ?? ($listFacility->id ?? null);
+            $listFacilityKey = $listFacility
+                ? ($listFacility->slug ?? $listFacility->id)
+                : ($facilities->first()->slug ?? $facilities->first()->id ?? 1);
+        @endphp
+        <a href="{{ route('admin.facility.employees', ['facility' => $listFacilityKey]) }}{{ $listFacilityId ? '?facility=' . $listFacilityId : '' }}"
             class="inline-flex items-center px-4 py-2 bg-teal-400 text-white hover:bg-teal-500"
             style="background: teal; hover:bg-teal-300; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem;">
             &larr; Back to Employee List
         </a>
         <span class="text-lg font-semibold text-gray-700">
-            @php
-            $selectedFacility = null;
-            if(request('facility')) {
-                $selectedFacility = $facilities->firstWhere('id', request('facility'));
-            }
-            if(!$selectedFacility && isset($employee->currentAssignment) && isset($employee->currentAssignment->facility)) {
-                $selectedFacility = $employee->currentAssignment->facility;
-            }
-            @endphp
-            {{ $selectedFacility ? $selectedFacility->name : '' }}
+            {{ $listFacility ? $listFacility->name : '' }}
         </span>
     </div>
     <h1 class="text-2xl font-bold mb-1 text-center">{{ $isAddMode ? 'Add Employee' : 'View/Edit Employee' }}</h1>

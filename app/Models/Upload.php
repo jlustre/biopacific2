@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -12,6 +13,10 @@ class Upload extends Model
     use HasFactory;
 
     public const EMPLOYEE_UPLOAD_ROOT = 'employee_documents';
+
+    public const EXPIRY_NOTIFICATION_WINDOW_DAYS = 120;
+
+    public const EXPIRY_NOTIFICATION_URGENT_DAYS = 30;
 
     protected static function booted(): void
     {
@@ -97,5 +102,37 @@ class Upload extends Model
         return $this->belongsTo(UploadType::class);
     }
 
-    
+    /**
+     * Expiry tier for notification emails: expired, urgent (≤30 days), soon (31–120 days), or null if not eligible.
+     */
+    public function expiryNotificationTier(): ?string
+    {
+        if (!$this->expires_at) {
+            return null;
+        }
+
+        $expires = Carbon::parse($this->expires_at)->startOfDay();
+        $today = now()->startOfDay();
+        $windowEnd = $today->copy()->addDays(self::EXPIRY_NOTIFICATION_WINDOW_DAYS);
+
+        if ($expires->gt($windowEnd)) {
+            return null;
+        }
+
+        if ($expires->lt($today)) {
+            return 'expired';
+        }
+
+        $urgentEnd = $today->copy()->addDays(self::EXPIRY_NOTIFICATION_URGENT_DAYS);
+        if ($expires->lte($urgentEnd)) {
+            return 'urgent';
+        }
+
+        return 'soon';
+    }
+
+    public function canSendExpiryNotification(): bool
+    {
+        return $this->expiryNotificationTier() !== null;
+    }
 }

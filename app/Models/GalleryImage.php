@@ -23,6 +23,11 @@ class GalleryImage extends Model
     protected $casts = [
         'order' => 'integer',
         'is_featured' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
+
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class);
+    }
 }

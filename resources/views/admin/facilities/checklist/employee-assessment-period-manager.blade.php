@@ -30,6 +30,7 @@
                         <select id="assessmentPeriodSelect-{{ $managerId }}" name="assessment_period_id"
                             class="js-assessment-period-select rounded-md border border-slate-400 bg-white px-2 py-1 text-[11px] font-semibold text-slate-900 md:text-xs"
                             onchange="this.form.submit()">
+                            <option value="" @if(empty($selectedAssessmentPeriodId)) selected @endif>— Select/Create Assessment Period —</option>
                             @foreach($assessmentPeriods as $period)
                             <option value="{{ $period->id }}" data-year="{{ $period->period_year }}"
                                 @if((int) $selectedAssessmentPeriodId === (int) $period->id) selected @endif>

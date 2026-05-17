@@ -6,13 +6,17 @@ use App\Models\BPEmployee;
 use App\Models\BPEmpChecklist;
 use App\Models\ChecklistItem;
 use App\Models\User;
+use App\Livewire\Concerns\GuardsAgainstSelfAssessment;
 use App\Orientation\OrientationChecklistSource;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class PartEOrientationChecklist extends Component
 {
+    use GuardsAgainstSelfAssessment;
+
     public const WORKFLOW_DRAFT = 'draft';
 
     public const WORKFLOW_EMPLOYEE_SIGNATURE = 'employee_signature_needed';
@@ -222,6 +226,10 @@ class PartEOrientationChecklist extends Component
         $this->summaryFeedback = null;
         $this->summaryError = null;
 
+        if ($this->denyEvaluatorAction()) {
+            return;
+        }
+
         if ($this->orientationWorkflowStatus !== self::WORKFLOW_DRAFT) {
             $this->summaryError = 'Draft saving is only available while the checklist is in Draft status.';
 
@@ -237,6 +245,10 @@ class PartEOrientationChecklist extends Component
         $this->resetValidation();
         $this->summaryFeedback = null;
         $this->summaryError = null;
+
+        if ($this->denyEvaluatorAction()) {
+            return;
+        }
 
         if ($this->orientationWorkflowStatus !== self::WORKFLOW_DRAFT) {
             $this->summaryError = 'This checklist has already been submitted.';
@@ -304,6 +316,10 @@ class PartEOrientationChecklist extends Component
         $this->summaryFeedback = null;
         $this->summaryError = null;
 
+        if ($this->denyEvaluatorAction()) {
+            return;
+        }
+
         if ($this->orientationWorkflowStatus !== self::WORKFLOW_REVIEWER_SIGNATURE) {
             $this->summaryError = 'Reviewer signature is not required at this step.';
 
@@ -343,13 +359,36 @@ class PartEOrientationChecklist extends Component
         }
 
         $user = auth()->user();
-        $history[] = [
-            'status' => $newStatus,
-            'recorded_at' => now()->toIso8601String(),
-            'actor_user_id' => $user?->id,
-            'actor_label' => $user instanceof User ? (string) ($user->name ?? 'User') : 'System',
-            'detail' => $historyDetail,
-        ];
+        $previousStatus = (string) ($existing['workflow_status'] ?? '');
+        $actorUserId = $user?->id;
+        $actorLabel = $user instanceof User ? (string) ($user->name ?? 'User') : 'System';
+        $recordedAt = now()->toIso8601String();
+
+        if ($newStatus !== $previousStatus || $history === []) {
+            $history[] = [
+                'status' => $newStatus,
+                'recorded_at' => $recordedAt,
+                'actor_user_id' => $actorUserId,
+                'actor_label' => $actorLabel,
+                'detail' => $historyDetail,
+            ];
+        } else {
+            $lastIndex = array_key_last($history);
+            if ($lastIndex !== null && (string) ($history[$lastIndex]['status'] ?? '') === $newStatus) {
+                $history[$lastIndex]['recorded_at'] = $recordedAt;
+                $history[$lastIndex]['actor_user_id'] = $actorUserId;
+                $history[$lastIndex]['actor_label'] = $actorLabel;
+                $history[$lastIndex]['detail'] = $historyDetail;
+            } else {
+                $history[] = [
+                    'status' => $newStatus,
+                    'recorded_at' => $recordedAt,
+                    'actor_user_id' => $actorUserId,
+                    'actor_label' => $actorLabel,
+                    'detail' => $historyDetail,
+                ];
+            }
+        }
 
         $payload = $this->orientationSummary;
 
@@ -390,6 +429,16 @@ class PartEOrientationChecklist extends Component
             ->where('employee_num', $this->employeeNum)
             ->first())
             ->items ?? [];
+    }
+
+    /**
+     * Reload checklist item state after AJAX verify/unverify in the orientation table.
+     */
+    #[On('part-e-checklist-item-updated')]
+    public function onPartEChecklistItemUpdated(): void
+    {
+        $this->reloadEmpChecklistItems();
+        unset($this->orientationStats);
     }
 
     /**

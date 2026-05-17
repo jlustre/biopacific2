@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ProvidesMemberPortalContext;
 use App\Models\EmployeeChecklist;
 use App\Models\JobApplication;
 use App\Models\User;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 
 class PreEmploymentController extends Controller
 {
+    use ProvidesMemberPortalContext;
+
     /**
      * Save or update a Confidential Reference Check for the authenticated user.
      */
@@ -198,8 +201,13 @@ class PreEmploymentController extends Controller
         // Fetch all confidential reference checks for this user
         $referenceChecks = \App\Models\ConfidentialReferenceCheck::where('user_id', $user->id)->get();
 
-        return view('pre-employment.portal', [
-            'user' => $user,
+        return view('pre-employment.portal', array_merge($this->memberPortalContext($user), [
+            'portalActive' => 'pre-employment',
+            'portalTitle' => 'Pre-Employment Portal | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Onboarding',
+            'portalPageTitle' => 'Pre-Employment Portal',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => false,
             'checklistItems' => $checklistItems,
             'completedCount' => $completedCount,
             'inProgressCount' => $inProgressCount,
@@ -210,7 +218,7 @@ class PreEmploymentController extends Controller
             'positions' => $positions,
             'selectedPositionId' => $selectedPositionId,
             'referenceChecks' => $referenceChecks,
-        ]);
+        ]));
     }
 
         /**

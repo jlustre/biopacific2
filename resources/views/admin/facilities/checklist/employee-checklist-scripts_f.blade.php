@@ -1,20 +1,49 @@
 <script>
+    function bpDenySelfAssessmentAction() {
+        if (window.bpEvaluatorActionsDisabled) {
+            alert(window.bpSelfAssessmentDeniedMessage || 'You cannot perform this assessment on yourself.');
+            return true;
+        }
+        return false;
+    }
+
+    function getHierarchyRowIndentLevel(row) {
+        if (!row) {
+            return 0;
+        }
+
+        var levelAttr = row.getAttribute('data-indent-level');
+        if (levelAttr !== null && levelAttr !== '') {
+            return Number(levelAttr || 0);
+        }
+
+        var cell = row.querySelector('td[style*="padding-left"]');
+        if (cell && cell.style.paddingLeft) {
+            var match = cell.style.paddingLeft.match(/calc\(0\.5rem \+ (\d+)px\)/);
+            if (match) {
+                return Math.round(Number(match[1]) / 20);
+            }
+        }
+
+        return 0;
+    }
+
     function setHierarchyRowExpansion(parentRow, expanded) {
         if (!parentRow) {
             return;
         }
 
         var toggle = parentRow.querySelector('.hierarchy-toggle');
-        var parentIndentLevel = Number(parentRow.getAttribute('data-indent-level') || 0);
+        var parentIndentLevel = getHierarchyRowIndentLevel(parentRow);
         var nextRow = parentRow.nextElementSibling;
 
         while (nextRow) {
-            var nextIndentAttr = nextRow.getAttribute('data-indent-level');
-            if (nextIndentAttr === null) {
-                break;
+            if (!nextRow.querySelector('td')) {
+                nextRow = nextRow.nextElementSibling;
+                continue;
             }
 
-            var nextIndentLevel = Number(nextIndentAttr || 0);
+            var nextIndentLevel = getHierarchyRowIndentLevel(nextRow);
             if (nextIndentLevel <= parentIndentLevel) {
                 break;
             }
@@ -78,7 +107,7 @@
         }
     }
 
-    function initializeHierarchyToggles(container) {
+    window.initializeHierarchyToggles = function initializeHierarchyToggles(container) {
         if (!container) {
             return;
         }
@@ -113,6 +142,19 @@
         window.assessmentActionFeedbackTimer = setTimeout(function() {
             banner.style.display = 'none';
         }, 2500);
+    }
+
+    function getPartFRowRating(row) {
+        if (!row) {
+            return '';
+        }
+
+        var checked = row.querySelector('input[type="radio"][name^="partf-response-"]:checked');
+        if (checked && checked.value) {
+            return String(checked.value).trim();
+        }
+
+        return String(row.getAttribute('data-partf-rating') || '').trim();
     }
 
     function updatePartFSummaryScores() {
@@ -174,32 +216,124 @@
             }
         }
 
+        var hasCheckedRating = tableContainer.querySelector('tr[data-partf-scorable="1"] input[type="radio"][name^="partf-response-"]:checked');
+        if (!hasCheckedRating && totalScoreField.value !== '' && averageScoreField.value !== '') {
+            if (overallRatingValueField && overallRatingValueField.value === '' && overallRatingField.value !== '') {
+                overallRatingValueField.value = overallRatingField.value;
+            }
+            syncOverallEvaluation(parseFloat(averageScoreField.value) || 0);
+            return;
+        }
+
         var total = 0;
         var count = 0;
 
-        tableContainer.querySelectorAll('tbody tr').forEach(function(row) {
-            var cells = row.querySelectorAll('td');
-            if (cells.length !== 6) {
-                return;
-            }
+        var radioRows = tableContainer.querySelectorAll('tr[data-partf-scorable="1"]');
+        if (radioRows.length) {
+            radioRows.forEach(function(row) {
+                if (row.getAttribute('data-summary-exclude') === '1') {
+                    return;
+                }
 
-            if (row.getAttribute('data-summary-exclude') === '1') {
-                return;
-            }
+                var code = getPartFRowRating(row);
+                row.setAttribute('data-partf-rating', code);
+                var numericRating = parsePerformanceRating(code);
+                if (numericRating === null) {
+                    return;
+                }
 
-            var numericRating = parsePerformanceRating(cells[2].textContent);
-            if (numericRating === null) {
-                return;
-            }
+                total += numericRating;
+                count += 1;
+            });
+        } else {
+            tableContainer.querySelectorAll('tbody tr').forEach(function(row) {
+                var cells = row.querySelectorAll('td');
+                if (cells.length !== 6) {
+                    return;
+                }
 
-            total += numericRating;
-            count += 1;
-        });
+                if (row.getAttribute('data-summary-exclude') === '1') {
+                    return;
+                }
+
+                var numericRating = parsePerformanceRating(cells[2].textContent);
+                if (numericRating === null) {
+                    return;
+                }
+
+                total += numericRating;
+                count += 1;
+            });
+        }
 
         totalScoreField.value = String(total);
         var average = count ? (total / count) : 0;
         averageScoreField.value = average.toFixed(2);
         syncOverallEvaluation(average);
+    }
+
+    window.updatePartFSummaryScores = updatePartFSummaryScores;
+
+    function bindPartFRatingSummaryListeners() {
+        var partFRoot = document.getElementById('partF');
+        if (!partFRoot || partFRoot.getAttribute('data-partf-summary-bound') === '1') {
+            return;
+        }
+
+        partFRoot.setAttribute('data-partf-summary-bound', '1');
+        partFRoot.addEventListener('change', function(e) {
+            var radio = e.target;
+            if (!radio || radio.type !== 'radio' || !radio.name || radio.name.indexOf('partf-response-') !== 0) {
+                return;
+            }
+
+            var row = radio.closest('tr[data-partf-scorable="1"]');
+            if (row) {
+                row.setAttribute('data-partf-rating', radio.value || '');
+            }
+
+            updatePartFSummaryScores();
+        });
+    }
+
+    window.bindPartFRatingSummaryListeners = bindPartFRatingSummaryListeners;
+
+    function getPartFPerformanceAreasComponent() {
+        var container = document.getElementById('partFTableContainer');
+        if (!container || typeof Livewire === 'undefined' || typeof Livewire.find !== 'function') {
+            return null;
+        }
+
+        var root = container.closest('[wire\\:id]');
+        if (!root) {
+            return null;
+        }
+
+        var wireId = root.getAttribute('wire:id');
+        return wireId ? Livewire.find(wireId) : null;
+    }
+
+    function syncPartFRatingsBeforeSave() {
+        var component = getPartFPerformanceAreasComponent();
+        if (!component || typeof component.call !== 'function') {
+            return Promise.resolve();
+        }
+
+        return component.call('syncAllRatings').catch(function() {
+            return null;
+        });
+    }
+
+    window.syncPartFRatingsBeforeSave = syncPartFRatingsBeforeSave;
+
+    function registerPartFSummaryUpdatedListener() {
+        if (typeof Livewire === 'undefined' || typeof Livewire.on !== 'function') {
+            return;
+        }
+
+        Livewire.on('partf-summary-updated', function() {
+            updatePartFSummaryScores();
+        });
     }
 
     // Binds click events for PART F checklist action links (Verify/View)
@@ -500,6 +634,7 @@
         var toggleButton = target.closest('.hierarchy-toggle');
         if (toggleButton) {
             e.preventDefault();
+            e.stopPropagation();
             var parentRow = toggleButton.closest('tr');
             var expanded = toggleButton.getAttribute('data-expanded') !== '1';
             setHierarchyRowExpansion(parentRow, expanded);
@@ -511,6 +646,9 @@
             var empId = target.getAttribute('data-emp-id');
             var assessmentPeriodId = (window.selectedAssessmentPeriodId || '');
             if (!confirm('Are you sure you want to revoke this assessment?')) return;
+            if (bpDenySelfAssessmentAction()) {
+                return;
+            }
             // Disable the link and show loading text
             var originalText = target.textContent;
             target.textContent = 'Revoking...';
@@ -605,6 +743,10 @@
     document.getElementById('verifyFormF').onsubmit = function(e) {
         e.preventDefault(); // Prevent default form submission (page reload)
 
+        if (bpDenySelfAssessmentAction()) {
+            return;
+        }
+
         // Get the employee ID, item key, and assessment_period_id from hidden fields
         var empId = document.getElementById('verifyEmpIdF').value;
         var itemKey = document.getElementById('verifyItemKeyF').value;
@@ -696,6 +838,40 @@
         });
     };
 
+    function registerPartFLivewireHooks() {
+        if (window.__partFLivewireHooksRegistered) {
+            return;
+        }
+
+        if (typeof Livewire === 'undefined' || typeof Livewire.hook !== 'function') {
+            return;
+        }
+
+        window.__partFLivewireHooksRegistered = true;
+        registerPartFSummaryUpdatedListener();
+
+        Livewire.hook('morph.updated', function (payload) {
+            var el = payload.el;
+            if (!el || typeof el.closest !== 'function') {
+                return;
+            }
+
+            if (el.id === 'partFTableContainer' || el.closest('#partFTableContainer')) {
+                window.initializeHierarchyToggles(document.getElementById('partFTableContainer'));
+                updatePartFSummaryScores();
+            }
+
+            if (el.id === 'partG' || el.closest('#partG')) {
+                window.initializeHierarchyToggles(document.getElementById('partG'));
+            }
+        });
+    }
+
+    document.addEventListener('livewire:init', registerPartFLivewireHooks);
+
+    if (window.Livewire) {
+        registerPartFLivewireHooks();
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         // Expiration Date Not Required checkbox logic (for A-E compatibility, safe to leave)
@@ -713,6 +889,7 @@
         }
         // Always bind PART F links on load
         bindChecklistLinksF();
+        bindPartFRatingSummaryListeners();
         initializeHierarchyToggles(document.querySelector('#partFTableContainer'));
         initializeHierarchyToggles(document.querySelector('#partGTableContainer'));
         updatePartFSummaryScores();
@@ -723,7 +900,10 @@
                 var docTypeId = btn.getAttribute('data-doc-type-id');
                 var empId = btn.getAttribute('data-emp-id');
                 var assessmentPeriodId = btn.getAttribute('data-assessment-period-id');
-                var textarea = document.querySelector('.section-comment-textarea[data-doc-type-id="' + docTypeId + '"]');
+                var sectionWrap = btn.closest('section') || btn.closest('.rounded-md.border.border-slate-400');
+                var textarea = sectionWrap
+                    ? sectionWrap.querySelector('.section-comment-textarea[data-doc-type-id="' + docTypeId + '"]')
+                    : document.querySelector('.section-comment-textarea[data-doc-type-id="' + docTypeId + '"]');
                 var statusSpan = btn.parentElement ? btn.parentElement.querySelector('.section-comment-status') : null;
                 if (!statusSpan) {
                     var sectionContainer = btn.closest('.rounded-md');
@@ -758,6 +938,7 @@
                     statusSpan.textContent = 'Saving...';
                     statusSpan.style.color = '#666';
                 }
+                syncPartFRatingsBeforeSave().then(function() {
                 fetch('/admin/employees/performance-section-comment', {
                     method: 'POST',
                     headers: {
@@ -786,10 +967,17 @@
                     }
                     if (data.success) {
                         if (statusSpan) {
-                            statusSpan.textContent = 'Saved!';
+                            var statusText = 'Saved!';
+                            if (data.action === 'deleted') {
+                                statusText = 'Cleared';
+                            } else if (data.action === 'noop') {
+                                statusText = 'OK';
+                            }
+                            statusSpan.textContent = statusText;
                             statusSpan.style.color = 'green';
                         }
-                        showAssessmentFeedback('Section comment saved successfully.');
+                        var feedbackMsg = data.message || 'Section comment saved successfully.';
+                        showAssessmentFeedback(feedbackMsg);
                         setTimeout(function() {
                                 if (statusSpan) {
                                     statusSpan.textContent = '';
@@ -807,6 +995,7 @@
                         statusSpan.textContent = 'Save failed.';
                         statusSpan.style.color = 'red';
                     }
+                });
                 });
             });
         });

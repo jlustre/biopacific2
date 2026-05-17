@@ -9,10 +9,17 @@
     'preview' => false
     ])
 
+    @if(isset($scopedFacility) && $scopedFacility)
+    <div class="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+        Showing email recipients for <strong>{{ $scopedFacility->name }}</strong> only.
+    </div>
+    @endif
+
     <div class="flex justify-between items-center my-4">
         <form method="GET" action="{{ route('admin.email-recipients.index') }}" class="flex space-x-2">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by email or category"
                 class="border border-slate-500 bg-white/70 rounded px-4 py-2">
+            @if(!empty($canFilterFacilities))
             <select name="facility" class="border border-slate-500 bg-white/70 rounded px-4 py-2">
                 <option value="">All Facilities</option>
                 @foreach ($facilities as $facility)
@@ -20,6 +27,7 @@
                     $facility->name }}</option>
                 @endforeach
             </select>
+            @endif
             <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Filter</button>
         </form>
 

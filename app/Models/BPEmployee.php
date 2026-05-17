@@ -18,16 +18,21 @@ class BPEmployee extends Model
         return $this->hasOne(\App\Models\BPEmpAddress::class, 'employee_num', 'employee_num');
     }
 
-    // Relationship: Employee belongs to a user
+    // Relationship: Employee belongs to a user (by user_id when present, else email)
     public function user()
     {
-        return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
+        if (\App\Models\User::bpEmployeesTableHasUserId()) {
+            return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
+        }
+
+        return $this->belongsTo(\App\Models\User::class, 'email', 'email');
     }
     protected $table = 'bp_employees';
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
     protected $fillable = [
+        'user_id',
         'employee_num',
         'ssn',
         'first_name',

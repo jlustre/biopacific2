@@ -44,4 +44,24 @@ class BPEmpAssignment extends Model
     {
         return $this->belongsTo(\App\Models\Position::class, 'job_code_id', 'id');
     }
+
+    public function reportsToPosition()
+    {
+        return $this->belongsTo(Position::class, 'reports_to', 'id');
+    }
+
+    /**
+     * Supervisory position title from the employee's position row (positions.reports_to_position_id).
+     */
+    public function reportsToPositionTitle(): ?string
+    {
+        $position = $this->position;
+        if (!$position && $this->job_code_id) {
+            $position = $this->position()->with('reportsToPosition')->first();
+        } elseif ($position && !$position->relationLoaded('reportsToPosition')) {
+            $position->load('reportsToPosition');
+        }
+
+        return $position?->reportsToPosition?->title;
+    }
 }

@@ -18,7 +18,7 @@
         class="flex flex-wrap items-end gap-4 w-full">
             <div>
                 <label class="block mb-1 text-xs font-semibold">Search by Name</label>
-                <input type="text" name="search" value="{{ request('search') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="File name...">
+                <input type="text" name="search" value="{{ request('search') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="Employee or file name...">
             </div>
             @php
                 $user = Auth::user();
@@ -95,7 +95,7 @@
         </thead>
         <tbody>
             @php
-            $query = App\Models\Upload::with(['facility','user','uploadType']);
+            $query = App\Models\Upload::with(['facility','user','uploadType','employee']);
             $user = Auth::user();
             $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('hrrd'));
             $userFacility = $user && $user->facility ? $user->facility : null;
@@ -105,10 +105,19 @@
                 $query->where('facility_id', $userFacility->id);
             }
             if(request('search')) {
-                $search = request('search');
-                $query->where(function($q) use ($search) {
-                    $q->where('original_filename', 'like', "%$search%")
-                      ->orWhereRaw('LOWER(employee_num) LIKE ?', ['%' . strtolower($search) . '%']);
+                $search = trim(request('search'));
+                $like = '%' . mb_strtolower($search) . '%';
+                $query->where(function ($q) use ($like) {
+                    $q->whereRaw('LOWER(original_filename) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(employee_num) LIKE ?', [$like])
+                        ->orWhereHas('employee', function ($employeeQuery) use ($like) {
+                            $employeeQuery->where(function ($nameQuery) use ($like) {
+                                $nameQuery->whereRaw('LOWER(first_name) LIKE ?', [$like])
+                                    ->orWhereRaw('LOWER(last_name) LIKE ?', [$like])
+                                    ->orWhereRaw("LOWER(CONCAT(COALESCE(last_name, ''), ', ', COALESCE(first_name, ''))) LIKE ?", [$like])
+                                    ->orWhereRaw("LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) LIKE ?", [$like]);
+                            });
+                        });
                 });
             }
             if(request('upload_type_id')) $query->where('upload_type_id', request('upload_type_id'));
@@ -200,6 +209,32 @@
                     <a href="{{ route('admin.facility.documents', ['facility' => $facility->id, 'edit' => $upload->id]) }}" title="Edit" class="text-green-600 hover:text-green-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     </a>
+                    @if($upload->canSendExpiryNotification())
+                        @php
+                            $notifyEmail = null;
+                            if ($upload->employee) {
+                                foreach ([$upload->employee->email, $upload->employee->user?->email] as $candidate) {
+                                    $candidate = trim((string) $candidate);
+                                    if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                                        $notifyEmail = $candidate;
+                                        break;
+                                    }
+                                }
+                            }
+                        @endphp
+                        <button type="button"
+                            title="{{ $notifyEmail ? 'Preview and send notification to ' . $notifyEmail : 'Employee has no email on file' }}"
+                            class="text-teal-600 hover:text-teal-800 bg-transparent border-none p-0 m-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                            @disabled(!$notifyEmail)
+                            data-upload-notify-preview="{{ route('admin.facility.uploads.notify.preview', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}"
+                            data-upload-notify-send="{{ route('admin.facility.uploads.notify', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}"
+                            onclick="openUploadNotifyModal(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span class="sr-only">Send notification</span>
+                        </button>
+                    @endif
                     <form action="{{ route('admin.facility.uploads.destroy', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this upload?');">
                         @csrf
                         @method('DELETE')
@@ -218,7 +253,113 @@
         </tbody>
     </table>
     <div class="mt-4">{{ $uploads->withQueryString()->links() }}</div>
+
+    <div id="uploadNotifyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="uploadNotifyModalTitle">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative">
+            <button type="button" onclick="closeUploadNotifyModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl leading-none" aria-label="Close">&times;</button>
+            <h3 id="uploadNotifyModalTitle" class="text-xl font-bold text-gray-900 mb-1">Send document notification</h3>
+            <p id="uploadNotifyModalMeta" class="text-sm text-gray-500 mb-4"></p>
+            <div id="uploadNotifyModalLoading" class="hidden py-8 text-center text-teal-700 font-semibold">Loading preview…</div>
+            <div id="uploadNotifyModalError" class="hidden mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+            <form id="uploadNotifyModalForm" method="POST" class="hidden space-y-4">
+                @csrf
+                <div>
+                    <label for="uploadNotifyTo" class="block mb-1 text-xs font-semibold text-gray-700">To</label>
+                    <input type="email" id="uploadNotifyTo" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm text-gray-700 cursor-not-allowed">
+                </div>
+                <div>
+                    <label for="uploadNotifySubject" class="block mb-1 text-xs font-semibold text-gray-700">Subject</label>
+                    <input type="text" name="subject" id="uploadNotifySubject" required maxlength="255" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm">
+                </div>
+                <div>
+                    <label for="uploadNotifyMessage" class="block mb-1 text-xs font-semibold text-gray-700">Message</label>
+                    <textarea name="message" id="uploadNotifyMessage" required rows="8" maxlength="10000" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Document details and a link to the member portal are included automatically below this message in the email.</p>
+                </div>
+                <div class="flex flex-wrap justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeUploadNotifyModal()" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
+                    <button type="submit" id="uploadNotifySendBtn" class="px-4 py-2 text-sm font-semibold text-white bg-teal-600 rounded hover:bg-teal-700 disabled:opacity-50">Send notification</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+            function openUploadNotifyModal(button) {
+                var previewUrl = button.getAttribute('data-upload-notify-preview');
+                var sendUrl = button.getAttribute('data-upload-notify-send');
+                var modal = document.getElementById('uploadNotifyModal');
+                var form = document.getElementById('uploadNotifyModalForm');
+                var loading = document.getElementById('uploadNotifyModalLoading');
+                var errorBox = document.getElementById('uploadNotifyModalError');
+                var meta = document.getElementById('uploadNotifyModalMeta');
+                var sendBtn = document.getElementById('uploadNotifySendBtn');
+
+                if (!previewUrl || !sendUrl || !modal) {
+                    return;
+                }
+
+                form.action = sendUrl;
+                form.classList.add('hidden');
+                loading.classList.remove('hidden');
+                errorBox.classList.add('hidden');
+                errorBox.textContent = '';
+                meta.textContent = '';
+                sendBtn.disabled = true;
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+
+                fetch(previewUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            if (!res.ok) {
+                                throw new Error(data.error || 'Unable to load notification preview.');
+                            }
+                            return data;
+                        });
+                    })
+                    .then(function (data) {
+                        document.getElementById('uploadNotifyTo').value = data.to || '';
+                        document.getElementById('uploadNotifySubject').value = data.subject || '';
+                        document.getElementById('uploadNotifyMessage').value = data.message || '';
+
+                        var tierLabel = data.expiry_tier_label || data.expiry_tier || '';
+                        var docParts = [data.document_type, data.file_name].filter(Boolean).join(' — ');
+                        meta.textContent = [docParts, tierLabel, data.facility_name].filter(Boolean).join(' · ');
+
+                        loading.classList.add('hidden');
+                        form.classList.remove('hidden');
+                        sendBtn.disabled = false;
+                    })
+                    .catch(function (err) {
+                        loading.classList.add('hidden');
+                        errorBox.textContent = err.message || 'Unable to load notification preview.';
+                        errorBox.classList.remove('hidden');
+                    });
+            }
+
+            function closeUploadNotifyModal() {
+                var modal = document.getElementById('uploadNotifyModal');
+                if (!modal) {
+                    return;
+                }
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeUploadNotifyModal();
+                }
+            });
+
             // Focus upload-table after filter change or submit
             document.addEventListener('DOMContentLoaded', function() {
                 var filterForm = document.getElementById('upload-table-filter-form');

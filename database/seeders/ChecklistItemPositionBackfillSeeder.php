@@ -31,10 +31,10 @@ class ChecklistItemPositionBackfillSeeder extends Seeder
         ]);
 
         $this->applyToNames([
-            'C.N.A. Certificate' => $this->positionIds($positionsByCode, ['CNA']),
-            'CPR Card (License Nurses)' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN']),
-            'Professional License' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN', 'SOCWRK', 'DIET', 'PHARM']),
-            'Professional License - Copy' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN', 'SOCWRK', 'DIET', 'PHARM']),
+            'C.N.A. Certificate*' => $this->positionIds($positionsByCode, ['CNA']),
+            'CPR Card (License Nurses)*' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN']),
+            'Professional License*' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN', 'SOCWRK', 'DIET', 'PHARM']),
+            'Professional License - Copy*' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN', 'SOCWRK', 'DIET', 'PHARM']),
             'Administrator Orientation' => $this->positionIds($positionsByCode, ['ADMIN']),
             'Blood Administration LN Competency Skills' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN']),
             'Blood Glucose Skills checklist' => $this->positionIds($positionsByCode, ['DON', 'RN', 'LPN']),

@@ -2,14 +2,28 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
 
+use App\Livewire\Concerns\GuardsAgainstSelfAssessment;
 use App\Models\EmployeeCompetencyAssessment;
 
 trait ManagesPartGSectionExclusion
 {
+    use GuardsAgainstSelfAssessment;
+
     public bool $sectionExcluded = false;
+
+    protected function abortPersistIfSelfAssessment(): bool
+    {
+        return $this->denyEvaluatorAction();
+    }
 
     public function updatedSectionExcluded(): void
     {
+        if ($this->denyEvaluatorAction()) {
+            $this->sectionExcluded = ! $this->sectionExcluded;
+
+            return;
+        }
+
         if (method_exists($this, 'persistDraftIfPossible')) {
             $this->persistDraftIfPossible();
 

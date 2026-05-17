@@ -101,13 +101,23 @@ class QuickActionsController extends Controller
 
         // Provide select list data for modal
 
-        $positions = \App\Models\Position::orderBy('title')->pluck('title');
+        $positions = \App\Models\Position::with(['department', 'reportsToPosition'])
+            ->orderBy('title')
+            ->get();
+        $positionDefaults = $positions->mapWithKeys(function ($position) {
+            return [
+                $position->title => [
+                    'department' => $position->department?->name,
+                    'reporting_to' => $position->reportsToPosition?->title,
+                ],
+            ];
+        })->all();
         $departments = \App\Models\Department::orderBy('name')->pluck('name');
         $employmentTypes = ['Full Time', 'Part Time', 'Per Diem', 'Temporary', 'Contractor', 'Internship'];
         // For reportingTo, use only positions with supervisor_role = 1
         $reportingTo = \App\Models\Position::where('supervisor_role', 1)->orderBy('title')->pluck('title');
 
-        return view('admin.facilities.hiring', compact('facility', 'jobOpenings', 'applications', 'preEmploymentApplications', 'stats', 'positions', 'departments', 'employmentTypes', 'reportingTo'));
+        return view('admin.facilities.hiring', compact('facility', 'jobOpenings', 'applications', 'preEmploymentApplications', 'stats', 'positions', 'positionDefaults', 'departments', 'employmentTypes', 'reportingTo'));
     }
 
     public function reviewPreEmployment(Facility $facility, $application)
@@ -362,10 +372,13 @@ class QuickActionsController extends Controller
                 })
                 ->get();
         }
+        $canScheduleReports = $user->hasAnyRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+
         return view('admin.facilities.reports', [
             'facility' => $facility,
             'reports' => $reports,
             'isAdmin' => $isAdmin,
+            'canScheduleReports' => $canScheduleReports,
         ]);
     }
 

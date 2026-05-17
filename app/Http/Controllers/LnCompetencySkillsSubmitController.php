@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Support\PreventsSelfAssessment;
 
 class LnCompetencySkillsSubmitController extends Controller
 {
@@ -27,6 +28,11 @@ class LnCompetencySkillsSubmitController extends Controller
                     'message' => 'Please select an assessment period before saving a draft.',
                 ], 422);
             }
+
+            if ($response = PreventsSelfAssessment::jsonDenyIfSelf(Auth::user(), (string) $employeeNum)) {
+                return $response;
+            }
+
             $summaryComments = $request->input('summary_comments', null);
             $employeeComments = $request->input('employee_comments', null);
             // If items is a string (from JS), decode it first
@@ -93,6 +99,9 @@ class LnCompetencySkillsSubmitController extends Controller
 
         $employeeNum = $request->input('employee_num');
         $assessmentPeriodId = $request->input('employee_assessment_period_id');
+
+        PreventsSelfAssessment::assertNotSelf(Auth::user(), (string) $employeeNum);
+
         $responses = $validated['items'];
 
         // Save all responses as JSON in the responses column

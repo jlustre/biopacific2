@@ -1,5 +1,5 @@
 @php
-    $partFAreasReadOnly = !empty($partFAssessmentLocked);
+    $partFAreasReadOnly = !empty($partFAssessmentLocked) || !empty($evaluatorActionsDisabled);
     $partFEmployeeCanComment = auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id;
 @endphp
 

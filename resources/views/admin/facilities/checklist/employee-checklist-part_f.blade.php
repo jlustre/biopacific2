@@ -1,5 +1,6 @@
 <div id="partF" class="tab-content">
     @php
+        $hasAssessmentPeriod = !empty($selectedAssessmentPeriodId);
         $partFSelectedAssessment = $selectedPerformanceAssessment ?? ($assessment ?? null);
         $partFAssessmentLocked = !empty(optional($partFSelectedAssessment)->finalized);
         $partFStatusLabel = $partFAssessmentLocked ? 'Completed' : ($partFSelectedAssessment ? 'In Progress' : null);
@@ -48,7 +49,7 @@
         </div>
 
         <div class="mb-4 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
-            Rating Legend: 3 = Excellent &nbsp;&nbsp;&nbsp; 2 = Satisfactory &nbsp;&nbsp;&nbsp; 1 = Unsatisfactory &nbsp;&nbsp;&nbsp; N = Not Applicable
+            Rating Legend: E = Excellent (3) &nbsp;&nbsp;&nbsp; S = Satisfactory (2) &nbsp;&nbsp;&nbsp; U = Unsatisfactory (1) &nbsp;&nbsp;&nbsp; N = Not Applicable
         </div>
 
         @if($partFStatusLabel && $partFShowStatusWarning)
@@ -62,7 +63,11 @@
         </div>
         @endif
 
-        @include('admin.facilities.checklist.employee-performance-areas')
+        @livewire('admin.facilities.checklist.part-f-sections.performance-appraisal-areas', [
+            'employeeNum' => $employee->employee_num,
+            'assessmentPeriodId' => $selectedAssessmentPeriodId,
+            'assessmentLocked' => $partFAssessmentLocked,
+        ], key('part-f-performance-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
         <div id="partF-messages">
             @if(session('success'))
@@ -114,23 +119,51 @@
                             <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Total</th>
                             <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Average</th>
                             <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Overall</th>
-                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Status</th>
+                            <th class="w-[10%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Status</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($performanceAssessmentHistory as $history)
+                        @php
+                            $historyIsCurrent = !empty($history['is_current']);
+                            $historyIsFinalized = !empty($history['is_finalized']);
+                            $historyLoadQuery = array_filter([
+                                'tab' => 'checklist',
+                                'checklist_tab' => 'partF',
+                                'assessment_period_id' => $history['assessment_period_id'] ?? null,
+                                'assessment_year' => $history['period_year'] ?? null,
+                                'facility' => request('facility'),
+                            ], fn ($value) => $value !== null && $value !== '');
+                            $historyLoadUrl = route('admin.employees.edit', $employee->id).'?'.http_build_query($historyLoadQuery);
+                            $historyActionLabel = $historyIsFinalized ? 'View' : 'Load';
+                        @endphp
                         <tr class="{{ $loop->odd ? 'bg-white' : 'bg-slate-50' }}">
-                            <td class="border border-slate-400 px-2 py-1.5 whitespace-nowrap">{{ $history['period_label'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 whitespace-nowrap">
+                                <div>{{ $history['period_label'] }}</div>
+                                @if($historyIsCurrent)
+                                <div class="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">Current</div>
+                                @endif
+                            </td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['assessment_date'] ?: 'N/A' }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['items_count'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['total_score'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['average_score'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['overall_rating'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['status'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">
+                                @if($historyIsCurrent)
+                                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Loaded</span>
+                                @else
+                                <a href="{{ $historyLoadUrl }}"
+                                    class="load-employee-btn inline-flex rounded-md bg-slate-700 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-slate-800"
+                                    title="{{ $historyIsFinalized ? 'Open this completed assessment in read-only mode' : 'Load this assessment for editing' }}">{{ $historyActionLabel }}</a>
+                                @endif
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="border border-slate-400 bg-slate-50 px-4 py-6 text-center text-slate-700">No performance assessment history is available for this employee yet.</td>
+                            <td colspan="8" class="border border-slate-400 bg-slate-50 px-4 py-6 text-center text-slate-700">No performance assessment history is available for this employee yet.</td>
                         </tr>
                         @endforelse
                     </tbody>

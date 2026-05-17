@@ -25,7 +25,11 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Facility Selection -->
-        @include('admin.facilities.webcontents.partials.facility_dropdown', ['facilities' => $facilities])
+        @include('admin.facilities.webcontents.partials.facility_dropdown', [
+            'facilities' => $facilities,
+            'scopedFacility' => $scopedFacility ?? null,
+            'canFilterFacilities' => $canFilterFacilities ?? true,
+        ])
 
         <!-- FAQs Content Area -->
         <div id="faqsContent" class="hidden">
@@ -275,8 +279,9 @@
                                 </div>
                             </div>
 
-                            <!-- Default FAQ -->
-                            <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+                            @if(empty($scopedFacilityId))
+                            <!-- Default FAQ (global admin only) -->
+                            <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl" id="defaultFaqOption">
                                 <div class="flex-shrink-0">
                                     <input type="checkbox" id="isDefault" name="is_default"
                                         class="w-5 h-5 text-teal-600 border-2 border-gray-300 rounded focus:ring-teal-500 focus:ring-offset-0">
@@ -287,6 +292,7 @@
                                     <p class="text-xs text-gray-500">Available to all facilities</p>
                                 </div>
                             </div>
+                            @endif
                         </div>
 
                         <!-- Sort Order -->
@@ -324,9 +330,10 @@
     const modal = document.getElementById('addFaqModal');
     const form = document.getElementById('faqForm');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const scopedFacilityId = @json($scopedFacilityId ?? null);
     let currentFacilityId = null;
 
-    document.addEventListener('DOMContentLoaded', function() {
+    function applyFacilitySelection(facilityId) {
         const facilitySelect = document.getElementById('facilitySelect');
         const faqsContent = document.getElementById('faqsContent');
         const defaultState = document.getElementById('defaultState');
@@ -334,69 +341,60 @@
         const selectedFacilityLocation = document.getElementById('selectedFacilityLocation');
         const selectedFacilityPhone = document.getElementById('selectedFacilityPhone');
 
-        // Restore the last selected facility from localStorage
-        const savedFacilityId = localStorage.getItem('selectedFacilityId');
-        if (savedFacilityId) {
-            facilitySelect.value = savedFacilityId;
-            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
-            currentFacilityId = savedFacilityId;
+        if (!facilitySelect || !facilityId) return;
 
-            // Update the UI to reflect the restored facility
-            faqsContent.classList.remove('hidden');
-            defaultState.classList.add('hidden');
-            selectedFacilityName.textContent = selectedOption.getAttribute('data-name');
-            selectedFacilityLocation.textContent = `${selectedOption.getAttribute('data-city')}, ${selectedOption.getAttribute('data-state')}`;
+        facilitySelect.value = facilityId;
+        const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return;
 
-            // Format and display phone number (if applicable)
-            const facilityPhone = selectedOption.getAttribute('data-phone');
-            if (facilityPhone && facilityPhone.trim() !== '') {
-                const digits = facilityPhone.replace(/\D/g, '');
-                let formattedPhone = facilityPhone;
-                if (digits.length === 10) {
-                    formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
-                }
-                selectedFacilityPhone.textContent = formattedPhone;
-                selectedFacilityPhone.parentElement.style.display = 'flex';
-            } else {
-                selectedFacilityPhone.parentElement.style.display = 'none';
+        currentFacilityId = facilityId;
+        faqsContent.classList.remove('hidden');
+        defaultState.classList.add('hidden');
+        selectedFacilityName.textContent = selectedOption.getAttribute('data-name');
+        selectedFacilityLocation.textContent = `${selectedOption.getAttribute('data-city')}, ${selectedOption.getAttribute('data-state')}`;
+
+        const facilityPhone = selectedOption.getAttribute('data-phone');
+        if (facilityPhone && facilityPhone.trim() !== '') {
+            const digits = facilityPhone.replace(/\D/g, '');
+            let formattedPhone = facilityPhone;
+            if (digits.length === 10) {
+                formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
             }
+            selectedFacilityPhone.textContent = formattedPhone;
+            selectedFacilityPhone.parentElement.style.display = 'flex';
+        } else {
+            selectedFacilityPhone.parentElement.style.display = 'none';
+        }
 
-            loadFaqs(savedFacilityId);
+        loadFaqs(facilityId);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const facilitySelect = document.getElementById('facilitySelect');
+        const faqsContent = document.getElementById('faqsContent');
+        const defaultState = document.getElementById('defaultState');
+
+        if (!facilitySelect) return;
+
+        if (scopedFacilityId) {
+            applyFacilitySelection(String(scopedFacilityId));
+        } else {
+            const savedFacilityId = localStorage.getItem('selectedFacilityId');
+            if (savedFacilityId && facilitySelect.querySelector(`option[value="${savedFacilityId}"]`)) {
+                applyFacilitySelection(savedFacilityId);
+            }
         }
 
         facilitySelect.addEventListener('change', function() {
             const facilityId = this.value;
-            currentFacilityId = facilityId;
 
             if (facilityId) {
-                // Save the selected facility ID to localStorage
-                localStorage.setItem('selectedFacilityId', facilityId);
-
-                const selectedOption = this.options[this.selectedIndex];
-                faqsContent.classList.remove('hidden');
-                defaultState.classList.add('hidden');
-                selectedFacilityName.textContent = selectedOption.getAttribute('data-name');
-                selectedFacilityLocation.textContent = `${selectedOption.getAttribute('data-city')}, ${selectedOption.getAttribute('data-state')}`;
-
-                // Format and display phone number (if applicable)
-                const facilityPhone = selectedOption.getAttribute('data-phone');
-                if (facilityPhone && facilityPhone.trim() !== '') {
-                    const digits = facilityPhone.replace(/\D/g, '');
-                    let formattedPhone = facilityPhone;
-                    if (digits.length === 10) {
-                        formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
-                    }
-                    selectedFacilityPhone.textContent = formattedPhone;
-                    selectedFacilityPhone.parentElement.style.display = 'flex';
-                } else {
-                    selectedFacilityPhone.parentElement.style.display = 'none';
+                if (!scopedFacilityId) {
+                    localStorage.setItem('selectedFacilityId', facilityId);
                 }
-
-                loadFaqs(facilityId);
+                applyFacilitySelection(facilityId);
             } else {
-                // Clear the saved facility ID if no facility is selected
                 localStorage.removeItem('selectedFacilityId');
-
                 currentFacilityId = null;
                 faqsContent.classList.add('hidden');
                 defaultState.classList.remove('hidden');
@@ -600,12 +598,14 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2 ml-4">
+                        ${(!scopedFacilityId || !faq.is_default) ? `
                         <button onclick="editFaq(${faq.id})" class="text-blue-600 hover:text-blue-800 p-2" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="deleteFaq(${faq.id}, '${faq.question.replace(/'/g, "\\'")}', event)" class="text-red-600 hover:text-red-800 p-2" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
+                        ` : '<span class="text-xs text-gray-400 px-2">Shared default (read-only)</span>'}
                     </div>
                 </div>
             </div>

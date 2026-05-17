@@ -1,0 +1,97 @@
+@php
+    $eyebrow = $eyebrow ?? null;
+    $pageTitle = $pageTitle ?? null;
+    $showSearch = $showSearch ?? false;
+    $showNotifications = $showNotifications ?? true;
+    $facilityName = $facilityName ?? '—';
+    $firstName = $firstName ?? 'Employee';
+    $initials = $initials ?? 'E';
+@endphp
+
+<header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+  <div class="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+    <div class="flex items-center gap-3 min-w-0">
+      <button type="button"
+        class="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm lg:hidden shrink-0"
+        @click="sidebarOpen = true" aria-label="Open menu">☰</button>
+      @if($eyebrow || $pageTitle)
+      <div class="min-w-0">
+        @if($eyebrow)
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500 truncate">{{ $eyebrow }}</p>
+        @endif
+        @if($pageTitle)
+        <h1 class="text-xl font-bold text-slate-950 sm:text-2xl truncate">{{ $pageTitle }}</h1>
+        @endif
+      </div>
+      @endif
+    </div>
+
+    @if($showSearch)
+    <div class="hidden flex-1 items-center justify-center px-6 xl:flex">
+      <div class="relative w-full max-w-xl">
+        <span class="absolute left-4 top-2.5 text-slate-400">⌕</span>
+        <input type="search" placeholder="Search policies, documents, benefits, schedules..."
+          class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none ring-brand-500/20 focus:border-brand-400 focus:ring-4" />
+      </div>
+    </div>
+    @endif
+
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      @hasSection('header-actions')
+        @yield('header-actions')
+      @endif
+
+      <select class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm md:block max-w-[180px] truncate">
+        <option>{{ $facilityName }}</option>
+      </select>
+
+      @if($showNotifications)
+      <div class="relative">
+        <button type="button" @click="notifyOpen = !notifyOpen; profileOpen = false"
+          class="relative rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm hover:bg-slate-50"
+          aria-label="Notifications">
+          🔔
+          <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">5</span>
+        </button>
+        <div x-show="notifyOpen" x-transition @click.outside="notifyOpen = false"
+          class="absolute right-0 mt-3 w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-soft z-50">
+          <div class="mb-3 flex items-center justify-between">
+            <p class="font-bold text-slate-950">Notifications</p>
+            <a href="#" class="text-xs font-semibold text-brand-600">View all</a>
+          </div>
+          <div class="space-y-3 text-sm">
+            <div class="rounded-2xl bg-rose-50 p-3">
+              <p class="font-semibold text-rose-800">CPR expires in 21 days</p>
+              <p class="text-xs text-rose-600">Upload renewal certificate.</p>
+            </div>
+            <div class="rounded-2xl bg-amber-50 p-3">
+              <p class="font-semibold text-amber-800">Policy acknowledgement due</p>
+              <p class="text-xs text-amber-600">Employee handbook update.</p>
+            </div>
+            <div class="rounded-2xl bg-brand-50 p-3">
+              <p class="font-semibold text-brand-800">New schedule posted</p>
+              <p class="text-xs text-brand-600">May 20 - May 26.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      @endif
+
+      <div class="relative">
+        <button type="button" @click="profileOpen = !profileOpen; notifyOpen = false"
+          class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 pr-3 shadow-sm hover:bg-slate-50">
+          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ $initials }}</div>
+          <span class="hidden text-sm font-semibold sm:inline">{{ $firstName }}</span>
+        </button>
+        <div x-show="profileOpen" x-transition @click.outside="profileOpen = false"
+          class="absolute right-0 mt-3 w-56 rounded-3xl border border-slate-200 bg-white p-3 shadow-soft z-50">
+          <a href="{{ route('settings.profile') }}" class="block rounded-xl px-3 py-2 text-sm hover:bg-slate-100">My Profile</a>
+          <a href="{{ route('settings.password') }}" class="block rounded-xl px-3 py-2 text-sm hover:bg-slate-100">Settings</a>
+          <a href="#" class="block rounded-xl px-3 py-2 text-sm hover:bg-slate-100">Switch Facility</a>
+          <button type="button" onclick="document.getElementById('logout-form').submit()"
+            class="block w-full rounded-xl px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>

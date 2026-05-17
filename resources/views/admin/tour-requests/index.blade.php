@@ -9,11 +9,18 @@
     'preview' => false
     ])
 
+    @if(isset($scopedFacility) && $scopedFacility)
+    <div class="mt-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+        Showing tour requests for <strong>{{ $scopedFacility->name }}</strong> only.
+    </div>
+    @endif
+
     <!-- Search and Filter Form -->
     <form method="GET" action="{{ route('admin.tour-requests.index') }}" class="mb-4 mt-4">
         <div class="flex space-x-4">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or email"
                 class="border border-slate-400 rounded px-4 py-2 w-full">
+            @if(!empty($canFilterFacilities))
             <select name="facility" class="border border-slate-400 rounded px-4 py-2">
                 <option value="">All Facilities</option>
                 @foreach ($facilities as $facility)
@@ -21,6 +28,7 @@
                     $facility->name }}</option>
                 @endforeach
             </select>
+            @endif
             <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Filter</button>
         </div>
     </form>

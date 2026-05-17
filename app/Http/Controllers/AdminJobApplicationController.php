@@ -2,49 +2,77 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Mail\PreEmploymentMail;
 use App\Models\EmployeeChecklist;
+use App\Models\Facility;
 use App\Models\JobApplication;
 use App\Models\User;
-use App\Models\Facility;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
-use App\Mail\PreEmploymentMail;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class AdminJobApplicationController extends Controller
 {
     use AuthorizesRequests;
-    public function index()
+
+    public function index(Request $request)
     {
+        $user = $request->user();
         $statuses = ['pending', 'reviewed', 'interview', 'pre-employment', 'hired', 'rejected'];
-        $facilities = Facility::orderBy('name')->get();
+        $isGlobalAdmin = $user->hasRole('admin');
+        $scopedFacilityId = (! $isGlobalAdmin && $user->facility_id)
+            ? (int) $user->facility_id
+            : null;
+        $canFilterFacilities = $isGlobalAdmin;
 
         $query = JobApplication::with(['jobOpening.facility'])->orderByDesc('created_at');
 
-        if (request()->filled('status')) {
-            $query->where('status', request('status'));
-        }
-
-        if (request()->filled('facility')) {
-            $facilityId = request('facility');
-            $query->whereHas('jobOpening', function ($builder) use ($facilityId) {
-                $builder->where('facility_id', $facilityId);
+        if ($scopedFacilityId) {
+            $query->whereHas('jobOpening', function ($builder) use ($scopedFacilityId) {
+                $builder->where('facility_id', $scopedFacilityId);
+            });
+        } elseif ($request->filled('facility')) {
+            $query->whereHas('jobOpening', function ($builder) use ($request) {
+                $builder->where('facility_id', $request->facility);
             });
         }
 
-        if (request()->filled('search')) {
-            $search = request('search');
-            $query->whereHas('jobOpening', function ($jobQuery) use ($search) {
-                $jobQuery->where('title', 'like', "%{$search}%");
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhereHas('jobOpening', function ($jobQuery) use ($search) {
+                        $jobQuery->where('title', 'like', "%{$search}%");
+                    });
             });
         }
 
         $jobApplications = $query->paginate(15)->withQueryString();
 
-        return view('admin.job-applications.index', compact('jobApplications', 'facilities', 'statuses'));
+        $facilities = $canFilterFacilities
+            ? Facility::orderBy('name')->get()
+            : collect();
+
+        $scopedFacility = $scopedFacilityId
+            ? Facility::find($scopedFacilityId)
+            : null;
+
+        return view('admin.job-applications.index', compact(
+            'jobApplications',
+            'facilities',
+            'statuses',
+            'canFilterFacilities',
+            'scopedFacility'
+        ));
     }
 
     public function show(JobApplication $jobApplication)
@@ -65,16 +93,22 @@ class AdminJobApplicationController extends Controller
 
     public function destroy(JobApplication $jobApplication)
     {
-        // Handle deleting a job application
-        // Example: $jobApplication->delete();
-        return redirect()->route('admin.job-applications.index');
+        $this->authorize('delete', $jobApplication);
+
+        if ($jobApplication->resume_path && Storage::disk('public')->exists($jobApplication->resume_path)) {
+            Storage::disk('public')->delete($jobApplication->resume_path);
+        }
+
+        $jobApplication->delete();
+
+        return redirect()
+            ->route('admin.job-applications.index')
+            ->with('success', 'Job application deleted successfully.');
     }
 
     public function updateStatus(Request $request, JobApplication $jobApplication)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:pending,reviewed,interview,pre-employment,hired,rejected',
-        ]);
+        $this->authorize('update', $jobApplication);
 
         $validated = $request->validate([
             'status' => 'required|in:pending,reviewed,interview,pre-employment,hired,rejected',
@@ -82,18 +116,14 @@ class AdminJobApplicationController extends Controller
 
         $updateData = ['status' => $validated['status']];
 
-        // Always ensure applicant_code is set for pre-employment
         if ($validated['status'] === 'pre-employment' && empty($jobApplication->applicant_code)) {
             $updateData['applicant_code'] = $this->generateApplicantCode();
         }
 
         $jobApplication->update($updateData);
-
-        // Reload the jobApplication to get the latest applicant_code
         $jobApplication->refresh();
 
         if ($validated['status'] === 'pre-employment') {
-            // If applicant_code is still missing, generate and save it
             if (empty($jobApplication->applicant_code)) {
                 $jobApplication->applicant_code = $this->generateApplicantCode();
                 $jobApplication->save();
@@ -108,32 +138,38 @@ class AdminJobApplicationController extends Controller
 
     public function downloadResume(JobApplication $jobApplication)
     {
-        if (!$jobApplication->resume_path) {
+        $this->authorize('view', $jobApplication);
+
+        if (! $jobApplication->resume_path) {
             abort(404, 'Resume not found.');
         }
 
         $disk = Storage::disk('public');
-        if (!$disk->exists($jobApplication->resume_path)) {
+        if (! $disk->exists($jobApplication->resume_path)) {
             abort(404, 'Resume not found.');
         }
 
         $path = $disk->path($jobApplication->resume_path);
         $fileName = strtolower($jobApplication->first_name) . '_' . strtolower($jobApplication->last_name) . '_resume.pdf';
+
         return response()->download($path, $fileName);
     }
 
     public function previewResume(JobApplication $jobApplication)
     {
-        if (!$jobApplication->resume_path) {
+        $this->authorize('view', $jobApplication);
+
+        if (! $jobApplication->resume_path) {
             abort(404, 'Resume not found.');
         }
 
         $disk = Storage::disk('public');
-        if (!$disk->exists($jobApplication->resume_path)) {
+        if (! $disk->exists($jobApplication->resume_path)) {
             abort(404, 'Resume not found.');
         }
 
         $path = $disk->path($jobApplication->resume_path);
+
         return response()->file($path, [
             'Content-Disposition' => 'inline; filename="' . basename($jobApplication->resume_path) . '"',
         ]);

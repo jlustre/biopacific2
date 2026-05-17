@@ -30,13 +30,9 @@
                         <th id="csc-section-heading" tabindex="-1" colspan="5" class="scroll-mt-4 bg-blue-100 text-gray-700 font-bold text-base border border-gray-300 px-4 py-1 text-left outline-none">
                             <div class="flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-2 min-w-0">
-                                    <button type="button"
-                                        class="section-toggle inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100"
-                                        x-text="$store.partGAccordion.openSection === 'cna-skills' ? '▲' : '▼'"
-                                        x-bind:aria-label="$store.partGAccordion.openSection === 'cna-skills' ? 'Collapse section items' : 'Expand section items'"
-                                        x-on:click="$store.partGAccordion.openSection = $store.partGAccordion.openSection === 'cna-skills' ? null : 'cna-skills'"
-                                        x-bind:data-expanded="$store.partGAccordion.openSection === 'cna-skills' ? '1' : '0'"
-                                    ></button>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
+                                        'accordionKey' => 'cna-skills',
+                                    ])
                                     <span class="truncate">CNA SKILLS CHECKLIST</span>
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
@@ -57,11 +53,10 @@
                     </tr>
                     @foreach($cnaSkillsChecklistItems as $index => $item)
                         @if($item['isParent'] ?? false)
-                            <tr wire:key="csc-parent-{{ $item['id'] }}">
-                                <td class="border border-gray-300 font-bold text-gray-700 bg-blue-50 text-md" colspan="5" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
-                                    {{ $item['item'] ?? '' }}
-                                </td>
-                            </tr>
+                            @include('livewire.admin.facilities.checklist.part-g-sections.partials.nested-parent-row', [
+                                'item' => $item,
+                                'wireKey' => 'csc-parent-'.$item['id'],
+                            ])
                         @else
                             <tr wire:key="csc-row-{{ $item['id'] }}" class="csc-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} csc-row-hover">
                                 <td class="border border-gray-300 py-0 text-sm" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
@@ -220,13 +215,19 @@
 @script
 <script>
     const registerPartGAccordionStore = () => {
-        if (Alpine.store('partGAccordion')) {
-            return;
+        if (!Alpine.store('partGAccordion')) {
+            Alpine.store('partGAccordion', { openSection: null });
         }
 
-        Alpine.store('partGAccordion', {
-            openSection: 'ln',
-        });
+        if (!Alpine.store('partGAccordion').openSection) {
+            Alpine.store('partGAccordion').openSection = 'cna-skills';
+        }
+    };
+
+    const initPartGHierarchyToggles = () => {
+        if (typeof window.initializeHierarchyToggles === 'function') {
+            window.initializeHierarchyToggles(document.getElementById('partG'));
+        }
     };
 
     const registerCscSummaryComponent = () => Alpine.data('cscSummary', () => ({
@@ -297,10 +298,12 @@
     if (window.Alpine) {
         registerPartGAccordionStore();
         registerCscSummaryComponent();
+        initPartGHierarchyToggles();
     } else {
         document.addEventListener('alpine:init', () => {
             registerPartGAccordionStore();
             registerCscSummaryComponent();
+            initPartGHierarchyToggles();
         });
     }
 </script>

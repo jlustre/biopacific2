@@ -34,6 +34,30 @@ class JobListingManager extends Component
     public $successMessage = '';
     public $errorMessage = '';
 
+    public function updatedTitle($value): void
+    {
+        $title = trim((string) $value);
+        if ($title === '' || $title === 'Other') {
+            return;
+        }
+
+        $position = \App\Models\Position::with(['department', 'reportsToPosition'])
+            ->where('title', $title)
+            ->first();
+
+        if (!$position) {
+            return;
+        }
+
+        if ($position->department?->name) {
+            $this->department = $position->department->name;
+        }
+
+        if ($position->reportsToPosition?->title) {
+            $this->reporting_to = $position->reportsToPosition->title;
+        }
+    }
+
     public function mount($facility)
     {
         // Check for facility_id in GET request

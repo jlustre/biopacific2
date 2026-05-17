@@ -216,7 +216,7 @@ function submitTemplateForm(actionType) {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block font-semibold mb-2">Job Title *</label>
-                    <select wire:model="title"
+                    <select wire:model.live="title"
                         class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 @error('title') border-red-500 @enderror">
                         <option value="">Select a position...</option>
                         @foreach($positions as $id => $positionTitle)

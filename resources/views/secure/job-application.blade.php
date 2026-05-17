@@ -133,10 +133,10 @@
                 <h2 class="text-lg font-semibold text-gray-900">Cover Letter</h2>
             </div>
             <div class="px-6 py-4">
-                <div class="prose max-w-none">
-                    <p class="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">{{
-                        $jobApplication->cover_letter }}</p>
-                </div>
+                @include('partials.job-description-html', [
+                    'content' => $jobApplication->cover_letter,
+                    'class' => 'job-description-content prose prose-sm max-w-none text-sm text-gray-900',
+                ])
             </div>
         </div>
         @endif

@@ -25,7 +25,11 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Facility Selection -->
-        @include('admin.facilities.webcontents.partials.facility_dropdown', ['facilities' => $facilities])
+        @include('admin.facilities.webcontents.partials.facility_dropdown', [
+            'facilities' => $facilities,
+            'scopedFacility' => $scopedFacility ?? null,
+            'canFilterFacilities' => $canFilterFacilities ?? true,
+        ])
 
         <!-- Testimonials Content Area -->
         <div id="testimonialsContent" class="hidden">
@@ -364,8 +368,37 @@
     const defaultState = document.getElementById('defaultState');
     const testimonialCount = document.getElementById('testimonialCount');
     const testimonialsList = document.getElementById('testimonialsList');
+    const scopedFacilityId = @json($scopedFacilityId ?? null);
     let currentFacilityId = null;
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    function applyFacilitySelection(facilityId) {
+        if (!facilitySelect || !facilityId) return;
+        facilitySelect.value = facilityId;
+        const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return;
+
+        currentFacilityId = facilityId;
+        testimonialsContent.classList.remove('hidden');
+        defaultState.classList.add('hidden');
+        document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
+        document.getElementById('selectedFacilityLocation').textContent = `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
+
+        const phoneElement = document.getElementById('selectedFacilityPhone');
+        if (selectedOption.dataset.phone && selectedOption.dataset.phone.trim() !== '') {
+            const digits = selectedOption.dataset.phone.replace(/\D/g, '');
+            let formattedPhone = selectedOption.dataset.phone;
+            if (digits.length === 10) {
+                formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
+            }
+            phoneElement.textContent = formattedPhone;
+            phoneElement.parentElement.style.display = 'flex';
+        } else {
+            phoneElement.parentElement.style.display = 'none';
+        }
+
+        loadTestimonials(facilityId);
+    }
 
     // Photo preview logic
     document.addEventListener('DOMContentLoaded', function() {
@@ -453,69 +486,23 @@
             return;
         }
 
-        // Restore the last selected facility from localStorage
-        const savedFacilityId = localStorage.getItem('selectedFacilityId');
-        if (savedFacilityId) {
-            facilitySelect.value = savedFacilityId;
-            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
-            currentFacilityId = savedFacilityId;
-
-            // Update the UI to reflect the restored facility
-            testimonialsContent.classList.remove('hidden');
-            defaultState.classList.add('hidden');
-            document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
-            document.getElementById('selectedFacilityLocation').textContent = `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
-
-            // Format and display phone number (if applicable)
-            const phoneElement = document.getElementById('selectedFacilityPhone');
-            if (selectedOption.dataset.phone && selectedOption.dataset.phone.trim() !== '') {
-                const digits = selectedOption.dataset.phone.replace(/\D/g, '');
-                let formattedPhone = selectedOption.dataset.phone;
-                if (digits.length === 10) {
-                    formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
-                }
-                phoneElement.textContent = formattedPhone;
-                phoneElement.parentElement.style.display = 'flex';
-            } else {
-                phoneElement.parentElement.style.display = 'none';
+        if (scopedFacilityId) {
+            applyFacilitySelection(String(scopedFacilityId));
+        } else {
+            const savedFacilityId = localStorage.getItem('selectedFacilityId');
+            if (savedFacilityId && facilitySelect.querySelector(`option[value="${savedFacilityId}"]`)) {
+                applyFacilitySelection(savedFacilityId);
             }
-
-            // Load testimonials for the restored facility
-            loadTestimonials(savedFacilityId);
         }
 
         facilitySelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            currentFacilityId = this.value;
-
             if (this.value) {
-                // Save the selected facility ID to localStorage
-                localStorage.setItem('selectedFacilityId', this.value);
-
-                testimonialsContent.classList.remove('hidden');
-                defaultState.classList.add('hidden');
-                document.getElementById('selectedFacilityName').textContent = selectedOption.dataset.name;
-                document.getElementById('selectedFacilityLocation').textContent = `${selectedOption.dataset.city || 'N/A'}, ${selectedOption.dataset.state || 'N/A'}`;
-
-                // Format and display phone number (if applicable)
-                const phoneElement = document.getElementById('selectedFacilityPhone');
-                if (selectedOption.dataset.phone && selectedOption.dataset.phone.trim() !== '') {
-                    const digits = selectedOption.dataset.phone.replace(/\D/g, '');
-                    let formattedPhone = selectedOption.dataset.phone;
-                    if (digits.length === 10) {
-                        formattedPhone = `(${digits.substr(0,3)}) ${digits.substr(3,3)}-${digits.substr(6)}`;
-                    }
-                    phoneElement.textContent = formattedPhone;
-                    phoneElement.parentElement.style.display = 'flex';
-                } else {
-                    phoneElement.parentElement.style.display = 'none';
+                if (!scopedFacilityId) {
+                    localStorage.setItem('selectedFacilityId', this.value);
                 }
-
-                loadTestimonials(this.value);
+                applyFacilitySelection(this.value);
             } else {
-                // Clear the saved facility ID if no facility is selected
                 localStorage.removeItem('selectedFacilityId');
-
                 currentFacilityId = null;
                 testimonialsContent.classList.add('hidden');
                 defaultState.classList.remove('hidden');

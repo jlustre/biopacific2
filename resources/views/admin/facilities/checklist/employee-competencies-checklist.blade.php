@@ -26,7 +26,7 @@
                     <th class="border px-2 py-1 text-left w-1/2 text-xs">SKILL</th>
                     <th class="border px-2 py-1 text-center w-1/8 text-xs">ON FILE</th>
                     <th class="border px-2 py-1 text-center w-1/8 text-xs">CONFIRMED DATE</th>
-                    <th class="border px-2 py-1 text-center w-1/8 text-xs">EXPIRED DATE</th>
+                    <th class="border px-2 py-1 text-center w-1/8 text-xs">EXPIRY DATE</th>
                     <th class="border px-2 py-1 text-center w-1/8 text-xs">CONFIRMED BY</th>
                 </tr>
             </thead>

@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -126,10 +127,70 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the employee record for this user
+     * Get the employee record for this user (legacy Employee model on bp_employees).
      */
     public function employee()
     {
-        return $this->hasOne(Employee::class);
+        if (static::bpEmployeesTableHasUserId()) {
+            return $this->hasOne(Employee::class, 'user_id', 'id');
+        }
+
+        return $this->hasOne(Employee::class, 'email', 'email');
+    }
+
+    /**
+     * Bio-Pacific employee record linked by email (falls back when user_id column is absent).
+     */
+    public function bpEmployee()
+    {
+        if (static::bpEmployeesTableHasUserId()) {
+            return $this->hasOne(BPEmployee::class, 'user_id', 'id');
+        }
+
+        return $this->hasOne(BPEmployee::class, 'email', 'email');
+    }
+
+    /**
+     * Resolve the employee record for this user (user_id when available, otherwise email).
+     */
+    public function resolvedBpEmployee(array $with = []): ?BPEmployee
+    {
+        $makeQuery = fn () => $with === []
+            ? BPEmployee::query()
+            : BPEmployee::query()->with($with);
+
+        if (static::bpEmployeesTableHasUserId()) {
+            $byUserId = $makeQuery()->where('user_id', $this->id)->first();
+            if ($byUserId) {
+                return $byUserId;
+            }
+        }
+
+        if (filled($this->email)) {
+            return $makeQuery()->where('email', $this->email)->first();
+        }
+
+        return null;
+    }
+
+    public static function bpEmployeesTableHasUserId(): bool
+    {
+        static $hasUserId = null;
+
+        if ($hasUserId !== null) {
+            return $hasUserId;
+        }
+
+        if (! Schema::hasColumn('bp_employees', 'user_id')) {
+            return $hasUserId = false;
+        }
+
+        try {
+            BPEmployee::query()->select('id')->whereNull('user_id')->limit(1)->value('id');
+
+            return $hasUserId = true;
+        } catch (\Throwable) {
+            return $hasUserId = false;
+        }
     }
 }

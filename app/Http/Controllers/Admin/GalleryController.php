@@ -3,42 +3,133 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Facility;
 use App\Models\GalleryImage;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class GalleryController extends Controller {
-    /**
-     * Display a listing of the galleries (facility selection).
-     */
-    public function index(Request $request, $facilityId = null)
+class GalleryController extends Controller
+{
+    protected function scopedFacilityId(Request $request): ?int
     {
-        if ($facilityId) {
-             $facilities = \App\Models\Facility::orderBy('name')->get();
-            // Show gallery images for a specific facility
-            $facility = \App\Models\Facility::findOrFail($facilityId);
-            $images = \App\Models\GalleryImage::where('facility_id', $facilityId)->orderBy('order')->get();
-            return view('admin.galleries.index', compact('facility', 'images', 'facilities'));
-        } else {
-            // Show facility selection
-            $facilities = \App\Models\Facility::orderBy('name')->get();
-            $type = 'gallery';
-            return view('admin.galleries.gallery-facility-selection', compact('facilities', 'type'));
+        $user = $request->user();
+
+        if ($user && ! $user->hasRole('admin') && $user->facility_id) {
+            return (int) $user->facility_id;
+        }
+
+        return null;
+    }
+
+    protected function facilitiesForUser(Request $request)
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId) {
+            return Facility::where('id', $scopedFacilityId)->orderBy('name')->get();
+        }
+
+        return Facility::orderBy('name')->get();
+    }
+
+    protected function authorizeFacilityAccess(Request $request, int $facilityId): void
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId && $scopedFacilityId !== $facilityId) {
+            abort(403, 'You do not have access to this facility\'s gallery.');
         }
     }
 
-    /**
-     * Show the form for creating a new gallery image for a facility.
-     */
-    public function create($facilityId)
+    protected function authorizeImageAccess(Request $request, GalleryImage $image): void
     {
-        $facility = \App\Models\Facility::findOrFail($facilityId);
-        return view('admin.galleries.create', compact('facility'));
+        $this->authorizeFacilityAccess($request, (int) $image->facility_id);
+    }
+
+    protected function resolveFacilityId(Request $request, $facility = null): ?int
+    {
+        if ($facility instanceof Facility) {
+            return (int) $facility->id;
+        }
+
+        if (is_numeric($facility)) {
+            return (int) $facility;
+        }
+
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId) {
+            return $scopedFacilityId;
+        }
+
+        if ($request->filled('facility_id')) {
+            return (int) $request->input('facility_id');
+        }
+
+        return null;
     }
 
     /**
-     * Store a newly uploaded gallery image for a facility.
+     * Gallery hub or facility gallery view.
      */
+    public function index(Request $request, $facility = null)
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $canFilterFacilities = $scopedFacilityId === null;
+        $facilityId = $this->resolveFacilityId($request, $facility);
+
+        $facilities = $this->facilitiesForUser($request);
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
+
+        if (! $facilityId) {
+            if ($scopedFacilityId) {
+                return redirect()->route('admin.facilities.galleries.index', ['facility' => $scopedFacilityId]);
+            }
+
+            return view('admin.galleries.index', [
+                'facilities' => $facilities,
+                'facility' => null,
+                'images' => collect(),
+                'scopedFacility' => $scopedFacility,
+                'scopedFacilityId' => $scopedFacilityId,
+                'canFilterFacilities' => $canFilterFacilities,
+                'stats' => null,
+            ]);
+        }
+
+        $this->authorizeFacilityAccess($request, $facilityId);
+        $facility = Facility::findOrFail($facilityId);
+
+        $images = GalleryImage::where('facility_id', $facilityId)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $stats = [
+            'total' => $images->count(),
+            'active' => $images->where('is_active', true)->count(),
+            'featured' => $images->where('is_featured', true)->count(),
+        ];
+
+        return view('admin.galleries.index', [
+            'facilities' => $facilities,
+            'facility' => $facility,
+            'images' => $images,
+            'scopedFacility' => $scopedFacility,
+            'scopedFacilityId' => $scopedFacilityId,
+            'canFilterFacilities' => $canFilterFacilities,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function create(Request $request, $facilityId)
+    {
+        $facility = Facility::findOrFail($facilityId);
+        $this->authorizeFacilityAccess($request, (int) $facility->id);
+
+        return view('admin.galleries.create', compact('facility'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -46,15 +137,19 @@ class GalleryController extends Controller {
             'caption' => 'nullable|string|max:255',
             'facility_id' => 'required|integer|exists:facilities,id',
         ]);
-        $facilityId = $request->input('facility_id');
-        $facility = \App\Models\Facility::findOrFail($facilityId);
+
+        $facilityId = (int) $request->input('facility_id');
+        $this->authorizeFacilityAccess($request, $facilityId);
+
         $file = $request->file('image');
         $originalFilename = $file->getClientOriginalName();
-        $facilityDir = 'gallery/facility_' . $facilityId;
+        $facilityDir = 'gallery/facility_'.$facilityId;
         $path = $file->store($facilityDir, 'public');
-        $maxOrder = \App\Models\GalleryImage::where('facility_id', $facilityId)->max('order');
+
+        $maxOrder = GalleryImage::where('facility_id', $facilityId)->max('order');
         $nextOrder = is_null($maxOrder) ? 1 : $maxOrder + 1;
-        $image = \App\Models\GalleryImage::create([
+
+        GalleryImage::create([
             'facility_id' => $facilityId,
             'image_url' => $path,
             'title' => $originalFilename,
@@ -62,62 +157,58 @@ class GalleryController extends Controller {
             'order' => $nextOrder,
             'is_active' => true,
         ]);
-        return redirect()->route('admin.facilities.galleries.index', ['facility' => $facilityId])
+
+        return redirect()
+            ->route('admin.facilities.galleries.index', ['facility' => $facilityId])
             ->with('success', 'Image uploaded successfully.');
     }
 
-    /**
-     * Show the form for editing a gallery image.
-     */
-    public function edit($facilityId, $imageId)
-    {
-        $facility = \App\Models\Facility::findOrFail($facilityId);
-        $image = \App\Models\GalleryImage::findOrFail($imageId);
-        return view('admin.facilities.webcontents.gallery-edit', compact('facility', 'image'));
-    }
-
-    /**
-     * Update the specified gallery image.
-     */
     public function update(Request $request, $facilityId, $imageId)
     {
-        $image = \App\Models\GalleryImage::findOrFail($imageId);
+        $image = GalleryImage::findOrFail($imageId);
+        $this->authorizeImageAccess($request, $image);
+
         $request->validate([
             'caption' => 'nullable|string|max:255',
             'is_active' => 'boolean',
         ]);
+
         $image->caption = $request->input('caption');
-        $image->is_active = $request->has('is_active');
+        $image->is_active = $request->boolean('is_active');
         $image->save();
-        return redirect()->route('admin.facilities.galleries.index', ['facility' => $facilityId])
+
+        return redirect()
+            ->route('admin.facilities.galleries.index', ['facility' => $image->facility_id])
             ->with('success', 'Image updated successfully.');
     }
 
-    /**
-     * Remove the specified gallery image.
-     */
-    public function destroy($facilityId, $imageId)
+    public function destroy(Request $request, $id)
     {
-        $image = \App\Models\GalleryImage::findOrFail($imageId);
+        $image = GalleryImage::findOrFail($id);
+        $this->authorizeImageAccess($request, $image);
+        $facilityId = $image->facility_id;
+
         if ($image->image_url) {
-            \Storage::disk('public')->delete($image->image_url);
+            Storage::disk('public')->delete($image->image_url);
         }
         $image->delete();
-        return redirect()->route('admin.facilities.galleries.index', ['facility' => $facilityId])
+
+        return redirect()
+            ->route('admin.facilities.galleries.index', ['facility' => $facilityId])
             ->with('success', 'Image deleted successfully.');
     }
 
     public function upload(Request $request, $facility_id)
     {
+        $this->authorizeFacilityAccess($request, (int) $facility_id);
+
         $request->validate([
             'image' => 'required|image|max:4096',
         ]);
 
-        $facilityDir = 'gallery/facility_' . $facility_id;
         $file = $request->file('image');
         $originalFilename = $file->getClientOriginalName();
 
-        // Prevent duplicate upload for same facility and filename
         $duplicate = GalleryImage::where('facility_id', $facility_id)
             ->where('title', $originalFilename)
             ->first();
@@ -125,12 +216,13 @@ class GalleryController extends Controller {
             return redirect()->back()->with('error', 'An image with this filename already exists for this facility.');
         }
 
+        $facilityDir = 'gallery/facility_'.$facility_id;
+        $path = $file->store($facilityDir, 'public');
+
         $maxOrder = GalleryImage::where('facility_id', $facility_id)->max('order');
         $nextOrder = is_null($maxOrder) ? 1 : $maxOrder + 1;
 
-        $path = $file->store($facilityDir, 'public');
-
-        $image = GalleryImage::create([
+        GalleryImage::create([
             'facility_id' => $facility_id,
             'image_url' => $path,
             'title' => $originalFilename,
@@ -141,9 +233,11 @@ class GalleryController extends Controller {
         return redirect()->back()->with('success', 'Image uploaded successfully.');
     }
 
-        public function move(Request $request, GalleryImage $image, $direction)
+    public function move(Request $request, GalleryImage $image, $direction)
     {
+        $this->authorizeImageAccess($request, $image);
         $facility_id = $image->facility_id;
+
         if ($direction === 'up') {
             $swap = GalleryImage::where('facility_id', $facility_id)
                 ->where('order', '<', $image->order)
@@ -155,6 +249,7 @@ class GalleryController extends Controller {
                 ->orderBy('order')
                 ->first();
         }
+
         if ($swap) {
             $temp = $image->order;
             $image->order = $swap->order;
@@ -162,45 +257,39 @@ class GalleryController extends Controller {
             $image->save();
             $swap->save();
         }
+
         return redirect()->back();
     }
 
-    public function delete(GalleryImage $image)
+    public function delete(Request $request, GalleryImage $image)
     {
+        $this->authorizeImageAccess($request, $image);
+        $facilityId = $image->facility_id;
+
         if ($image->image_url) {
             Storage::disk('public')->delete($image->image_url);
         }
         $image->delete();
-        return redirect()->back()->with('success', 'Image deleted successfully.');
-    }
 
-    public function deleteByFilename(GalleryImage $image)
-    {
-        // Delete all files in storage for this facility with the same original filename
-        $facility_id = $image->facility_id;
-        $originalFilename = $image->title;
-        $facilityDir = 'gallery/facility_' . $facility_id;
-        $files = Storage::disk('public')->files($facilityDir);
-        foreach ($files as $file) {
-            if (basename($file) === $originalFilename) {
-                Storage::disk('public')->delete($file);
-            }
-        }
-        // Delete all DB records for this facility and filename
-        GalleryImage::where('facility_id', $facility_id)
-            ->where('title', $originalFilename)
-            ->delete();
-        return redirect()->back()->with('success', 'Image(s) deleted successfully.');
+        return redirect()
+            ->route('admin.facilities.galleries.index', ['facility' => $facilityId])
+            ->with('success', 'Image deleted successfully.');
     }
 
     public function clearFacility(Request $request, $facility_id)
     {
-        $facilityDir = 'gallery/facility_' . $facility_id;
-        $files = Storage::disk('public')->files($facilityDir);
-        foreach ($files as $file) {
-            Storage::disk('public')->delete($file);
+        $this->authorizeFacilityAccess($request, (int) $facility_id);
+
+        $facilityDir = 'gallery/facility_'.$facility_id;
+        if (Storage::disk('public')->exists($facilityDir)) {
+            $files = Storage::disk('public')->files($facilityDir);
+            foreach ($files as $file) {
+                Storage::disk('public')->delete($file);
+            }
         }
+
         GalleryImage::where('facility_id', $facility_id)->delete();
+
         return redirect()->back()->with('success', 'All gallery images for this facility have been deleted.');
     }
 }

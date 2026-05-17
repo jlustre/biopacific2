@@ -1,0 +1,61 @@
+/* Sidebar shell — must win over Vite/Tailwind v4 app.css on facility management pages */
+aside.member-portal-sidebar {
+    background: linear-gradient(180deg, #042f2e 0%, #134e4a 100%) !important;
+    color: #fff !important;
+}
+
+aside.member-portal-sidebar [class*="border-white/"] {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+aside.member-portal-sidebar [class*="text-teal"] {
+    color: #ccfbf1 !important;
+}
+
+aside.member-portal-sidebar .member-portal-sidebar-brand {
+    background-color: #fff !important;
+}
+
+aside.member-portal-sidebar .member-portal-nav-active {
+    background-color: #0d9488 !important;
+    color: #fff !important;
+}
+
+aside.member-portal-sidebar .member-portal-nav-sub-active {
+    background-color: rgba(13, 148, 136, 0.9) !important;
+    color: #fff !important;
+}
+
+aside.member-portal-sidebar .member-portal-help-card {
+    background: linear-gradient(135deg, #0d9488 0%, #115e59 100%) !important;
+}
+
+aside.member-portal-sidebar [class*="bg-white/"] {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Nav link hover — survives Vite/Tailwind overrides */
+aside.member-portal-sidebar a.member-portal-nav-link {
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+aside.member-portal-sidebar a.member-portal-nav-link:not(.member-portal-nav-active):not(.member-portal-nav-sub-active):hover {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    color: #fff !important;
+    transform: translateX(4px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+aside.member-portal-sidebar a.member-portal-nav-link.member-portal-nav-active:hover,
+aside.member-portal-sidebar a.member-portal-nav-link.member-portal-nav-sub-active:hover {
+    background-color: #14b8a6 !important;
+    color: #fff !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+aside.member-portal-sidebar .member-portal-help-card a.member-portal-nav-link:hover {
+    background-color: #f0fdfa !important;
+    color: #0f766e !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}

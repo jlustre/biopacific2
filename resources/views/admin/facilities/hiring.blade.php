@@ -1,5 +1,8 @@
 @push('scripts')
-<script src="/js/job_opening_modal.js"></script>
+<script>
+    window.jobOpeningPositionDefaults = @json($positionDefaults ?? []);
+</script>
+<script src="/js/job_opening_modal.js?v=2"></script>
 <!-- TinyMCE CDN -->
 <script src="https://cdn.tiny.cloud/1/hggcx7g2kfrgugocare6vapc39m9hxb4unvnk9nui4od2ftg/tinymce/6/tinymce.min.js"
     referrerpolicy="origin"></script>
@@ -273,7 +276,9 @@
                                                 }">
                                                 <option value="">Select a title</option>
                                                 @foreach($positions as $position)
-                                                <option value="{{ $position }}">{{ $position }}</option>
+                                                <option value="{{ $position->title }}"
+                                                    data-department="{{ $position->department?->name ?? '' }}"
+                                                    data-reporting-to="{{ $position->reportsToPosition?->title ?? '' }}">{{ $position->title }}</option>
                                                 @endforeach
                                                 <option value="Other">Other</option>
                                             </select>
@@ -345,7 +350,7 @@
                                         </div>
                                         <div>
                                             <label class="block font-semibold mb-1">Department</label>
-                                            <select name="department" class="w-full border rounded px-3 py-2">
+                                            <select id="modal-department" name="department" class="w-full border rounded px-3 py-2">
                                                 <option value="">Select a department</option>
                                                 @foreach($departments as $department)
                                                 <option value="{{ $department }}">{{ $department }}</option>
@@ -354,7 +359,7 @@
                                         </div>
                                         <div>
                                             <label class="block font-semibold mb-1">Reporting To</label>
-                                            <select name="reporting_to" class="w-full border rounded px-3 py-2"
+                                            <select id="modal-reporting-to" name="reporting_to" class="w-full border rounded px-3 py-2"
                                                 required>
                                                 <option value="">Select reporting to</option>
                                                 @foreach($reportingTo as $supervisor)

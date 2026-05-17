@@ -16,6 +16,11 @@
 
         <div class="mb-4">
             <label for="facility_id" class="block text-gray-700 text-sm font-bold mb-2">Facility:</label>
+            @if(!empty($scopedFacilityId))
+            <input type="hidden" name="facility_id" value="{{ $scopedFacilityId }}">
+            <input type="text" readonly value="{{ $scopedFacility->name ?? ($facilities->first()->name ?? '') }}"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-50">
+            @else
             <select name="facility_id" id="facility_id"
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                 @foreach ($facilities as $facility)
@@ -23,6 +28,7 @@
                     }}>{{ $facility->name }}</option>
                 @endforeach
             </select>
+            @endif
         </div>
 
         <div class="mb-4">

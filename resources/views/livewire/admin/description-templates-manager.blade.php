@@ -1,4 +1,4 @@
-<div class="bg-white rounded-lg shadow p-6">
+<div id="description-templates-manager" class="bg-white rounded-lg shadow p-6">
     <div class="flex flex-col gap-6">
         @if(session('success'))
         <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
@@ -428,7 +428,7 @@
                 </div>
 
                 @if($showFinalDescriptionEditor)
-                <div>
+                <div wire:ignore>
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-sm font-medium text-gray-700">Final Description (Rich Text
                             Editor)</label>
@@ -571,13 +571,13 @@
     }
 
     function loadTemplate(templateId) {
-        // Call Livewire method to load template
         @this.call('loadTemplate', templateId).then(() => {
-            // Scroll to position block after loading
             const positionBlock = document.getElementById('position-block');
             if (positionBlock) {
+                positionBlock.classList.remove('hidden');
                 positionBlock.scrollIntoView({ behavior: 'smooth' });
             }
+            setTimeout(() => window.reinitFinalDescriptionEditor?.(), 350);
         });
     }
 
@@ -668,27 +668,72 @@
     let jobDescriptionEditorInstance = null;
     let isHtmlMode = false;
 
-    function initEditor() {
+    function getDescriptionTemplatesComponent() {
+        const root = document.getElementById('description-templates-manager');
+        if (!root || !window.Livewire) {
+            return null;
+        }
+        const wireId = root.getAttribute('wire:id');
+        return wireId ? Livewire.find(wireId) : null;
+    }
+
+    function getFinalDescriptionContent() {
+        const component = getDescriptionTemplatesComponent();
+        return component ? (component.get('finalDescription') || '') : '';
+    }
+
+    function setFinalDescriptionContent(content) {
+        const component = getDescriptionTemplatesComponent();
+        if (component) {
+            component.set('finalDescription', content || '');
+        }
+        const htmlTextarea = document.getElementById('html-textarea');
+        if (htmlTextarea) {
+            htmlTextarea.value = content || '';
+        }
+    }
+
+    function destroyFinalDescriptionEditor() {
+        const existing = tinymce.get('final-description-editor');
+        if (existing) {
+            existing.remove();
+        }
+        editorInstance = null;
+    }
+
+    window.reinitFinalDescriptionEditor = function (forcedContent) {
         if (!window.tinymce) {
-            console.log('Waiting for TinyMCE to load...');
-            setTimeout(initEditor, 100);
+            setTimeout(() => window.reinitFinalDescriptionEditor(forcedContent), 100);
             return;
         }
 
-        const editorElement = document.querySelector('#final-description-editor');
+        const editorElement = document.getElementById('final-description-editor');
         if (!editorElement) {
-            console.log('Editor element not found');
+            setTimeout(() => window.reinitFinalDescriptionEditor(forcedContent), 150);
             return;
         }
 
-        // Check if TinyMCE is already initialized on this element
-        const existingEditor = tinymce.get('final-description-editor');
-        if (existingEditor) {
-            editorInstance = existingEditor;
-            console.log('Editor already initialized');
+        const content = forcedContent !== undefined ? forcedContent : getFinalDescriptionContent();
+        destroyFinalDescriptionEditor();
+        initEditor(content);
+    };
+
+    function initEditor(initialContent) {
+        if (!window.tinymce) {
+            setTimeout(() => initEditor(initialContent), 100);
             return;
         }
 
+        const editorElement = document.getElementById('final-description-editor');
+        if (!editorElement) {
+            return;
+        }
+
+        if (tinymce.get('final-description-editor')) {
+            return;
+        }
+
+        const content = initialContent !== undefined ? initialContent : getFinalDescriptionContent();
         let updateTimeout;
 
         tinymce.init({
@@ -713,37 +758,34 @@
             },
             init_instance_callback: function(editor) {
                 editorInstance = editor;
-                
-                // Load initial data if exists
-                if (@this.finalDescription) {
-                    editor.setContent(@this.finalDescription);
-                    document.getElementById('html-textarea').value = @this.finalDescription;
+                editor.setContent(content || '');
+                const htmlTextarea = document.getElementById('html-textarea');
+                if (htmlTextarea) {
+                    htmlTextarea.value = content || '';
                 }
-                
-                console.log('Editor initialized successfully');
             },
             setup: function(editor) {
-                // Debounced update to Livewire
                 const updateLivewire = function() {
                     clearTimeout(updateTimeout);
                     updateTimeout = setTimeout(function() {
-                        const content = editor.getContent();
-                        document.getElementById('html-textarea').value = content;
-                        @this.set('finalDescription', content).catch(err => {
-                            console.error('Livewire update error:', err);
-                        });
+                        const editorContent = editor.getContent();
+                        const htmlTextarea = document.getElementById('html-textarea');
+                        if (htmlTextarea) {
+                            htmlTextarea.value = editorContent;
+                        }
+                        setFinalDescriptionContent(editorContent);
                     }, 500);
                 };
 
-                // Update Livewire when editor content changes (debounced)
                 editor.on('change', updateLivewire);
                 editor.on('blur', function() {
                     clearTimeout(updateTimeout);
-                    const content = editor.getContent();
-                    document.getElementById('html-textarea').value = content;
-                    @this.set('finalDescription', content).catch(err => {
-                        console.error('Livewire update error:', err);
-                    });
+                    const editorContent = editor.getContent();
+                    const htmlTextarea = document.getElementById('html-textarea');
+                    if (htmlTextarea) {
+                        htmlTextarea.value = editorContent;
+                    }
+                    setFinalDescriptionContent(editorContent);
                 });
             }
         });
@@ -781,31 +823,41 @@
         }
     }
 
-    // Initialize when page loads
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initEditor);
+        document.addEventListener('DOMContentLoaded', () => initEditor());
     } else {
         initEditor();
     }
 
-    // Also initialize on Livewire updates
-    document.addEventListener('livewire:load', initEditor);
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('template-loaded', (event) => {
+            const contents = event?.contents ?? event?.detail?.contents ?? getFinalDescriptionContent();
+            setTimeout(() => window.reinitFinalDescriptionEditor(contents), 200);
+        });
+    });
+
     document.addEventListener('livewire:updated', function() {
-        // Try to initialize if element appears (like when Show Editor is clicked)
         setTimeout(function() {
-            initEditor();
-            // Sync content if editor exists
-            if (editorInstance && !isHtmlMode && @this.finalDescription) {
-                editorInstance.setContent(@this.finalDescription);
-                document.getElementById('html-textarea').value = @this.finalDescription;
+            const editorElement = document.getElementById('final-description-editor');
+            if (!editorElement) {
+                return;
             }
-        }, 100);
+            if (!tinymce.get('final-description-editor')) {
+                initEditor();
+            } else if (editorInstance && !isHtmlMode) {
+                const content = getFinalDescriptionContent();
+                if (content && editorInstance.getContent() !== content) {
+                    editorInstance.setContent(content);
+                    const htmlTextarea = document.getElementById('html-textarea');
+                    if (htmlTextarea) {
+                        htmlTextarea.value = content;
+                    }
+                }
+            }
+        }, 150);
     });
 
     function initJobDescriptionEditor() {
-        if (jobDescriptionEditorInstance) {
-            return;
-        }
         if (!window.tinymce) {
             setTimeout(initJobDescriptionEditor, 100);
             return;
@@ -815,10 +867,16 @@
         const hiddenElement = document.querySelector('#job-description-hidden');
 
         if (!editorElement || !hiddenElement) {
-            if (jobDescriptionEditorInstance) {
-                tinymce.get('job-description-editor-input')?.remove();
-                jobDescriptionEditorInstance = null;
+            if (tinymce.get('job-description-editor-input')) {
+                tinymce.get('job-description-editor-input').remove();
             }
+            jobDescriptionEditorInstance = null;
+            return;
+        }
+
+        if (tinymce.get('job-description-editor-input')) {
+            jobDescriptionEditorInstance = tinymce.get('job-description-editor-input');
+            syncJobDescriptionEditor();
             return;
         }
 
@@ -846,35 +904,31 @@
             },
             init_instance_callback: function(editor) {
                 jobDescriptionEditorInstance = editor;
-                
-                // Set initial content from hidden field
-                const initialContent = hiddenElement.value || '';
-                if (initialContent) {
-                    editor.setContent(initialContent);
-                }
+                const initialContent = hiddenElement.value || getDescriptionTemplatesComponent()?.get('editJobDescriptionDescription') || '';
+                editor.setContent(initialContent);
             },
             setup: function(editor) {
-                // Debounced update to Livewire
                 const updateLivewire = function() {
                     clearTimeout(updateTimeout);
                     updateTimeout = setTimeout(function() {
                         const content = editor.getContent();
                         hiddenElement.value = content;
-                        @this.set('editJobDescriptionDescription', content).catch(err => {
-                            console.error('Livewire update error:', err);
-                        });
+                        const component = getDescriptionTemplatesComponent();
+                        if (component) {
+                            component.set('editJobDescriptionDescription', content);
+                        }
                     }, 500);
                 };
 
-                // Update Livewire when editor content changes (debounced)
                 editor.on('change', updateLivewire);
                 editor.on('blur', function() {
                     clearTimeout(updateTimeout);
                     const content = editor.getContent();
                     hiddenElement.value = content;
-                    @this.set('editJobDescriptionDescription', content).catch(err => {
-                        console.error('Livewire update error:', err);
-                    });
+                    const component = getDescriptionTemplatesComponent();
+                    if (component) {
+                        component.set('editJobDescriptionDescription', content);
+                    }
                 });
             }
         });

@@ -28,9 +28,10 @@
             @if($jobApplication->cover_letter)
             <div class="bg-white rounded-lg shadow-sm border p-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Cover Letter</h2>
-                <div class="prose max-w-none">
-                    <p class="text-gray-700 whitespace-pre-wrap">{{ $jobApplication->cover_letter }}</p>
-                </div>
+                @include('partials.job-description-html', [
+                    'content' => $jobApplication->cover_letter,
+                    'class' => 'job-description-content prose prose-sm max-w-none text-gray-700',
+                ])
             </div>
             @endif
 

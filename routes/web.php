@@ -15,7 +15,7 @@ use App\Http\Controllers\AdminRoleAssignmentController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\CareersController;
 use App\Http\Controllers\CareersPublicController;
 use App\Http\Controllers\BookATourController;
@@ -33,7 +33,7 @@ use App\Http\Controllers\AdminJobApplicationController;
 use App\Http\Controllers\AdminMfaController;
 use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\TourRequestController;
-use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\PreEmploymentController;
 use App\Http\Controllers\HireApplicantController;
 use App\Http\Controllers\EmployeeApplicationController;
@@ -113,7 +113,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.
 Route::post('/admin/reports/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('admin.reports.validate-sql');
 
 // Scheduled Report Runs Management (Admin)
-Route::middleware(['auth', 'role:admin'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'index'])->name('index');
     Route::get('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'show'])->name('show');
     Route::get('/{run}/report', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'showReport'])->name('show-report');
@@ -162,6 +162,9 @@ Route::get('/admin/positions/all', function() {
         ->get();
 });
 
+Route::middleware(['auth'])->get('/admin/positions/lookup', [\App\Http\Controllers\Admin\PositionController::class, 'lookup'])
+    ->name('admin.positions.lookup');
+
 // PART F: Areas for Development (save)
 Route::post('admin/employees/{employee}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
 
@@ -200,14 +203,11 @@ Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\C
     ->middleware(['auth'])
     ->name('pre-employment.reference-checks.save');
 
-// Pre-Employment2 Portal (authenticated users)
-Route::get('/my-pre-employment2', [\App\Http\Controllers\PreEmployment2Controller::class, 'portal'])
-    ->middleware(['auth'])
-    ->name('pre-employment2.portal');
-
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 // Scheduled Reports Management (CRUD)
-Route::middleware(['auth', 'role:admin'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
+Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
+    Route::post('/templates', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'storeTemplate'])->name('templates.store');
+    Route::delete('/templates/{scheduledReportTemplate}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'destroyTemplate'])->name('templates.destroy');
         Route::get('/{scheduledReport}/history', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'history'])->name('history');
         Route::get('/{scheduledReport}/download/{run}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'download'])->name('download');
     Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'index'])->name('index');
@@ -284,6 +284,10 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility
             'update' => 'admin.facility.uploads.update',
             'destroy' => 'admin.facility.uploads.destroy',
     ]);
+    Route::get('/admin/facility/{facility}/uploads/{upload}/notify/preview', [UploadController::class, 'previewUploadNotification'])
+        ->name('admin.facility.uploads.notify.preview');
+    Route::post('/admin/facility/{facility}/uploads/{upload}/notify', [UploadController::class, 'sendUploadNotification'])
+        ->name('admin.facility.uploads.notify');
 });
 // Root route: show landing page (welcome)
 Route::get('/', function () {
@@ -305,7 +309,7 @@ Route::get('/test-urls', function () {
 
 // Services Management CRUD (Web Contents)
 Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('services', ServicesController::class);
+    Route::resource('services', ServicesController::class)->except(['show']);
 });
 
 Route::post('/webmaster/contact', [App\Http\Controllers\WebmasterController::class, 'submit'])->name('webmaster.contact.submit');
@@ -465,19 +469,12 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
 
     
     // Gallery image management
-    Route::resource('galleries', GalleryController::class)->except(['show']);
-    // Gallery index for a specific facility
     Route::get('/facilities/{facility}/galleries', [GalleryController::class, 'index'])->name('facilities.galleries.index');
-    // Gallery image creation for a specific facility
     Route::get('/galleries/{facility}/create', [GalleryController::class, 'create'])->name('facilities.galleries.create');
-
-    Route::get('/gallery/upload', [GalleryController::class, 'showUploadForm'])->name('gallery.upload');
-    Route::post('/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload.submit');
-    // Route::post('/facilities/{facility}/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
+    Route::post('/facilities/{facility}/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
+    Route::resource('galleries', GalleryController::class)->except(['show']);
     Route::delete('/gallery/{image}', [GalleryController::class, 'delete'])->name('gallery.delete');
-    // Move gallery image up/down
     Route::post('/gallery/{image}/move/{direction}', [GalleryController::class, 'move'])->name('gallery.move');
-    // Clear all gallery images for a facility
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
 
     // Admin Facility Testimonials Management
@@ -565,9 +562,13 @@ Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin|f
 // General dashboard and user settings for all authenticated users
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    Route::get('settings/profile', function() {
-        return view('profile.edit');
-    })->name('settings.profile');
+    Route::get('/dashboard/documents', [DashboardController::class, 'memberDocuments'])->name('member.documents');
+    Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
+    Route::get('/dashboard/trainings', [DashboardController::class, 'memberTrainings'])->name('member.trainings');
+    Route::get('/dashboard/schedule', [DashboardController::class, 'memberSchedule'])->name('member.schedule');
+    Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
+    Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');
+    Route::patch('settings/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('settings.profile.update');
     Route::get('settings/password', Password::class)->name('settings.password');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
 });

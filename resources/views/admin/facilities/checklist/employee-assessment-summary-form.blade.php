@@ -59,9 +59,8 @@
             $partGReviewDateValue = optional($partGCurrentSubmissionData->review_date)->toDateString() ?: ($reviewDate ?? '');
             $partGEmployeeDateValue = optional($partGCurrentSubmissionData->employee_signed_at)->toDateString() ?? '';
 
-            if ($partGReviewerTitle === '' && !empty($partGAssignment?->reports_to)) {
-                $partGReviewerEmployee = \App\Models\BPEmployee::where('id', $partGAssignment->reports_to)->first();
-                $partGReviewerTitle = $partGReviewerEmployee?->currentAssignment?->position?->title ?? '';
+            if ($partGReviewerTitle === '') {
+                $partGReviewerTitle = $partGAssignment?->reportsToPositionTitle() ?? '';
             }
         @endphp
         <div class="rounded-md border border-slate-400 bg-white p-3 shadow-sm">
@@ -98,11 +97,15 @@
                     View Completed PDF
                 </a>
                 @else
-                @if($partGCurrentStatus === 'draft' || !$partGCurrentSubmission)
+                @php
+                    $partGBlockEvaluatorActions = !empty($evaluatorActionsDisabled) && $partGCurrentStatus !== 'for_employee_signature';
+                @endphp
+                @if(($partGCurrentStatus === 'draft' || !$partGCurrentSubmission) && ! $partGBlockEvaluatorActions)
                 <button type="button" id="partGSaveDraftBtn" class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300">
                     Save as Draft
                 </button>
                 @endif
+                @if(! $partGBlockEvaluatorActions || $partGCurrentStatus === 'for_employee_signature')
                 <button type="button" id="partGSubmitAssessmentBtn" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300">
                     @if($partGCurrentStatus === 'for_employee_signature')
                     Employee Sign Assessment
@@ -113,23 +116,31 @@
                     @endif
                 </button>
                 @endif
+                @endif
             </div>
             <div id="partGSubmitAssessmentMessage" class="mt-2 hidden rounded-md border px-3 py-2 text-sm shadow-sm"></div>
         </div>
     </div>
     @else
+    @php
+        $partFSummaryTotal = old('partf_total_score', $selectedPerformanceAssessment?->total_score ?? '');
+        $partFSummaryAverage = old('partf_average_score', $selectedPerformanceAssessment?->average_score !== null
+            ? number_format((float) $selectedPerformanceAssessment->average_score, 2, '.', '')
+            : '');
+        $partFSummaryOverall = old('overall_rating', $selectedPerformanceAssessment?->overall_rating ?? '');
+    @endphp
     <div class="mb-3 grid gap-2 md:grid-cols-3 xl:grid-cols-3">
         <div class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm">
             <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</div>
-            <input id="partFTotalScore" type="text" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
+            <input id="partFTotalScore" type="text" value="{{ $partFSummaryTotal !== '' ? $partFSummaryTotal : '' }}" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
         </div>
         <div class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm">
             <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Average</div>
-            <input id="partFAverageScore" type="text" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
+            <input id="partFAverageScore" type="text" value="{{ $partFSummaryAverage }}" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
         </div>
         <div id="partFOverallRatingCard" class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm transition-colors">
             <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Overall Rating</div>
-            <input id="partFOverallRating" type="text" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
+            <input id="partFOverallRating" type="text" value="{{ $partFSummaryOverall }}" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
         </div>
     </div>
 
@@ -140,7 +151,7 @@
                 <p class="mt-1 text-[11px] text-slate-700">Use the same assessment period narrative fields here that were previously shown beneath the old Part F form.</p>
             </div>
 
-            <input type="hidden" name="overall_rating" id="partFOverallRatingValue" value="{{ old('overall_rating', '') }}">
+            <input type="hidden" name="overall_rating" id="partFOverallRatingValue" value="{{ old('overall_rating', $partFSummaryOverall) }}">
 
             <div id="partFUnsatisfactoryReasonWrapper" class="hidden rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-3 shadow-sm">
                 <label for="partFUnsatisfactoryReason" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-amber-900">Unsatisfactory Reason</label>
@@ -168,17 +179,18 @@
                     <input type="date" name="review_dt" class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('review_dt', $reviewDt ?? '') }}" @required(!$partFAssessmentLocked) @readonly($partFAssessmentLocked || (auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id))>
                 </label>
 
-                <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-700 md:col-span-2">
-                    Employee
-                    <input type="text" name="employee_name" class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ $employee->last_name }}, {{ $employee->first_name }}@if($employee->middle_name), {{ $employee->middle_name }}@endif" readonly>
-                </label>
+                <div class="md:col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2 md:items-end md:gap-x-6 md:gap-y-3">
+                    <div class="min-w-0">
+                        <label for="partFReviewSignaturesEmployeeName" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-700">Employee</label>
+                        <input id="partFReviewSignaturesEmployeeName" type="text" name="employee_name" class="w-full max-w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 md:max-w-md" value="{{ $employee->last_name }}, {{ $employee->first_name }}@if($employee->middle_name), {{ $employee->middle_name }}@endif" readonly>
+                    </div>
+                    <div class="min-w-0">
+                        <label for="partFReviewSignaturesEmployeeAckDt" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-700">Employee Acknowledge Date</label>
+                        <input id="partFReviewSignaturesEmployeeAckDt" type="date" name="employee_acknowledge_dt" class="w-full min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('employee_acknowledge_dt', $employeeAcknowledgeDt ?? '') }}" @readonly($partFAssessmentLocked || !(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id))>
+                    </div>
+                </div>
 
-                <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-700">
-                    Employee Acknowledge Date
-                    <input type="date" name="employee_acknowledge_dt" class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('employee_acknowledge_dt', $employeeAcknowledgeDt ?? '') }}" @readonly($partFAssessmentLocked || !(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id))>
-                </label>
-
-                <div class="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-700">
+                <div class="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 md:col-span-2">
                     <div class="font-semibold uppercase tracking-wide text-slate-900">Current Status</div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">{{ $partFStatusLabel ?? 'Draft' }}</div>
                     <div class="mt-1">Save as Draft keeps the assessment editable. Submit Assessment marks the period complete in the current Part F flow.</div>
@@ -188,6 +200,13 @@
             @if($partFAssessmentLocked)
             <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
                 This assessment has already been completed for the selected period. The notes and signature fields are shown for reference only.
+            </div>
+            @elseif(!empty($evaluatorActionsDisabled))
+            <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">
+                You may update your employee acknowledgment date below. A supervisor must complete and submit this performance evaluation.
+            </div>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button type="submit" name="action" value="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save acknowledgment</button>
             </div>
             @else
             <div class="flex flex-wrap justify-end gap-2">

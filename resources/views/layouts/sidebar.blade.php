@@ -296,9 +296,10 @@ use Illuminate\Support\Facades\Log;
                     <i class="fas fa-blog mr-2"></i> Blogs Management
                 </a>
                 @php
-                $firstFacility = \App\Models\Facility::first();
+                $careersFacilityId = auth()->user()?->facility_id
+                    ?? \App\Models\Facility::orderBy('name')->value('id');
                 @endphp
-                <a href="{{ $firstFacility ? route('admin.facilities.webcontents.careers', ['facility' => $firstFacility->id]) : '#' }}"
+                <a href="{{ $careersFacilityId ? route('admin.facilities.webcontents.careers', ['facility_id' => $careersFacilityId]) : '#' }}"
                     class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                     <i class="fas fa-briefcase mr-2"></i> Careers Management
                 </a>

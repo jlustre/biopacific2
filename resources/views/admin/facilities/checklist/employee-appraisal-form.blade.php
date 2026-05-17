@@ -54,16 +54,7 @@
             <td class="border border-slate-500 bg-slate-50 px-2 py-1.5">{{ $displayReviewerName }}</td>
             <td class="border border-slate-500 bg-slate-100 px-2 py-1.5 font-semibold">Reviewer's Position</td>
             <td class="border border-slate-500 bg-slate-50 px-2 py-1.5">
-                @php
-                $reviewerPosition = '';
-                if (!empty($assignment) && $assignment->reports_to) {
-                $reviewerEmp = \App\Models\Employee::where('id', $assignment->reports_to)->first();
-                if ($reviewerEmp && $reviewerEmp->currentAssignment && $reviewerEmp->currentAssignment->position) {
-                $reviewerPosition = $reviewerEmp->currentAssignment->position->title;
-                }
-                }
-                @endphp
-                {{ $reviewerPosition }}
+                {{ $assignment?->reportsToPositionTitle() ?: '—' }}
             </td>
         </tr>
     </table>

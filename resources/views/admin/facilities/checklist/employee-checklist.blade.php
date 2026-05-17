@@ -1,4 +1,20 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<script>
+    window.bpEvaluatorActionsDisabled = @json($evaluatorActionsDisabled ?? false);
+    window.bpSelfAssessmentDeniedMessage = @json(\App\Support\PreventsSelfAssessment::DEFAULT_MESSAGE);
+
+    document.addEventListener('alpine:init', function () {
+        if (typeof Alpine === 'undefined') {
+            return;
+        }
+        if (!Alpine.store('partGAccordion')) {
+            Alpine.store('partGAccordion', { openSection: null });
+        }
+        if (!Alpine.store('partFAccordion')) {
+            Alpine.store('partFAccordion', { openSection: null });
+        }
+    });
+</script>
 <style>
     #partA table,
     #partB table,
@@ -10,6 +26,97 @@
         border-radius: 0.75rem;
         overflow: hidden;
         box-shadow: 0 1px 3px rgba(13, 148, 136, 0.12);
+    }
+
+    /* PART A–D: narrow date/verified columns; give item + on-file columns the rest */
+    #partA table,
+    #partB table,
+    #partC table,
+    #partD table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    #partA th:nth-child(1),
+    #partA td:nth-child(1),
+    #partB th:nth-child(1),
+    #partB td:nth-child(1),
+    #partC th:nth-child(1),
+    #partC td:nth-child(1),
+    #partD th:nth-child(1),
+    #partD td:nth-child(1) {
+        width: calc(100% - 32rem);
+    }
+
+    #partA th:nth-child(2),
+    #partA td:nth-child(2),
+    #partB th:nth-child(2),
+    #partB td:nth-child(2),
+    #partC th:nth-child(2),
+    #partC td:nth-child(2),
+    #partD th:nth-child(2),
+    #partD td:nth-child(2) {
+        width: 10.5rem;
+        max-width: 10.5rem;
+        white-space: nowrap;
+    }
+
+    #partA th:nth-child(3),
+    #partA td:nth-child(3),
+    #partA th:nth-child(4),
+    #partA td:nth-child(4),
+    #partB th:nth-child(3),
+    #partB td:nth-child(3),
+    #partB th:nth-child(4),
+    #partB td:nth-child(4),
+    #partC th:nth-child(3),
+    #partC td:nth-child(3),
+    #partC th:nth-child(4),
+    #partC td:nth-child(4),
+    #partD th:nth-child(3),
+    #partD td:nth-child(3),
+    #partD th:nth-child(4),
+    #partD td:nth-child(4) {
+        width: 6.5rem;
+        max-width: 6.5rem;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        white-space: nowrap;
+    }
+
+    #partA th:nth-child(5),
+    #partA td:nth-child(5),
+    #partB th:nth-child(5),
+    #partB td:nth-child(5),
+    #partC th:nth-child(5),
+    #partC td:nth-child(5),
+    #partD th:nth-child(5),
+    #partD td:nth-child(5) {
+        width: 8.5rem;
+        max-width: 8.5rem;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #partA thead th:nth-child(3),
+    #partA thead th:nth-child(4),
+    #partA thead th:nth-child(5),
+    #partB thead th:nth-child(3),
+    #partB thead th:nth-child(4),
+    #partB thead th:nth-child(5),
+    #partC thead th:nth-child(3),
+    #partC thead th:nth-child(4),
+    #partC thead th:nth-child(5),
+    #partD thead th:nth-child(3),
+    #partD thead th:nth-child(4),
+    #partD thead th:nth-child(5) {
+        font-size: 0.65rem;
+        line-height: 1.1;
+        word-break: break-word;
+        white-space: normal;
     }
 
     #partA thead tr,
@@ -83,9 +190,47 @@
     #partF .load-employee-btn:hover {
         background-color: #115e59;
     }
+
+    #employeeFileTabs [data-tooltip] {
+        position: relative;
+    }
+
+    #employeeFileTabs [data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #1f2937;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.35;
+        white-space: normal;
+        text-align: center;
+        width: max-content;
+        max-width: 16rem;
+        z-index: 1000;
+        pointer-events: none;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+
+    #employeeFileTabs [data-tooltip]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: calc(100% + 2px);
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #1f2937;
+        z-index: 1000;
+        pointer-events: none;
+    }
 </style>
 <div x-show="tab === 'checklist'" data-checklist-tabs="alpine" x-data="{
-    checklistTab: localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab') || 'partA',
+    checklistTab: (@js(request('checklist_tab')) || localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab') || 'partA'),
     init() {
         localStorage.setItem('checklistTab', this.checklistTab);
         localStorage.setItem('employeeChecklistActiveTab', this.checklistTab);
@@ -116,9 +261,23 @@
                 return (object) $empChecklistItems[$itemName];
             }
 
+            $legacyName = is_string($itemName) ? rtrim($itemName, '*') : $itemName;
+            if ($legacyName && $legacyName !== $itemName && isset($empChecklistItems[$legacyName])) {
+                return (object) $empChecklistItems[$legacyName];
+            }
+
             return null;
         };
+        $checklistItemsByNameLookup = $checklistItems->keyBy('name');
         @endphp
+        <script>
+            window.checklistItemsByName = @json($checklistItems->mapWithKeys(fn ($item) => [
+                $item->name => ['isExpiring' => (bool) $item->isExpiring, 'id' => $item->id],
+            ]));
+            window.checklistItemsById = @json($checklistItems->mapWithKeys(fn ($item) => [
+                (string) $item->id => ['isExpiring' => (bool) $item->isExpiring, 'name' => $item->name],
+            ]));
+        </script>
         @if(isset($isAddMode) && $isAddMode)
         <div class="mb-4">
             <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
@@ -127,31 +286,49 @@
             </div>
         </div>
         @endif
+
+        @php
+            $checklistTabTooltips = [
+                'partA' => 'Part A — Applicant info, identifications & verifications',
+                'partB' => 'Part B — Acknowledgement of receipts',
+                'partC' => 'Part C — HR acknowledgements',
+                'partD' => 'Part D — Policies & required notices',
+                'partE' => 'Part E — Orientation checklist',
+                'partF' => 'Part F — Employee performance appraisal',
+                'partG' => 'Part G — Competencies checklist',
+            ];
+        @endphp
         
         <!-- Tabs -->
         <ul class="flex border-b mb-6" id="employeeFileTabs">
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partA'" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART A</button>
+                <button type="button" @click="checklistTab = 'partA'" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partA'] }}" title="{{ $checklistTabTooltips['partA'] }}" aria-label="{{ $checklistTabTooltips['partA'] }}">PART A</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partB'" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART B</button>
+                <button type="button" @click="checklistTab = 'partB'" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partB'] }}" title="{{ $checklistTabTooltips['partB'] }}" aria-label="{{ $checklistTabTooltips['partB'] }}">PART B</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partC'" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART C</button>
+                <button type="button" @click="checklistTab = 'partC'" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partC'] }}" title="{{ $checklistTabTooltips['partC'] }}" aria-label="{{ $checklistTabTooltips['partC'] }}">PART C</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partD'" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART D</button>
+                <button type="button" @click="checklistTab = 'partD'" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partD'] }}" title="{{ $checklistTabTooltips['partD'] }}" aria-label="{{ $checklistTabTooltips['partD'] }}">PART D</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partE'" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART E</button>
+                <button type="button" @click="checklistTab = 'partE'" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partE'] }}" title="{{ $checklistTabTooltips['partE'] }}" aria-label="{{ $checklistTabTooltips['partE'] }}">PART E</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partF'" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART F</button>
+                <button type="button" @click="checklistTab = 'partF'" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partF'] }}" title="{{ $checklistTabTooltips['partF'] }}" aria-label="{{ $checklistTabTooltips['partF'] }}">PART F</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partG'" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500">PART G</button>
+                <button type="button" @click="checklistTab = 'partG'" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partG'] }}" title="{{ $checklistTabTooltips['partG'] }}" aria-label="{{ $checklistTabTooltips['partG'] }}">PART G</button>
             </li>
         </ul>
+
+        @if(!empty($evaluatorActionsDisabled))
+            <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+                {{ \App\Support\PreventsSelfAssessment::DEFAULT_MESSAGE }}
+            </div>
+        @endif
 
         <!-- PART A -->
         <div x-show="checklistTab === 'partA'">

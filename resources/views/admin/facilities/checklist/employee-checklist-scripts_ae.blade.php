@@ -4,6 +4,14 @@
         window.currentUserId = {{ auth()->user()->id }};
         window.currentUserName = @json(auth()->user()->name);
     @endif
+
+    function bpDenySelfAssessmentAction() {
+        if (window.bpEvaluatorActionsDisabled) {
+            alert(window.bpSelfAssessmentDeniedMessage || 'You cannot perform this assessment on yourself.');
+            return true;
+        }
+        return false;
+    }
     
     // Ensure the modal form is wired up to the handler
     document.addEventListener('DOMContentLoaded', function() {
@@ -111,6 +119,44 @@
     }
 
     // Opens the PART A-E modal and populates its fields for the selected item/employee
+    function resolveChecklistItemIsExpiring(itemName, itemId, link) {
+        if (link && link.hasAttribute('data-is-expiring')) {
+            return link.getAttribute('data-is-expiring') === '1';
+        }
+        if (itemId && window.checklistItemsById && window.checklistItemsById[String(itemId)]) {
+            return !!window.checklistItemsById[String(itemId)].isExpiring;
+        }
+        if (itemName && window.checklistItemsByName && window.checklistItemsByName[itemName]) {
+            return !!window.checklistItemsByName[itemName].isExpiring;
+        }
+        return false;
+    }
+
+    function setVerifyExpDtVisibility(isExpiring, viewOnly) {
+        var wrapper = document.getElementById('verifyExpDtWrapper');
+        var expDtField = document.getElementById('verifyExpDt');
+        var expDtRequiredMsg = document.getElementById('expDtRequiredMsg');
+        if (!wrapper || !expDtField) {
+            return;
+        }
+        if (isExpiring) {
+            wrapper.classList.remove('hidden');
+            expDtField.disabled = !!viewOnly;
+            expDtField.required = !viewOnly;
+            if (expDtRequiredMsg) {
+                expDtRequiredMsg.classList.add('hidden');
+            }
+        } else {
+            wrapper.classList.add('hidden');
+            expDtField.value = '';
+            expDtField.disabled = true;
+            expDtField.required = false;
+            if (expDtRequiredMsg) {
+                expDtRequiredMsg.classList.add('hidden');
+            }
+        }
+    }
+
     function findChecklistLink(itemName, empId, itemId = null, checklistKey = null) {
         return Array.from(document.querySelectorAll('.verify-link, .view-link')).find((link) => {
             if (String(link.getAttribute('data-emp-id')) !== String(empId)) {
@@ -150,29 +196,11 @@
             subitemValidationMsg.classList.add('hidden');
         }
 
-        // Find isExpiring for this item (assumes a global JS object window.checklistItemsByName)
-        var isExpiring = 0;
-        if (window.checklistItemsByName && window.checklistItemsByName[itemName]) {
-            isExpiring = window.checklistItemsByName[itemName].isExpiring ? 1 : 0;
-        }
-        // Show/hide Expiration Date field and required message
-        if (expDtField && expDtRequiredMsg) {
-            if (isExpiring) {
-                expDtField.disabled = false;
-                expDtField.parentElement.classList.remove('hidden');
-                expDtField.required = true;
-                expDtRequiredMsg.classList.add('hidden');
-            } else {
-                expDtField.value = '';
-                expDtField.disabled = true;
-                expDtField.required = false;
-                expDtField.parentElement.classList.add('hidden');
-                expDtRequiredMsg.classList.add('hidden');
-            }
-        }
-        
         // Find the row for this itemName/empId to get any existing data
         var link = findChecklistLink(itemName, empId, itemId, checklistKey);
+        var resolvedItemId = itemId || (link ? link.getAttribute('data-item-id') : null);
+        var isExpiring = resolveChecklistItemIsExpiring(itemName, resolvedItemId, link);
+        setVerifyExpDtVisibility(isExpiring, viewOnly);
         var row = link ? link.closest('tr') : null;
         
         // Set hidden fields for employee and document
@@ -191,7 +219,9 @@
             if (verifiedDtField && link.hasAttribute('data-verified-dt') && link.getAttribute('data-verified-dt')) {
                 verifiedDtField.value = link.getAttribute('data-verified-dt');
             }
-            if (expDtField && link.hasAttribute('data-exp-dt')) expDtField.value = link.getAttribute('data-exp-dt') || '';
+            if (isExpiring && expDtField && link.hasAttribute('data-exp-dt')) {
+                expDtField.value = link.getAttribute('data-exp-dt') || '';
+            }
             if (commentsField && link.hasAttribute('data-comments')) commentsField.value = link.getAttribute('data-comments') || '';
             if (verifiedByField && link.hasAttribute('data-verified-by')) verifiedByField.value = link.getAttribute('data-verified-by') || '';
             if (verifiedByIdField && link.hasAttribute('data-verified-by')) verifiedByIdField.value = link.getAttribute('data-verified-by') || '';
@@ -225,7 +255,8 @@
         if (!viewOnly) {
             window._verifyModalInitial = {
                 comments: commentsField ? commentsField.value : '',
-                verifiedDt: verifiedDtField ? verifiedDtField.value : ''
+                verifiedDt: verifiedDtField ? verifiedDtField.value : '',
+                expDt: expDtField ? expDtField.value : ''
             };
         }
         // Show the modal
@@ -367,6 +398,11 @@
             if (e.target && e.target.matches && e.target.matches('input.part-e-confirm-checkbox[type="checkbox"]')) {
                 var rowCb = e.target.closest('tr');
                 if (rowCb && rowCb.closest('#partE')) {
+                    if (bpDenySelfAssessmentAction()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
                     var verifyFromRow = rowCb.querySelector('.verify-link[data-item-name]');
                     if (verifyFromRow) {
                         e.preventDefault();
@@ -455,6 +491,7 @@
         }
 
         e.preventDefault();
+        e.stopPropagation();
         var parentRow = toggleButton.closest('tr');
         var expanded = toggleButton.getAttribute('data-expanded') !== '1';
         setPartEHierarchyRowExpansion(parentRow, expanded);
@@ -463,20 +500,21 @@
     // Handles the form submission for checklist verification modal
     function handleChecklistFormSubmit(e) {
         e.preventDefault();
+        if (bpDenySelfAssessmentAction()) {
+            return;
+        }
         var empId = document.getElementById('verifyEmpId').value;
         var checklistItemId = document.getElementById('verifyChecklistItemId').value;
         var docName = document.getElementById('verifyDocName').value;
         var docTypeId = parseInt(document.getElementById('verifyDocTypeId').value || document.getElementById('verifyForm').getAttribute('data-doc-type-id') || '1', 10);
         var onFile = true; // Always true when verified
         var verifiedDt = document.getElementById('verifyVerifiedDt').value;
-        var row = findChecklistLink(docName, empId, checklistItemId)?.closest('tr');
+        var verifyLink = findChecklistLink(docName, empId, checklistItemId);
+        var row = verifyLink ? verifyLink.closest('tr') : null;
         var expDtField = document.getElementById('verifyExpDt');
         var expDtRequiredMsg = document.getElementById('expDtRequiredMsg');
         var subitemValidationMsg = document.getElementById('subitemValidationMsg');
-        var isExpiring = 0;
-        if (window.checklistItemsByName && window.checklistItemsByName[docName]) {
-            isExpiring = window.checklistItemsByName[docName].isExpiring ? 1 : 0;
-        }
+        var isExpiring = resolveChecklistItemIsExpiring(docName, checklistItemId, verifyLink);
         if (subitemValidationMsg) {
             subitemValidationMsg.textContent = '';
             subitemValidationMsg.classList.add('hidden');
@@ -489,12 +527,16 @@
             }
             return;
         }
-        // If item is expiring, require Expiration Date
-        if (isExpiring && (!expDtField.value || expDtField.value === '')) {
-            expDtRequiredMsg.classList.remove('hidden');
-            expDtField.focus();
+        // If item is expiring, require Date of Expiration
+        if (isExpiring && (!expDtField || !expDtField.value || expDtField.value === '')) {
+            if (expDtRequiredMsg) {
+                expDtRequiredMsg.classList.remove('hidden');
+            }
+            if (expDtField) {
+                expDtField.focus();
+            }
             return;
-        } else {
+        } else if (expDtRequiredMsg) {
             expDtRequiredMsg.classList.add('hidden');
         }
         document.getElementById('verifyExpDt').disabled = true;
@@ -549,6 +591,16 @@
             alert('Save failed.');
                 closeVerifyModalAE();
         });
+    }
+
+    function refreshPartEOrientationSummaryIfNeeded(row) {
+        if (!row || typeof Livewire === 'undefined' || typeof Livewire.dispatch !== 'function') {
+            return;
+        }
+        if (!row.closest('[data-part-e-orientation-checklist]')) {
+            return;
+        }
+        Livewire.dispatch('part-e-checklist-item-updated');
     }
 
     // Updates the PART A-E checklist table row after verification save
@@ -621,6 +673,7 @@
             }
         }
         bindChecklistLinks();
+        refreshPartEOrientationSummaryIfNeeded(row);
     }
 
     // Legacy: anchor-based tabs only. Never blanket-hide .tab-content when Alpine owns the checklist.

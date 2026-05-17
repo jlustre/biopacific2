@@ -31,6 +31,10 @@ class EmployeeEmailMappings extends Component
     // Modal control
     public $showModal = false;
     public $editMode = false;
+
+    public ?int $scopedFacilityId = null;
+
+    public bool $canFilterFacilities = true;
     
     protected $categories = [
         'book-a-tour' => 'Book a Tour',
@@ -86,6 +90,39 @@ class EmployeeEmailMappings extends Component
         'employee_email.unique' => 'This email is already assigned to this category for this facility.',
     ];
 
+    public function mount(): void
+    {
+        $user = auth()->user();
+
+        if ($user && ! $user->hasRole('admin') && $user->facility_id) {
+            $this->scopedFacilityId = (int) $user->facility_id;
+            $this->canFilterFacilities = false;
+            $this->selectedFacility = (string) $this->scopedFacilityId;
+        }
+    }
+
+    protected function enforceScopedFacilityOnForm(): void
+    {
+        if ($this->scopedFacilityId) {
+            $this->facility_id = $this->scopedFacilityId;
+        }
+    }
+
+    protected function authorizeMappingFacility(?int $facilityId): void
+    {
+        if ($this->scopedFacilityId && $facilityId && (int) $facilityId !== $this->scopedFacilityId) {
+            abort(403, 'You do not have access to email mappings for this facility.');
+        }
+    }
+
+    protected function findAuthorizedMapping(int $id): EmployeeEmailMapping
+    {
+        $mapping = EmployeeEmailMapping::findOrFail($id);
+        $this->authorizeMappingFacility($mapping->facility_id);
+
+        return $mapping;
+    }
+
     public function updatedSearch()
     {
         $this->resetPage();
@@ -93,6 +130,10 @@ class EmployeeEmailMappings extends Component
 
     public function updatedSelectedFacility()
     {
+        if ($this->scopedFacilityId) {
+            $this->selectedFacility = (string) $this->scopedFacilityId;
+        }
+
         $this->resetPage();
     }
 
@@ -110,7 +151,7 @@ class EmployeeEmailMappings extends Component
 
     public function edit($id)
     {
-        $mapping = EmployeeEmailMapping::findOrFail($id);
+        $mapping = $this->findAuthorizedMapping($id);
         
         $this->employee_id = $mapping->id;
         $this->facility_id = $mapping->facility_id;
@@ -127,6 +168,7 @@ class EmployeeEmailMappings extends Component
 
     public function save()
     {
+        $this->enforceScopedFacilityOnForm();
         $this->validate();
 
         // Database transaction to ensure data consistency
@@ -146,7 +188,7 @@ class EmployeeEmailMappings extends Component
             }
 
             if ($this->editMode) {
-            $mapping = EmployeeEmailMapping::findOrFail($this->employee_id);
+            $mapping = $this->findAuthorizedMapping((int) $this->employee_id);
             $mapping->update([
                 'facility_id' => $this->facility_id,
                 'category' => $this->category,
@@ -179,7 +221,7 @@ class EmployeeEmailMappings extends Component
 
     public function delete($id)
     {
-        $mapping = EmployeeEmailMapping::findOrFail($id);
+        $mapping = $this->findAuthorizedMapping($id);
         $mapping->delete();
         
         session()->flash('success', 'Employee email mapping deleted successfully.');
@@ -187,7 +229,7 @@ class EmployeeEmailMappings extends Component
 
     public function toggleStatus($id)
     {
-        $mapping = EmployeeEmailMapping::findOrFail($id);
+        $mapping = $this->findAuthorizedMapping($id);
         $newStatus = !$mapping->is_active;
         
         // If we're deactivating a primary contact, warn about the consequences
@@ -218,7 +260,7 @@ class EmployeeEmailMappings extends Component
             Log::info("makePrimary called with ID: {$id}");
             
             DB::transaction(function () use ($id) {
-                $mapping = EmployeeEmailMapping::findOrFail($id);
+                $mapping = $this->findAuthorizedMapping($id);
                 Log::info("Found mapping: {$mapping->employee_name} - Current primary status: " . ($mapping->is_primary ? 'true' : 'false'));
                 
                 // Check if this mapping is already primary
@@ -262,7 +304,7 @@ class EmployeeEmailMappings extends Component
     private function resetForm()
     {
         $this->employee_id = null;
-        $this->facility_id = '';
+        $this->facility_id = $this->scopedFacilityId ? (string) $this->scopedFacilityId : '';
         $this->category = '';
         $this->employee_name = '';
         $this->employee_email = '';
@@ -275,6 +317,9 @@ class EmployeeEmailMappings extends Component
     public function getEmployeeMappingsProperty()
     {
         $query = EmployeeEmailMapping::with('facility')
+            ->when($this->scopedFacilityId, function ($q) {
+                $q->where('facility_id', $this->scopedFacilityId);
+            })
             ->when($this->search, function($q) {
                 $q->where(function($query) {
                     $query->where('employee_name', 'like', '%' . $this->search . '%')
@@ -298,6 +343,10 @@ class EmployeeEmailMappings extends Component
 
     public function getFacilitiesProperty()
     {
+        if ($this->scopedFacilityId) {
+            return Facility::where('id', $this->scopedFacilityId)->orderBy('name')->get();
+        }
+
         return Facility::orderBy('name')->get();
     }
 
@@ -310,8 +359,9 @@ class EmployeeEmailMappings extends Component
     {
         $warnings = collect();
         
-        // Get all facilities and categories
-        $facilities = Facility::all();
+        $facilities = $this->scopedFacilityId
+            ? Facility::where('id', $this->scopedFacilityId)->get()
+            : Facility::all();
         $categories = ['book-a-tour', 'inquiry', 'hiring'];
         
         foreach ($facilities as $facility) {
@@ -358,11 +408,16 @@ class EmployeeEmailMappings extends Component
 
     public function render()
     {
+        $scopedFacility = $this->scopedFacilityId
+            ? Facility::find($this->scopedFacilityId)
+            : null;
+
         return view('livewire.admin.employee-email-mappings', [
             'employeeMappings' => $this->employeeMappings,
             'facilities' => $this->facilities,
             'categories' => $this->categories,
             'warnings' => $this->warnings,
+            'scopedFacility' => $scopedFacility,
         ]);
     }
 }

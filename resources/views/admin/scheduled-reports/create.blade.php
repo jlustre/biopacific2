@@ -14,6 +14,22 @@
 @endsection
 
 @section('content')
+@if(!empty($template))
+<div class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 max-w-2xl mx-auto">
+    <i class="fas fa-file-alt mr-1"></i> Prefilled from template: <strong>{{ $template->name }}</strong>
+</div>
+@endif
+@php
+    $fromTemplate = $template ?? null;
+    $val = fn ($key, $default = '') => old($key, $fromTemplate ? data_get($fromTemplate, $key, $default) : $default);
+    $defaultParams = '';
+    if ($fromTemplate && $fromTemplate->parameters) {
+        $defaultParams = json_encode($fromTemplate->parameters);
+    } elseif (!empty($prefillFacilityId)) {
+        $defaultParams = json_encode(['facility_id' => (int) $prefillFacilityId]);
+    }
+    $paramsJson = old('parameters', $defaultParams);
+@endphp
 <div class="max-w-2xl mx-auto">
     <form action="{{ route('admin.scheduled-reports.store') }}" method="POST" class="space-y-6">
         @csrf
@@ -22,31 +38,31 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Report Name</label>
-                    <input type="text" name="name" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required value="{{ old('name') }}">
+                    <input type="text" name="name" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required value="{{ $val('name') }}">
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Report</label>
                     <select name="report_id" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required>
                         <option value="">Select Report</option>
                         @foreach($reports as $report)
-                        <option value="{{ $report->id }}" {{ old('report_id') == $report->id ? 'selected' : '' }}>{{ $report->name }}</option>
+                        <option value="{{ $report->id }}" {{ (string) $val('report_id') === (string) $report->id ? 'selected' : '' }}>{{ $report->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Report Format</label>
                     <select name="report_format" id="report_format" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" required onchange="toggleOrientation()">
-                        <option value="csv" {{ old('report_format', 'csv') == 'csv' ? 'selected' : '' }}>CSV</option>
-                        <option value="pdf" {{ old('report_format') == 'pdf' ? 'selected' : '' }}>PDF</option>
-                        <option value="html" {{ old('report_format') == 'html' ? 'selected' : '' }}>HTML</option>
+                        <option value="csv" {{ $val('report_format', 'csv') == 'csv' ? 'selected' : '' }}>CSV</option>
+                        <option value="pdf" {{ $val('report_format') == 'pdf' ? 'selected' : '' }}>PDF</option>
+                        <option value="html" {{ $val('report_format') == 'html' ? 'selected' : '' }}>HTML</option>
                     </select>
                     <span class="text-xs text-gray-500">Choose the file format for the generated report.</span>
                 </div>
                 <div id="pdf_orientation_group" style="display: {{ old('report_format') == 'pdf' ? 'block' : 'none' }};">
                     <label class="block text-gray-700 font-semibold mb-1">PDF Orientation</label>
                     <select name="pdf_orientation" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
-                        <option value="P" {{ old('pdf_orientation') == 'P' ? 'selected' : '' }}>Portrait</option>
-                        <option value="L" {{ old('pdf_orientation') == 'L' ? 'selected' : '' }}>Landscape</option>
+                        <option value="P" {{ $val('pdf_orientation', 'P') == 'P' ? 'selected' : '' }}>Portrait</option>
+                        <option value="L" {{ $val('pdf_orientation') == 'L' ? 'selected' : '' }}>Landscape</option>
                     </select>
                     <span class="text-xs text-gray-500">Choose page orientation for PDF output.</span>
                 </div>
@@ -71,16 +87,16 @@
                             </span>
                         </span>
                     </label>
-                    <textarea name="parameters" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" rows="2">{{ old('parameters') }}</textarea>
+                    <textarea name="parameters" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" rows="2">{{ $paramsJson }}</textarea>
                     <span class="text-xs text-gray-500">Optional. Example: {"facility_id":1}</span>
                 </div>
                 <div>
                     <label class="inline-flex items-center">
-                        <input type="checkbox" name="notifications_enabled" id="notifications_enabled" value="1" {{ old('notifications_enabled') ? 'checked' : '' }}>
+                        <input type="checkbox" name="notifications_enabled" id="notifications_enabled" value="1" {{ old('notifications_enabled', $fromTemplate?->notifications_enabled) ? 'checked' : '' }}>
                         <span class="ml-2 text-gray-700 font-semibold">Enable Notifications</span>
                     </label>
                 </div>
-                <div id="notification_recipients_group" style="display: {{ old('notifications_enabled') ? 'block' : 'none' }};">
+                <div id="notification_recipients_group" style="display: {{ old('notifications_enabled', $fromTemplate?->notifications_enabled) ? 'block' : 'none' }};">
                     <label class="block text-gray-700 font-semibold mb-1">Notification Recipients</label>
                     <div class="mb-2">
                         <label class="block text-xs font-semibold mb-1">Notify Roles</label>
@@ -97,7 +113,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold mb-1">Notify Email Addresses</label>
-                        <input type="text" name="notify_emails" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" placeholder="Enter email addresses, separated by commas" value="{{ old('notify_emails') }}">
+                        <input type="text" name="notify_emails" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" placeholder="Enter email addresses, separated by commas" value="{{ $val('notify_emails') }}">
                         <span class="text-xs text-gray-500">You can enter multiple emails separated by commas.</span>
                     </div>
                 </div>
@@ -108,7 +124,7 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">End Date/Time</label>
-                        <input type="datetime-local" name="end_at" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" value="{{ old('end_at') }}">
+                        <input type="datetime-local" name="end_at" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" value="{{ old('end_at', $fromTemplate?->end_at?->format('Y-m-d\TH:i')) }}">
                         <span class="text-xs text-gray-500">Leave blank for ongoing schedule.</span>
                     </div>
                 </div>
@@ -165,15 +181,15 @@
                             </select>
                         </div>
                     </div>
-                    <input type="hidden" name="cron_expression" id="cron_expression" value="{{ old('cron_expression', '* * * * *') }}">
+                    <input type="hidden" name="cron_expression" id="cron_expression" value="{{ old('cron_expression', $fromTemplate?->cron_expression ?? '* * * * *') }}">
                     <span class="text-xs text-gray-500">Choose when the report should run. <a href='https://crontab.guru/' target='_blank' class='underline'>Learn more</a><br>
                     </span>
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Status</label>
                     <select name="status" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
-                        <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="paused" {{ old('status') == 'paused' ? 'selected' : '' }}>Paused</option>
+                        <option value="active" {{ $val('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="paused" {{ $val('status') == 'paused' ? 'selected' : '' }}>Paused</option>
                     </select>
                 </div>
             </div>

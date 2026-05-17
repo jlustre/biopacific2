@@ -1,7 +1,7 @@
-@extends('layouts.user_dashboard', ['title' => 'Pre-Employment Portal'])
+@extends('layouts.member-portal')
 
 @section('content')
-<div class="flex flex-col gap-8" x-data="{ 
+<div class="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8" x-data="{ 
     activeItem: localStorage.getItem('pre_employment_active_item') || @if(session('success') || $errors->any()) 'application_form' @else null @endif 
 }" x-init="$watch('activeItem', value => { 
     if (value) localStorage.setItem('pre_employment_active_item', value); 

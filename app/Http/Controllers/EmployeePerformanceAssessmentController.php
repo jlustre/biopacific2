@@ -15,9 +15,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\PartFPerformanceScoring;
+use App\Support\PreventsSelfAssessment;
+use Illuminate\Http\JsonResponse;
 
 
 class EmployeePerformanceAssessmentController extends Controller {
+    protected function denyIfSelfAssessing(string $employeeNum): ?JsonResponse
+    {
+        return PreventsSelfAssessment::jsonDenyIfSelf(Auth::user(), $employeeNum);
+    }
+
     protected function finalizedPerformanceAssessment(string $employeeNum, int $assessmentPeriodId): ?EmployeePerformanceAssessment
     {
         return EmployeePerformanceAssessment::query()
@@ -48,13 +56,13 @@ class EmployeePerformanceAssessmentController extends Controller {
                 return false;
             }
 
-            $items = json_decode($assessment->items, true) ?: [];
+            $items = $assessment->itemsArray();
             if (!array_key_exists($itemKey, $items)) {
                 return false;
             }
 
             unset($items[$itemKey]);
-            $assessment->items = empty($items) ? null : json_encode($items);
+            $assessment->items = empty($items) ? null : $items;
             $assessment->save();
 
             return true;
@@ -95,6 +103,26 @@ class EmployeePerformanceAssessmentController extends Controller {
             'U' => 1,
             default => null,
         };
+    }
+
+    protected function syncPerformanceAssessmentSummary(EmployeePerformanceAssessment $assessment): void
+    {
+        $ratings = [];
+        foreach ($assessment->itemsArray() as $itemKey => $itemData) {
+            if (! preg_match('/^F_(\d+)$/', (string) $itemKey, $matches)) {
+                continue;
+            }
+
+            $rating = EmployeePerformanceAssessment::itemRating($itemData);
+            if ($rating !== null) {
+                $ratings[(int) $matches[1]] = $rating;
+            }
+        }
+
+        $summary = PartFPerformanceScoring::summarize($ratings, PartFPerformanceScoring::scorableItemIds());
+        $assessment->total_score = $summary['total_score'];
+        $assessment->average_score = $summary['average_score'];
+        $assessment->overall_rating = $summary['overall_rating'];
     }
 
     protected function getCompetencyItems(BPEmployee $employee)
@@ -436,37 +464,43 @@ class EmployeePerformanceAssessmentController extends Controller {
         return response()->json(['success' => true, 'employees' => $result]);
     }
     /**
-     * Delete an assessment period. If assessments exist, return affected records unless force=1 is set.
+     * Delete an assessment period when no employees are linked to it.
      */
     public function destroyPeriod(Request $request, $id)
     {
-        $force = $request->query('force', false);
         $period = \App\Models\EmployeeAssessmentPeriod::find($id);
         if (!$period) {
             return response()->json(['success' => false, 'message' => 'Assessment period not found.'], 404);
         }
-        $affected = $period->assessments()->get();
-        if ($affected->count() > 0 && !$force) {
-            // Return affected records for modal display
-            $affectedList = $affected->map(function($a) {
-                $emp = $a->employee ?? null;
+
+        $assignedEmployeeNums = $period->assignedEmployeeNums();
+        if ($assignedEmployeeNums->isNotEmpty()) {
+            $employeesByNum = \App\Models\BPEmployee::query()
+                ->whereIn('employee_num', $assignedEmployeeNums)
+                ->get()
+                ->keyBy('employee_num');
+
+            $assignedEmployees = $assignedEmployeeNums->map(function ($employeeNum) use ($employeesByNum) {
+                $employee = $employeesByNum->get($employeeNum);
+
                 return [
-                    'employee_num' => $a->employee_num,
-                    'employee_name' => $emp ? ($emp->last_name . ', ' . $emp->first_name . ($emp->middle_name ? ' ' . $emp->middle_name : '')) : null,
-                    'assessment_date' => $a->assessment_date,
+                    'employee_num' => $employeeNum,
+                    'employee_name' => $employee
+                        ? trim($employee->last_name . ', ' . $employee->first_name . ($employee->middle_name ? ' ' . $employee->middle_name : ''))
+                        : $employeeNum,
                 ];
-            })->toArray();
+            })->values()->all();
+
             return response()->json([
                 'success' => false,
-                'affected' => $affectedList,
-                'message' => 'There are employee assessments linked to this period. Deleting will remove them. Continue?',
-            ], 200);
+                'blocked' => true,
+                'assigned_employees' => $assignedEmployees,
+                'message' => 'This assessment period cannot be deleted because ' . count($assignedEmployees) . ' employee(s) already have performance or competency data for this period.',
+            ], 422);
         }
-        // Delete all related assessments if force
-        foreach ($affected as $a) {
-            $a->delete();
-        }
+
         $period->delete();
+
         return response()->json(['success' => true, 'message' => 'Assessment period deleted.']);
     }
     public function store(Request $request)
@@ -499,6 +533,10 @@ class EmployeePerformanceAssessmentController extends Controller {
                 ], 422);
             }
 
+            if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
+                return $response;
+            }
+
             // Removed requirement for comments when rating is Unsatisfactory ('U')
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->expectsJson() || $request->isJson() || $request->wantsJson()) {
@@ -518,7 +556,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'assessment_period_id' => $validated['assessment_period_id'],
             ],
             [
-                'items' => json_encode([]),
+                'items' => [],
                 'assessment_date' => $validated['assessment_date'],
                 'assessed_by' => Auth::id(),
             ]
@@ -526,6 +564,14 @@ class EmployeePerformanceAssessmentController extends Controller {
 
         $assessment->assessment_date = $validated['assessment_date'];
         $assessment->assessed_by = Auth::id();
+
+        if (str_starts_with((string) $validated['item_key'], 'F_')) {
+            $items = $assessment->itemsArray();
+            $items[(string) $validated['item_key']] = ['rating' => $validated['rating']];
+            $assessment->items = $items;
+            $this->syncPerformanceAssessmentSummary($assessment);
+        }
+
         $assessment->save();
 
         EmployeeAssessmentItemEntry::create([
@@ -584,6 +630,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'employee_name' => 'required|string|max:255',
             'employee_title' => 'nullable|string|max:255',
         ]);
+
+        if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
+            return $response;
+        }
 
         if ($this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
             return response()->json([
@@ -774,6 +824,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'employee_title' => 'nullable|string|max:255',
         ]);
 
+        if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
+            return $response;
+        }
+
         if ($this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
             return response()->json([
                 'success' => false,
@@ -929,6 +983,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'hoyer_lift_training_comments' => 'nullable|string',
         ]);
 
+        if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
+            return $response;
+        }
+
         if ($this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
             return response()->json([
                 'success' => false,
@@ -1038,6 +1096,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'review_date' => 'required|date',
         ]);
 
+        if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
+            return $response;
+        }
+
         $assessment = EmployeeCompetencyAssessment::query()
             ->where('employee_num', $validated['employee_num'])
             ->where('assessment_period_id', $validated['assessment_period_id'])
@@ -1092,6 +1154,10 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'item_key' => 'required',
                 'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             ]);
+
+            if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
+                return $response;
+            }
 
             if (str_starts_with((string) $validated['item_key'], 'F_')
                 && $this->finalizedPerformanceAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {

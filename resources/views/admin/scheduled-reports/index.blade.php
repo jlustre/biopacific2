@@ -6,7 +6,12 @@
         <h1 class="text-3xl font-bold text-gray-900">Scheduled Reports</h1>
         <p class="text-gray-600 mt-2">Manage and schedule automated report generation using CRON expressions.</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="openScheduledReportTemplateModal()"
+            class="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition font-semibold flex items-center">
+            <i class="fas fa-file-alt mr-2"></i> Create Template
+        </button>
+        @if(!empty($canManageScheduledReports))
         <a href="{{ route('admin.reports.index') }}" target="_blank"
             class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition font-semibold flex items-center">
             <i class="fas fa-list mr-2"></i> Reports Management
@@ -15,11 +20,18 @@
             class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center">
             <i class="fas fa-plus mr-2"></i> Schedule New Report
         </a>
+        @endif
     </div>
 </div>
 @endsection
 
 @section('content')
+@if(isset($scopedFacility) && $scopedFacility)
+<div class="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+    Showing scheduled reports for <strong>{{ $scopedFacility->name }}</strong>.
+</div>
+@endif
+
 <div class="bg-white rounded-lg shadow overflow-x-auto p-4">
     @if(session('success'))
         <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4">
@@ -107,9 +119,11 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ $sr->next_run_at ? $sr->next_run_at->format('Y-m-d H:i') : '-' }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center">
+                    @if(!empty($canManageScheduledReports))
                     <a href="{{ route('admin.scheduled-reports.edit', $sr) }}" class="mx-1 text-blue-600 hover:text-blue-800" title="Edit">
                         <i class="fas fa-edit"></i>
                     </a>
+                    @endif
                     <a href="{{ route('admin.scheduled-reports.history', $sr) }}" class="mx-1 text-indigo-600 hover:text-indigo-800" title="History">
                         <i class="fas fa-history"></i>
                     </a>
@@ -123,6 +137,7 @@
                     @else
                         <span class="mx-1 text-gray-400" title="No report available"><i class="fas fa-file-alt"></i></span>
                     @endif
+                    @if(!empty($canManageScheduledReports))
                     <form action="{{ route('admin.scheduled-reports.destroy', $sr) }}" method="POST" class="inline-block mx-1" onsubmit="return confirm('Delete this scheduled report?');">
                         @csrf
                         @method('DELETE')
@@ -136,15 +151,88 @@
                             <i class="fas fa-play"></i>
                         </button>
                     </form>
+                    @endif
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="px-6 py-4 text-center text-gray-500">No scheduled reports found.</td>
+                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-clock text-4xl text-gray-300 mb-4"></i>
+                        @if(isset($scopedFacility) && $scopedFacility)
+                        <h3 class="text-lg font-medium text-gray-900 mb-1">No scheduled reports for this facility</h3>
+                        <p class="text-gray-500 max-w-md">There are no scheduled reports configured for <strong>{{ $scopedFacility->name }}</strong> at this time. Create a template to save a reusable configuration, or contact your system administrator.</p>
+                        <button type="button" onclick="openScheduledReportTemplateModal()"
+                            class="mt-4 bg-teal-600 text-white px-5 py-2 rounded-lg hover:bg-teal-700 text-sm font-semibold">
+                            <i class="fas fa-file-alt mr-1"></i> Create Template
+                        </button>
+                        @else
+                        <h3 class="text-lg font-medium text-gray-900 mb-1">No scheduled reports found</h3>
+                        <p class="text-gray-500">No scheduled reports have been configured yet.</p>
+                        @endif
+                    </div>
+                </td>
             </tr>
             @endforelse
         </tbody>
     </table>
     <div class="p-4">{{ $scheduledReports->links() }}</div>
 </div>
+
+@if(isset($templates) && $templates->isNotEmpty())
+<div class="mt-8 bg-white rounded-lg shadow overflow-hidden p-4">
+    <h2 class="text-lg font-bold text-gray-900 mb-1">Saved Templates</h2>
+    <p class="text-sm text-gray-600 mb-4">Reusable configurations for scheduling reports.</p>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Template</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Report</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Schedule</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Format</th>
+                    <th class="px-4 py-2 text-center font-medium text-gray-500">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @foreach($templates as $template)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="font-semibold text-gray-900">{{ $template->name }}</div>
+                        @if($template->description)
+                        <p class="text-xs text-gray-500 mt-0.5">{{ \Illuminate\Support\Str::limit($template->description, 80) }}</p>
+                        @endif
+                        @if($template->facility)
+                        <span class="inline-block mt-1 text-xs text-teal-700 bg-teal-50 px-2 py-0.5 rounded">{{ $template->facility->name }}</span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3">{{ $template->report->name ?? '—' }}</td>
+                    <td class="px-4 py-3 font-mono text-xs">{{ $template->cron_expression }}</td>
+                    <td class="px-4 py-3 uppercase">{{ $template->report_format }}</td>
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                        @if(!empty($canManageScheduledReports))
+                        <a href="{{ route('admin.scheduled-reports.create', ['template' => $template->id]) }}"
+                            class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium mr-3"
+                            title="Schedule using this template">
+                            <i class="fas fa-calendar-plus mr-1"></i> Use
+                        </a>
+                        @endif
+                        <form action="{{ route('admin.scheduled-reports.templates.destroy', $template) }}" method="POST"
+                            class="inline-block" onsubmit="return confirm('Delete this template?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 hover:text-red-800 font-medium">
+                                <i class="fas fa-trash mr-1"></i> Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
+@include('admin.scheduled-reports.partials.template-modal')
 @endsection

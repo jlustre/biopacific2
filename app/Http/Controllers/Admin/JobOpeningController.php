@@ -15,10 +15,28 @@ class JobOpeningController extends Controller
     public function index(Facility $facility)
     {
         $jobs = $facility->jobOpenings()->latest()->get();
-        $positions = \App\Models\Position::orderBy('title')->get();
+        $positions = Position::with(['department', 'reportsToPosition'])
+            ->orderBy('title')
+            ->get();
         $departments = \App\Models\Department::orderBy('name')->get();
-        $supervisors = \App\Models\Position::where('supervisor_role', 1)->orderBy('title')->get();
-        return view('admin.facilities.job_openings', compact('facility', 'jobs', 'positions', 'departments', 'supervisors'));
+        $supervisors = Position::where('supervisor_role', 1)->orderBy('title')->get();
+        $positionDefaults = $positions->mapWithKeys(function (Position $position) {
+            return [
+                $position->title => [
+                    'department' => $position->department?->name,
+                    'reporting_to' => $position->reportsToPosition?->title,
+                ],
+            ];
+        })->all();
+
+        return view('admin.facilities.job_openings', compact(
+            'facility',
+            'jobs',
+            'positions',
+            'departments',
+            'supervisors',
+            'positionDefaults'
+        ));
     }
 
     public function store(Request $request, Facility $facility)
@@ -86,13 +104,24 @@ class JobOpeningController extends Controller
     public function update(Request $request, Facility $facility, JobOpening $jobOpening)
     {
         $data = $request->validate([
-              'title' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'employment_type' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
             'reporting_to' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|string',
+            'posted_at' => 'nullable|date',
+            'expires_at' => 'nullable|date',
+            'active' => 'nullable|in:0,1',
+            'status' => 'required|string|in:open,closed,pending,filled,cancelled',
         ]);
+
+        $data['active'] = (int) ($data['active'] ?? 0) === 1;
+
         $jobOpening->update($data);
-        return redirect()->back()->with('success', 'Job opening updated.');
+
+        return redirect()
+            ->route('admin.facility.job_openings.edit', [$facility, $jobOpening])
+            ->with('success', 'Job opening updated.');
     }
 
     public function destroy(Facility $facility, JobOpening $jobOpening)
@@ -135,18 +164,35 @@ class JobOpeningController extends Controller
 
     public function getTemplatesForTitle(Request $request)
     {
-        $title = trim($request->input('title'));
-        if ($title === '' || $title === null) {
-            // Show all templates if filter is empty
-            $templates = \App\Models\JobDescriptionTemplate::all();
+        $title = trim((string) $request->input('title', ''));
+
+        if ($title === '') {
+            $templates = \App\Models\JobDescriptionTemplate::query()
+                ->with('position:id,title')
+                ->orderBy('name')
+                ->get(['id', 'name', 'contents', 'position_id', 'updated_at']);
         } else {
-            // Case-insensitive, trimmed match
-            $templates = \App\Models\JobDescriptionTemplate::whereRaw('LOWER(TRIM(title)) = ?', [strtolower($title)])
-                ->get();
+            $position = Position::whereRaw('LOWER(TRIM(title)) = ?', [strtolower($title)])->first();
+
+            if (!$position) {
+                return response()->json([]);
+            }
+
+            $templates = \App\Models\JobDescriptionTemplate::query()
+                ->where('position_id', $position->id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'contents', 'position_id', 'updated_at']);
         }
-        // Debug: log all template titles being returned
-        logger()->info('Template titles returned:', $templates->pluck('title')->toArray());
-        return response()->json($templates);
+
+        return response()->json($templates->map(function ($template) {
+            return [
+                'id' => $template->id,
+                'name' => $template->name,
+                'title' => $template->position?->title,
+                'contents' => $template->contents,
+                'updated_at' => $template->updated_at,
+            ];
+        }));
     }
 
     public function storeTemplate(Request $request)
@@ -262,7 +308,12 @@ class JobOpeningController extends Controller
 
         $positionId = Position::where('title', $data['template_position_title'])->value('id');
         if (!$positionId) {
-            return redirect()->back()->with('error', 'Template position is required. Please select a valid job title.');
+            $message = 'Template position is required. Please select a valid job title.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return redirect()->back()->with('error', $message);
         }
 
         $template = \App\Models\JobDescriptionTemplate::create([
@@ -271,6 +322,18 @@ class JobOpeningController extends Controller
             'contents' => $data['template_contents'] ?? '',
             'created_by' => $request->user() ? $request->user()->id : null,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Template '{$template->name}' saved successfully.",
+                'template' => [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'contents' => $template->contents,
+                ],
+            ]);
+        }
 
         return redirect()->back()->with('success', "Template '{$template->name}' saved successfully.");
     }
