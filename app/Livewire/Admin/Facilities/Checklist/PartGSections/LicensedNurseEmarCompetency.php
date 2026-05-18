@@ -2,49 +2,57 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections;
 
-use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGSectionExclusion;
 use App\Models\BPEmployee;
+use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeeCompetencyItem;
+use App\Support\PartGCompetencyScoring;
+use App\Support\PreventsSelfAssessment;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
+/**
+ * Clean-slate Livewire component for the LICENSED NURSE eMAR COMPETENCY section.
+ *
+ * Design rules (kept narrow to avoid Alpine / window-event conflicts):
+ *  - Ratings use wire:model.live on responses.{id} (reliable Livewire binding).
+ *  - Section + global summaries are #[Computed] so every render reflects current responses.
+ *  - Persistence and re-render happen entirely on the server; no JS bridges.
+ */
 class LicensedNurseEmarCompetency extends Component
 {
-    use ManagesPartGSectionExclusion;
+    public const SECTION = 'LICENSED NURSE eMAR COMPETENCY';
 
-    public string $employeeNum;
+    public string $employeeNum = '';
 
     public ?int $assessmentPeriodId = null;
 
-    /** @var list<array<string, mixed>> */
-    public array $emarCompetencyItems = [];
+    public bool $assessmentLocked = false;
 
+    public bool $evaluatorActionsDisabled = false;
+
+    public bool $sectionExcluded = false;
+
+    /** @var list<array{id:int,item:string,rawItem:string,indentLevel:int,isParent:bool}> */
+    public array $items = [];
+
+
+    /** @var array<int,string> source_item_id => 'E'|'S'|'U'|'N' */
     public array $responses = [];
 
-    public string $summaryComments = '';
-
-    public string $employeeComments = '';
-
-    public string $reviewerName = '';
-
-    public string $reviewerTitle = '';
+    // For draft save feedback
+    public ?string $draftSaveMessage = null;
+    public ?string $draftSaveType = null;
 
     public string $employeeName = '';
 
     public string $employeeTitle = '';
 
-    public string $reviewSignDate = '';
+    public string $reviewerName = '';
 
-    public string $employeeSignDate = '';
-
-    public bool $assessmentLocked = false;
-
-    public ?string $draftSaveMessage = null;
-
-    public string $draftSaveType = '';
-
-    public const SECTION = 'LICENSED NURSE eMAR COMPETENCY';
+    public string $reviewerTitle = '';
 
     public function mount(
         string $employeeNum,
@@ -54,6 +62,11 @@ class LicensedNurseEmarCompetency extends Component
         $this->employeeNum = $employeeNum;
         $this->assessmentPeriodId = $assessmentPeriodId;
         $this->assessmentLocked = $assessmentLocked;
+
+        $this->evaluatorActionsDisabled = PreventsSelfAssessment::isSelfAssessment(
+            Auth::user(),
+            $this->employeeNum
+        );
 
         $employee = BPEmployee::with('currentAssignment.position')
             ->where('employee_num', $employeeNum)
@@ -69,16 +82,62 @@ class LicensedNurseEmarCompetency extends Component
         $this->reviewerName = $user?->name ?? '';
         $this->reviewerTitle = $user?->title ?? '';
 
-        $this->emarCompetencyItems = $this->buildCompetencyItems();
-        $this->loadDraftResponses();
+        $this->items = $this->buildCompetencyItems();
+        $this->loadResponsesFromStorage();
+        $this->loadExclusionFromStorage();
         $this->normalizeResponseKeys();
     }
 
-    public function setResponse(int $itemId, string $rating): void
+    /**
+     * @return array{totalItems:int,checkedOfTotal:string,totalPoints:int|float,average:string,overallRating:string}
+     */
+    #[Computed]
+    public function sectionSummaryMetrics(): array
     {
-        if ($this->assessmentLocked || $this->sectionExcluded) {
+        return $this->buildSectionSummaryMetrics();
+    }
+
+    /**
+     * @return array{total_score:int,average_score:float,overall_rating:string,average_score_formatted:string}
+     */
+    #[Computed]
+    public function globalSummaryMetrics(): array
+    {
+        $global = $this->buildGlobalSummaryMetrics();
+        $global['average_score_formatted'] = number_format((float) $global['average_score'], 2, '.', '');
+
+        return $global;
+    }
+
+    public function updatedResponses(mixed $value, string $key): void
+    {
+        if ($this->cannotRate()) {
+            unset($this->responses[$key]);
+
             return;
         }
+
+        $itemId = (int) $key;
+        $rating = strtoupper(trim((string) $value));
+
+        if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+            unset($this->responses[$itemId]);
+
+            return;
+        }
+
+        $this->responses[$itemId] = $rating;
+        $this->normalizeResponseKeys();
+        $this->persistRating($itemId, $rating);
+    }
+
+    public function setRating(int $itemId, string $rating): void
+    {
+        if ($this->cannotRate()) {
+            return;
+        }
+
+        $rating = strtoupper(trim($rating));
 
         if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
             return;
@@ -86,84 +145,182 @@ class LicensedNurseEmarCompetency extends Component
 
         $this->responses[$itemId] = $rating;
         $this->normalizeResponseKeys();
-        $this->persistDraftIfPossible();
-        $this->dispatch('lnemar-responses-updated', responses: $this->responses);
+        $this->persistRating($itemId, $rating);
     }
 
-    public function updatedSummaryComments(): void
+    public function updatedSectionExcluded(): void
     {
-        $this->persistDraftIfPossible();
-    }
-
-    public function updatedEmployeeComments(): void
-    {
-        $this->persistDraftIfPossible();
-    }
-
-    public function updatedReviewSignDate(): void
-    {
-        $this->persistDraftIfPossible();
-    }
-
-    public function updatedEmployeeSignDate(): void
-    {
-        $this->persistDraftIfPossible();
-    }
-
-    public function saveDraft(): void
-    {
-        $this->draftSaveMessage = null;
-        $this->draftSaveType = '';
-
-        if ($this->assessmentLocked) {
-            $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be saved.');
+        if (! $this->canPersist()) {
+            $this->sectionExcluded = ! $this->sectionExcluded;
 
             return;
         }
 
-        if (! $this->assessmentPeriodId) {
-            $this->setDraftSaveFeedback('error', 'Please select an assessment period before saving a draft.');
-
-            return;
-        }
-
-        try {
-            $this->persistResponses('draft');
-            $this->setDraftSaveFeedback('success', 'Draft saved successfully!');
-        } catch (\Throwable $e) {
-            report($e);
-            $this->setDraftSaveFeedback('error', 'Failed to save draft. Please try again.');
-        }
+        $this->persistResponses();
     }
 
-    public function submitAssessment(): void
+    protected function cannotRate(): bool
     {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
+        return $this->assessmentLocked
+            || $this->sectionExcluded
+            || $this->evaluatorActionsDisabled
+            || ! $this->assessmentPeriodId;
+    }
+
+    protected function persistRating(int $itemId, string $rating): void
+    {
+        if (! $this->canPersist() || $this->sectionExcluded) {
             return;
         }
 
-        $this->validate([
-            'reviewSignDate' => 'required|date',
-            'responses' => 'required|array',
-        ]);
+        $this->persistResponses();
+    }
 
-        if (! $this->sectionExcluded) {
-            foreach ($this->scorableItemIds() as $itemId) {
-                $response = $this->responses[$itemId] ?? null;
-                if (! in_array($response, ['E', 'S', 'U', 'N'], true)) {
-                    $this->addError('responses', 'Please rate all competency items before submitting.');
+    protected function normalizeResponseKeys(): void
+    {
+        $normalized = [];
 
-                    return;
+        foreach ($this->responses as $itemId => $rating) {
+            if ($rating === null || $rating === '') {
+                continue;
+            }
+
+            $normalized[(int) $itemId] = $rating;
+        }
+
+        $this->responses = $normalized;
+    }
+
+    /**
+     * @return array{totalItems:int,checkedOfTotal:string,totalPoints:int|float,average:string,overallRating:string}
+     */
+    protected function buildSectionSummaryMetrics(): array
+    {
+        if ($this->sectionExcluded) {
+            return [
+                'totalItems' => 0,
+                'checkedOfTotal' => '',
+                'totalPoints' => 0,
+                'average' => '0',
+                'overallRating' => 'Excluded',
+            ];
+        }
+
+        $total = 0;
+        $rated = 0;
+        $notApplicable = 0;
+        $points = 0;
+
+        foreach ($this->items as $item) {
+            if ($item['isParent'] ?? false) {
+                continue;
+            }
+
+            $total++;
+            $rating = $this->responses[$item['id']] ?? null;
+
+            if ($rating === null || $rating === '') {
+                continue;
+            }
+
+            if ($rating === 'N') {
+                $notApplicable++;
+
+                continue;
+            }
+
+            if (in_array($rating, ['E', 'S', 'U'], true)) {
+                $rated++;
+                $points += match ($rating) {
+                    'E' => 3,
+                    'S' => 2,
+                    'U' => 1,
+                };
+            }
+        }
+
+        $checkedOfTotal = $notApplicable > 0
+            ? $rated.' of '.$total.' rated ('.$notApplicable.' N/A)'
+            : $rated.' of '.$total.' rated';
+
+        $average = $rated > 0 ? round($points / $rated, 2) : 0.0;
+
+        return [
+            'totalItems' => $total,
+            'checkedOfTotal' => $checkedOfTotal,
+            'totalPoints' => $points,
+            'average' => $rated > 0 ? number_format($average, 2, '.', '') : '—',
+            'overallRating' => match (true) {
+                $rated === 0 => '—',
+                $average >= 2.5 => 'Excellent',
+                $average >= 1.5 => 'Satisfactory',
+                $average > 0 => 'Unsatisfactory',
+                default => 'Needs Improvement',
+            },
+        ];
+    }
+
+    /**
+     * @return array{total_score:int,average_score:float,overall_rating:string}
+     */
+    protected function buildGlobalSummaryMetrics(): array
+    {
+        $ratings = [];
+
+        if ($this->assessmentPeriodId) {
+            $latestEntries = EmployeeAssessmentItemEntry::query()
+                ->where('employee_num', $this->employeeNum)
+                ->where('assessment_period_id', $this->assessmentPeriodId)
+                ->where('assessment_type', 'competency')
+                ->whereNull('revoked_at')
+                ->orderByDesc('assessment_date')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy(fn (EmployeeAssessmentItemEntry $entry) => (int) $entry->source_item_id)
+                ->map(fn ($entries) => $entries->first());
+
+            foreach ($latestEntries as $entry) {
+                $sourceItemId = (int) $entry->source_item_id;
+                if ($sourceItemId <= 0) {
+                    continue;
+                }
+
+                $rating = strtoupper(trim((string) $entry->rating));
+                if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                    $ratings[$sourceItemId] = $rating;
                 }
             }
         }
 
-        $this->persistResponses('submitted');
-        session()->flash('success', 'Licensed Nurse eMAR Competency assessment saved.');
+        if (! $this->sectionExcluded) {
+            foreach ($this->responses as $itemId => $rating) {
+                if (! is_string($rating)) {
+                    continue;
+                }
+                $normalized = strtoupper(trim($rating));
+                if (in_array($normalized, ['E', 'S', 'U', 'N'], true)) {
+                    $ratings[(int) $itemId] = $normalized;
+                }
+            }
+        } else {
+            foreach ($this->items as $item) {
+                if ($item['isParent'] ?? false) {
+                    continue;
+                }
+                unset($ratings[(int) $item['id']]);
+            }
+        }
+
+        return PartGCompetencyScoring::summarize($ratings);
+    }
+
+    public function render()
+    {
+        return view('livewire.admin.facilities.checklist.part-g-sections.licensed-nurse-emar-competency');
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return list<array{id:int,item:string,rawItem:string,indentLevel:int,isParent:bool}>
      */
     protected function buildCompetencyItems(): array
     {
@@ -182,7 +339,7 @@ class LicensedNurseEmarCompetency extends Component
                 $indentLevel = strlen($matches[1]);
             }
 
-            // Parent only if the immediate next row is a child (deeper dash-indent). No child → scorable row with radios.
+            // Parent only if the immediate next row is a deeper child.
             $isParent = false;
             if (isset($rawItems[$index + 1])) {
                 $nextRaw = (string) $rawItems[$index + 1]->item;
@@ -194,7 +351,7 @@ class LicensedNurseEmarCompetency extends Component
             }
 
             $items[] = [
-                'id' => $item->id,
+                'id' => (int) $item->id,
                 'item' => ltrim($raw, '-'),
                 'rawItem' => $raw,
                 'indentLevel' => $indentLevel,
@@ -205,187 +362,296 @@ class LicensedNurseEmarCompetency extends Component
         return $items;
     }
 
-    protected function loadDraftResponses(): void
+    protected function loadResponsesFromStorage(): void
     {
         if (! $this->assessmentPeriodId) {
             return;
         }
 
-        $assessment = EmployeeCompetencyAssessment::query()
+        $sectionItemIds = collect($this->items)
+            ->filter(fn (array $item) => ! ($item['isParent'] ?? false))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($sectionItemIds === []) {
+            return;
+        }
+
+        $assessment = $this->loadAssessment();
+
+        if ($assessment) {
+            foreach ($this->decodeResponses($assessment->responses) as $itemKey => $entry) {
+                $sourceItemId = $this->normalizeKey($itemKey);
+                if (! in_array($sourceItemId, $sectionItemIds, true)) {
+                    continue;
+                }
+
+                $rating = is_array($entry) ? ($entry['response'] ?? null) : $entry;
+                if (is_string($rating) && $rating !== '') {
+                    $rating = strtoupper(trim($rating));
+                    if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                        $this->responses[$sourceItemId] = $rating;
+                    }
+                }
+            }
+        }
+
+        // Latest item entries trump the JSON blob when both are present.
+        $latestEntries = EmployeeAssessmentItemEntry::query()
             ->where('employee_num', $this->employeeNum)
             ->where('assessment_period_id', $this->assessmentPeriodId)
-            ->first();
+            ->where('assessment_type', 'competency')
+            ->whereIn('source_item_id', $sectionItemIds)
+            ->whereNull('revoked_at')
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy(fn (EmployeeAssessmentItemEntry $entry) => (int) $entry->source_item_id)
+            ->map(fn ($entries) => $entries->first());
 
+        foreach ($latestEntries as $entry) {
+            $sourceItemId = (int) $entry->source_item_id;
+            if ($sourceItemId <= 0) {
+                continue;
+            }
+
+            $rating = strtoupper(trim((string) $entry->rating));
+            if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                $this->responses[$sourceItemId] = $rating;
+            }
+        }
+    }
+
+    protected function loadExclusionFromStorage(): void
+    {
+        $assessment = $this->loadAssessment();
         if (! $assessment) {
             return;
         }
 
-        $decoded = $this->decodeResponses($assessment->responses ?? null);
-
-        $emarItemIds = collect($this->emarCompetencyItems)
-            ->filter(fn (array $item) => ! ($item['isParent'] ?? false))
-            ->pluck('id')
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $excluded = collect($snapshot['excluded_section_labels'] ?? [])
+            ->map(fn ($label) => (string) $label)
             ->all();
 
-        foreach ($decoded as $itemId => $data) {
-            if (! in_array((int) $itemId, $emarItemIds, true) && ! in_array((string) $itemId, array_map('strval', $emarItemIds), true)) {
-                continue;
-            }
-
-            $response = is_array($data)
-                ? ($data['response'] ?? null)
-                : $data;
-
-            if ($response !== null && $response !== '') {
-                $this->responses[(int) $itemId] = $response;
-            }
-        }
-
-        $this->summaryComments = (string) ($assessment->comments ?? '');
-        $this->employeeComments = (string) ($assessment->employee_comments ?? '');
-        $this->reviewSignDate = $assessment->review_date?->format('Y-m-d') ?? '';
-        $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
-
-        $this->loadSectionExcludedFromAssessment($assessment);
+        $this->sectionExcluded = in_array(self::SECTION, $excluded, true);
     }
 
-    protected function setDraftSaveFeedback(string $type, string $message): void
+    protected function loadAssessment(): ?EmployeeCompetencyAssessment
     {
-        $this->draftSaveType = $type;
-        $this->draftSaveMessage = $message;
-    }
-
-    protected function persistDraftIfPossible(): void
-    {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
-            return;
+        if (! $this->assessmentPeriodId) {
+            return null;
         }
 
-        $this->persistResponses('draft');
-    }
-
-    protected function persistResponses(string $status): void
-    {
-        if ($this->abortPersistIfSelfAssessment()) {
-            return;
-        }
-
-        $existing = [];
-        $row = EmployeeCompetencyAssessment::query()
+        return EmployeeCompetencyAssessment::query()
             ->where('employee_num', $this->employeeNum)
             ->where('assessment_period_id', $this->assessmentPeriodId)
             ->first();
+    }
 
-        if ($row?->responses) {
-            $existing = $this->decodeResponses($row->responses);
+    protected function canPersist(): bool
+    {
+        if ($this->assessmentLocked) {
+            return false;
         }
+
+        if (! $this->assessmentPeriodId) {
+            return false;
+        }
+
+        if ($this->evaluatorActionsDisabled) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Persist current section state:
+     *  - upsert the EmployeeCompetencyAssessment row (responses JSON + snapshot exclusion + reviewer info)
+     *  - create a new EmployeeAssessmentItemEntry for any rating that actually changed
+     *  - refresh the assessment's denormalized total/average/overall columns
+     */
+    protected function persistResponses(): void
+    {
+        if (! $this->canPersist()) {
+            return;
+        }
+
+        $row = $this->loadAssessment();
+        $existing = $this->decodeResponses($row?->responses);
 
         $payload = $existing;
-        foreach ($this->responses as $itemId => $response) {
-            if ($response === null || $response === '') {
+        foreach ($this->responses as $itemId => $rating) {
+            if ($rating === null || $rating === '') {
                 continue;
             }
-            $payload[(int) $itemId] = ['response' => $response];
+            $payload[(int) $itemId] = ['response' => $rating];
         }
 
-        $scores = $this->calculateScores();
+        $snapshot = is_array($row?->snapshot_json) ? $row->snapshot_json : [];
+        $snapshot = $this->applyExclusionToSnapshot($snapshot);
 
         $updateData = [
             'responses' => $payload,
-            'comments' => $this->summaryComments,
-            'employee_comments' => $this->employeeComments,
+            'snapshot_json' => $snapshot,
             'reviewer_name' => $this->reviewerName,
             'reviewer_title' => $this->reviewerTitle,
-            'review_date' => $this->reviewSignDate ?: null,
             'employee_name' => $this->employeeName,
             'employee_title' => $this->employeeTitle,
-            'employee_signed_at' => filled($this->employeeSignDate) ? $this->employeeSignDate : null,
-            'total_score' => $scores['totalPoints'],
-            'average_score' => $scores['average'],
-            'overall_rating' => $scores['overallRating'],
             'submitted_by' => Auth::id(),
-            'submitted_at' => $status === 'submitted' ? now() : null,
-            'status' => $status === 'submitted' ? 'submitted' : 'draft',
+            'status' => $this->resolveStatus($row),
+            'submitted_at' => $row?->submitted_at,
         ];
 
-        $updateData = $this->withExcludedSnapshot($updateData, $row);
-
-        EmployeeCompetencyAssessment::updateOrCreate(
+        $row = EmployeeCompetencyAssessment::updateOrCreate(
             [
                 'employee_num' => $this->employeeNum,
                 'assessment_period_id' => $this->assessmentPeriodId,
             ],
             $updateData
         );
+
+        // Append entries only for this section's items (not the entire payload).
+        $sectionItemIds = collect($this->items)
+            ->filter(fn (array $item) => ! ($item['isParent'] ?? false))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        foreach ($sectionItemIds as $itemId) {
+            $rating = $this->responses[$itemId] ?? null;
+            if (! is_string($rating) || $rating === '') {
+                continue;
+            }
+            $this->upsertItemEntry($itemId, $rating);
+        }
+
+        $this->syncAssessmentSummaryColumns($row);
     }
 
-    /**
-     * @return array{totalPoints: int|float, average: float, overallRating: string}
-     */
-    protected function calculateScores(): array
+    protected function upsertItemEntry(int $itemId, string $rating): void
     {
+        $latest = EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->where('assessment_type', 'competency')
+            ->where('source_item_id', $itemId)
+            ->whereNull('revoked_at')
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latest && strtoupper((string) $latest->rating) === $rating) {
+            return;
+        }
+
+        EmployeeAssessmentItemEntry::create([
+            'employee_num' => $this->employeeNum,
+            'assessment_period_id' => $this->assessmentPeriodId,
+            'assessment_type' => 'competency',
+            'item_key' => 'G_'.$itemId,
+            'item_label' => $this->labelForItem($itemId),
+            'source_item_id' => $itemId,
+            'rating' => $rating,
+            'assessment_date' => now()->toDateString(),
+            'assessed_by' => Auth::id(),
+            'comments' => null,
+        ]);
+    }
+
+    protected function syncAssessmentSummaryColumns(EmployeeCompetencyAssessment $row): void
+    {
+        // Pull fresh ratings straight from the DB so the denormalized columns
+        // never drift from the source-of-truth item-entry table.
+        $latestEntries = EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->where('assessment_type', 'competency')
+            ->whereNull('revoked_at')
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy(fn (EmployeeAssessmentItemEntry $entry) => (int) $entry->source_item_id)
+            ->map(fn ($entries) => $entries->first());
+
+        $ratings = [];
+        foreach ($latestEntries as $entry) {
+            $sourceItemId = (int) $entry->source_item_id;
+            if ($sourceItemId <= 0) {
+                continue;
+            }
+            $rating = strtoupper(trim((string) $entry->rating));
+            if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                $ratings[$sourceItemId] = $rating;
+            }
+        }
+
+        // Excluded sections should not contribute to the totals.
         if ($this->sectionExcluded) {
-            return $this->sectionExcludedScores();
+            foreach ($this->items as $item) {
+                if ($item['isParent'] ?? false) {
+                    continue;
+                }
+                unset($ratings[(int) $item['id']]);
+            }
         }
 
-        $ratedCount = 0;
-        $points = 0;
+        $summary = PartGCompetencyScoring::summarize($ratings);
 
-        foreach ($this->emarCompetencyItems as $item) {
-            if ($item['isParent'] ?? false) {
-                continue;
-            }
-
-            $response = $this->responses[$item['id']] ?? null;
-            if ($response === null || $response === '' || $response === 'N') {
-                continue;
-            }
-
-            if (! in_array($response, ['E', 'S', 'U'], true)) {
-                continue;
-            }
-
-            $ratedCount++;
-            $points += match ($response) {
-                'E' => 3,
-                'S' => 2,
-                'U' => 1,
-                default => 0,
-            };
-        }
-
-        $average = $ratedCount > 0 ? round($points / $ratedCount, 2) : 0;
-
-        return [
-            'totalPoints' => $points,
-            'average' => $average,
-            'overallRating' => match (true) {
-                $ratedCount === 0 => '—',
-                $average >= 2.5 => 'Excellent',
-                $average >= 1.5 => 'Satisfactory',
-                $average > 0 => 'Unsatisfactory',
-                default => 'Needs Improvement',
-            },
-        ];
-    }
-
-    protected function normalizeResponseKeys(): void
-    {
-        $normalized = [];
-
-        foreach ($this->responses as $itemId => $response) {
-            if ($response === null || $response === '') {
-                continue;
-            }
-
-            $normalized[(int) $itemId] = $response;
-        }
-
-        $this->responses = $normalized;
+        $row->update([
+            'total_score' => $summary['total_score'],
+            'average_score' => $summary['average_score'],
+            'overall_rating' => $summary['overall_rating'],
+        ]);
     }
 
     /**
-     * @return array<int|string, mixed>
+     * @param  array<string,mixed>  $snapshot
+     * @return array<string,mixed>
+     */
+    protected function applyExclusionToSnapshot(array $snapshot): array
+    {
+        $labels = collect($snapshot['excluded_section_labels'] ?? [])
+            ->map(fn ($label) => trim((string) $label))
+            ->filter(fn ($label) => $label !== '' && $label !== self::SECTION)
+            ->values()
+            ->all();
+
+        if ($this->sectionExcluded) {
+            $labels[] = self::SECTION;
+        }
+
+        $snapshot['excluded_section_labels'] = array_values(array_unique($labels));
+
+        return $snapshot;
+    }
+
+    protected function resolveStatus(?EmployeeCompetencyAssessment $row): string
+    {
+        $status = (string) ($row?->status ?? 'draft');
+
+        if (in_array($status, ['completed', 'for_employee_signature', 'for_reviewer_signature'], true)) {
+            return $status;
+        }
+
+        return 'draft';
+    }
+
+    protected function labelForItem(int $itemId): ?string
+    {
+        foreach ($this->items as $item) {
+            if ((int) $item['id'] === $itemId) {
+                return Str::limit(ltrim((string) $item['item'], '-'), 255);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int|string,mixed>
      */
     protected function decodeResponses(mixed $raw): array
     {
@@ -398,7 +664,6 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $decoded = json_decode($raw, true);
-
         if (is_string($decoded)) {
             $decoded = json_decode($decoded, true);
         }
@@ -406,19 +671,22 @@ class LicensedNurseEmarCompetency extends Component
         return is_array($decoded) ? $decoded : [];
     }
 
-    /**
-     * @return list<int>
-     */
-    protected function scorableItemIds(): array
+    protected function normalizeKey(mixed $key): int
     {
-        return collect($this->emarCompetencyItems)
-            ->filter(fn (array $item) => ! ($item['isParent'] ?? false))
-            ->pluck('id')
-            ->all();
+        if (is_int($key)) {
+            return $key;
+        }
+
+        $value = trim((string) $key);
+        if ($value === '') {
+            return 0;
+        }
+
+        if (preg_match('/^G[_-]?(\d+)$/i', $value, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return (int) $value;
     }
 
-    public function render()
-    {
-        return view('livewire.admin.facilities.checklist.part-g-sections.licensed-nurse-emar-competency');
-    }
 }

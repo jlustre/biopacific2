@@ -34,7 +34,7 @@
         <input type="hidden" name="employee_num" value="{{ $employee->employee_num ?? '' }}">
         <input type="hidden" name="employee_assessment_period_id" value="{{ $selectedAssessmentPeriodId ?? '' }}">
         {{-- Tailwind CSS classes will be used for row colors and hover --}}
-        <div x-data="lncSummary">
+        <div x-data="lncSummary()">
         <style>
             /* Custom alternating row colors and hover effect */
             .lnc-row-even { background-color: #f1f5f9; } /* slate-100 */
@@ -197,17 +197,12 @@
 
 @push('scripts')
 <script>
-function registerPartGAccordionStore() {
-    if (Alpine.store('partGAccordion')) {
-        return;
+document.addEventListener('alpine:init', () => {
+    // Register Accordion Store
+    if (!Alpine.store('partGAccordion')) {
+        Alpine.store('partGAccordion', { openSection: 'ln' });
     }
-
-    Alpine.store('partGAccordion', {
-        openSection: 'ln',
-    });
-}
-
-function registerLncSummaryComponent() {
+    // Register lncSummary Alpine component
     Alpine.data('lncSummary', () => ({
         items: @json($lncJsItems),
         summary: {
@@ -249,20 +244,8 @@ function registerLncSummaryComponent() {
             return 'Needs Improvement';
         },
     }));
-}
-
-if (window.Alpine) {
-    registerPartGAccordionStore();
-    registerLncSummaryComponent();
-} else {
-    document.addEventListener('alpine:init', () => {
-        registerPartGAccordionStore();
-        registerLncSummaryComponent();
-    });
-}
-
-(function () {
-    const saveDraftUrl = @json(route('partg.ln_competency_skills.saveDraft'));
+});
+</script>
 
     function showDraftFeedback(draftMsg, type, message) {
         if (!draftMsg) {

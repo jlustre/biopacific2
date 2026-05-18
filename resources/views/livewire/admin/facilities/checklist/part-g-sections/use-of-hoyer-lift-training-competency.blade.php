@@ -13,7 +13,7 @@
 
 <section class="mb-4 mt-6">
     <div
-        x-data="hltSummary"
+        x-data="partGSectionSummary(@js($hltJsItems))"
         @hlt-responses-updated.window="syncResponses($event.detail.responses)"
     >
         <style>
@@ -58,24 +58,19 @@
                                 'wireKey' => 'hlt-parent-'.$item['id'],
                             ])
                         @else
-                            <tr wire:key="hlt-row-{{ $item['id'] }}" class="hlt-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} hlt-row-hover">
+                            <tr wire:key="hlt-row-{{ $item['id'] }}-{{ $responses[$item['id']] ?? 'none' }}" class="hlt-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} hlt-row-hover">
                                 <td class="border border-gray-300 py-0 text-sm" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
                                     {{ $item['item'] ?? '' }}
                                 </td>
                                 @foreach(['E', 'S', 'U', 'N'] as $rating)
-                                    <td class="text-center border border-gray-300 py-0">
-                                        <input
-                                            type="radio"
-                                            name="hlt-response-{{ $item['id'] }}"
-                                            value="{{ $rating }}"
-                                            wire:key="hlt-response-{{ $item['id'] }}-{{ $rating }}"
-                                            @checked(($responses[$item['id']] ?? null) === $rating)
-                                            wire:click="setResponse({{ (int) $item['id'] }}, '{{ $rating }}')"
-                                            @click="setResponse({{ $item['id'] }}, '{{ $rating }}')"
-                                            @disabled($assessmentLocked || $sectionExcluded)
-                                            class="h-4 w-4 border-slate-400 text-slate-700 focus:ring-slate-400"
-                                        >
-                                    </td>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-rating-cell', [
+                                        'itemId' => $item['id'],
+                                        'rating' => $rating,
+                                        'namePrefix' => 'hlt',
+                                        'wireKeyPrefix' => 'hlt',
+                                        'currentResponse' => $responses[$item['id']] ?? null,
+                                        'disabled' => $assessmentLocked || $sectionExcluded,
+                                    ])
                                 @endforeach
                             </tr>
                         @endif
@@ -211,92 +206,3 @@
         </div>
     </div>
 </section>
-
-@script
-<script>
-    const registerPartGAccordionStore = () => {
-        if (Alpine.store('partGAccordion')) {
-            return;
-        }
-
-        Alpine.store('partGAccordion', {
-            openSection: 'hoyer-lift',
-        });
-    };
-
-    const registerHltSummaryComponent = () => Alpine.data('hltSummary', () => ({
-        items: @js($hltJsItems),
-        summary: {
-            totalItems: 0,
-            checkedOfTotal: '',
-            totalPoints: 0,
-            average: '—',
-            overallRating: '—',
-        },
-        init() {
-            this.updateSummary();
-        },
-        syncResponses(responses) {
-            if (!responses || typeof responses !== 'object') {
-                return;
-            }
-            this.items.forEach(item => {
-                item.response = responses[item.id] ?? responses[String(item.id)] ?? null;
-            });
-            this.updateSummary();
-        },
-        setResponse(itemId, rating) {
-            const item = this.items.find(i => i.id == itemId);
-            if (item) {
-                item.response = rating;
-            }
-            this.updateSummary();
-        },
-        updateSummary() {
-            let total = 0, rated = 0, notApplicable = 0, points = 0;
-            this.items.forEach(item => {
-                if (!item.isParent) {
-                    total++;
-                    if (!item.response) {
-                        return;
-                    }
-                    if (item.response === 'N') {
-                        notApplicable++;
-                        return;
-                    }
-                    rated++;
-                    points += this.responseToPoints(item.response);
-                }
-            });
-            this.summary.totalItems = total;
-            this.summary.checkedOfTotal = notApplicable > 0
-                ? `${rated} of ${total} rated (${notApplicable} N/A)`
-                : `${rated} of ${total} rated`;
-            this.summary.totalPoints = points;
-            this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
-            this.summary.overallRating = this.getOverallRating(points, rated);
-        },
-        responseToPoints(val) {
-            return val === 'E' ? 3 : val === 'S' ? 2 : val === 'U' ? 1 : 0;
-        },
-        getOverallRating(points, ratedCount) {
-            if (ratedCount === 0) return '—';
-            const avg = points / ratedCount;
-            if (avg >= 2.5) return 'Excellent';
-            if (avg >= 1.5) return 'Satisfactory';
-            if (avg > 0) return 'Unsatisfactory';
-            return 'Needs Improvement';
-        },
-    }));
-
-    if (window.Alpine) {
-        registerPartGAccordionStore();
-        registerHltSummaryComponent();
-    } else {
-        document.addEventListener('alpine:init', () => {
-            registerPartGAccordionStore();
-            registerHltSummaryComponent();
-        });
-    }
-</script>
-@endscript

@@ -666,11 +666,13 @@
             }
             var tempDiv = document.createElement('span');
             tempDiv.innerHTML = actionLinks;
-            if (tempDiv && actionCell) {
-                Array.from(tempDiv.childNodes).forEach(function(node) {
-                    actionCell.appendChild(node);
-                });
+            if (!actionCell) {
+                console.warn('actionCell is null, cannot append action links. Row:', row, 'Item:', item);
+                return;
             }
+            Array.from(tempDiv.childNodes).forEach(function(node) {
+                actionCell.appendChild(node);
+            });
         }
         bindChecklistLinks();
         refreshPartEOrientationSummaryIfNeeded(row);

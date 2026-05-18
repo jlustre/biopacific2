@@ -94,6 +94,24 @@ class EmployeesController extends Controller
     }
 
     /**
+     * Resolve route {employee} by primary key or employee_num (e.g. EMP022).
+     */
+    protected function resolveEmployee($employee): BPEmployee
+    {
+        if ($employee instanceof BPEmployee) {
+            return $employee->relationLoaded('currentAssignment')
+                ? $employee
+                : $employee->load('currentAssignment');
+        }
+
+        return BPEmployee::query()
+            ->with('currentAssignment')
+            ->whereKey($employee)
+            ->orWhere('employee_num', $employee)
+            ->firstOrFail();
+    }
+
+    /**
      * Handle employee document upload.
      */
     public function uploadDocument(Request $request, $employee_num)
@@ -435,7 +453,9 @@ class EmployeesController extends Controller
      */
     public function updatePersonal(Request $request, $employee_num)
     {
-        $employee = \App\Models\BPEmployee::with('user')->findOrFail($employee_num); // $employee_num is PK id
+        $employee = \App\Models\BPEmployee::with(['user', 'currentAssignment'])->findOrFail($employee_num); // $employee_num is PK id
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
+
         try {
             $validated = $request->validate([
                 'user_id' => 'nullable|string|max:255',
@@ -452,11 +472,12 @@ class EmployeesController extends Controller
                 'citizenship_status_id' => 'nullable|integer|exists:selectoptions,id',
                 'gender' => 'required|in:M,F,O,N',
                 'email' => [
-                    'nullable',
+                    'required',
                     'string',
                     'email',
                     'max:255',
                     \Illuminate\Validation\Rule::unique('users', 'email')->ignore($employee->user_id),
+                    \Illuminate\Validation\Rule::unique('bp_employees', 'email')->ignore($employee->id),
                 ],
             ]);
             $user = Auth::user();
@@ -478,26 +499,30 @@ class EmployeesController extends Controller
             $employee->ethnic_group_id = $validated['ethnic_group_id'] ?? null;
             $employee->military_status_id = $validated['military_status_id'] ?? null;
             $employee->citizenship_status_id = $validated['citizenship_status_id'] ?? null;
+            $email = $validated['email'];
             $dirty = $employee->isDirty();
             $employee->save();
 
-            // Update email in user table if provided
-            if (isset($validated['email']) && $employee->user) {
-                $employee->user->email = $validated['email'];
+            if ($employee->user && $employee->user->email !== $email) {
+                $employee->user->email = $email;
                 $employee->user->save();
+                $dirty = true;
             }
 
             $msg = $dirty ? 'Personal information updated successfully.' : 'No changes were made, but your profile is up to date.';
             return redirect()->route('admin.employees.edit', $employee->id)
-                ->with('success', $msg);
+                ->with('success', $msg)
+                ->with('employeeTab', 'personal');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->route('admin.employees.edit', $employee->id)
                 ->withErrors($e->validator)
-                ->withInput();
+                ->withInput()
+                ->with('employeeTab', 'personal');
         } catch (\Exception $e) {
             return redirect()->route('admin.employees.edit', $employee->id)
                 ->with('error', 'Failed to update personal information: ' . $e->getMessage())
-                ->withInput();
+                ->withInput()
+                ->with('employeeTab', 'personal');
         }
     }
 
@@ -506,6 +531,9 @@ class EmployeesController extends Controller
      */
     public function addPhone(Request $request, $employee)
     {
+        $employeeModel = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
         $validated = $request->validate([
             'phone_type' => 'required|string|max:50',
             'phone_number' => 'required|string|max:50',
@@ -514,8 +542,6 @@ class EmployeesController extends Controller
 
         // Checkbox submits as 'on' if checked, so use has()
         $isPrimary = $request->has('is_primary');
-
-        $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
         if ($isPrimary) {
             \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', 1)
@@ -537,13 +563,14 @@ class EmployeesController extends Controller
      */
     public function updatePhone(Request $request, $employee, $phone)
     {
+        $employeeModel = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
         $validated = $request->validate([
             'phone_type' => 'required|string|max:50',
             'phone_number' => 'required|string|max:50',
             'is_primary' => 'nullable',
         ]);
-
-        $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
         $phoneModel = \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
 
         $isPrimary = $request->has('is_primary');
@@ -565,6 +592,9 @@ class EmployeesController extends Controller
      */
     public function updateAddress(Request $request, $employee)
     {
+        $employeeModel = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
         // If effseq is present, it's an update; otherwise, it's an add
         $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
         $rules = [
@@ -588,7 +618,6 @@ class EmployeesController extends Controller
         // Enforce only one default address per employee
         if ($validated['is_primary'] == '1') {
             // If updating, allow this address to remain primary, but unset all others
-            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
             $query = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', 1);
             if (isset($validated['effseq']) && $validated['effseq'] !== '') {
@@ -601,7 +630,6 @@ class EmployeesController extends Controller
             $query->update(['is_primary' => 0]);
         } else {
             // If trying to set is_primary=0, but there is no other primary, prevent unsetting the last default
-            $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
             $otherPrimary = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', 1);
             if (isset($validated['effseq']) && $validated['effseq'] !== '') {
@@ -618,7 +646,6 @@ class EmployeesController extends Controller
         }
 
         // If effseq is present, update existing address; else, add new with correct effseq
-        $employeeModel = is_object($employee) ? $employee : \App\Models\BPEmployee::find($employee);
         if (isset($validated['effseq']) && $validated['effseq'] !== '') {
             // Update existing address
             $address = \App\Models\BPEmpAddress::where([
@@ -662,10 +689,8 @@ class EmployeesController extends Controller
      */
     public function updateAssignment(Request $request, $employee)
     {
-        $employeeModel = \App\Models\BPEmployee::query()
-            ->whereKey($employee)
-            ->orWhere('employee_num', $employee)
-            ->firstOrFail();
+        $employeeModel = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
         $employeeNum = $employeeModel->employee_num;
 
         // If effseq is present, it's an update; otherwise, it's an add
@@ -1240,7 +1265,6 @@ class EmployeesController extends Controller
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
         $jsonRow = \App\Models\EmployeeCompetencyAssessment::where('employee_num', $employee->employee_num)
             ->where('assessment_period_id', $selectedAssessmentPeriodId)
-            ->where('status', 'draft')
             ->first();
         $rawDraftRow = $jsonRow;
        
@@ -1278,19 +1302,6 @@ class EmployeesController extends Controller
         // --- END: Load draft competency responses for Part G ---
 
         // --- END: Load draft competency responses for Part G ---
-        // Extract LICENSED NURSE COMPETENCY SKILLS summary for current period (must be after $competencyAssessmentHistory is built)
-        $lnSummary = null;
-        if (!empty($competencyAssessmentHistory)) {
-            foreach ($competencyAssessmentHistory as $row) {
-                if ((int)($row['assessment_period_id'] ?? 0) === (int)$selectedAssessmentPeriodId) {
-                    $lnSummary = $row;
-                    break;
-                }
-            }
-        }
-        $lnTotalPoints = $lnSummary['total_score'] ?? null;
-        $lnAverage = $lnSummary['average_score'] ?? null;
-        $lnOverallRating = $lnSummary['overall_rating'] ?? null;
 
         // Load all states for address select dropdown
         $states = State::orderBy('name')->get();
@@ -1479,20 +1490,6 @@ class EmployeesController extends Controller
             ->sortByDesc('assessment_date')
             ->values()
             ->all();
-
-        // Extract LICENSED NURSE COMPETENCY SKILLS summary for current period (must be after $competencyAssessmentHistory is built)
-        $lnSummary = null;
-        if (!empty($competencyAssessmentHistory)) {
-            foreach ($competencyAssessmentHistory as $row) {
-                if ((int)($row['assessment_period_id'] ?? 0) === (int)$selectedAssessmentPeriodId) {
-                    $lnSummary = $row;
-                    break;
-                }
-            }
-        }
-        $lnTotalPoints = $lnSummary['total_score'] ?? null;
-        $lnAverage = $lnSummary['average_score'] ?? null;
-        $lnOverallRating = $lnSummary['overall_rating'] ?? null;
 
         $performanceEntriesByPeriod = $allAssessmentEntries
             ->filter(fn ($entry) => $entry->assessment_type === 'performance')
@@ -1803,10 +1800,6 @@ class EmployeesController extends Controller
             // Add draft competency responses for Part G
             'draftResponses',
             'rawDraftRow',
-            // LN Competency summary for current period
-            'lnTotalPoints',
-            'lnAverage',
-		'lnOverallRating'
         ));
     }
     }

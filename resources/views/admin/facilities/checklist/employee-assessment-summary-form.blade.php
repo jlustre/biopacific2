@@ -1,5 +1,5 @@
 @php
-    $assessmentSummaryMode = $assessmentSummaryMode ?? 'competency';
+    $assessmentSummaryMode = $assessmentSummaryMode ?? 'performance';
     $assessmentWord = $assessmentWord ?? ucfirst($assessmentSummaryMode);
     $assessmentSummaryTitle = $assessmentSummaryTitle ?? ($assessmentWord . ' Evaluation Summary');
     $assessmentSummaryDescription = $assessmentSummaryDescription ?? 'Review the calculated result, add notes, and complete the signatures.';
@@ -18,110 +18,7 @@
         {{ $assessmentLegendText }}
     </div>
 
-    @if($assessmentSummaryMode === 'competency')
-    <div class="flex flex-col gap-2 lg:flex-row lg:items-stretch">
-        <div class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm">
-            <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total Points</div>
-            <input id="partGTotalScore" type="text" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
-        </div>
-        <div class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm">
-            <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Average</div>
-            <input id="partGAverageScore" type="text" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
-        </div>
-        <div id="partGOverallRatingCard" class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm transition-colors">
-            <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Overall Rating</div>
-            <input id="partGOverallRating" type="text" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
-        </div>
-    </div>
-
-    <div id="partGUnsatisfactoryDetailsWrapper" class="mt-2 hidden rounded-md border border-dashed border-slate-400 bg-slate-100 px-2 py-2 transition-opacity">
-        <textarea id="partGUnsatisfactoryDetails" class="min-h-[56px] w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50" placeholder="Describe the further action required..." disabled>{{ $selectedCompetencyAssessment?->further_action_required ?? '' }}</textarea>
-    </div>
-
-    <div class="mt-3 grid gap-3 lg:grid-cols-[1.2fr,0.8fr]">
-        <div class="rounded-md border border-slate-400 bg-white p-3 shadow-sm">
-            <label class="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Comments</label>
-            <textarea id="partGComments" class="min-h-[96px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="Enter comments here...">{{ $selectedCompetencyAssessment?->comments ?? '' }}</textarea>
-        </div>
-
-        @php
-            $partGCurrentSubmission = $selectedCompetencyAssessment ?? null;
-            $partGCurrentSubmissionData = optional($partGCurrentSubmission);
-            $partGCurrentStatus = $partGCurrentSubmissionData->status ?? 'draft';
-            $partGAssignment = $employee->currentAssignment;
-            $partGDefaultEmployeeDisplayName = trim($employee->last_name . ', ' . $employee->first_name . ($employee->middle_name ? ' ' . $employee->middle_name : ''));
-            $partGEmployeeDisplayName = $partGCurrentSubmissionData->employee_name ?: $partGDefaultEmployeeDisplayName;
-            $partGEmployeeTitle = $partGCurrentSubmissionData->employee_title ?: ($partGAssignment?->position?->title ?? '');
-            $partGReviewerDisplayName = $partGCurrentSubmissionData->reviewer_name ?: (!empty($reviewDate)
-                ? ($reviewerName ?? (auth()->user()->name ?? ''))
-                : (auth()->user()->name ?? ($reviewerName ?? '')));
-            $partGReviewerTitle = $partGCurrentSubmissionData->reviewer_title ?: '';
-            $partGReviewDateValue = optional($partGCurrentSubmissionData->review_date)->toDateString() ?: ($reviewDate ?? '');
-            $partGEmployeeDateValue = optional($partGCurrentSubmissionData->employee_signed_at)->toDateString() ?? '';
-
-            if ($partGReviewerTitle === '') {
-                $partGReviewerTitle = $partGAssignment?->reportsToPositionTitle() ?? '';
-            }
-        @endphp
-        <div class="rounded-md border border-slate-400 bg-white p-3 shadow-sm">
-            <div class="grid gap-2.5 lg:grid-cols-3">
-                <div>
-                    <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Reviewer Name/Signature</label>
-                    <input id="partGReviewerName" type="text" value="{{ $partGReviewerDisplayName }}" class="w-full rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                </div>
-                <div>
-                    <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Reviewer Title</label>
-                    <input id="partGReviewerTitle" type="text" value="{{ $partGReviewerTitle }}" class="w-full rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                </div>
-                <div>
-                    <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Review Date</label>
-                    <input id="partGReviewDate" type="date" value="{{ $partGReviewDateValue }}" class="w-full rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                </div>
-                <div class="lg:col-span-1">
-                    <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Employee Name/Signature</label>
-                    <input id="partGEmployeeName" type="text" value="{{ $partGEmployeeDisplayName }}" class="w-full rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                </div>
-                <div class="lg:col-span-1">
-                    <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Employee Title</label>
-                    <input id="partGEmployeeTitle" type="text" value="{{ $partGEmployeeTitle }}" class="w-full rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                </div>
-                <div>
-                    <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-600">Employee Date</label>
-                    <input id="partGEmployeeDate" type="date" value="{{ $partGEmployeeDateValue }}" class="w-full rounded-md border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                </div>
-            </div>
-            <input type="hidden" id="partGWorkflowStatus" value="{{ $partGCurrentStatus }}">
-            <div class="mt-3 flex flex-wrap justify-end gap-2">
-                @if($partGCurrentStatus === 'completed' && $partGCurrentSubmissionData->id)
-                <a href="{{ route('admin.employees.competency-assessment.pdf', $partGCurrentSubmissionData->id) }}" target="_blank" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300">
-                    View Completed PDF
-                </a>
-                @else
-                @php
-                    $partGBlockEvaluatorActions = !empty($evaluatorActionsDisabled) && $partGCurrentStatus !== 'for_employee_signature';
-                @endphp
-                @if(($partGCurrentStatus === 'draft' || !$partGCurrentSubmission) && ! $partGBlockEvaluatorActions)
-                <button type="button" id="partGSaveDraftBtn" class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300">
-                    Save as Draft
-                </button>
-                @endif
-                @if(! $partGBlockEvaluatorActions || $partGCurrentStatus === 'for_employee_signature')
-                <button type="button" id="partGSubmitAssessmentBtn" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300">
-                    @if($partGCurrentStatus === 'for_employee_signature')
-                    Employee Sign Assessment
-                    @elseif($partGCurrentStatus === 'for_reviewer_signature')
-                    Reviewer Sign Assessment
-                    @else
-                    Submit Assessment
-                    @endif
-                </button>
-                @endif
-                @endif
-            </div>
-            <div id="partGSubmitAssessmentMessage" class="mt-2 hidden rounded-md border px-3 py-2 text-sm shadow-sm"></div>
-        </div>
-    </div>
-    @else
+    @if($assessmentSummaryMode === 'performance')
     @php
         $partFSummaryTotal = old('partf_total_score', $selectedPerformanceAssessment?->total_score ?? '');
         $partFSummaryAverage = old('partf_average_score', $selectedPerformanceAssessment?->average_score !== null
@@ -215,6 +112,34 @@
             </div>
             @endif
         </div>
+    </div>
+    @elseif($assessmentSummaryMode === 'competency')
+    @php
+        $partGSummaryTotal = $selectedCompetencyAssessment?->total_score ?? '';
+        $partGSummaryAverage = $selectedCompetencyAssessment?->average_score !== null
+            ? number_format((float) $selectedCompetencyAssessment->average_score, 2, '.', '')
+            : '';
+        $partGSummaryOverall = $selectedCompetencyAssessment?->overall_rating ?? '';
+    @endphp
+    <div
+        @partg-summary-updated.window="window.updatePartGSummaryScores && window.updatePartGSummaryScores($event.detail)"
+    >
+        <div class="mb-3 grid gap-2 md:grid-cols-3 xl:grid-cols-3">
+            <div class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm">
+                <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</div>
+                <input id="partGTotalScore" type="text" value="{{ $partGSummaryTotal !== '' ? $partGSummaryTotal : '' }}" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
+            </div>
+            <div class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm">
+                <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Average</div>
+                <input id="partGAverageScore" type="text" value="{{ $partGSummaryAverage }}" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
+            </div>
+            <div id="partGOverallRatingCard" class="rounded-md border border-slate-400 bg-white px-3 py-2 shadow-sm transition-colors">
+                <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Overall Rating</div>
+                <input id="partGOverallRating" type="text" value="{{ $partGSummaryOverall }}" class="mt-1 w-full border-0 bg-transparent p-0 text-xl font-bold text-slate-900 focus:outline-none focus:ring-0" readonly>
+            </div>
+        </div>
+        <input type="hidden" id="partGOverallRatingValue" value="{{ $partGSummaryOverall }}">
+        <p class="text-[11px] text-slate-700">Scores update automatically as competency ratings are saved. Use each section&rsquo;s <strong>Save as Draft</strong> button to persist comments and signatures.</p>
     </div>
     @endif
 </div>

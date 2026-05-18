@@ -377,3 +377,4 @@
 @include('admin.facilities.checklist.employee-checklist-scripts_ae')
 @include('admin.facilities.checklist.employee-assessment-period-scripts')
 @include('admin.facilities.checklist.employee-checklist-scripts_f')
+@include('admin.facilities.checklist.employee-checklist-scripts_g')

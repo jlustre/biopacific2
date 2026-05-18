@@ -9,7 +9,7 @@
 
 <section class="mb-4 mt-6">
     <div
-        x-data="trachSummary"
+        x-data="partGTrachSummary(@js($trachJsProcedures))"
         @trach-procedure-updated.window="syncReviews($event.detail.reviews)"
     >
         <style>
@@ -98,7 +98,7 @@
                                         </thead>
                                         <tbody>
                                             @foreach($procedureRows as $procedureRow)
-                                                <tr wire:key="trach-procedure-{{ $procedureRow['key'] }}">
+                                                <tr wire:key="trach-procedure-{{ $procedureRow['key'] }}-{{ $procedureReviews[$procedureRow['key']] ?? 'none' }}">
                                                     <td class="border border-slate-500 px-3 py-2">
                                                         {{ $procedureRow['key'] }}. {{ $procedureRow['text'] }}
                                                         @if(!empty($procedureRow['note']))
@@ -112,9 +112,7 @@
                                                                 name="trach-procedure-{{ $procedureRow['key'] }}"
                                                                 value="{{ $procedureRating }}"
                                                                 wire:key="trach-procedure-{{ $procedureRow['key'] }}-{{ $procedureRating }}"
-                                                                @checked(($procedureReviews[$procedureRow['key']] ?? null) === $procedureRating)
-                                                                wire:click="setProcedureReview('{{ $procedureRow['key'] }}', '{{ $procedureRating }}')"
-                                                                @click="setProcedureReview('{{ $procedureRow['key'] }}', '{{ $procedureRating }}')"
+                                                                wire:model.live="procedureReviews.{{ $procedureRow['key'] }}"
                                                                 @disabled($assessmentLocked || $sectionExcluded)
                                                                 class="h-4 w-4 border-slate-400 text-slate-700 focus:ring-slate-400"
                                                                 aria-label="Procedure {{ $procedureRow['key'] }} rating {{ $procedureRating }}"
@@ -260,87 +258,3 @@
         </div>
     </div>
 </section>
-
-@script
-<script>
-    const registerPartGAccordionStore = () => {
-        if (!Alpine.store('partGAccordion')) {
-            Alpine.store('partGAccordion', { openSection: null });
-        }
-
-        if (!Alpine.store('partGAccordion').openSection) {
-            Alpine.store('partGAccordion').openSection = 'tracheostomy';
-        }
-    };
-
-    const registerTrachSummaryComponent = () => Alpine.data('trachSummary', () => ({
-        procedures: @js($trachJsProcedures),
-        summary: {
-            totalItems: 0,
-            checkedOfTotal: '',
-            totalPoints: 0,
-            average: '—',
-            overallRating: '—',
-        },
-        init() {
-            this.updateSummary();
-        },
-        syncReviews(reviews) {
-            if (!reviews || typeof reviews !== 'object') {
-                return;
-            }
-            this.procedures.forEach(row => {
-                row.response = reviews[row.key] ?? reviews[String(row.key)] ?? null;
-            });
-            this.updateSummary();
-        },
-        setProcedureReview(procedureKey, rating) {
-            const row = this.procedures.find(p => String(p.key) === String(procedureKey));
-            if (row) {
-                row.response = rating;
-            }
-            this.updateSummary();
-        },
-        updateSummary() {
-            let total = this.procedures.length;
-            let rated = 0;
-            let points = 0;
-
-            this.procedures.forEach(row => {
-                if (!row.response) {
-                    return;
-                }
-                if (!['E', 'S', 'U'].includes(row.response)) {
-                    return;
-                }
-                rated++;
-                points += row.response === 'E' ? 3 : row.response === 'S' ? 2 : 1;
-            });
-
-            this.summary.totalItems = total;
-            this.summary.checkedOfTotal = `${rated} of ${total} rated`;
-            this.summary.totalPoints = points;
-            this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
-            this.summary.overallRating = this.getOverallRating(points, rated);
-        },
-        getOverallRating(points, ratedCount) {
-            if (ratedCount === 0) return '—';
-            const avg = points / ratedCount;
-            if (avg >= 2.5) return 'Excellent';
-            if (avg >= 1.5) return 'Satisfactory';
-            if (avg > 0) return 'Unsatisfactory';
-            return 'Needs Improvement';
-        },
-    }));
-
-    if (window.Alpine) {
-        registerPartGAccordionStore();
-        registerTrachSummaryComponent();
-    } else {
-        document.addEventListener('alpine:init', () => {
-            registerPartGAccordionStore();
-            registerTrachSummaryComponent();
-        });
-    }
-</script>
-@endscript

@@ -1,19 +1,106 @@
-@php
-    $lnemarJsItems = [];
-    foreach ($emarCompetencyItems as $item) {
-        $lnemarJsItems[] = [
-            'id' => $item['id'],
-            'label' => $item['item'] ?? '',
-            'isParent' => (bool) ($item['isParent'] ?? false),
-            'indentLevel' => $item['indentLevel'] ?? 0,
-            'response' => $responses[$item['id']] ?? null,
-        ];
-    }
-@endphp
 
 <section class="mb-4 mt-6">
+    @php
+        $lnemarJsItems = [];
+        foreach ($items as $item) {
+            $lnemarJsItems[] = [
+                'id' => $item['id'],
+                'label' => $item['item'] ?? '',
+                'isParent' => (bool) ($item['isParent'] ?? false),
+                'indentLevel' => $item['indentLevel'] ?? 0,
+                'response' => $responses[$item['id']] ?? null,
+            ];
+        }
+    @endphp
+
+    <script>
+        const registerPartGAccordionStore = () => {
+            if (!Alpine.store('partGAccordion')) {
+                Alpine.store('partGAccordion', { openSection: null });
+            }
+
+            if (!Alpine.store('partGAccordion').openSection) {
+                Alpine.store('partGAccordion').openSection = 'ln-emar';
+            }
+        };
+
+        window.lnemarSummary = function() {
+            return {
+                items: @js($lnemarJsItems),
+                summary: {
+                    totalItems: 0,
+                    checkedOfTotal: '',
+                    totalPoints: 0,
+                    average: '—',
+                    overallRating: '—',
+                },
+                init() {
+                    this.updateSummary();
+                },
+                syncResponses(responses) {
+                    if (!responses || typeof responses !== 'object') {
+                        return;
+                    }
+                    this.items.forEach(item => {
+                        item.response = responses[item.id] ?? responses[String(item.id)] ?? null;
+                    });
+                    this.updateSummary();
+                },
+                setResponse(itemId, rating) {
+                    const item = this.items.find(i => i.id == itemId);
+                    if (item) {
+                        item.response = rating;
+                    }
+                    this.updateSummary();
+                },
+                updateSummary() {
+                    let total = 0, rated = 0, notApplicable = 0, points = 0;
+                    this.items.forEach(item => {
+                        if (!item.isParent) {
+                            total++;
+                            if (!item.response) {
+                                return;
+                            }
+                            if (item.response === 'N') {
+                                notApplicable++;
+                                return;
+                            }
+                            rated++;
+                            points += this.responseToPoints(item.response);
+                        }
+                    });
+                    this.summary.totalItems = total;
+                    this.summary.checkedOfTotal = notApplicable > 0
+                        ? `${rated} of ${total} rated (${notApplicable} N/A)`
+                        : `${rated} of ${total} rated`;
+                    this.summary.totalPoints = points;
+                    this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
+                    this.summary.overallRating = this.getOverallRating(points, rated);
+                },
+                responseToPoints(val) {
+                    return val === 'E' ? 3 : val === 'S' ? 2 : val === 'U' ? 1 : 0;
+                },
+                getOverallRating(points, ratedCount) {
+                    if (ratedCount === 0) return '—';
+                    const avg = points / ratedCount;
+                    if (avg >= 2.5) return 'Excellent';
+                    if (avg >= 1.5) return 'Satisfactory';
+                    if (avg > 0) return 'Unsatisfactory';
+                    return 'Needs Improvement';
+                },
+            };
+        };
+
+        if (window.Alpine) {
+            registerPartGAccordionStore();
+        } else {
+            document.addEventListener('alpine:init', () => {
+                registerPartGAccordionStore();
+            });
+        }
+    </script>
     <div
-        x-data="lnemarSummary"
+        x-data="lnemarSummary()"
         @lnemar-responses-updated.window="syncResponses($event.detail.responses)"
     >
         <style>
@@ -51,11 +138,12 @@
                         <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">U</td>
                         <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">N</td>
                     </tr>
-                    @foreach($emarCompetencyItems as $index => $item)
+                    @foreach($items as $index => $item)
                         @if($item['isParent'] ?? false)
                             @include('livewire.admin.facilities.checklist.part-g-sections.partials.nested-parent-row', [
                                 'item' => $item,
                                 'wireKey' => 'lnemar-parent-'.$item['id'],
+                                // No showToggle passed, so partial should not render a toggle
                             ])
                         @else
                             <tr wire:key="lnemar-row-{{ $item['id'] }}" class="lnemar-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} lnemar-row-hover">
@@ -212,92 +300,3 @@
     </div>
 
 </section>
-
-@script
-<script>
-    const registerPartGAccordionStore = () => {
-        if (!Alpine.store('partGAccordion')) {
-            Alpine.store('partGAccordion', { openSection: null });
-        }
-
-        if (!Alpine.store('partGAccordion').openSection) {
-            Alpine.store('partGAccordion').openSection = 'ln-emar';
-        }
-    };
-
-    const registerLnemarSummaryComponent = () => Alpine.data('lnemarSummary', () => ({
-        items: @js($lnemarJsItems),
-        summary: {
-            totalItems: 0,
-            checkedOfTotal: '',
-            totalPoints: 0,
-            average: '—',
-            overallRating: '—',
-        },
-        init() {
-            this.updateSummary();
-        },
-        syncResponses(responses) {
-            if (!responses || typeof responses !== 'object') {
-                return;
-            }
-            this.items.forEach(item => {
-                item.response = responses[item.id] ?? responses[String(item.id)] ?? null;
-            });
-            this.updateSummary();
-        },
-        setResponse(itemId, rating) {
-            const item = this.items.find(i => i.id == itemId);
-            if (item) {
-                item.response = rating;
-            }
-            this.updateSummary();
-        },
-        updateSummary() {
-            let total = 0, rated = 0, notApplicable = 0, points = 0;
-            this.items.forEach(item => {
-                if (!item.isParent) {
-                    total++;
-                    if (!item.response) {
-                        return;
-                    }
-                    if (item.response === 'N') {
-                        notApplicable++;
-                        return;
-                    }
-                    rated++;
-                    points += this.responseToPoints(item.response);
-                }
-            });
-            this.summary.totalItems = total;
-            this.summary.checkedOfTotal = notApplicable > 0
-                ? `${rated} of ${total} rated (${notApplicable} N/A)`
-                : `${rated} of ${total} rated`;
-            this.summary.totalPoints = points;
-            this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
-            this.summary.overallRating = this.getOverallRating(points, rated);
-        },
-        responseToPoints(val) {
-            return val === 'E' ? 3 : val === 'S' ? 2 : val === 'U' ? 1 : 0;
-        },
-        getOverallRating(points, ratedCount) {
-            if (ratedCount === 0) return '—';
-            const avg = points / ratedCount;
-            if (avg >= 2.5) return 'Excellent';
-            if (avg >= 1.5) return 'Satisfactory';
-            if (avg > 0) return 'Unsatisfactory';
-            return 'Needs Improvement';
-        },
-    }));
-
-    if (window.Alpine) {
-        registerPartGAccordionStore();
-        registerLnemarSummaryComponent();
-    } else {
-        document.addEventListener('alpine:init', () => {
-            registerPartGAccordionStore();
-            registerLnemarSummaryComponent();
-        });
-    }
-</script>
-@endscript

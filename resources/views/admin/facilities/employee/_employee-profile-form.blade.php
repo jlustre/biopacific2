@@ -113,21 +113,17 @@
         </select>
     </div>
     {{-- Email --}}
-    <div class="mb-1" x-data="{ editingEmail: false }">
+    @php
+        $employeeEmail = '';
+        if (isset($employee)) {
+            $employeeEmail = $employee->user?->email ?? $employee->email ?? '';
+        }
+    @endphp
+    <div class="mb-1">
         <label class="block text-sm font-medium mb-2">Email</label>
-        <div class="flex items-center gap-2">
-            @if($isAddMode)
-                <input type="email" name="email" value="{{ old('email', (isset($employee) && isset($employee->user) && isset($employee->user->email)) ? $employee->user->email : ((isset($employee) && isset($employee->email)) ? $employee->email : '')) }}"
-                    class="form-input w-full rounded-lg px-2 py-1 border border-teal-300 {{ $errors->has('email') ? 'border-red-500' : '' }}" required>
-            @else
-                <input type="email" value="{{ (isset($employee) && isset($employee->user) && isset($employee->user->email)) ? $employee->user->email : '' }}"
-                    class="form-input w-full rounded-lg px-2 py-1 border border-teal-300 bg-gray-100" readonly>
-                @if(isset($employee) && !empty($employee->user_id))
-                    <button type="button" @click="showEmailModal = true"
-                        class="ml-2 px-2 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700 cursor-pointer">Edit</button>
-                @endif
-            @endif
-        </div>
+        <input type="email" name="email" value="{{ old('email', $employeeEmail) }}"
+            class="form-input w-full rounded-lg px-2 py-1 {{ $errors->has('email') ? 'border-red-500' : 'border border-teal-300' }}"
+            required maxlength="255" autocomplete="email">
         @error('email')
         <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
         @enderror

@@ -79,6 +79,11 @@ class TracheostomyCareCompetency extends Component
         $this->loadDraftData();
     }
 
+    public function updatedResponses(): void
+    {
+        $this->persistDraftIfPossible();
+    }
+
     public function toggleEquipmentCheckById(int $itemId): void
     {
         $rawItem = collect($this->renderItems)
@@ -109,17 +114,20 @@ class TracheostomyCareCompetency extends Component
         $this->persistDraftIfPossible();
     }
 
-    public function setProcedureReview(string $procedureKey, string $rating): void
+    public function updatedProcedureReviews(mixed $value = null, ?string $key = null): void
     {
         if ($this->assessmentLocked || $this->sectionExcluded) {
             return;
         }
 
-        if (! in_array($rating, ['E', 'S', 'U'], true)) {
-            return;
+        if ($key !== null && $value !== null && $value !== '') {
+            $normalizedRating = strtoupper(trim((string) $value));
+            if (in_array($normalizedRating, ['E', 'S', 'U'], true)) {
+                $this->procedureReviews[(string) $key] = $normalizedRating;
+            }
         }
 
-        $this->procedureReviews[$procedureKey] = $rating;
+        $this->procedureReviews = $this->normalizeProcedureReviews($this->procedureReviews);
         $this->persistDraftIfPossible();
         $this->dispatch('trach-procedure-updated', reviews: $this->procedureReviews);
     }
@@ -149,15 +157,7 @@ class TracheostomyCareCompetency extends Component
         $this->draftSaveMessage = null;
         $this->draftSaveType = '';
 
-        if ($this->assessmentLocked) {
-            $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be saved.');
-
-            return;
-        }
-
-        if (! $this->assessmentPeriodId) {
-            $this->setDraftSaveFeedback('error', 'Please select an assessment period before saving a draft.');
-
+        if (! $this->guardPartGManualDraftSave()) {
             return;
         }
 
@@ -172,7 +172,10 @@ class TracheostomyCareCompetency extends Component
 
     public function submitAssessment(): void
     {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
+        $this->draftSaveMessage = null;
+        $this->draftSaveType = '';
+
+        if (! $this->guardPartGSectionSubmit()) {
             return;
         }
 
@@ -191,8 +194,13 @@ class TracheostomyCareCompetency extends Component
             }
         }
 
-        $this->persistAssessment('submitted');
-        session()->flash('success', 'Tracheostomy Care Competency assessment saved.');
+        try {
+            $this->persistAssessment('section_submit');
+            $this->setDraftSaveFeedback('success', self::SECTION.' submitted successfully.');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->setDraftSaveFeedback('error', 'Failed to submit this section. Please try again.');
+        }
     }
 
     public function isEquipmentChecked(string $rawItem): bool
@@ -277,29 +285,10 @@ class TracheostomyCareCompetency extends Component
         );
 
         $this->loadSectionExcludedFromAssessment($assessment);
-
-        $this->summaryComments = (string) ($assessment->comments ?? '');
-        $this->employeeComments = (string) ($assessment->employee_comments ?? '');
-        $this->reviewSignDate = $assessment->review_date?->format('Y-m-d') ?? '';
-        $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
+        $this->loadSectionCommentsFromAssessment($assessment);
     }
 
-    protected function setDraftSaveFeedback(string $type, string $message): void
-    {
-        $this->draftSaveType = $type;
-        $this->draftSaveMessage = $message;
-    }
-
-    protected function persistDraftIfPossible(): void
-    {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
-            return;
-        }
-
-        $this->persistAssessment('draft');
-    }
-
-    protected function persistAssessment(string $status): void
+    protected function persistAssessment(string $intent): void
     {
         if ($this->abortPersistIfSelfAssessment()) {
             return;
@@ -315,31 +304,33 @@ class TracheostomyCareCompetency extends Component
         $snapshot['tracheostomy_procedure_reviews'] = $this->normalizeProcedureReviews($this->procedureReviews);
         $snapshot = $this->applySectionExclusionToSnapshot($snapshot);
 
-        $scores = $this->calculateScores();
+        $updateData = [
+            'snapshot_json' => $snapshot,
+            'reviewer_name' => $this->reviewerName,
+            'reviewer_title' => $this->reviewerTitle,
+            'employee_name' => $this->employeeName,
+            'employee_title' => $this->employeeTitle,
+            'submitted_by' => Auth::id(),
+        ];
+
+        $updateData = $this->applySectionScopedFormFields($updateData, $row);
+
+        if ($intent === 'section_submit') {
+            $updateData = $this->withSectionSubmissionSnapshot($updateData, $row);
+        } else {
+            $updateData['status'] = $this->resolveAssessmentStatusForDraft($row);
+            $updateData['submitted_at'] = $row?->submitted_at;
+        }
 
         EmployeeCompetencyAssessment::updateOrCreate(
             [
                 'employee_num' => $this->employeeNum,
                 'assessment_period_id' => $this->assessmentPeriodId,
             ],
-            [
-                'snapshot_json' => $snapshot,
-                'comments' => $this->summaryComments,
-                'employee_comments' => $this->employeeComments,
-                'reviewer_name' => $this->reviewerName,
-                'reviewer_title' => $this->reviewerTitle,
-                'review_date' => $this->reviewSignDate ?: null,
-                'employee_name' => $this->employeeName,
-                'employee_title' => $this->employeeTitle,
-                'employee_signed_at' => filled($this->employeeSignDate) ? $this->employeeSignDate : null,
-                'total_score' => $scores['totalPoints'],
-                'average_score' => $scores['average'],
-                'overall_rating' => $scores['overallRating'],
-                'submitted_by' => Auth::id(),
-                'submitted_at' => $status === 'submitted' ? now() : null,
-                'status' => $status === 'submitted' ? 'submitted' : 'draft',
-            ]
+            $updateData
         );
+
+        $this->dispatchPartGSummaryUpdated();
     }
 
     protected function calculateScores(): array

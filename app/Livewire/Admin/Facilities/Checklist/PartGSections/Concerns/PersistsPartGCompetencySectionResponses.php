@@ -1,0 +1,254 @@
+<?php
+
+namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
+
+use App\Models\EmployeeCompetencyAssessment;
+use Illuminate\Support\Facades\Auth;
+
+trait PersistsPartGCompetencySectionResponses
+{
+    protected function setDraftSaveFeedback(string $type, string $message): void
+    {
+        $this->draftSaveType = $type;
+        $this->draftSaveMessage = $message;
+    }
+
+    protected function guardPartGSectionSubmit(): bool
+    {
+        if ($this->assessmentLocked) {
+            $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be submitted.');
+
+            return false;
+        }
+
+        if (! $this->assessmentPeriodId) {
+            $this->setDraftSaveFeedback('error', 'Please select an assessment period before submitting this section.');
+
+            return false;
+        }
+
+        if ($this->denyEvaluatorAction()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function persistDraftIfPossible(): void
+    {
+        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
+            return;
+        }
+
+        $this->persistResponses('draft');
+    }
+
+    /**
+     * @param  'draft'|'section_submit'  $intent
+     */
+    protected function persistResponses(string $intent): void
+    {
+        if ($this->abortPersistIfSelfAssessment()) {
+            return;
+        }
+
+        $row = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->first();
+
+        $existing = $this->decodeResponses($row?->responses);
+        $payload = $this->mergeSectionRatingsIntoResponses($existing);
+
+        $updateData = [
+            'responses' => $payload,
+            'reviewer_name' => $this->reviewerName,
+            'reviewer_title' => $this->reviewerTitle,
+            'employee_name' => $this->employeeName,
+            'employee_title' => $this->employeeTitle,
+            'submitted_by' => Auth::id(),
+        ];
+
+        $updateData = $this->applySectionScopedFormFields($updateData, $row);
+        $updateData = $this->withExcludedSnapshot($updateData, $row);
+
+        if ($intent === 'section_submit') {
+            $updateData = $this->withSectionSubmissionSnapshot($updateData, $row);
+        } else {
+            $updateData['status'] = $this->resolveAssessmentStatusForDraft($row);
+            $updateData['submitted_at'] = $row?->submitted_at;
+        }
+
+        EmployeeCompetencyAssessment::updateOrCreate(
+            [
+                'employee_num' => $this->employeeNum,
+                'assessment_period_id' => $this->assessmentPeriodId,
+            ],
+            $updateData
+        );
+
+        $this->syncCompetencyItemEntriesFromResponses($payload);
+        $this->dispatchPartGSummaryUpdated();
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $existing
+     * @return array<int|string, mixed>
+     */
+    protected function mergeSectionRatingsIntoResponses(array $existing): array
+    {
+        $payload = $existing;
+
+        foreach ($this->responses as $itemId => $response) {
+            if ($response === null || $response === '') {
+                continue;
+            }
+
+            $payload[(int) $itemId] = ['response' => $response];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $updateData
+     * @return array<string, mixed>
+     */
+    protected function applySectionScopedFormFields(array $updateData, ?EmployeeCompetencyAssessment $row): array
+    {
+        $snapshot = is_array($row?->snapshot_json) ? $row->snapshot_json : [];
+        if (isset($updateData['snapshot_json']) && is_array($updateData['snapshot_json'])) {
+            $snapshot = $updateData['snapshot_json'];
+        }
+
+        $snapshot['section_comments'] ??= [];
+        $snapshot['section_comments'][static::SECTION] = [
+            'reviewer_comments' => $this->summaryComments,
+            'employee_comments' => $this->employeeComments,
+            'review_date' => $this->reviewSignDate ?: null,
+            'employee_signed_at' => filled($this->employeeSignDate) ? $this->employeeSignDate : null,
+        ];
+
+        $updateData['snapshot_json'] = $snapshot;
+
+        return $updateData;
+    }
+
+    /**
+     * @param  array<string, mixed>  $updateData
+     * @return array<string, mixed>
+     */
+    protected function withSectionSubmissionSnapshot(array $updateData, ?EmployeeCompetencyAssessment $row): array
+    {
+        $snapshot = is_array($updateData['snapshot_json'] ?? null)
+            ? $updateData['snapshot_json']
+            : (is_array($row?->snapshot_json) ? $row->snapshot_json : []);
+
+        $scores = $this->calculateScores();
+
+        $snapshot['section_summaries'] ??= [];
+        $snapshot['section_summaries'][static::SECTION] = [
+            'total_score' => $scores['totalPoints'],
+            'average_score' => $scores['average'],
+            'overall_rating' => $scores['overallRating'],
+            'submitted_at' => now()->toDateTimeString(),
+            'review_date' => $this->reviewSignDate ?: null,
+        ];
+
+        $submittedLabels = collect($snapshot['submitted_section_labels'] ?? [])
+            ->map(fn ($label) => trim((string) $label))
+            ->filter(fn ($label) => $label !== '')
+            ->values()
+            ->all();
+
+        if (! in_array(static::SECTION, $submittedLabels, true)) {
+            $submittedLabels[] = static::SECTION;
+        }
+
+        $snapshot['submitted_section_labels'] = array_values(array_unique($submittedLabels));
+        $updateData['snapshot_json'] = $snapshot;
+        $updateData['status'] = $this->resolveAssessmentStatusForDraft($row);
+        $updateData['submitted_at'] = $row?->submitted_at;
+
+        return $updateData;
+    }
+
+    protected function resolveAssessmentStatusForDraft(?EmployeeCompetencyAssessment $row): string
+    {
+        $status = (string) ($row?->status ?? 'draft');
+
+        if (in_array($status, ['completed', 'for_employee_signature', 'for_reviewer_signature'], true)) {
+            return $status;
+        }
+
+        return 'draft';
+    }
+
+    protected function loadSectionCommentsFromAssessment(?EmployeeCompetencyAssessment $assessment): void
+    {
+        if (! $assessment) {
+            return;
+        }
+
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $sectionComments = $snapshot['section_comments'][static::SECTION] ?? null;
+
+        if (is_array($sectionComments)) {
+            $this->summaryComments = (string) ($sectionComments['reviewer_comments'] ?? $this->summaryComments);
+            $this->employeeComments = (string) ($sectionComments['employee_comments'] ?? $this->employeeComments);
+            $this->reviewSignDate = (string) ($sectionComments['review_date'] ?? $this->reviewSignDate);
+            $this->employeeSignDate = (string) ($sectionComments['employee_signed_at'] ?? $this->employeeSignDate);
+
+            return;
+        }
+
+        $this->summaryComments = (string) ($assessment->comments ?? $this->summaryComments);
+        $this->employeeComments = (string) ($assessment->employee_comments ?? $this->employeeComments);
+        $this->reviewSignDate = $assessment->review_date?->format('Y-m-d') ?? $this->reviewSignDate;
+        $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? $this->employeeSignDate;
+    }
+
+    protected function normalizeResponseKeys(): void
+    {
+        $normalized = [];
+
+        foreach ($this->responses as $itemId => $response) {
+            if ($response === null || $response === '') {
+                continue;
+            }
+
+            $normalized[(int) $itemId] = $response;
+        }
+
+        $this->responses = $normalized;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    protected function decodeResponses(mixed $raw): array
+    {
+        return $this->decodeCompetencyResponses($raw);
+    }
+
+    public function sectionIsSubmitted(): bool
+    {
+        if (! $this->assessmentPeriodId) {
+            return false;
+        }
+
+        $assessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->first();
+
+        if (! $assessment) {
+            return false;
+        }
+
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $submittedLabels = $snapshot['submitted_section_labels'] ?? [];
+
+        return in_array(static::SECTION, $submittedLabels, true);
+    }
+}

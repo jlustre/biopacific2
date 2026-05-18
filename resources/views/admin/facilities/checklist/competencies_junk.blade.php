@@ -1,178 +1,92 @@
-{{-- All logic is now in the controller. Only use passed variables. --}}
-<div id="partG" class="tab-content">
-    <div class="overflow-x-auto">
-        {{-- All logic moved to controller. The following variables must be passed: --}}
-
-            @php
-                $draftResponses = $draftResponses ?? [];
-        $partGSections = $employeeCompetencyItems->groupBy('section');
-        $partGPosition = $employee->currentAssignment?->position?->title ?? 'No Position Assigned';
-        
-        $partGLicensedNurseGuidancePositions = [
-            'Director of Nursing',
-            'Registered Nurse',
-            'Licensed Vocational Nurse',
-            'Licensed Nurse',
-            'Charge Nurse',
-            'IP Nurse',
-        ];
-        $partGShowLicensedNurseGuidance = in_array($partGPosition, $partGLicensedNurseGuidancePositions, true);
-        $partGShowCnaSkillsChecklist = $partGSections->has('CNA SKILLS CHECKLIST');
-        $partGShowPerinealCare = $partGSections->has('PERINEAL CARE');
-        $partGShowHoyerLiftTraining = $partGSections->has('USE OF HOYER LIFT TRAINING');
-        $partGShowCnaCompetencyGuidance = ! $partGShowLicensedNurseGuidance
-            && ($partGShowCnaSkillsChecklist || $partGShowPerinealCare || $partGShowHoyerLiftTraining);
-        $partGShowDsdCompetency = $partGSections->keys()
-            ->intersect(collect(\App\Livewire\Admin\Facilities\Checklist\PartGSections\DirectorOfStaffDevelopmentCompetency::dsdSectionKeys()))
-            ->isNotEmpty();
-        $partGSubmissionStatus = $selectedCompetencyAssessment?->status;
-        $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
-        $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
-        $partGDontIncludeSections = [
-            'BLOOD ADMINISTRATION COMPETENCY',
-            'BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY',
-            'TRACHEOSTOMY CARE COMPETENCY',
-            'NURSE TREATMENT SKILLS COMPETENCY',
-            'HAND HYGIENE COMPETENCY SKILLS',
-            'VENTILATOR MANAGEMENT SKILLS COMPETENCY',
-            'PERSONAL PROTECTIVE EQUIPMENT (PPE)',
-            'MEDICATION ADMINISTRATION COMPETENCY',
-            'USE OF HOYER LIFT TRAINING',
-            'CNA SKILLS CHECKLIST',
-            'PERINEAL CARE',
-            'DIRECTOR OF STAFF DEVELOPMENT COMPETENCIES',
-        ];
-        $partGExcludedSectionLabels = collect($selectedCompetencyAssessment?->snapshot_json['excluded_section_labels'] ?? [])
-            ->filter(fn ($sectionLabel) => filled($sectionLabel))
-            ->map(fn ($sectionLabel) => (string) $sectionLabel)
-            ->values()
-            ->all();
-        $partGTracheostomyEquipmentChecks = collect($selectedCompetencyAssessment?->snapshot_json['tracheostomy_equipment_checks'] ?? [])
-            ->map(fn ($itemLabel) => (string) $itemLabel)
-            ->filter(fn ($itemLabel) => filled($itemLabel))
-            ->values()
-            ->all();
-        $partGTracheostomyProcedureReviews = collect($selectedCompetencyAssessment?->snapshot_json['tracheostomy_procedure_reviews'] ?? [])
-            ->mapWithKeys(fn ($rating, $procedureKey) => [(string) $procedureKey => strtoupper((string) $rating)])
-            ->filter(fn ($rating) => in_array($rating, ['E', 'S', 'U'], true))
-            ->all();
-        $hasAssessmentPeriod = !empty($selectedAssessmentPeriodId);
-        $partGHasCompetenciesForPosition = $employeeCompetencyItems->isNotEmpty();
-        $partGHasPositionAssigned = filled($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id);
-
-        @endphp
-        {{-- $partGSections, $partGPosition, $partGLicensedNurseGuidancePositions, $partGShowLicensedNurseGuidance, $partGSubmissionStatus, $partGAssessmentLocked, $partGSubmissionStatusLabel, $partGDontIncludeSections, $partGExcludedSectionLabels, $partGTracheostomyEquipmentChecks, $partGTracheostomyProcedureReviews --}}
-        <div class="mb-4 flex flex-wrap items-center gap-2">
-            <h2 class="text-xl font-bold">COMPETENCIES CHECKLIST: {{ $partGPosition }}</h2>
-            @if($partGSubmissionStatusLabel)
-            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $partGAssessmentLocked ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}">{{ $partGAssessmentLocked ? 'Read Only' : $partGSubmissionStatusLabel }}</span>
-            @endif
-        </div>
-        <div class="mb-4 grid gap-3 xl:grid-cols-2 xl:items-stretch">
-            <div>
-                @include('admin.facilities.checklist.employee-assessment-subject-summary', [
-                    'managerId' => 'partG',
-                ])
-            </div>
-
-            <div>
-                @include('admin.facilities.checklist.employee-assessment-period-manager', [
-                    'managerId' => 'partG',
-                    'contextLabel' => 'Competency Assessment',
-                ])
-            </div>
-        </div>
-
-        @if(!$partGHasPositionAssigned)
-        <p class="mb-4 rounded-md border border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-            Assign a position to this employee to load the competencies checklist.
-        </p>
-        @elseif(!$partGHasCompetenciesForPosition)
-        <p class="mb-4 rounded-md border border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-            No competency checklist items apply to &ldquo;{{ $partGPosition }}&rdquo; for this employee.
-            Competency assessments are configured per position; assign a different position or contact an administrator if this role should have a checklist.
-        </p>
-        @endif
-
-        @if(!$hasAssessmentPeriod)
-        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 shadow-sm" role="alert">
-            <strong>No assessment period selected.</strong> Please create or select an assessment period above to enable
-            competency assessment actions.
-        </div>
-        @elseif($partGHasCompetenciesForPosition)
-        <div class="mb-2 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
-            Rating Legend: E = Excellent (3) &nbsp;&nbsp;&nbsp; S = Satisfactory (2) &nbsp;&nbsp;&nbsp; U = Unsatisfactory (1) &nbsp;&nbsp;&nbsp; N = Not Applicable
-        </div>
-        @if($partGShowLicensedNurseGuidance)
-            <p class="mb-1 text-[11px] leading-relaxed text-slate-700 md:text-xs">
-                These competencies checklists are intended for all licensed nurses. If a section does not apply to the employee&rsquo;s position, check that checkbox <strong>Exclude</strong> so it is not counted in the assessment.
-            </p>
+ <!-- @if($partGSections->has('LICENSED NURSE COMPETENCY SKILLS'))
             @livewire('admin.facilities.checklist.part-g-sections.licensed-nurse-competency-skills', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('licensed-nurse-competency-skills-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('LICENSED NURSE eMAR COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.licensed-nurse-emar-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('licensed-nurse-emar-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('LICENSED NURSE POINT OF CARE COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.licensed-nurse-point-of-care-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('licensed-nurse-point-of-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.matrixcare-physician-order-documentation-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('matrixcare-physician-order-documentation-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('BLOOD ADMINISTRATION COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.blood-administration-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('blood-administration-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.blood-glucose-system-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('blood-glucose-system-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('TRACHEOSTOMY CARE COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.tracheostomy-care-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('tracheostomy-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('NURSE TREATMENT SKILLS COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.nurse-treatment-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('nurse-treatment-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('HAND HYGIENE COMPETENCY SKILLS'))
             @livewire('admin.facilities.checklist.part-g-sections.hand-hygiene-competency-skills', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('hand-hygiene-competency-skills-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('VENTILATOR MANAGEMENT SKILLS COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.ventilator-management-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('ventilator-management-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        <!-- @if($partGSections->has('PERSONAL PROTECTIVE EQUIPMENT (PPE)'))
             @livewire('admin.facilities.checklist.part-g-sections.personal-protective-equipment-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('personal-protective-equipment-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+        @endif -->
 
+        @if($partGSections->has('MEDICATION ADMINISTRATION COMPETENCY'))
             @livewire('admin.facilities.checklist.part-g-sections.medication-administration-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -180,7 +94,8 @@
             ], key('medication-administration-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
 
-        @if($partGShowCnaCompetencyGuidance)
+
+         @if($partGShowCnaCompetencyGuidance)
             <p class="mb-1 text-[11px] leading-relaxed text-slate-700 md:text-xs">
                 Complete the competency checklists below for this assessment period. If a section does not apply, check <strong>Exclude</strong> so it is not counted in the assessment.
             </p>
@@ -220,7 +135,3 @@
                 'assessmentLocked' => $partGAssessmentLocked,
             ], key('director-of-staff-development-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
-        @endif
-
-    </div>
-</div>

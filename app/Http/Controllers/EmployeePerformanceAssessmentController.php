@@ -229,6 +229,46 @@ class EmployeePerformanceAssessmentController extends Controller {
             ]);
         }
 
+        $assessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employeeNum)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->first();
+
+        $responses = $assessment?->responses;
+        if (is_string($responses)) {
+            $responses = json_decode($responses, true);
+        }
+
+        if (is_array($responses)) {
+            foreach ($responses as $itemId => $data) {
+                $sourceItemId = (int) $itemId;
+                if ($sourceItemId <= 0) {
+                    continue;
+                }
+
+                $itemKey = 'G_'.$sourceItemId;
+                if ($entries->has($itemKey)) {
+                    continue;
+                }
+
+                $rating = is_array($data)
+                    ? ($data['response'] ?? null)
+                    : $data;
+
+                if (! is_string($rating) || $rating === '') {
+                    continue;
+                }
+
+                $entries->put($itemKey, (object) [
+                    'item_key' => $itemKey,
+                    'rating' => strtoupper($rating),
+                    'assessment_date' => optional($assessment?->updated_at)->toDateString() ?? now()->toDateString(),
+                    'assessed_by' => $assessment?->submitted_by,
+                    'comments' => null,
+                ]);
+            }
+        }
+
         return $entries;
     }
 
@@ -799,7 +839,8 @@ class EmployeePerformanceAssessmentController extends Controller {
 
     public function saveCompetencyAssessmentDraft(Request $request)
     {
-        $validated = $request->validate([
+        try {
+            $validated = $request->validate([
             'employee_num' => 'required|string',
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'excluded_section_labels' => 'nullable|array',
@@ -822,7 +863,18 @@ class EmployeePerformanceAssessmentController extends Controller {
             'review_date' => 'nullable|date',
             'employee_name' => 'required|string|max:255',
             'employee_title' => 'nullable|string|max:255',
-        ]);
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson() || $request->isJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $e->errors(),
+                    'message' => 'Validation failed.',
+                ], 422);
+            }
+
+            throw $e;
+        }
 
         if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
             return $response;
@@ -840,17 +892,35 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->firstOrFail();
 
         $allCompetencyItems = $this->getCompetencyItems($employee);
-        $excludedSectionLabels = collect($validated['excluded_section_labels'] ?? [])
+        $existingAssessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->where('assessment_period_id', $validated['assessment_period_id'])
+            ->first();
+        $existingSnapshot = is_array($existingAssessment?->snapshot_json) ? $existingAssessment->snapshot_json : [];
+
+        $excludedSectionLabels = collect($validated['excluded_section_labels'] ?? ($existingSnapshot['excluded_section_labels'] ?? []))
             ->filter(fn ($sectionLabel) => filled($sectionLabel))
             ->map(fn ($sectionLabel) => (string) $sectionLabel)
             ->unique()
             ->values()
             ->all();
-        $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks($validated['tracheostomy_equipment_checks'] ?? []);
-        $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews($validated['tracheostomy_procedure_reviews'] ?? []);
-        $handHygieneObservation = $this->normalizeHandHygieneObservation($validated['hand_hygiene_observation'] ?? []);
-        $medicationAdministrationComments = trim((string) ($validated['medication_administration_comments'] ?? ''));
-        $hoyerLiftTrainingComments = trim((string) ($validated['hoyer_lift_training_comments'] ?? ''));
+        $tracheostomyEquipmentChecks = $this->normalizeTracheostomyChecks(
+            $validated['tracheostomy_equipment_checks'] ?? ($existingSnapshot['tracheostomy_equipment_checks'] ?? [])
+        );
+        $tracheostomyProcedureReviews = $this->normalizeTracheostomyProcedureReviews(
+            $validated['tracheostomy_procedure_reviews'] ?? ($existingSnapshot['tracheostomy_procedure_reviews'] ?? [])
+        );
+        $handHygieneObservation = $this->normalizeHandHygieneObservation(
+            $validated['hand_hygiene_observation'] ?? ($existingSnapshot['hand_hygiene_observation'] ?? [])
+        );
+        $medicationAdministrationComments = trim((string) (
+            $validated['medication_administration_comments']
+            ?? ($existingSnapshot['medication_administration_comments'] ?? '')
+        ));
+        $hoyerLiftTrainingComments = trim((string) (
+            $validated['hoyer_lift_training_comments']
+            ?? ($existingSnapshot['hoyer_lift_training_comments'] ?? '')
+        ));
         $excludedItemKeys = $this->getExcludedCompetencyItemKeys($allCompetencyItems, $excludedSectionLabels);
         $assessableItems = $this->getAssessableCompetencyItems($employee, $excludedItemKeys);
         $latestEntries = $this->latestCompetencyEntries(
