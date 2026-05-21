@@ -16,8 +16,15 @@ use Illuminate\Support\Facades\Auth;
         <div class="mt-2">
             <span class="font-semibold text-gray-700 dark:text-gray-200">Role:</span>
             <span class="inline-block bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 px-2 py-1 rounded">
-                {{ Auth::user()->roles->pluck('name')->implode(', ') }}
+                {{ Auth::user()->primaryRoleLabel() }}
             </span>
+            @if(Auth::user()->roles->isNotEmpty())
+            <div class="mt-2 flex flex-wrap gap-1">
+                @foreach(Auth::user()->rolesForDisplay() as $role)
+                <span class="inline-block rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">{{ $role['label'] }}</span>
+                @endforeach
+            </div>
+            @endif
         </div>
     </header>
 

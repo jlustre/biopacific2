@@ -18,8 +18,6 @@ return new class extends Migration {
             $table->string('middle_name', 100)->nullable();
             $table->string('last_name', 100);
             $table->enum('gender', ['M', 'F', 'O', 'N'])->nullable();
-            $table->unsignedBigInteger('assignment_id')->nullable();
-            // $table->foreign('assignment_id')->references('assign_id')->on('bp_emp_assignments')->nullOnDelete(); // Removed to break circular dependency
             $table->timestamps();
             $table->softDeletes();
         });

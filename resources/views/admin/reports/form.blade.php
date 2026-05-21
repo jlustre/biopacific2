@@ -92,7 +92,7 @@
                     'facility-admin' => 'Facility Admin',
                     'facility-editor' => 'Facility Editor',
                     'regular-user' => 'Regular User',
-                    'hrrd' => 'HR Regional Director',
+                    'rdhr' => 'HR Regional Director',
                     'facility-dsd' => 'Facility DSD',
                 ];
                 $allFacilities = \App\Models\Facility::orderBy('name')->get();

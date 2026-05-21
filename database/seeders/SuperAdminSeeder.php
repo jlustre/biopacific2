@@ -19,31 +19,34 @@ class SuperAdminSeeder extends Seeder
         // Clear cache
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create permissions if they don't exist
-        $permissions = [
+        // Create all permissions if they don't exist
+        $allPermissions = [
             'view facilities',
             'create facilities',
             'edit facilities',
             'delete facilities',
             'manage users',
             'manage roles',
-            'manage permissions'
+            'manage permissions',
+            'use import mapping presets',
+            'create import mapping presets',
+            // Add more permissions here as needed
         ];
 
-        foreach ($permissions as $permission) {
+        foreach ($allPermissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // Create or get the admin role
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        // Create or get the SuperAdmin role
+        $superAdminRole = Role::firstOrCreate(['name' => 'super-admin']);
 
-        // Assign all permissions to admin role
-        $adminRole->syncPermissions($permissions);
+        // Assign ALL permissions to SuperAdmin role
+        $superAdminRole->syncPermissions(Permission::all());
 
-        $adminEmail = 'admin@biopacific.com';
+        $superAdminEmail = 'super-admin@biopacific.com';
 
-        $user = User::firstOrCreate(
-            ['email' => $adminEmail],
+        $superAdminUser = User::firstOrCreate(
+            ['email' => $superAdminEmail],
             [
                 'name' => 'Joey Lustre',
                 'email_verified_at' => now(),
@@ -52,20 +55,20 @@ class SuperAdminSeeder extends Seeder
             ]
         );
 
-        if ($user->wasRecentlyCreated) {
+        if ($superAdminUser->wasRecentlyCreated) {
             $this->command->info('Super admin user created successfully.');
         } else {
             $this->command->info('User already exists, updating role...');
         }
 
         // Update existing user's facility if not set
-        if (!$user->facility_id) {
-            $user->update(['facility_id' => 99]);
+        if (!$superAdminUser->facility_id) {
+            $superAdminUser->update(['facility_id' => 99]);
             $this->command->info('Updated user facility assignment.');
         }
 
-        // Force assign the admin role to the user
-        $user->syncRoles(['admin']);
-        $this->command->info('Admin role synced to user.');
+        // Assign the SuperAdmin role to the user (ensures all permissions)
+        $superAdminUser->syncRoles(['super-admin']);
+        $this->command->info('SuperAdmin role synced to user.');
     }
 }

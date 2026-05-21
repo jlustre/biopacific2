@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class BPEmpEmployeesTableSeeder extends Seeder
 {
@@ -31,7 +30,6 @@ class BPEmpEmployeesTableSeeder extends Seeder
                 'last_name' => $lastName,
                 'email' => $faker->unique()->safeEmail(),
                 'gender' => $faker->randomElement(['M', 'F', 'O', 'N']),
-                'assignment_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -41,8 +39,6 @@ class BPEmpEmployeesTableSeeder extends Seeder
         }
 
         $this->seedFacilityEmployees($faker);
-
-        $this->syncAssignmentIdsFromAssignments();
     }
 
     private function seedFacilityEmployees(\Faker\Generator $faker): void
@@ -85,7 +81,6 @@ class BPEmpEmployeesTableSeeder extends Seeder
                     'last_name' => $lastName,
                     'email' => $faker->unique()->safeEmail(),
                     'gender' => $faker->randomElement(['M', 'F', 'O', 'N']),
-                    'assignment_id' => null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -105,7 +100,7 @@ class BPEmpEmployeesTableSeeder extends Seeder
                 'effseq' => 0,
                 'facility_id' => $facilityId,
                 'dept_id' => $deptId,
-                'job_code_id' => $jobCodeId,
+                'position_id' => $jobCodeId,
                 'reports_to' => $supervisor?->id,
                 'reg_temp' => 'r',
                 'full_part_time' => $i % 3 === 0 ? 'pt' : 'ft',
@@ -123,36 +118,13 @@ class BPEmpEmployeesTableSeeder extends Seeder
         }
 
         if ($newAssignments !== []) {
-            DB::table('bp_emp_assignments')->insert($newAssignments);
-        }
-    }
-
-    private function syncAssignmentIdsFromAssignments(): void
-    {
-        $assignments = DB::table('bp_emp_assignments')
-            ->select('employee_num', 'assign_id', 'reports_to')
-            ->orderBy('employee_num')
-            ->orderByDesc('effdt')
-            ->orderByDesc('effseq')
-            ->get()
-            ->groupBy('employee_num');
-
-        $employeeUpdate = ['assignment_id' => null];
-        $syncReportsTo = Schema::hasColumn('bp_employees', 'reports_to');
-
-        foreach ($assignments as $employeeNum => $assignmentGroup) {
-            $latestAssignment = $assignmentGroup->first();
-            $employeeUpdate['assignment_id'] = $latestAssignment->assign_id;
-            if ($syncReportsTo) {
-                $employeeUpdate['reports_to'] = $latestAssignment->reports_to;
-            }
-            DB::table('bp_employees')->where('employee_num', $employeeNum)->update($employeeUpdate);
+            DB::table('bp_emp_job_data')->insert($newAssignments);
         }
     }
 
     private function assignmentExists(string $employeeNum): bool
     {
-        return DB::table('bp_emp_assignments')
+        return DB::table('bp_emp_job_data')
             ->where('employee_num', $employeeNum)
             ->where('effdt', '2022-01-01')
             ->where('effseq', 0)

@@ -73,12 +73,12 @@ return new class extends Migration
                 ->pluck('id', 'legacy_position_id')
                 ->all();
 
-            if (Schema::hasTable('bp_emp_assignments')) {
-                DB::table('bp_emp_assignments')->orderBy('assign_id')->get(['assign_id', 'job_code_id', 'reports_to'])->each(function ($assignment) use ($idMap) {
+            if (Schema::hasTable('bp_emp_job_data')) {
+                DB::table('bp_emp_job_data')->orderBy('assign_id')->get(['assign_id', 'job_code_id', 'reports_to'])->each(function ($assignment) use ($idMap) {
                     $jobCodeId = $idMap[$assignment->job_code_id] ?? $assignment->job_code_id;
                     $reportsTo = $idMap[$assignment->reports_to] ?? $assignment->reports_to;
 
-                    DB::table('bp_emp_assignments')
+                    DB::table('bp_emp_job_data')
                         ->where('assign_id', $assignment->assign_id)
                         ->update([
                             'job_code_id' => $jobCodeId,

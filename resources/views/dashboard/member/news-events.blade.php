@@ -7,7 +7,7 @@
     <p class="text-4xl">📰</p>
     <p class="mt-3 text-lg font-semibold text-slate-900">No news or events right now</p>
     <p class="mt-1 text-sm text-slate-500">Check back later for company and facility updates.</p>
-    <a href="{{ route('dashboard.index') }}" class="mt-6 inline-block rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700">Return to dashboard</a>
+    <a href="{{ route('dashboard.index') }}" class="mt-6 inline-block rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-700">Return to dashboard</a>
   </div>
   @else
   <p class="mb-4 text-sm text-slate-600">{{ $newsItems->count() }} {{ $newsItems->count() === 1 ? 'item' : 'items' }} published</p>
@@ -20,7 +20,7 @@
             @if($item->is_global)
             <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-800">Company-wide</span>
             @else
-            <span class="rounded-full bg-brand-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-brand-800">Facility</span>
+            <span class="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-teal-800">Facility</span>
             @endif
             @if($item->published_at)
             <span class="text-xs text-slate-500">{{ $item->published_at->format('M j, Y') }}</span>

@@ -1,11 +1,21 @@
 @php
     $active = $active ?? 'dashboard';
     $profileComplete = $profileComplete ?? 88;
-    $navItems = config('member-portal.sidebar_nav', []);
+    $portalNav = $portalNav ?? 'employee';
+    $navItems = match ($portalNav) {
+        'admin' => config('member-portal.admin_sidebar_nav', []),
+        'facility' => config('member-portal.sidebar_nav', []),
+        default => config('member-portal.sidebar_nav', []),
+    };
+    $portalSubtitle = $portalSubtitle ?? match ($portalNav) {
+        'admin' => 'Admin Portal',
+        'facility' => 'Facility Management',
+        default => 'HR Employee Portal',
+    };
 @endphp
 
 <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-    class="member-portal-sidebar fixed inset-y-0 left-0 z-40 w-80 transform bg-gradient-to-b from-teal-950 to-teal-900 text-white transition-transform duration-300 lg:static lg:translate-x-0 lg:w-72">
+    class="member-portal-sidebar fixed inset-y-0 left-0 z-40 w-80 transform bg-teal-800 text-white transition-transform duration-300 lg:static lg:translate-x-0 lg:w-72">
   <div class="flex h-full flex-col">
     <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
       <div class="flex items-center gap-3">
@@ -14,7 +24,7 @@
         </div>
         <div>
           <p class="text-lg font-bold leading-tight">Bio-Pacific</p>
-          <p class="text-xs text-teal-100">HR Employee Portal</p>
+          <p class="text-xs text-teal-100">{{ $portalSubtitle }}</p>
         </div>
       </div>
       <button type="button" class="rounded-lg p-2 text-teal-100 hover:bg-white/10 lg:hidden"
@@ -28,8 +38,9 @@
             if (!empty($item['fragment'])) {
                 $href .= '#' . ltrim($item['fragment'], '#');
             }
+            $routePatterns = $item['route_is'] ?? null;
             $isActive = $active === $item['id']
-                || (!empty($item['route_is']) && request()->routeIs($item['route_is']));
+                || ($routePatterns && request()->routeIs($routePatterns));
             $linkClass = $isActive
                 ? 'member-portal-nav-active bg-brand-600 font-semibold shadow-lg shadow-brand-900/20 text-white'
                 : 'text-teal-100';
@@ -46,7 +57,18 @@
         </a>
       @endforeach
 
-      @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active])
+      @if(($portalNav ?? '') === 'admin' && auth()->user() && \App\Support\MemberPortalLayout::userIsSystemAdmin(auth()->user()))
+        @include('dashboard.member.partials.portal-sidebar-admin-management-groups', ['active' => $active])
+      @endif
+
+      @if(in_array($portalNav, ['admin', 'facility'], true))
+        @include('dashboard.member.partials.portal-sidebar-management-groups', [
+            'active' => $active,
+            'sectionLabel' => $portalNav === 'admin' ? 'HR & Operations' : 'Facility management',
+        ])
+      @endif
+
+      @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active, 'portalNav' => $portalNav])
     </nav>
 
     <div class="border-t border-white/10 p-4">
@@ -59,7 +81,7 @@
         <p class="mt-2 text-xs text-teal-100">{{ $profileComplete }}% complete</p>
       </div>
       @else
-      <div class="member-portal-help-card rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-4">
+      <div class="member-portal-help-card rounded-2xl bg-teal-600 p-4">
         <p class="font-semibold">Need help?</p>
         <p class="mt-1 text-xs text-brand-50">Contact HR or submit a support ticket.</p>
         <a href="#support" class="member-portal-nav-link mt-3 block w-full rounded-xl bg-white px-3 py-2 text-center text-sm font-bold text-brand-700">Open Support</a>

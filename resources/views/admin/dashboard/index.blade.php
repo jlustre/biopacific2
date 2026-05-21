@@ -1,88 +1,84 @@
-
 @extends('layouts.dashboard', ['title' => 'Admin Dashboard'])
 
 @section('content')
-<div class="flex flex-col gap-8 w-full max-w-7xl mx-auto py-8">
-    <!-- Modern Dashboard Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Welcome back, {{ auth()->user()->name ?? 'Admin' }}!</h1>
-            <p class="text-gray-500 dark:text-gray-400">Here's an overview of your administration panel.</p>
-        </div>
-        <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-sm font-medium">
-                <flux:icon name="calendar" class="w-4 h-4 mr-1" /> {{ now()->format('F j, Y') }}
-            </span>
-        </div>
-    </div>
+@php
+    $adminName = auth()->user()->name ?? 'Admin';
+    $activeCount = $facilities->where('is_active', true)->count();
+    $todayLabel = now()->format('l, F j, Y');
+@endphp
 
-    <!-- Interactive Stats -->
-    <div class="px-4">
-        @include('admin.dashboard.partials.stats')
-    </div>
-
-    <!-- Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
-        <!-- Facilities Overview -->
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow border border-blue-200 dark:border-gray-700 p-6 flex flex-col justify-between">
-            <div>
-                <div class="flex items-center gap-2 mb-2">
-                    <flux:icon name="building-office-2" class="h-7 w-7 text-blue-600 dark:text-blue-400" />
-                    <span class="text-lg font-semibold text-blue-900 dark:text-blue-200">Facilities</span>
-                </div>
-                <p class="text-4xl font-bold text-gray-900 dark:text-white mb-1">{{ $facilities->count() }}</p>
-                <p class="text-gray-600 dark:text-gray-400">Total registered facilities</p>
-            </div>
-            <div class="mt-4">
-                <a href="{{ route('admin.facilities.index') }}" class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-medium">
-                    Manage Facilities <flux:icon name="arrow-right" class="w-4 h-4 ml-2" />
-                </a>
-            </div>
-        </div>
-        <!-- Active Facilities -->
-        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow border border-green-200 dark:border-gray-700 p-6 flex flex-col justify-between">
-            <div>
-                <div class="flex items-center gap-2 mb-2">
-                    <flux:icon name="check-circle" class="h-7 w-7 text-green-600 dark:text-green-400" />
-                    <span class="text-lg font-semibold text-green-900 dark:text-green-200">Active</span>
-                </div>
-                <p class="text-4xl font-bold text-gray-900 dark:text-white mb-1">{{ $facilities->where('is_active', true)->count() }}</p>
-                <p class="text-gray-600 dark:text-gray-400">Currently active facilities</p>
-            </div>
-            <div class="mt-4">
-                <a href="{{ route('admin.facilities.index', ['status' => 'active']) }}" class="inline-flex items-center px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition font-medium">
-                    View Active <flux:icon name="arrow-right" class="w-4 h-4 ml-2" />
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="px-4">
-        @include('admin.dashboard.partials.quick_actions')
-    </div>
-
-        <!-- Recent Activity / Audit Log -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 p-6 mt-6 mx-4">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
-            <a href="#" class="text-blue-600 hover:underline text-sm">View all</a>
-        </div>
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
-            @forelse($recentActivities ?? [] as $activity)
-                @if(is_object($activity) && isset($activity->description, $activity->created_at))
-                <div class="py-3 flex items-center gap-3">
-                    <flux:icon name="clock" class="w-5 h-5 text-gray-400" />
-                    <div class="flex-1">
-                        <div class="text-gray-900 dark:text-white font-medium">{{ $activity->description }}</div>
-                        <div class="text-xs text-gray-500">{{ $activity->created_at->diffForHumans() }}</div>
-                    </div>
-                </div>
-                @endif
-            @empty
-                <div class="py-8 text-center text-gray-400">No recent activity to display.</div>
-            @endforelse
-        </div>
-    </div>
+<div class="mb-6">
+@include('dashboard.member.partials.portal-page-hero', [
+    'badge' => 'System Administration · ' . $todayLabel,
+    'title' => 'Welcome back, ' . $adminName,
+    'subtitle' => 'Overview of facilities, users, and recent system activity.',
+])
 </div>
+
+@include('admin.dashboard.partials.stats')
+
+<div class="mt-6 grid gap-6 md:grid-cols-2">
+    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-teal-800">
+                    <i class="fa-solid fa-building"></i> Facilities
+                </div>
+                <p class="mt-3 text-4xl font-black text-slate-950">{{ $facilities->count() }}</p>
+                <p class="mt-1 text-sm text-slate-500">Total registered facilities</p>
+            </div>
+            <span class="rounded-2xl bg-teal-50 p-3 text-2xl text-teal-700"><i class="fa-solid fa-building"></i></span>
+        </div>
+        <a href="{{ route('admin.facilities.index') }}" class="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-700">
+            Manage Facilities <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
+    </section>
+
+    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-800">
+                    <i class="fa-solid fa-circle-check"></i> Active
+                </div>
+                <p class="mt-3 text-4xl font-black text-slate-950">{{ $activeCount }}</p>
+                <p class="mt-1 text-sm text-slate-500">Currently active facilities</p>
+            </div>
+            <span class="rounded-2xl bg-emerald-50 p-3 text-2xl text-emerald-700"><i class="fa-solid fa-circle-check"></i></span>
+        </div>
+        <a href="{{ route('admin.facilities.index', ['status' => 'active']) }}" class="mt-5 inline-flex items-center gap-2 rounded-2xl border border-teal-200 px-4 py-2.5 text-sm font-bold text-teal-700 hover:bg-teal-50">
+            View Active <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
+    </section>
+</div>
+
+<div class="mt-6">
+    @include('admin.dashboard.partials.quick_actions')
+</div>
+
+<section class="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card">
+    <div class="flex items-center justify-between border-b border-slate-200 bg-teal-50 px-6 py-4">
+        <h2 class="text-lg font-bold text-slate-950">Recent Activity</h2>
+        <a href="#" class="text-sm font-semibold text-teal-700 hover:text-teal-800">View all</a>
+    </div>
+    <div class="divide-y divide-slate-100 px-6">
+        @forelse($recentActivities ?? [] as $activity)
+            @if(is_object($activity) && isset($activity->description, $activity->created_at))
+            <div class="flex items-center gap-3 py-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                    <i class="fa-regular fa-clock"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-slate-950">{{ $activity->description }}</p>
+                    <p class="text-xs text-slate-500">{{ $activity->created_at->diffForHumans() }}</p>
+                </div>
+            </div>
+            @endif
+        @empty
+            <div class="py-12 text-center text-slate-400">
+                <i class="fa-regular fa-clock mb-2 text-3xl"></i>
+                <p>No recent activity to display.</p>
+            </div>
+        @endforelse
+    </div>
+</section>
 @endsection

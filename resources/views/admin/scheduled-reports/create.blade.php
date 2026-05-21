@@ -106,7 +106,7 @@
                             <option value="facility-admin">Facility Admin</option>
                             <option value="facility-dsd">Facility DSD</option>
                             <option value="facility-editor">Facility Editor</option>
-                            <option value="hrrd">HRRD</option>
+                            <option value="rdhr">RDHR</option>
                             <option value="regular-user">Regular User</option>
                         </select>
                         <span class="text-xs text-gray-500">Users with these roles will be notified by email.</span>

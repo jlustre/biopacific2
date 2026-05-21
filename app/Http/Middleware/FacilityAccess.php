@@ -16,7 +16,7 @@ class FacilityAccess
         if (!$user) {
             return redirect()->route('login');
         }
-        if ($user->hasRole(['admin', 'hrrd'])) {
+        if ($user->hasRole(['admin', 'rdhr'])) {
             return $next($request);
         }
         $facilityId = $request->route('facility');

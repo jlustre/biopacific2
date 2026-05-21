@@ -34,7 +34,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
     <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-center">Employees</h1>
 
     
-    @if($selectedFacility && !(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd'))))
+    @if($selectedFacility && !(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('rdhr'))))
         <div class="mb-4 text-center">
             <span class="inline-block px-4 py-1 bg-teal-100 text-teal-800 rounded font-semibold">
                 Facility: {{ $selectedFacility->name }}
@@ -56,7 +56,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                         @endforeach
                     </select>
                 </div>
-                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
+                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('rdhr')))
                 <div class="w-full sm:w-auto px-0 sm:px-0">
                     <label for="facility" class="block text-sm font-medium">Facility</label>
                     <select name="facility" id="facility"

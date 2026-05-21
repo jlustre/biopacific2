@@ -1,7 +1,7 @@
 @extends('layouts.member-portal')
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8" x-data="{ 
+<section class="px-4 py-6 sm:px-6 lg:px-8" x-data="{ 
     activeItem: localStorage.getItem('pre_employment_active_item') || @if(session('success') || $errors->any()) 'application_form' @else null @endif 
 }" x-init="$watch('activeItem', value => { 
     if (value) localStorage.setItem('pre_employment_active_item', value); 
@@ -57,18 +57,11 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
         </div>
     </div>
     @else
-    <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-xl shadow-lg p-8">
-        <div class="flex items-start justify-between">
-            <div>
-                <h1 class="text-3xl font-bold mb-2">Welcome to Your Pre-Employment Portal</h1>
-                <p class="text-teal-100 text-lg">Complete the steps below to finish your onboarding process</p>
-            </div>
-            <div class="bg-white/20 rounded-lg px-4 py-2">
-                <div class="text-xs text-teal-100 uppercase font-semibold">Status</div>
-                <div class="text-xl font-bold">In Progress</div>
-            </div>
-        </div>
-    </div>
+    @include('dashboard.member.partials.portal-page-hero', [
+        'badge' => 'Pre-Employment · In Progress',
+        'title' => 'Welcome to Your Pre-Employment Portal',
+        'subtitle' => 'Complete the steps below to finish your onboarding process.',
+    ])
     @endif
 
     <!-- Progress Stats -->
@@ -77,8 +70,8 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
     $draftCount = $checklistItems->where('status', 'draft')->count();
     $returnedCount = $checklistItems->where('status', 'returned')->count();
     @endphp
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-card">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-bold text-gray-900">Completed</h3>
                 <span class="text-2xl font-bold text-green-600">{{ $completedCount }}/{{ $checklistItems->count()
@@ -94,7 +87,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+        <div class="rounded-3xl border border-sky-200 bg-sky-50 p-5 shadow-card">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-bold text-gray-900">Submitted</h3>
                 <span class="text-2xl font-bold text-blue-600">{{ $inProgressCount }}</span>
@@ -102,7 +95,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
             <p class="text-sm text-gray-600">Items awaiting review</p>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-300">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-bold text-gray-900">Draft / Returned</h3>
                 <span class="text-2xl font-bold text-gray-600">{{ $draftCount }}<span class="mx-1">/</span>{{
@@ -112,10 +105,10 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Left Column: Accordion Checklist -->
-        <aside class="bg-white rounded-xl shadow-md p-6 lg:col-span-1">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">Pre-Employment Checklist</h2>
+        <aside class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card lg:col-span-1">
+            <h2 class="mb-4 text-xl font-bold text-slate-950">Pre-Employment Checklist</h2>
             @php
             $statusLabels = [
             'draft' => 'Draft',
@@ -177,7 +170,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
             @endphp
             <div x-show="activeItem === '{{ $item->item_key }}'" x-transition:enter="transition ease-out duration-200"
                 x-transition:enter-start="opacity-0 transform scale-95"
-                x-transition:enter-end="opacity-100 transform scale-100" class="bg-white rounded-xl shadow-md p-8">
+                x-transition:enter-end="opacity-100 transform scale-100" class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card sm:p-8">
 
                 <!-- Form Header -->
                 <div class="border-b border-gray-200 pb-4 mb-6">
@@ -521,5 +514,5 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
             </div>
         </section>
     </div>
-</div>
+</section>
 @endsection

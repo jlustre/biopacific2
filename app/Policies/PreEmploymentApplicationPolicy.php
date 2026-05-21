@@ -13,7 +13,7 @@ class PreEmploymentApplicationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+        return $user->hasRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
     }
 
     /**
@@ -21,7 +21,7 @@ class PreEmploymentApplicationPolicy
      */
     public function view(User $user, PreEmploymentApplication $preEmploymentApplication): bool
     {
-        return $user->hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+        return $user->hasRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
     }
 
     /**
@@ -69,7 +69,7 @@ class PreEmploymentApplicationPolicy
      */
     public function hireApplicant(User $user, PreEmploymentApplication $preEmploymentApplication): bool
     {
-        return $user->hasRole(['admin', 'hrrd', 'facility-admin']);
+        return $user->hasRole(['admin', 'rdhr', 'facility-admin']);
     }
 
     /**
@@ -77,6 +77,6 @@ class PreEmploymentApplicationPolicy
      */
     public function rejectApplicant(User $user, PreEmploymentApplication $preEmploymentApplication): bool
     {
-        return $user->hasRole(['admin', 'hrrd', 'facility-admin']);
+        return $user->hasRole(['admin', 'rdhr', 'facility-admin']);
     }
 }

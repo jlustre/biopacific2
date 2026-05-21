@@ -13,12 +13,12 @@ return new class extends Migration {
                 $table->renameColumn('employee_num', 'employee_num');
             }
         });
-        // bp_emp_assignments
-        Schema::table('bp_emp_assignments', function (Blueprint $table) {
-            if (Schema::hasColumn('bp_emp_assignments', 'employee_num')) {
+        // bp_emp_job_data
+        Schema::table('bp_emp_job_data', function (Blueprint $table) {
+            if (Schema::hasColumn('bp_emp_job_data', 'employee_num')) {
                 $table->renameColumn('employee_num', 'employee_num');
             }
-            if (Schema::hasColumn('bp_emp_assignments', 'reports_to_employee_num')) {
+            if (Schema::hasColumn('bp_emp_job_data', 'reports_to_employee_num')) {
                 $table->renameColumn('reports_to_employee_num', 'reports_to_employee_num');
             }
         });
@@ -42,11 +42,11 @@ return new class extends Migration {
                 $table->renameColumn('employee_num', 'employee_num');
             }
         });
-        Schema::table('bp_emp_assignments', function (Blueprint $table) {
-            if (Schema::hasColumn('bp_emp_assignments', 'employee_num')) {
+        Schema::table('bp_emp_job_data', function (Blueprint $table) {
+            if (Schema::hasColumn('bp_emp_job_data', 'employee_num')) {
                 $table->renameColumn('employee_num', 'employee_num');
             }
-            if (Schema::hasColumn('bp_emp_assignments', 'reports_to_employee_num')) {
+            if (Schema::hasColumn('bp_emp_job_data', 'reports_to_employee_num')) {
                 $table->renameColumn('reports_to_employee_num', 'reports_to_employee_num');
             }
         });

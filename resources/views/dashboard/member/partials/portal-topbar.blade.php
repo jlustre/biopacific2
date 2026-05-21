@@ -85,6 +85,10 @@
         </button>
         <div x-show="profileOpen" x-transition @click.outside="profileOpen = false"
           class="absolute right-0 mt-3 w-56 rounded-3xl border border-slate-200 bg-white p-3 shadow-soft z-50">
+          <div class="mb-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span class="font-bold text-slate-800">Role</span>
+            <p class="mt-0.5 font-semibold text-slate-900">{{ $primaryRoleLabel ?? 'User' }}</p>
+          </div>
           <a href="{{ route('settings.profile') }}" class="block rounded-xl px-3 py-2 text-sm hover:bg-slate-100">My Profile</a>
           <a href="{{ route('settings.password') }}" class="block rounded-xl px-3 py-2 text-sm hover:bg-slate-100">Settings</a>
           <a href="#" class="block rounded-xl px-3 py-2 text-sm hover:bg-slate-100">Switch Facility</a>

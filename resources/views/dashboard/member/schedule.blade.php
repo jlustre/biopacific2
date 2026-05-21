@@ -30,7 +30,7 @@
                 <p class="mt-1 text-xs text-slate-500">{{ $facilityName }} · {{ $positionTitle ?? '—' }}</p>
                 @endif
             </div>
-            <div class="rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-5 shadow-card">
+            <div class="rounded-3xl border border-teal-200 bg-teal-50 p-5 shadow-card">
                 <p class="text-sm font-medium text-brand-700">HR & compliance events</p>
                 <p class="mt-2 text-3xl font-black text-brand-900">{{ count($calendarEvents) }}</p>
                 <p class="mt-1 text-xs text-brand-600">Assessment periods, expirations, milestones</p>
@@ -38,7 +38,7 @@
         </div>
 
         <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card">
-            <div class="border-b border-slate-200 bg-gradient-to-r from-brand-50 via-white to-white p-6">
+            <div class="border-b border-slate-200 bg-teal-50 p-6">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div class="inline-flex items-center gap-2 rounded-full bg-brand-100/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-800">

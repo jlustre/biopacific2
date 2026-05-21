@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\Auth;
 $user = Auth::user();
 
 $isAdmin = $isAdmin ?? ($user && $user->hasRole('admin'));
-$isHrrd = $user && $user->hasRole('hrrd');
+$isRdhr = $user && $user->hasRole('rdhr');
 $isFacilityAdmin = $user && ($user->hasRole('facility-admin') || $user->hasRole('facility-dsd'));
-$facilities = $facilities ?? ( ($isAdmin || $isHrrd) ? \App\Models\Facility::all() : ($user && $user->facility ?
+$facilities = $facilities ?? ( ($isAdmin || $isRdhr) ? \App\Models\Facility::all() : ($user && $user->facility ?
 collect([$user->facility]) : collect()));
-$facilityId = $facilityId ?? ( ($isAdmin || $isHrrd) ? request('facility_id') : ($user && $user->facility ?
+$facilityId = $facilityId ?? ( ($isAdmin || $isRdhr) ? request('facility_id') : ($user && $user->facility ?
 $user->facility->id : null));
 @endphp
 <div class="container py-4">
     <h1 class="text-2xl font-bold mb-4">Gallery</h1>
-    @if($isAdmin || $isHrrd)
+    @if($isAdmin || $isRdhr)
     <form method="GET" action="" class="mb-4">
         <label for="facility-select" class="block font-semibold mb-1">Select Facility</label>
         <select id="facility-select" name="facility_id" class="form-select w-full"

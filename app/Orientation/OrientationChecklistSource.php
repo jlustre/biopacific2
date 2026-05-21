@@ -27,7 +27,7 @@ final class OrientationChecklistSource
 
     /**
      * Orientation checklist items for the employee's current position.
-     * {@see BPEmpAssignment::$job_code_id} references {@see Position::$id} (column name is historical).
+     * {@see BPEmpJobData::$job_code_id} references {@see Position::$id} (column name is historical).
      *
      * Excludes CNA-style skills rows (doc_type_id = 5) used elsewhere under PART E.
      *

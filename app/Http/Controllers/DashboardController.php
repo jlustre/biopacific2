@@ -36,21 +36,27 @@ class DashboardController extends Controller
         };
 
         // Admin dashboard main view
-        if ($routeName === 'admin.dashboard.index' && $hasRole('admin')) {
+        if ($routeName === 'admin.dashboard.index' && $hasRole(['admin', 'super-admin'])) {
             $facilities = \App\Models\Facility::all();
             $facilitiesByState = $facilities->groupBy('state');
             $recentActivities = [];
-            return view('admin.dashboard.index', compact('facilities', 'facilitiesByState', 'recentActivities'));
+            $context = $this->memberPortalContext($user);
+
+            return view('admin.dashboard.index', array_merge($context, compact(
+                'facilities',
+                'facilitiesByState',
+                'recentActivities'
+            )));
         }
 
-        // HR Portal dashboard for hrrd, facility-admin, facility-dsd
-        if ($routeName === 'admin.dashboard.index' && $hasRole(['hrrd', 'facility-admin', 'facility-dsd'])) {
+        // HR Portal dashboard for rdhr, facility-admin, facility-dsd
+        if ($routeName === 'admin.dashboard.index' && $hasRole(['rdhr', 'facility-admin', 'facility-dsd'])) {
             return view('dashboard.hr-portal-dashboard');
         }
 
         // Member / employee dashboard (static UI — refactor with live data later)
         if (in_array($routeName, ['user.dashboard', 'dashboard.index'], true)) {
-            if (!$hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd', 'facility-editor'])) {
+            if (!$hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'facility-editor'])) {
                 return $this->memberDashboard($user);
             }
         }
@@ -177,7 +183,21 @@ class DashboardController extends Controller
             'portalEyebrow' => 'Employee Record',
             'portalPageTitle' => 'Personal Profile',
             'showPortalSearch' => false,
-            'showPortalNotifications' => false,
+            'showPortalNotifications' => true,
+        ]));
+    }
+
+    public function memberPassword(Request $request)
+    {
+        $context = $this->memberPortalContext($request->user());
+
+        return view('dashboard.member.password', array_merge($context, [
+            'portalActive' => 'profile',
+            'portalTitle' => 'Bio Pacific HR Portal | Change Password',
+            'portalEyebrow' => 'Account Security',
+            'portalPageTitle' => 'Change Password',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
         ]));
     }
 
@@ -189,7 +209,7 @@ class DashboardController extends Controller
         $currentUser = Auth::user();
         
         // Check if current user has permission to view employee/applicant information
-        if (!$currentUser->hasRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd'])) {
+        if (!$currentUser->hasRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd'])) {
             abort(403, 'Unauthorized to view user dashboards.');
         }
 

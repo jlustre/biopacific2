@@ -2,11 +2,9 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Livewire\Settings\Password;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
@@ -19,16 +17,14 @@ class PasswordUpdateTest extends TestCase
             'password' => Hash::make('password'),
         ]);
 
-        $this->actingAs($user);
+        $response = $this->actingAs($user)->put(route('settings.password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
 
-        $response = Livewire::test(Password::class)
-            ->set('current_password', 'password')
-            ->set('password', 'new-password')
-            ->set('password_confirmation', 'new-password')
-            ->call('updatePassword');
-
-        $response->assertHasNoErrors();
-
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
     }
 
@@ -38,14 +34,14 @@ class PasswordUpdateTest extends TestCase
             'password' => Hash::make('password'),
         ]);
 
-        $this->actingAs($user);
+        $response = $this->actingAs($user)->from(route('settings.password'))
+            ->put(route('settings.password.update'), [
+                'current_password' => 'wrong-password',
+                'password' => 'new-password',
+                'password_confirmation' => 'new-password',
+            ]);
 
-        $response = Livewire::test(Password::class)
-            ->set('current_password', 'wrong-password')
-            ->set('password', 'new-password')
-            ->set('password_confirmation', 'new-password')
-            ->call('updatePassword');
-
-        $response->assertHasErrors(['current_password']);
+        $response->assertSessionHasErrorsIn('updatePassword', 'current_password');
+        $response->assertRedirect(route('settings.password'));
     }
 }

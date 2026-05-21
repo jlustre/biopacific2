@@ -22,7 +22,7 @@
             </div>
             @php
                 $user = Auth::user();
-                $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('hrrd'));
+                $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('rdhr'));
                 $userFacility = $user && $user->facility ? $user->facility : null;
             @endphp
             @if($canChooseFacility)
@@ -97,7 +97,7 @@
             @php
             $query = App\Models\Upload::with(['facility','user','uploadType','employee']);
             $user = Auth::user();
-            $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('hrrd'));
+            $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('rdhr'));
             $userFacility = $user && $user->facility ? $user->facility : null;
             if($canChooseFacility) {
                 if(request('facility_id')) $query->where('facility_id', request('facility_id'));

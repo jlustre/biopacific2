@@ -50,8 +50,8 @@ class AuthenticatedSessionController extends Controller
             // Otherwise, go to user dashboard
             return redirect()->route('admin.dashboard.index');
         }
-        // All other users always go to /dashboard, never to any /admin route
-        return redirect()->route('admin.dashboard.index');
+        // All other users go to the employee dashboard
+        return redirect()->route('dashboard.index');
     }
 
     /**

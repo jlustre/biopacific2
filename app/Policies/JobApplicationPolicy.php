@@ -13,7 +13,7 @@ class JobApplicationPolicy
             return true;
         }
 
-        if ($user->hasRole(['hrrd', 'facility-admin', 'facility-dsd', 'facility-editor'])) {
+        if ($user->hasRole(['rdhr', 'facility-admin', 'facility-dsd', 'facility-editor'])) {
             $facilityId = $jobApplication->jobOpening?->facility_id;
 
             if ($facilityId && $user->facility_id && (int) $user->facility_id === (int) $facilityId) {

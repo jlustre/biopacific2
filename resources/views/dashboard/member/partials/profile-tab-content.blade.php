@@ -29,6 +29,19 @@
         <p class="mt-2 text-lg font-black text-slate-950">Employee + HR</p>
         <p class="mt-1 text-sm text-slate-500">Sensitive fields require HR approval.</p>
       </div>
+      <div class="rounded-3xl bg-teal-50/60 p-5 sm:col-span-2">
+        <p class="text-xs font-bold uppercase tracking-wide text-teal-700">Account Role</p>
+        <p class="mt-2 text-lg font-black text-slate-950">{{ $primaryRoleLabel }}</p>
+        @if(!empty($userRoles))
+        <div class="mt-3 flex flex-wrap gap-2">
+          @foreach($userRoles as $role)
+          <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-teal-800 ring-1 ring-teal-200" title="Role key: {{ $role['name'] }}">{{ $role['label'] }}</span>
+          @endforeach
+        </div>
+        @else
+        <p class="mt-1 text-sm text-slate-500">No role assigned. Contact an administrator if you need access.</p>
+        @endif
+      </div>
     </div>
   </div>
 </section>
@@ -50,6 +63,17 @@
         <input name="name" :disabled="!editMode" value="{{ old('name', $user->name) }}" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-500/20 disabled:text-slate-500" />
         @error('name')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
       </label>
+      <div class="rounded-2xl bg-slate-50 p-4 sm:col-span-2">
+        <p class="text-xs font-bold uppercase text-slate-500">Account Role</p>
+        <p class="mt-1 font-semibold text-slate-900">{{ $primaryRoleLabel }}</p>
+        @if(!empty($userRoles))
+        <div class="mt-2 flex flex-wrap gap-2">
+          @foreach($userRoles as $role)
+          <span class="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-800">{{ $role['label'] }}</span>
+          @endforeach
+        </div>
+        @endif
+      </div>
       <label class="block sm:col-span-2">
         <span class="text-sm font-bold text-slate-700">Email</span>
         <input name="email" type="email" :disabled="!editMode" value="{{ old('email', $user->email) }}" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-teal-400 focus:ring-4 focus:ring-teal-500/20 disabled:text-slate-500" />
@@ -109,6 +133,22 @@
 <section x-show="activeTab==='security'" x-transition class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
   <h3 class="text-lg font-black text-slate-950">Security Settings</h3>
   <p class="text-sm text-slate-500">Account protection and sensitive record access.</p>
+  <div class="mt-6 rounded-2xl border border-teal-100 bg-teal-50/50 p-4">
+    <p class="text-xs font-bold uppercase text-teal-700">Your role</p>
+    <p class="mt-1 font-black text-slate-950">{{ $primaryRoleLabel }}</p>
+    @if(!empty($userRoles))
+    <p class="mt-2 text-sm text-slate-600">Assigned roles determine which areas of the portal you can access.</p>
+    <ul class="mt-3 space-y-1 text-sm text-slate-700">
+      @foreach($userRoles as $role)
+      <li class="flex items-center gap-2">
+        <span class="h-1.5 w-1.5 rounded-full bg-teal-500"></span>
+        <span class="font-semibold">{{ $role['label'] }}</span>
+        <span class="text-xs text-slate-400">({{ $role['name'] }})</span>
+      </li>
+      @endforeach
+    </ul>
+    @endif
+  </div>
   <div class="mt-6 space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-teal-50/60 p-4">
       <div>

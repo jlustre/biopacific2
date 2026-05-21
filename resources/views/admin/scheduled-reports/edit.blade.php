@@ -91,7 +91,7 @@
                             <option value="facility-admin" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('facility-admin')) ? 'selected' : '' }}>Facility Admin</option>
                             <option value="facility-dsd" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('facility-dsd')) ? 'selected' : '' }}>Facility DSD</option>
                             <option value="facility-editor" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('facility-editor')) ? 'selected' : '' }}>Facility Editor</option>
-                            <option value="hrrd" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('hrrd')) ? 'selected' : '' }}>HRRD</option>
+                            <option value="rdhr" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('rdhr')) ? 'selected' : '' }}>RDHR</option>
                             <option value="regular-user" {{ (collect(old('notify_roles', $scheduledReport->notify_roles))->contains('regular-user')) ? 'selected' : '' }}>Regular User</option>
                         </select>
                         <span class="text-xs text-gray-500">Users with these roles will be notified by email.</span>

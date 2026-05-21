@@ -42,7 +42,7 @@ class QuickActionsController extends Controller
     {
         $user = Auth::user();
         // ...existing code...
-        if ($user->hasRole('admin') || $user->hasRole('hrrd')) {
+        if ($user->hasRole('admin') || $user->hasRole('rdhr')) {
             // ...existing code...
             return true;
         }
@@ -342,7 +342,7 @@ class QuickActionsController extends Controller
         $this->authorizeFacilityAccess($facility);
         $user = auth()->user();
         $isAdmin = $user->hasRole('admin');
-        $isHrrd = $user->hasRole('hrrd');
+        $isRdhr = $user->hasRole('rdhr');
         $roles = $user->getRoleNames()->toArray();
         $userFacilityIds = collect();
         if (method_exists($user, 'facilities')) {
@@ -356,7 +356,7 @@ class QuickActionsController extends Controller
             $reports = \App\Models\Report::where('is_active', true)->get();
         } else {
             $reports = \App\Models\Report::where('is_active', true)
-                ->where(function($q) use ($roles, $userFacilityIds, $isHrrd, $facility) {
+                ->where(function($q) use ($roles, $userFacilityIds, $isRdhr, $facility) {
                     $q->where('visibility', 'all');
                     $q->orWhere(function($q2) use ($roles) {
                         $q2->where('visibility', 'roles')
@@ -366,13 +366,13 @@ class QuickActionsController extends Controller
                         $q2->where('visibility', 'facilities')
                             ->whereJsonContains('visible_facilities', $facility->id);
                     });
-                    if ($isHrrd) {
-                        $q->orWhere('visibility', 'admin'); // HRRD can see admin reports
+                    if ($isRdhr) {
+                        $q->orWhere('visibility', 'admin'); // RDHR can see admin reports
                     }
                 })
                 ->get();
         }
-        $canScheduleReports = $user->hasAnyRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+        $canScheduleReports = $user->hasAnyRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
 
         return view('admin.facilities.reports', [
             'facility' => $facility,

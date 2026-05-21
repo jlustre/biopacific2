@@ -1,7 +1,6 @@
 <?php
 use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use App\Livewire\Settings\Appearance;
-use App\Livewire\Settings\Password;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacilityAdminController;
@@ -10,7 +9,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminPermissionController;
-use App\Http\Controllers\BaaRegistryController;
+use App\Http\Controllers\Admin\BaaRegistryController;
 use App\Http\Controllers\AdminRoleAssignmentController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\NewsController;
@@ -87,14 +86,14 @@ Route::get('/admin/employees/{employee}/documents/{upload}', function ($employee
 Route::get('/admin/employees/{employee}/documents/{upload}/view', [\App\Http\Controllers\Admin\EmployeesController::class, 'viewDocument'])->name('admin.employees.documents.view');
 
 // Facility session selection route
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor'])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
 
 // Employee Document Delete Route
 Route::delete('/admin/employees/{employee}/documents/{upload}', [\App\Http\Controllers\Admin\EmployeesController::class, 'deleteDocument'])->name('admin.employees.documents.delete');
 
 
 // Admin Reports Management (CRUD)
-Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('index');
     Route::get('/create', [\App\Http\Controllers\Admin\ReportController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\Admin\ReportController::class, 'store'])->name('store');
@@ -113,7 +112,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/reports')->name('admin.
 Route::post('/admin/reports/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('admin.reports.validate-sql');
 
 // Scheduled Report Runs Management (Admin)
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'index'])->name('index');
     Route::get('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'show'])->name('show');
     Route::get('/{run}/report', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'showReport'])->name('show-report');
@@ -124,14 +123,16 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->pref
 // Route::post('/admin/reports/request', [\App\Http\Controllers\Admin\ReportController::class, 'requestReport'])->name('admin.reports.request');
 
 // HR Portal Reports page for allowed users
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd'])->group(function () {
     Route::get('/admin/hr-portal/reports', [\App\Http\Controllers\Admin\HrPortalReportsController::class, 'index'])->name('admin.hr-portal.reports');
 });
 
 // Import Mapping Presets
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->prefix('admin/facility/files')->group(function () {
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|facility-editor'])->prefix('admin/facility/files')->group(function () {
     Route::get('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'index']);
     Route::post('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'store']);
+    Route::post('mapping-presets/{id}/duplicate', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'duplicate']);
+    Route::put('mapping-presets/{id}/details', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'updateDetails']);
     Route::put('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'update']);
     Route::delete('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'destroy']);
 });
@@ -178,7 +179,7 @@ Route::delete('/admin/employees/performance-assessment/period/{id}', [App\Http\C
 
 // PART F: Section Comments (AJAX endpoints)
 
-Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])
+Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -205,7 +206,7 @@ Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\C
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 // Scheduled Reports Management (CRUD)
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
     Route::post('/templates', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'storeTemplate'])->name('templates.store');
     Route::delete('/templates/{scheduledReportTemplate}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'destroyTemplate'])->name('templates.destroy');
         Route::get('/{scheduledReport}/history', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'history'])->name('history');
@@ -221,18 +222,18 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->pref
 
 Route::middleware(['auth'])->group(function () {
     // Admin: access to all dashboards and HR portal
-        Route::middleware('role:admin|hrrd|facility-admin|facility-dsd')->group(function () {
+        Route::middleware('role:admin|super-admin|rdhr|facility-admin|facility-dsd')->group(function () {
             Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
             Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
             Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
         });
-        // Add explicit route for hrrd, facility-admin, facility-dsd
-        Route::middleware('role:hrrd|facility-admin|facility-dsd')->group(function () {
+        // Add explicit route for rdhr, facility-admin, facility-dsd
+        Route::middleware('role:rdhr|facility-admin|facility-dsd')->group(function () {
             Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
         });
-    // HRRD, facility-admin, facility-dsd: HR portal and user dashboard
-    Route::middleware('role:admin|hrrd|facility-admin|facility-dsd')->group(function () {
+    // RDHR, facility-admin, facility-dsd: HR portal and user dashboard
+    Route::middleware('role:admin|super-admin|rdhr|facility-admin|facility-dsd')->group(function () {
         Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
         Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
@@ -243,7 +244,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 // Facility-specific admin dashboard
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])->group(function () {
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|facility-editor'])->group(function () {
     Route::get('/admin/facility/{facility}/dashboard', [\App\Http\Controllers\Admin\FacilityDashboardController::class, 'show'])->name('admin.facility.dashboard');
 
     // Facility Quick Actions
@@ -308,7 +309,7 @@ Route::get('/test-urls', function () {
 });
 
 // Services Management CRUD (Web Contents)
-Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('services', ServicesController::class)->except(['show']);
 });
 
@@ -319,8 +320,8 @@ Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'ind
 
 
 // Admin Routes (auth + admin role)
-Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->name('admin.')->group(function () {
-    // HR Portal Route removed from admin group; now only in HRRD-specific group above
+Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-admin|facility-dsd|rdhr'])->name('admin.')->group(function () {
+    // HR Portal Route removed from admin group; now only in RDHR-specific group above
     // Blog management (admin only, under web contents)
     Route::resource('blogs', BlogController::class)->names('blogs');
     // Admin dashboard route for compatibility with legacy references
@@ -459,13 +460,33 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     // Departments Management CRUD
     Route::resource('departments', \App\Http\Controllers\Admin\DepartmentController::class)->names('departments');
 
+    // Import mapping presets (system admin)
+    Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::post('import-mapping-presets/sync-seeder', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'syncSeeder'])
+            ->name('import-mapping-presets.sync-seeder');
+        Route::post('import-mapping-presets/parse-workbook', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'parseWorkbook'])
+            ->name('import-mapping-presets.parse-workbook');
+        Route::post('import-mapping-presets/{import_mapping_preset}/duplicate', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'duplicate'])
+            ->name('import-mapping-presets.duplicate');
+        Route::post('import-mapping-presets/{import_mapping_preset}/run-import', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'runImport'])
+            ->name('import-mapping-presets.run-import');
+        Route::resource('import-mapping-presets', \App\Http\Controllers\Admin\ImportMappingPresetAdminController::class)
+            ->names('import-mapping-presets');
+
+        Route::post('import-logs/{import_log}/revert', [\App\Http\Controllers\Admin\ImportLogAdminController::class, 'revert'])
+            ->name('import-logs.revert');
+        Route::resource('import-logs', \App\Http\Controllers\Admin\ImportLogAdminController::class)
+            ->only(['index', 'show'])
+            ->names('import-logs');
+    });
+
     // Email Recipients Management CRUD
     Route::resource('email-recipients', \App\Http\Controllers\Admin\EmailRecipientController::class)->names('email-recipients');
 
     // Employee Email Mappings Management
     Route::get('/communications/employee-email-mappings', function () {
         return view('admin.employee-email-mappings');
-    })->middleware(['auth', 'role:admin|facility-admin|hrrd|facility-dsd'])->name('communications.employee-email-mappings');
+    })->middleware(['auth', 'role:admin|facility-admin|rdhr|facility-dsd'])->name('communications.employee-email-mappings');
 
     
     // Gallery image management
@@ -478,7 +499,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
 
     // Admin Facility Testimonials Management
-    Route::prefix('facilities')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->group(function () {
+    Route::prefix('facilities')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])->group(function () {
         Route::get('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'index'])->name('admin.facilities.testimonials.index');
         Route::get('/{facility}/testimonials/create', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'create'])->name('admin.facilities.testimonials.create');
         Route::post('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'store'])->name('admin.facilities.testimonials.store');
@@ -490,8 +511,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::resource('inquiries', InquiryController::class)->only(['index', 'show', 'destroy']);
     Route::resource('job-applications', AdminJobApplicationController::class)->only(['index', 'show', 'destroy'])->names('job-applications');
 
-    // Ensure hrrd, facility-admin, facility-dsd, and admin roles have access to index route
-    Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])->group(function () {
+    // Ensure rdhr, facility-admin, facility-dsd, and admin roles have access to index route
+    Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])->group(function () {
        Route::get('/admin/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'index'])->name('job-openings.index');
     });
     Route::patch('/job-applications/{jobApplication}/status', [AdminJobApplicationController::class, 'updateStatus'])->name('job-applications.update-status');
@@ -502,7 +523,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
     Route::get('/users/{user}/dashboard', [DashboardController::class, 'showUserDashboard'])->name('users.dashboard');
 
     // API endpoint for fetching a single testimonial (for edit modal)
-    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])->name('admin.facilities.testimonials.show');
+    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])->name('admin.facilities.testimonials.show');
 
     // Security Monitoring Routes
     Route::prefix('security')->name('security.')->group(function () {
@@ -522,8 +543,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-
 
 });
 
-// Email Templates Management (admin + facility-admin + facility-dsd + hrrd)
-Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|hrrd'])
+// Email Templates Management (admin + facility-admin + facility-dsd + rdhr)
+Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])
     ->name('admin.')
     ->group(function () {
         Route::resource('email-templates', \App\Http\Controllers\Admin\EmailTemplateController::class)->names('email-templates');
@@ -544,7 +565,7 @@ Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor
     });
 
 // Careers CRUD and applications routes
-Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin|facility-admin|hrrd|facility-dsd'])->group(function () {
+Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin|facility-admin|rdhr|facility-dsd'])->group(function () {
     Route::get('careers/templates', [CareersController::class, 'templates'])->name('admin.facilities.webcontents.careers.templates');
     Route::get('careers', [CareersController::class, 'indexAll'])->name('admin.facilities.webcontents.careers');
     Route::get('careers/{facility}', [CareersController::class, 'index'])->name('admin.facilities.webcontents.careers.show');
@@ -569,7 +590,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
     Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');
     Route::patch('settings/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('settings.profile.update');
-    Route::get('settings/password', Password::class)->name('settings.password');
+    Route::get('settings/password', [DashboardController::class, 'memberPassword'])->name('settings.password');
+    Route::put('settings/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('settings.password.update');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
 });
 
@@ -617,7 +639,7 @@ Route::post('/livewire/update', [HandleRequests::class, 'handleUpdate'])
     ->middleware(['web'])
     ->name('default.livewire.update');
 Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdate'])
-    ->middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd'])
+    ->middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])
     ->where('any', '.*')
     ->name('livewire.update.admin');
 
@@ -648,7 +670,7 @@ Route::post('/secure/tour-request/{token}/verify-staff', [App\Http\Controllers\S
 Route::post('/secure/tour-request/{token}/log-access', [App\Http\Controllers\SecureTourRequestController::class, 'logAccess'])
     ->name('secure.tour-request.log-access');
     
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin'])->group(function () {
     Route::get('/admin/secure-inquiries', [App\Http\Controllers\SecureInquiryController::class, 'adminIndex'])
         ->name('admin.secure-inquiries.index');
     Route::post('/admin/secure-inquiries/{inquiry}/regenerate-token', [App\Http\Controllers\SecureInquiryController::class, 'regenerateToken'])
@@ -712,7 +734,7 @@ Route::get('/home', function() {
 Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {
     $facility = \App\Models\Facility::where('slug', $facilitySlug)->firstOrFail();
     $user = \Illuminate\Support\Facades\Auth::user();
-    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('hrrd') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
+    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('rdhr') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
         // Optionally check if user is assigned to this facility
         return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug]);
     }
@@ -738,11 +760,11 @@ Route::post('/my-pre-employment/checklist/{employeeChecklist}', [\App\Http\Contr
     ->name('pre-employment.checklist.update');
 
 Route::post('/my-pre-employment/checklist/{employeeChecklist}/return', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'returnForEdit'])
-    ->middleware(['auth', 'role:admin|facility-admin|hrrd'])
+    ->middleware(['auth', 'role:admin|facility-admin|rdhr'])
     ->name('pre-employment.checklist.return');
 
 Route::post('/my-pre-employment/checklist/{employeeChecklist}/approve', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'approve'])
-    ->middleware(['auth', 'role:admin|facility-admin|hrrd'])
+    ->middleware(['auth', 'role:admin|facility-admin|rdhr'])
     ->name('pre-employment.checklist.approve');
 
 // Employee Application Form
@@ -750,8 +772,8 @@ Route::post('/my-pre-employment/employee-application', [EmployeeApplicationContr
     ->middleware(['auth'])
     ->name('employee-application.store');
 
-// Hiring Actions (Admin/HRRD only)
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin'])->prefix('admin')->name('admin.')->group(function () {
+// Hiring Actions (Admin/RDHR only)
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::post('/pre-employment/{preEmployment}/hire', [HireApplicantController::class, 'hire'])
         ->name('pre-employment.hire');
     Route::post('/pre-employment/{preEmployment}/reject', [HireApplicantController::class, 'reject'])
@@ -762,7 +784,7 @@ Route::middleware(['auth', 'role:admin|hrrd|facility-admin'])->prefix('admin')->
 Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
     $facility = \App\Models\Facility::where('slug', $facilitySlug)->firstOrFail();
     $user = \Illuminate\Support\Facades\Auth::user();
-    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('hrrd') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
+    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('rdhr') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
         // You may want to check if the user is assigned to this facility
         // Example: if ($user->facility_id == $facility->id) { ... }
         return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug]);
@@ -798,7 +820,7 @@ Route::get('/admin/facilities/all', function () {
 });
 
 // Employee Documents Upload/Download
-Route::middleware(['auth', 'role:admin|hrrd|facility-admin|facility-dsd|facility-editor'])
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|facility-editor'])
     ->prefix('admin/employees')
     ->name('admin.employees.')
     ->group(function () {

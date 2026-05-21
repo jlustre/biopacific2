@@ -1,51 +1,41 @@
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <flux:icon name="building-office-2" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-500">Total Facilities</p>
+                <p class="mt-2 text-2xl font-black text-slate-950">{{ $facilities->count() }}</p>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Facilities</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $facilities->count() }}</p>
-            </div>
+            <span class="rounded-2xl bg-teal-50 p-3 text-teal-700"><i class="fa-solid fa-building"></i></span>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                <flux:icon name="check-circle" class="h-6 w-6 text-green-600 dark:text-green-400" />
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-500">Active Facilities</p>
+                <p class="mt-2 text-2xl font-black text-slate-950">{{ $facilities->where('is_active', true)->count() }}</p>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Facilities</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $facilities->where('is_active',
-                    true)->count() }}</p>
-            </div>
+            <span class="rounded-2xl bg-emerald-50 p-3 text-emerald-700"><i class="fa-solid fa-circle-check"></i></span>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                <flux:icon name="map-pin" class="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-500">States Covered</p>
+                <p class="mt-2 text-2xl font-black text-slate-950">{{ $facilitiesByState->count() }}</p>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">States Covered</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $facilitiesByState->count() }}</p>
-            </div>
+            <span class="rounded-2xl bg-amber-50 p-3 text-amber-700"><i class="fa-solid fa-map-pin"></i></span>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <flux:icon name="globe-alt" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-500">Unique Domains</p>
+                <p class="mt-2 text-2xl font-black text-slate-950">{{ $facilities->pluck('domain')->unique()->filter()->count() }}</p>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Domains</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{
-                    $facilities->pluck('domain')->unique()->count() }}</p>
-            </div>
+            <span class="rounded-2xl bg-sky-50 p-3 text-sky-700"><i class="fa-solid fa-globe"></i></span>
         </div>
     </div>
 </div>

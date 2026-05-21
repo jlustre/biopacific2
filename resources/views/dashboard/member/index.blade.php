@@ -1,4 +1,4 @@
-﻿@extends('layouts.member-portal')
+@extends('layouts.member-portal')
 
 @php
     $newsEventsCount = $newsEventsCount ?? 0;
@@ -11,20 +11,22 @@
 <section class="px-4 py-6 sm:px-6 lg:px-8">
         <!-- Hero / Overview -->
         <div class="grid gap-6 xl:grid-cols-12">
-          <div class="overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900 p-6 text-white shadow-soft xl:col-span-8">
-            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div class="relative overflow-hidden rounded-[2rem] bg-teal-700 text-white shadow-soft xl:col-span-8">
+            <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-600/40" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-teal-800/50" aria-hidden="true"></div>
+            <div class="relative z-10 flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
               <div>
                 <div class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold ring-1 ring-white/20">Today • {{ $todayLabel }}</div>
                 <h2 class="mt-5 max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">Your next shift starts at 7:00 AM</h2>
-                <p class="mt-3 max-w-2xl text-brand-50">Assigned to Skilled Nursing Wing A. Please review the updated fall prevention policy before clocking in.</p>
+                <p class="mt-3 max-w-2xl text-teal-50">Assigned to Skilled Nursing Wing A. Please review the updated fall prevention policy before clocking in.</p>
                 <div class="mt-6 flex flex-wrap gap-3">
-                  <button type="button" class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-brand-800 shadow-lg hover:bg-brand-50">Clock In</button>
+                  <button type="button" class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-teal-800 shadow-lg hover:bg-teal-50">Clock In</button>
                   <a href="{{ route('member.schedule') }}" class="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">View Schedule</a>
                   <button type="button" class="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">Message Supervisor</button>
                 </div>
               </div>
               <div class="rounded-3xl bg-white/10 p-5 ring-1 ring-white/20 md:min-w-64">
-                <p class="text-sm text-brand-100">Current Compliance Score</p>
+                <p class="text-sm text-teal-100">Current Compliance Score</p>
                 <div class="mt-4 flex items-end gap-2">
                   @if($complianceScore !== null)
                     <span class="text-5xl font-black">{{ $complianceScore }}%</span>
@@ -38,7 +40,7 @@
                 <div class="mt-4 h-3 rounded-full bg-white/20">
                   <div class="h-3 rounded-full {{ ($complianceScore ?? 0) >= 90 ? 'bg-emerald-300' : (($complianceScore ?? 0) >= 70 ? 'bg-amber-300' : 'bg-rose-300') }}" style="width: {{ $complianceScore !== null ? min(100, max(0, $complianceScore)) : 0 }}%"></div>
                 </div>
-                <p class="mt-3 text-xs text-brand-100">
+                <p class="mt-3 text-xs text-teal-100">
                   @if($documentsNeededCount > 0)
                     {{ $documentsNeededCount }} checklist {{ Str::plural('item', $documentsNeededCount) }} need attention.
                   @elseif($complianceScore !== null)

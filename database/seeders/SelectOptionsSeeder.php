@@ -114,6 +114,18 @@ class SelectOptionsSeeder extends Seeder
             ];
         }
 
+        // Action
+        $action = ['New Hire', 'Rehire'];
+        foreach ($action as $i => $value) {
+            $selectOptions[] = [
+                'type_id' => $optionTypes['Action'] ?? null,
+                'name' => $value,
+                'value' => $value,
+                'isActive' => 1,
+                'sort_order' => $i + 1
+            ];
+        }
+
         // Filter out any with null type_id (in case option type is missing)
         $selectOptions = array_filter($selectOptions, function($opt) {
             return !is_null($opt['type_id']);

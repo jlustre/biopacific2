@@ -49,6 +49,7 @@
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{{ asset('css/member-portal-sidebar.css') }}">
   @stack('head')
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased pb-20 lg:pb-0"
@@ -63,6 +64,8 @@
     @include('dashboard.member.partials.portal-sidebar', [
         'active' => $portalActive,
         'profileComplete' => $profileComplete,
+        'portalNav' => $portalNav ?? 'employee',
+        'portalSubtitle' => $portalSubtitle ?? 'HR Employee Portal',
     ])
 
     <main class="flex-1 lg:min-w-0 flex flex-col min-h-screen">
@@ -91,7 +94,10 @@
     </main>
   </div>
 
-  @include('dashboard.member.partials.portal-mobile-nav', ['active' => $portalActive])
+  @include('dashboard.member.partials.portal-mobile-nav', [
+      'active' => $portalActive,
+      'portalNav' => $portalNav ?? 'employee',
+  ])
 
   @stack('scripts')
   @livewireScripts(['vite' => true])

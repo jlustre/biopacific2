@@ -11,8 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('bp_employees', function (Blueprint $table) {
-            $table->decimal('amount', 15, 2)->nullable()->after('compensation_rate_id');
-            $table->string('union_code', 50)->nullable()->after('amount');
+            $table->string('union_code', 50)->nullable()->after('action_id');
             $table->date('effdt_of_membership')->nullable()->after('union_code');
             $table->string('email', 191)->nullable()->after('effdt_of_membership');
         });
@@ -25,7 +24,6 @@ return new class extends Migration {
     {
         Schema::table('bp_employees', function (Blueprint $table) {
             $table->dropColumn([
-                'amount',
                 'union_code',
                 'effdt_of_membership',
                 'email',

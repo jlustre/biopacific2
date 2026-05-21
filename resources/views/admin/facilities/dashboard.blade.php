@@ -106,7 +106,7 @@
     <section>
         <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <h3 class="text-lg font-bold text-slate-900 sm:text-xl">HR & operations</h3>
+                <h3 class="text-lg font-bold text-slate-900 sm:text-xl">HR & Operations</h3>
                 <p class="text-sm text-slate-500">Manage staffing, hiring, credentials, and facility data.</p>
             </div>
         </div>
@@ -255,7 +255,7 @@
     {{-- Web content shortcuts --}}
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div class="mb-4">
-            <h3 class="text-lg font-bold text-slate-900">Website & communications</h3>
+            <h3 class="text-lg font-bold text-slate-900">Website & Communications</h3>
             <p class="text-sm text-slate-500">Quick links to manage your facility’s public presence.</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -283,5 +283,4 @@
 </div>
 
 @include('admin.facilities.partials.import-mapping-modal')
-@include('admin.facilities.partials.import-mapping-scripts')
 @endsection

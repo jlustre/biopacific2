@@ -202,7 +202,7 @@
                                     <option value="facility-admin">Facility Admin</option>
                                     <option value="facility-dsd">Facility DSD</option>
                                     <option value="facility-editor">Facility Editor</option>
-                                    <option value="hrrd">HRRD</option>
+                                    <option value="rdhr">RDHR</option>
                                 </select>
                             </div>
                             <div>

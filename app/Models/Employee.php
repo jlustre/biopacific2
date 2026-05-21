@@ -76,11 +76,11 @@ class Employee extends Model
         return $assignment && $assignment->bargaining_unit_id ? true : false;
     }
     /**
-     * Get the current (most recent) assignment from bp_emp_assignments
+     * Get the current (most recent) assignment from bp_emp_job_data
      */
     public function currentAssignment()
     {
-        return $this->hasOne(\App\Models\BPEmpAssignment::class, 'employee_num', 'employee_num')
+        return $this->hasOne(\App\Models\BPEmpJobData::class, 'employee_num', 'employee_num')
             ->orderByDesc('effdt')
             ->orderByDesc('effseq');
     }

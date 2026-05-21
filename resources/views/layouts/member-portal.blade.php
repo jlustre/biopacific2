@@ -14,6 +14,8 @@
     $positionTitle = $positionTitle ?? 'Team Member';
     $facilityName = $facilityName ?? '—';
     $initials = $initials ?? strtoupper(substr($firstNameOnly, 0, 1));
+    $primaryRoleLabel = $primaryRoleLabel ?? ($user?->primaryRoleLabel() ?? 'User');
+    $userRoles = $userRoles ?? ($user?->rolesForDisplay() ?? []);
 @endphp
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -70,6 +72,7 @@
         'facilityName' => $facilityName,
         'initials' => $initials,
         'profileComplete' => $profileComplete,
+        'portalNav' => $portalNav ?? 'employee',
     ])
 
     <main class="flex-1 lg:min-w-0 flex flex-col min-h-screen">
@@ -96,7 +99,10 @@
   @hasSection('mobile-nav')
     @yield('mobile-nav')
   @else
-    @include('dashboard.member.partials.portal-mobile-nav', ['active' => $portalActive])
+    @include('dashboard.member.partials.portal-mobile-nav', [
+        'active' => $portalActive,
+        'portalNav' => $portalNav ?? 'employee',
+    ])
   @endif
 
   @stack('scripts')

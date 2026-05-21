@@ -39,6 +39,8 @@ trait ProvidesMemberPortalContext
             'initials' => $user->initials ?? strtoupper(substr($firstNameOnly, 0, 1)),
             'profileComplete' => 88,
             'newsEventsCount' => $this->countMemberNewsEvents($facility),
+            'userRoles' => $user->rolesForDisplay(),
+            'primaryRoleLabel' => $user->primaryRoleLabel(),
         ];
     }
 

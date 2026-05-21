@@ -24,11 +24,12 @@
                 <select id="tableSelect" class="border-2 border-teal-800 bg-teal-100 rounded w-full p-2">
                     <option value="">-- Select Table --</option>
                     <option value="bp_emp_checklists">bp_emp_checklists</option>
-                    <option value="bp_emp_assignments">bp_emp_assignments</option>
+                    <option value="bp_emp_job_data">bp_emp_job_data</option>
                     <option value="bp_employees">bp_employees</option>
                     <option value="bp_emp_phones">bp_emp_phones</option>
                     <option value="bp_emp_addresses">bp_emp_addresses</option>
                     <option value="bp_emp_compensation">bp_emp_compensation</option>
+                    <option value="bp_emp_tax_data">bp_emp_tax_data</option>
                     <option value="bp_emp_health_screenings">bp_emp_health_screenings</option>
                     <option value="bp_emp_credentials">bp_emp_credentials</option>
                 </select>
@@ -45,13 +46,21 @@
         <select id="mappingPresetSelect" class="border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 w-56 focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm">
             <option value="">-- Load Mapping Preset --</option>
         </select>
+        @if($canCreateMappingPreset ?? false)
+        <button type="button" id="editMappingPresetBtn" class="hidden bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm" title="Edit selected preset" onclick="openEditPresetModalFromMapping()">
+            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'/></svg>Edit
+        </button>
+        <button type="button" id="duplicateMappingPresetBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm" title="Duplicate selected preset" onclick="openDuplicatePresetModalFromMapping()">
+            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2'/></svg>Duplicate
+        </button>
         <button type="button" id="deletePresetBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm hidden" title="Delete selected preset">
             <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>Delete
         </button>
         <input type="text" id="mappingPresetName" class="border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 w-44 focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm" placeholder="Preset Name">
-        <button type="button" class="bg-orange-500 hover:bg-orange-700 text-white font-bold px-2 py-1 rounded-lg shadow-sm text-sm" onclick="saveMappingPreset()">
+        <button type="button" id="saveMappingPresetBtn" class="bg-orange-500 hover:bg-orange-700 text-white font-bold px-2 py-1 rounded-lg shadow-sm text-sm" onclick="saveMappingPreset()">
             <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'/></svg>Save Preset
         </button>
+        @endif
 
         <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-2 py-1 rounded-lg shadow-sm text-sm" onclick="addMappingRow()">
             <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 4v16m8-8H4'/></svg>Add Mapping

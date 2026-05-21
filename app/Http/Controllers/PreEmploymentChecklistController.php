@@ -43,7 +43,7 @@ class PreEmploymentChecklistController extends Controller
     public function returnForEdit(Request $request, EmployeeChecklist $employeeChecklist)
     {
         $user = $request->user();
-        if (! $user || ! $user->hasAnyRole(['admin', 'facility-admin', 'hrrd'])) {
+        if (! $user || ! $user->hasAnyRole(['admin', 'facility-admin', 'rdhr'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -63,7 +63,7 @@ class PreEmploymentChecklistController extends Controller
     public function approve(Request $request, EmployeeChecklist $employeeChecklist)
     {
         $user = $request->user();
-        if (! $user || ! $user->hasAnyRole(['admin', 'facility-admin', 'hrrd'])) {
+        if (! $user || ! $user->hasAnyRole(['admin', 'facility-admin', 'rdhr'])) {
             abort(403, 'Unauthorized');
         }
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-class BPEmpAssignmentsTableSeeder extends Seeder
+class BPEmpJobDataTableSeeder extends Seeder
 {
     public function run(): void
     {
@@ -75,7 +75,7 @@ class BPEmpAssignmentsTableSeeder extends Seeder
                 'effseq' => 0,
                 'facility_id' => ($i % 2) + 1, // alternate between 1 and 2
                 'dept_id' => $deptId, // use real department id
-                'job_code_id' => $jobCodeId,
+                'position_id' => $jobCodeId,
                 'reports_to' => $reportsTo,
                 'reg_temp' => 'r',
                 'full_part_time' => $i % 3 === 0 ? 'pt' : 'ft',
@@ -87,6 +87,6 @@ class BPEmpAssignmentsTableSeeder extends Seeder
                 'union_seniority_dt' => $isUnion ? '2022-01-01' : null,
             ];
         }
-        DB::table('bp_emp_assignments')->insert($assignments);
+        DB::table('bp_emp_job_data')->insert($assignments);
     }
 }

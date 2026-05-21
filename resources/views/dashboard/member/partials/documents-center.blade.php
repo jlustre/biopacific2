@@ -16,7 +16,7 @@
 @endphp
 
 <section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="{ tab: 'mine', facilityFilter: '' }">
-    <div class="border-b border-slate-200 bg-gradient-to-r from-cyan-50 via-white to-white p-6">
+    <div class="border-b border-slate-200 bg-teal-50 p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div class="inline-flex items-center gap-2 rounded-full bg-cyan-100/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-cyan-800">

@@ -22,7 +22,7 @@ class ScheduledReportRunController extends Controller
 
     protected function canManageScheduledReports(Request $request): bool
     {
-        return (bool) $request->user()?->hasAnyRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+        return (bool) $request->user()?->hasAnyRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
     }
 
     protected function applyFacilityScopeToRunsQuery($query, Request $request)

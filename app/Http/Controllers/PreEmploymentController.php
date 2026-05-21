@@ -207,7 +207,7 @@ class PreEmploymentController extends Controller
             'portalEyebrow' => 'Onboarding',
             'portalPageTitle' => 'Pre-Employment Portal',
             'showPortalSearch' => false,
-            'showPortalNotifications' => false,
+            'showPortalNotifications' => true,
             'checklistItems' => $checklistItems,
             'completedCount' => $completedCount,
             'inProgressCount' => $inProgressCount,

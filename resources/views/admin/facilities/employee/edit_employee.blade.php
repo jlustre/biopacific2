@@ -132,7 +132,7 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
                 currentAssignment: {
                     facility_id: assignmentLatest ? assignmentLatest.facility_id : '',
                     dept_id: assignmentLatest ? assignmentLatest.dept_id : '',
-                    job_code_id: assignmentLatest ? assignmentLatest.job_code_id : '',
+                    position_id: assignmentLatest ? assignmentLatest.position_id : '',
                     reports_to: assignmentLatest ? assignmentLatest.reports_to : '',
                     reg_temp: assignmentLatest ? assignmentLatest.reg_temp : 'r',
                     full_part_time: assignmentLatest ? assignmentLatest.full_part_time : 'ft',
@@ -146,7 +146,7 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
                 latestEffdt: assignmentLatest ? assignmentLatest.effdt : '',
                 latestEffseq: assignmentLatest ? assignmentLatest.effseq : '',
                 syncDepartmentFromPosition() {
-                    const selectedPosition = this.positionsById[String(this.currentAssignment.job_code_id || '')];
+                    const selectedPosition = this.positionsById[String(this.currentAssignment.position_id || '')];
                     this.currentAssignment.dept_id = selectedPosition && selectedPosition.department_id
                         ? String(selectedPosition.department_id)
                         : '';
@@ -168,11 +168,11 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
                         : '';
                 },
                 setAssignment(assign) {
-                    this.currentAssignment = Object.assign({facility_id: '', dept_id: '', job_code_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
+                    this.currentAssignment = Object.assign({facility_id: '', dept_id: '', position_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''}, assign);
                     this.handlePositionChange();
                 },
                 clearAssignment() {
-                    this.currentAssignment = {facility_id: '', dept_id: '', job_code_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
+                    this.currentAssignment = {facility_id: '', dept_id: '', position_id: '', reports_to: '', reg_temp: 'r', full_part_time: 'ft', bargaining_unit_id: '', seniority_date: '', effdt: '', effseq: ''};
                 },
                 willUpdateExistingRecord() {
                     return Boolean(this.latestEffdt) && this.currentAssignment.effdt === this.latestEffdt;

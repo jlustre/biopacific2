@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ProvidesMemberPortalContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EmploymentController extends Controller
 {
+    use ProvidesMemberPortalContext;
     /**
      * Display the authenticated employment portal.
      *
@@ -23,9 +25,14 @@ class EmploymentController extends Controller
             ['key' => 'benefits_enrollment', 'label' => 'Benefits Enrollment'],
         ];
 
-        return view('employment.portal', [
-            'user' => $user,
+        return view('employment.portal', array_merge($this->memberPortalContext($user), [
+            'portalActive' => 'employment',
+            'portalTitle' => 'Employment Portal | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Onboarding',
+            'portalPageTitle' => 'Employment Portal',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
             'checklistDefaults' => $checklistDefaults,
-        ]);
+        ]));
     }
 }

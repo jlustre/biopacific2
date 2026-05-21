@@ -33,7 +33,7 @@
                     <a href="#" class="text-blue-600 hover:underline cursor-pointer" @click.prevent="setAssignment({
                             facility_id: '{{ $assign->facility_id }}',
                             dept_id: '{{ $assign->dept_id }}',
-                            job_code_id: '{{ $assign->job_code_id }}',
+                            position_id: '{{ $assign->position_id }}',
                             reports_to: '{{ $assign->reports_to }}',
                             reg_temp: '{{ $assign->reg_temp }}',
                             full_part_time: '{{ $assign->full_part_time }}',

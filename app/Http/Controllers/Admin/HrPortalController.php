@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Support\MemberPortalLayout;
 
 class HrPortalController extends Controller
 {
     public function index()
     {
         $user = auth()->user();
-        // HRRD and admin see all facilities
-        if ($user->hasRole('admin') || $user->hasRole('hrrd')) {
+        // System admins and RDHR see all facilities
+        if (MemberPortalLayout::userIsSystemAdmin($user) || $user->hasRole('rdhr')) {
             $facilities = \App\Models\Facility::all();
             $roles = $user->getRoleNames();
             return view('admin.hr-portal.index', compact('facilities', 'roles'));

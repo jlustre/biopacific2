@@ -11,7 +11,7 @@ class AdminRoleController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin']);
+        $this->middleware(['auth', 'role:admin|super-admin']);
     }
 
     /**
@@ -116,7 +116,7 @@ class AdminRoleController extends Controller
     public function destroy(Role $role)
     {
         // Prevent deletion of critical roles
-        $protectedRoles = ['web-admin', 'admin'];
+        $protectedRoles = ['super-admin', 'admin'];
         
         if (in_array($role->name, $protectedRoles)) {
             return redirect()->route('admin.roles.index')

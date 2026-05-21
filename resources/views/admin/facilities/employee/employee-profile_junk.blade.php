@@ -22,7 +22,7 @@
                         $user = Auth::user();
                         $canShowEmpIdBtn = false;
                         if ($user && method_exists($user, 'hasRole')) {
-                        $canShowEmpIdBtn = $user->hasRole('hrrd') || $user->hasRole('admin');
+                        $canShowEmpIdBtn = $user->hasRole('rdhr') || $user->hasRole('admin');
                         }
                         @endphp
                         @if($canShowEmpIdBtn)
@@ -37,7 +37,7 @@
                     $user = Auth::user();
                     $canEditSsn = false;
                     if ($user && method_exists($user, 'hasRole')) {
-                    $canEditSsn = $user->hasRole('hrrd') || $user->hasRole('admin') || ($user->id ==
+                    $canEditSsn = $user->hasRole('rdhr') || $user->hasRole('admin') || ($user->id ==
                     $employee->user_id);
                     }
                     $maskedSsn = $employee->ssn ? str_repeat('*', max(0, strlen($employee->ssn) - 4)) .

@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bp_emp_assignments', function (Blueprint $table) {
+        Schema::create('bp_emp_job_data', function (Blueprint $table) {
             $table->id('assign_id');
             $table->string('employee_num');
             $table->date('effdt'); // Effective Date
@@ -42,6 +42,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bp_emp_assignments');
+        Schema::dropIfExists('bp_emp_job_data');
     }
 };

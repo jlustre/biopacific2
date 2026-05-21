@@ -2,24 +2,26 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UsersTableSeeder extends Seeder
 {
     public function run(): void
     {
-        $users = [];
         for ($i = 1; $i <= 20; $i++) {
-            $users[] = [
-                'name' => 'User ' . $i,
-                'email' => 'user' . $i . '@example.com',
-                'password' => Hash::make('password'),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            $user = User::firstOrCreate(
+                ['email' => 'user' . $i . '@example.com'],
+                [
+                    'name' => 'User ' . $i,
+                    'password' => Hash::make('password'),
+                ]
+            );
+
+            if (!$user->hasRole('regular-user')) {
+                $user->assignRole('regular-user');
+            }
         }
-        DB::table('users')->insert($users);
     }
 }

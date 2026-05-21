@@ -384,7 +384,7 @@ class EmployeesController extends Controller
         // Filter by position
         if ($request->filled('position')) {
             $query->whereHas('assignments', function ($q) use ($request) {
-                $q->where('job_code_id', $request->position);
+                $q->where('position_id', $request->position);
             });
         }
 
@@ -481,13 +481,13 @@ class EmployeesController extends Controller
                 ],
             ]);
             $user = Auth::user();
-            $isHrrd = $user && method_exists($user, 'hasRole') && $user->hasRole('hrrd');
+            $isRdhr = $user && method_exists($user, 'hasRole') && $user->hasRole('rdhr');
             $isAdmin = $user && method_exists($user, 'hasRole') && $user->hasRole('admin');
             $isSelf = $user && ($user->id == $employee->user_id);
             // Only allow SSN update if the input is all digits (not masked)
             $ssnInput = $validated['ssn'] ?? null;
             $ssnIsAllDigits = $ssnInput && preg_match('/^\d+$/', $ssnInput);
-            $canUpdateSsn = ($isHrrd || $isAdmin || $isSelf) && $ssnIsAllDigits;
+            $canUpdateSsn = ($isRdhr || $isAdmin || $isSelf) && $ssnIsAllDigits;
             if (!$canUpdateSsn) {
                 unset($validated['ssn']); // Prevent masked or unauthorized SSN update
             }
@@ -697,7 +697,7 @@ class EmployeesController extends Controller
         $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
         $rules = [
             'facility_id' => 'required|integer',
-            'job_code_id' => 'required|integer|exists:positions,id',
+            'position_id' => 'required|integer|exists:positions,id',
             'reports_to' => 'nullable|integer',
             'reg_temp' => 'required|in:r,t',
             'full_part_time' => 'required|in:ft,pt,pd',
@@ -711,10 +711,10 @@ class EmployeesController extends Controller
             $rules['effdt'][] = 'after_or_equal:' . now()->toDateString();
         }
         $validated = $request->validate($rules);
-        $position = \App\Models\Position::query()->find($validated['job_code_id']);
+        $position = \App\Models\Position::query()->find($validated['position_id']);
         if (!$position || !$position->department_id) {
             return redirect()->back()
-                ->withErrors(['job_code_id' => 'The selected position does not have an assigned department.'])
+                ->withErrors(['position_id' => 'The selected position does not have an assigned department.'])
                 ->withInput();
         }
 
@@ -725,7 +725,7 @@ class EmployeesController extends Controller
         $validated['updated_by'] = $userId;
 
         // Always update the latest assignment unless effdt is changed
-        $latest = \App\Models\BPEmpAssignment::where('employee_num', $employeeNum)
+        $latest = \App\Models\BPEmpJobData::where('employee_num', $employeeNum)
             ->orderByDesc('effdt')
             ->orderByDesc('effseq')
             ->first();
@@ -738,7 +738,7 @@ class EmployeesController extends Controller
             }
             $validated['effseq'] = $effseq;
             $validated['employee_num'] = $employeeNum;
-            \App\Models\BPEmpAssignment::create($validated);
+            \App\Models\BPEmpJobData::create($validated);
             $msg = 'Assignment added successfully.';
         } else {
             // Update the latest assignment
@@ -1255,7 +1255,7 @@ class EmployeesController extends Controller
         $departments = \App\Models\Department::all();
         $positions = \App\Models\Position::all();
         $facilities = \App\Models\Facility::all();
-        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
+        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->position_id)->get();
         $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
             ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
             ->orderBy('order')

@@ -13,11 +13,16 @@ use Illuminate\Support\Facades\Auth;
             $hasProfile = file_exists($profilePath);
             $userName = Auth::user()->name ?? 'Admin';
             $initials = collect(explode(' ', $userName))->map(function($w) { return strtoupper($w[0]); })->join('');
+            $userRoles = Auth::user()->rolesForDisplay();
+            $roleLabel = Auth::user()->primaryRoleLabel();
             @endphp
             <span
                 class="h-8 w-8 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 font-bold text-lg border">{{
                 $initials }}</span>
-            <span class="ml-2 text-gray-700 font-medium">{{ $userName }}</span>
+            <span class="ml-2 text-left leading-tight">
+                <span class="block text-gray-700 font-medium">{{ $userName }}</span>
+                <span class="block text-xs text-gray-500">{{ $roleLabel }}</span>
+            </span>
             <svg class="ml-1 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -31,6 +36,21 @@ use Illuminate\Support\Facades\Auth;
             x-transition:leave-end="transform opacity-0 scale-95">
             <a href="{{ route('settings.profile') }}"
                 class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profile</a>
+            <div class="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
+                <span class="font-semibold text-gray-600">Role:</span>
+                @if(!empty($userRoles))
+                <ul class="mt-1 space-y-0.5">
+                    @foreach($userRoles as $role)
+                    <li>
+                        <span class="text-gray-800">{{ $role['label'] }}</span>
+                        <span class="text-gray-400">({{ $role['name'] }})</span>
+                    </li>
+                    @endforeach
+                </ul>
+                @else
+                <span class="text-gray-800">{{ $roleLabel }}</span>
+                @endif
+            </div>
             <a href="{{ route('settings.appearance') }}"
                 class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Settings</a>
             @if(auth()->user() && auth()->user()->hasRole('admin'))

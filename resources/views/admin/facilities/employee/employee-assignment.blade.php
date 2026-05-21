@@ -36,7 +36,7 @@ $assignmentPositions = App\Models\Position::query()
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Position</label>
-                    <select name="job_code_id" x-model="currentAssignment.job_code_id" @change="handlePositionChange()"
+                    <select name="position_id" x-model="currentAssignment.position_id" @change="handlePositionChange()"
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Position</option>
                         @foreach($assignmentPositions as $pos)
@@ -44,7 +44,7 @@ $assignmentPositions = App\Models\Position::query()
                         @endforeach
                     </select>
                 </div>
-                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('hrrd')))
+                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('rdhr')))
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Facility</label>
                     <select name="facility_id" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"

@@ -14,15 +14,15 @@ class TestUsersSeeder extends Seeder
     public function run(): void
     {
 
-        // HR Regional Director (hrrd)
-        $hrrd = User::firstOrCreate([
-            'email' => 'hrrd@example.com',
+        // HR Regional Director (rdhr)
+        $rdhr = User::firstOrCreate([
+            'email' => 'rdhr@example.com',
         ], [
             'name' => 'Liszel Justice',
             'password' => Hash::make('password'),
             'facility_id' => 99,
         ]);
-        $hrrd->syncRoles(['hrrd']);
+        $rdhr->syncRoles(['rdhr']);
 
         // Facility Admin assigned to 'almaden-healthcare-and-rehabilitation-center'
         $facility = \App\Models\Facility::where('slug', 'almaden-healthcare-and-rehabilitation-center')->first();

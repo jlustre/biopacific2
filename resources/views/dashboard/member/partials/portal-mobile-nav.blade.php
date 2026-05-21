@@ -1,6 +1,17 @@
 @php
     $active = $active ?? 'dashboard';
-    $navItems = config('member-portal.mobile_nav', []);
+    $portalNav = $portalNav ?? 'employee';
+    $navItems = match ($portalNav) {
+        'admin' => [
+            ['id' => 'admin-dashboard', 'route' => 'admin.dashboard.index', 'icon' => '⚙️', 'label' => 'Admin'],
+            ['id' => 'facility-hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
+            ['id' => 'facilities', 'route' => 'admin.facilities.index', 'icon' => '🏢', 'label' => 'Sites'],
+            ['id' => 'facility-tour-requests', 'route' => 'admin.tour-requests.index', 'icon' => '💬', 'label' => 'Comms'],
+            ['id' => 'settings', 'route' => 'admin.settings.index', 'icon' => '🔧', 'label' => 'Settings'],
+        ],
+        'facility' => config('member-portal.mobile_nav', []),
+        default => config('member-portal.mobile_nav', []),
+    };
 @endphp
 
 <nav class="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white px-3 py-2 shadow-2xl lg:hidden">
@@ -8,10 +19,11 @@
     @foreach($navItems as $item)
       @php
           $href = isset($item['route']) ? route($item['route']) : ($item['href'] ?? '#');
-          $isActive = $active === $item['id'];
+          $isActive = $active === $item['id']
+              || (!empty($item['route_is']) && request()->routeIs($item['route_is']));
       @endphp
       <a href="{{ $href }}"
-         class="rounded-xl p-2 {{ $isActive ? 'text-brand-700' : '' }}">
+         class="rounded-xl p-2 {{ $isActive ? 'text-teal-700' : '' }}">
         {{ $item['icon'] }}<span class="block">{{ $item['label'] }}</span>
       </a>
     @endforeach

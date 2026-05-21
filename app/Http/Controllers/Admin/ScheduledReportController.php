@@ -29,7 +29,7 @@ class ScheduledReportController extends Controller
 
     protected function canManageScheduledReports(Request $request): bool
     {
-        return (bool) $request->user()?->hasAnyRole(['admin', 'hrrd', 'facility-admin', 'facility-dsd']);
+        return (bool) $request->user()?->hasAnyRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
     }
 
     protected function ensureCanManage(Request $request): void
@@ -43,7 +43,7 @@ class ScheduledReportController extends Controller
     {
         $user = $request->user();
         $isAdmin = $user->hasRole('admin');
-        $isHrrd = $user->hasRole('hrrd');
+        $isRdhr = $user->hasRole('rdhr');
         $roles = $user->getRoleNames()->toArray();
         $userFacilityIds = collect();
 
@@ -58,7 +58,7 @@ class ScheduledReportController extends Controller
         }
 
         return Report::where('is_active', true)
-            ->where(function ($q) use ($roles, $userFacilityIds, $isHrrd) {
+            ->where(function ($q) use ($roles, $userFacilityIds, $isRdhr) {
                 $q->where('visibility', 'all');
                 if (! empty($roles)) {
                     $q->orWhere(function ($q2) use ($roles) {
@@ -74,7 +74,7 @@ class ScheduledReportController extends Controller
                         $q2->orWhereJsonContains('visible_facilities', $fid);
                     }
                 });
-                if ($isHrrd) {
+                if ($isRdhr) {
                     $q->orWhere('visibility', 'admin');
                 }
             })

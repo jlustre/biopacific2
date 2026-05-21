@@ -3,7 +3,7 @@
 namespace App\Helpers;
 
 use App\Models\BPEmployee;
-use App\Models\BPEmpAssignment;
+use App\Models\BPEmpJobData;
 use App\Models\BPEmpAddress;
 use App\Models\BPEmpPhone;
 

@@ -31,15 +31,24 @@ class BPEmployee extends Model
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
+
+    protected $casts = [
+        'dob' => 'date',
+        'original_hire_dt' => 'date',
+        'badge_eff_dt' => 'date',
+        'effdt_of_membership' => 'date',
+    ];
+
     protected $fillable = [
         'user_id',
         'employee_num',
+        'badge_num',
+        'badge_eff_dt',
         'ssn',
         'first_name',
         'middle_name',
         'last_name',
         'gender',
-        'assignment_id',
         'dob',
         'original_hire_dt',
         'marital_status_id',
@@ -48,13 +57,6 @@ class BPEmployee extends Model
         'citizenship_status_id',
         // Newly added columns
         'action_id',
-        'hourly_status_id',
-        'std_hrs_week',
-        'federal_tax_data_id',
-        'state_tax_data_id',
-        'local_tax_data_id',
-        'compensation_rate_id',
-        'amount',
         'union_code',
         'effdt_of_membership',
         'email',
@@ -70,16 +72,27 @@ class BPEmployee extends Model
     // Relationship: Employee has many assignments
     public function assignments()
     {
-        return $this->hasMany(\App\Models\BPEmpAssignment::class, 'employee_num', 'employee_num');
+        return $this->hasMany(\App\Models\BPEmpJobData::class, 'employee_num', 'employee_num');
+    }
+
+    public function taxData()
+    {
+        return $this->hasMany(\App\Models\BPEmpTaxData::class, 'employee_num', 'employee_num');
+    }
+
+    public function currentTaxData()
+    {
+        return $this->hasOne(\App\Models\BPEmpTaxData::class, 'employee_num', 'employee_num')
+            ->latestOfMany(['effdt', 'effseq']);
     }
 
     /**
-     * Get the current (most recent) assignment from bp_emp_assignments
+     * Get the current (most recent) assignment from bp_emp_job_data
      */
     public function currentAssignment()
     {
         // Always get the latest assignment by effdt and effseq
-        return $this->hasOne(\App\Models\BPEmpAssignment::class, 'employee_num', 'employee_num')
+        return $this->hasOne(\App\Models\BPEmpJobData::class, 'employee_num', 'employee_num')
             ->latestOfMany(['effdt', 'effseq']);
     }
 
@@ -123,6 +136,25 @@ class BPEmployee extends Model
         return $assignment && $assignment->bargaining_unit_id ? true : false;
     }
 
+    public function getHourlyStatusIdAttribute(): mixed
+    {
+        return $this->current_assignment?->hourly_status_id;
+    }
+
+    public function getStdHrsWeekAttribute(): mixed
+    {
+        return $this->current_assignment?->std_hrs_week;
+    }
+
+    public function getCompensationRateIdAttribute(): mixed
+    {
+        return $this->current_assignment?->compensation_rate_id;
+    }
+
+    public function getAmountAttribute(): mixed
+    {
+        return $this->current_assignment?->amount;
+    }
 
     /**
      * Get the current union status via the latest assignment

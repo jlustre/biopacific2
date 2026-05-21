@@ -8,7 +8,7 @@
     {{-- Facility Filter Dropdown for permitted roles --}}
     @php
         $user = Auth::user();
-        $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('hrrd'));
+        $canChooseFacility = $user && ($user->hasRole('admin') || $user->hasRole('rdhr'));
         $facilities = $canChooseFacility ? \App\Models\Facility::orderBy('name')->get() : null;
         $userFacility = $user && $user->facility ? $user->facility : null;
     @endphp

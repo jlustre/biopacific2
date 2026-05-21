@@ -372,13 +372,13 @@ class EmployeesController extends Controller
                 ],
             ]);
             $user = Auth::user();
-            $isHrrd = $user && method_exists($user, 'hasRole') && $user->hasRole('hrrd');
+            $isRdhr = $user && method_exists($user, 'hasRole') && $user->hasRole('rdhr');
             $isAdmin = $user && method_exists($user, 'hasRole') && $user->hasRole('admin');
             $isSelf = $user && ($user->id == $employee->user_id);
             // Only allow SSN update if the input is all digits (not masked)
             $ssnInput = $validated['ssn'] ?? null;
             $ssnIsAllDigits = $ssnInput && preg_match('/^\d+$/', $ssnInput);
-            $canUpdateSsn = ($isHrrd || $isAdmin || $isSelf) && $ssnIsAllDigits;
+            $canUpdateSsn = ($isRdhr || $isAdmin || $isSelf) && $ssnIsAllDigits;
             if (!$canUpdateSsn) {
                 unset($validated['ssn']); // Prevent masked or unauthorized SSN update
             }
@@ -612,7 +612,7 @@ class EmployeesController extends Controller
         $validated['updated_by'] = $userId;
 
         // Always update the latest assignment unless effdt is changed
-        $latest = \App\Models\BPEmpAssignment::where('employee_num', $employeeNum)
+        $latest = \App\Models\BPEmpJobData::where('employee_num', $employeeNum)
             ->orderByDesc('effdt')
             ->orderByDesc('effseq')
             ->first();
@@ -625,7 +625,7 @@ class EmployeesController extends Controller
             }
             $validated['effseq'] = $effseq;
             $validated['employee_num'] = $employeeNum;
-            \App\Models\BPEmpAssignment::create($validated);
+            \App\Models\BPEmpJobData::create($validated);
             $msg = 'Assignment added successfully.';
         } else {
             // Update the latest assignment

@@ -177,7 +177,7 @@ use Illuminate\Support\Facades\Log;
                 <!-- Manage Tables Menu -->
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') || request()->routeIs('admin.checklist-items.*') || request()->routeIs('admin.departments.*') || request()->routeIs('admin.events.*') || request()->routeIs('admin.email-recipients.*') || request()->routeIs('admin.email-templates.*') ? 'bg-gray-100 font-bold' : '' }}">
+                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') || request()->routeIs('admin.checklist-items.*') || request()->routeIs('admin.departments.*') || request()->routeIs('admin.events.*') || request()->routeIs('admin.email-recipients.*') || request()->routeIs('admin.email-templates.*') || request()->routeIs('admin.import-mapping-presets.*') ? 'bg-gray-100 font-bold' : '' }}">
                         <i class="fas fa-table mr-2"></i> Manage Tables
                         <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -215,6 +215,14 @@ use Illuminate\Support\Facades\Log;
                         <a href="{{ route('admin.email-templates.index') }}"
                             class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.email-templates.*') ? 'bg-amber-50 text-amber-700 font-medium' : '' }}">
                             <i class="fas fa-envelope-open-text mr-2 text-amber-600"></i> Email Templates
+                        </a>
+                        <a href="{{ route('admin.import-mapping-presets.index') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.import-mapping-presets.*') ? 'bg-teal-50 text-teal-700 font-medium' : '' }}">
+                            <i class="fas fa-file-import mr-2 text-teal-600"></i> Import Preset Management
+                        </a>
+                        <a href="{{ route('admin.import-logs.index') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.import-logs.*') ? 'bg-teal-50 text-teal-700 font-medium' : '' }}">
+                            <i class="fas fa-history mr-2 text-teal-600"></i> Import History
                         </a>
                     </div>
                 </div>
@@ -257,7 +265,7 @@ use Illuminate\Support\Facades\Log;
         </div>
         @endif
 
-        @if($user && $user->hasRole(['admin','hrrd','facility-admin','facility-dsd']))
+        @if($user && $user->hasRole(['admin','rdhr','facility-admin','facility-dsd']))
         <!-- Web Contents Menu -->
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
@@ -358,13 +366,13 @@ use Illuminate\Support\Facades\Log;
         </div>
         @endif
 
-        <!-- Show HR Portal if user is admin, hrrd, facility-admin, or facility-dsd -->
+        <!-- Show HR Portal if user is admin, rdhr, facility-admin, or facility-dsd -->
         @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
         <a href="{{ route('hr-portal.index') }}"
             class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
             <i class="fas fa-users-cog mr-2"></i> HR Portal
         </a>
-        @elseif($user && $user->hasRole(['hrrd','facility-admin','facility-dsd']))
+        @elseif($user && $user->hasRole(['rdhr','facility-admin','facility-dsd']))
         <a href="{{ route('user.hr-portal') }}"
             class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
             <i class="fas fa-users-cog mr-2"></i> HR Portal

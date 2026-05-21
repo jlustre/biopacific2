@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\MemberPortalLayout;
 use Illuminate\Http\Request;
 use App\Models\Report;
 
@@ -10,8 +11,8 @@ class HrPortalReportsController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin');
-        $isHrrd = $user->hasRole('hrrd');
+        $isAdmin = MemberPortalLayout::userIsSystemAdmin($user);
+        $isRdhr = $user->hasRole('rdhr');
         $roles = $user->getRoleNames()->toArray();
         $userFacilityIds = collect();
         if (method_exists($user, 'facilities')) {
@@ -25,7 +26,7 @@ class HrPortalReportsController extends Controller
             $reports = Report::where('is_active', true)->get();
         } else {
             $reports = Report::where('is_active', true)
-                ->where(function($q) use ($roles, $userFacilityIds, $isHrrd) {
+                ->where(function($q) use ($roles, $userFacilityIds, $isRdhr) {
                     $q->where('visibility', 'all');
                     $q->orWhere(function($q2) use ($roles) {
                         $q2->where('visibility', 'roles')
@@ -39,8 +40,8 @@ class HrPortalReportsController extends Controller
                                 }
                             });
                     });
-                    if ($isHrrd) {
-                        $q->orWhere('visibility', 'admin'); // HRRD can see admin reports
+                    if ($isRdhr) {
+                        $q->orWhere('visibility', 'admin'); // RDHR can see admin reports
                     }
                 })
                 ->get();

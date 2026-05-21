@@ -80,6 +80,10 @@ class RolePermissionSeeder extends Seeder
             'manage system settings',
             'view reports',
             'export data',
+
+            // Facility data import
+            'use import mapping presets',
+            'create import mapping presets',
         ];
 
         // Create permissions if they don't exist
@@ -88,17 +92,23 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Create roles with descriptions
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
         $facilityAdmin = Role::firstOrCreate(['name' => 'facility-admin'], ['name' => 'facility-admin']);
         $facilityEditor = Role::firstOrCreate(['name' => 'facility-editor'], ['name' => 'facility-editor']);
         $regularUser = Role::firstOrCreate(['name' => 'regular-user'], ['name' => 'regular-user']);
 
         // New HR roles (short names)
-        $hrrd = Role::firstOrCreate(['name' => 'hrrd'], ['name' => 'hrrd']);
+        $rdhr = Role::firstOrCreate(['name' => 'rdhr'], ['name' => 'rdhr']);
         $facilityDsd = Role::firstOrCreate(['name' => 'facility-dsd'], ['name' => 'facility-dsd']);
 
         // Assign permissions to roles
 
-        // Web Admin - Full system access
+        // Super Admin — full system access
+        $superAdmin->syncPermissions(Permission::all()->pluck('name')->toArray());
+
+        // System admin — full access including import preset creation
+        $admin->syncPermissions(Permission::all()->pluck('name')->toArray());
 
         // Facility Admin - Comprehensive facility management
         $facilityAdmin->syncPermissions([
@@ -108,15 +118,16 @@ class RolePermissionSeeder extends Seeder
             'view content', 'create content', 'edit content', 'publish content',
             'manage testimonials', 'manage news', 'manage faqs', 'manage galleries', 'manage services',
             'view communications', 'manage tour requests', 'manage inquiries', 'manage job applications',
-            'view reports', 'export data'
+            'view reports', 'export data',
+            'use import mapping presets',
         ]);
 
-        // HR Regional Director (hrrd) - All facilities HR portal access
-        $hrrd->syncPermissions([
+        // HR Regional Director (rdhr) - All facilities HR portal access
+        $rdhr->syncPermissions([
             'access admin panel',
             'view facilities', 'view users', 'view user profiles',
             'view content', 'view communications', 'view reports',
-            // Add more HR-specific permissions as needed
+            'use import mapping presets',
         ]);
 
         // Facility DSD - Assigned facility HR portal access
@@ -124,7 +135,7 @@ class RolePermissionSeeder extends Seeder
             'access admin panel',
             'view facilities', 'view users', 'view user profiles',
             'view content', 'view communications', 'view reports',
-            // Add more HR-specific permissions as needed
+            'use import mapping presets',
         ]);
 
         // Facility Editor - Content and basic management
@@ -134,7 +145,8 @@ class RolePermissionSeeder extends Seeder
             'view users', 'view user profiles',
             'view content', 'create content', 'edit content',
             'manage testimonials', 'manage news', 'manage faqs', 'manage galleries', 'manage services',
-            'view communications', 'manage tour requests', 'manage inquiries'
+            'view communications', 'manage tour requests', 'manage inquiries',
+            'use import mapping presets',
         ]);
 
         // Regular User - View only access

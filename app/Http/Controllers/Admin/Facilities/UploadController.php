@@ -20,7 +20,7 @@ class UploadController extends Controller {
     protected function authorizeFacilityAccess(Facility $facility): void
     {
         $user = Auth::user();
-        if ($user->hasRole('admin') || $user->hasRole('hrrd')) {
+        if ($user->hasRole('admin') || $user->hasRole('rdhr')) {
             return;
         }
         if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
