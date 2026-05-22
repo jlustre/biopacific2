@@ -8,6 +8,8 @@
 @endphp
 
 <section class="mb-4 mt-6">
+    @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-review-modal')
+
     <div
         x-data="partGTrachSummary(@js($trachJsProcedures))"
         @trach-procedure-updated.window="syncReviews($event.detail.reviews)"

@@ -15,6 +15,8 @@
 @endphp
 
 <section class="mb-4 mt-6">
+    @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-review-modal')
+
     <div
         x-data="partGSectionSummary(@js($dsdJsItems))"
         @dsd-responses-updated.window="syncResponses($event.detail.responses)"
@@ -53,13 +55,7 @@
                                 {{ $sectionBlock['section'] }}
                             </td>
                         </tr>
-                        <tr class="bg-blue-50">
-                            <td class="border border-gray-300 font-bold text-gray-700 text-start pl-2 text-md">Items</td>
-                            <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">E</td>
-                            <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">S</td>
-                            <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">U</td>
-                            <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">N</td>
-                        </tr>
+                        @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                         @foreach($sectionBlock['items'] as $index => $item)
                             @if($item['isParent'] ?? false)
                             @include('livewire.admin.facilities.checklist.part-g-sections.partials.nested-parent-row', [
@@ -67,21 +63,13 @@
                                 'wireKey' => 'dsd-parent-'.$item['id'],
                             ])
                             @else
-                                <tr wire:key="dsd-row-{{ $item['id'] }}-{{ $responses[$item['id']] ?? 'none' }}" class="dsd-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} dsd-row-hover">
-                            <td class="border border-gray-300 py-0 text-sm" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
-                                        {{ $item['item'] ?? '' }}
-                                    </td>
-                                    @foreach(['E', 'S', 'U', 'N'] as $rating)
-                                        @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-rating-cell', [
-                                            'itemId' => $item['id'],
-                                            'rating' => $rating,
-                                            'namePrefix' => 'dsd',
-                                            'wireKeyPrefix' => 'dsd',
-                                            'currentResponse' => $responses[$item['id']] ?? null,
-                                            'disabled' => $assessmentLocked || $sectionExcluded,
-                                        ])
-                                    @endforeach
-                                </tr>
+                                @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-scorable-item-row', [
+                                'item' => $item,
+                                'index' => $index,
+                                'wireKeyPrefix' => 'dsd',
+                                'rowClassPrefix' => 'dsd',
+                                'disabled' => $assessmentLocked || $sectionExcluded || ! $assessmentPeriodId,
+                            ])
                             @endif
                         @endforeach
                     @empty

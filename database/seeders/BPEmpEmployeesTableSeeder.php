@@ -30,6 +30,7 @@ class BPEmpEmployeesTableSeeder extends Seeder
                 'last_name' => $lastName,
                 'email' => $faker->unique()->safeEmail(),
                 'gender' => $faker->randomElement(['M', 'F', 'O', 'N']),
+                'original_hire_dt' => $this->originalHireDtForIndex($i),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -39,6 +40,7 @@ class BPEmpEmployeesTableSeeder extends Seeder
         }
 
         $this->seedFacilityEmployees($faker);
+        $this->backfillOriginalHireDates();
     }
 
     private function seedFacilityEmployees(\Faker\Generator $faker): void
@@ -81,6 +83,7 @@ class BPEmpEmployeesTableSeeder extends Seeder
                     'last_name' => $lastName,
                     'email' => $faker->unique()->safeEmail(),
                     'gender' => $faker->randomElement(['M', 'F', 'O', 'N']),
+                    'original_hire_dt' => $this->originalHireDtForIndex($i),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -134,5 +137,53 @@ class BPEmpEmployeesTableSeeder extends Seeder
     private function employeeNum(int $index): string
     {
         return 'EMP' . str_pad((string) $index, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Original hire date for seeded employees (maps to original_hire_dt column).
+     */
+    private function originalHireDtForIndex(int $index): string
+    {
+        if ($index >= 21) {
+            return '2022-01-01';
+        }
+
+        $month = (($index - 1) % 12) + 1;
+        $year = 2016 + intdiv($index - 1, 12);
+
+        return sprintf('%04d-%02d-01', $year, $month);
+    }
+
+    /**
+     * Fill original_hire_dt for any existing employees still missing it.
+     */
+    private function backfillOriginalHireDates(): void
+    {
+        $missing = DB::table('bp_employees')
+            ->whereNull('original_hire_dt')
+            ->get(['id', 'employee_num']);
+
+        foreach ($missing as $employee) {
+            $hireDate = DB::table('bp_emp_job_data')
+                ->where('employee_num', $employee->employee_num)
+                ->orderBy('effdt')
+                ->orderBy('effseq')
+                ->value('effdt');
+
+            if (!$hireDate && preg_match('/EMP(\d+)/', (string) $employee->employee_num, $matches)) {
+                $hireDate = $this->originalHireDtForIndex((int) $matches[1]);
+            }
+
+            if (!$hireDate) {
+                $hireDate = '2020-01-01';
+            }
+
+            DB::table('bp_employees')
+                ->where('id', $employee->id)
+                ->update([
+                    'original_hire_dt' => $hireDate,
+                    'updated_at' => now(),
+                ]);
+        }
     }
 }

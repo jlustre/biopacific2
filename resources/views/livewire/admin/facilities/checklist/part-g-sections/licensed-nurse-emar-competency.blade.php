@@ -1,5 +1,7 @@
 
 <section class="mb-4 mt-6">
+    @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-review-modal')
+
     @php
         $lnemarJsItems = [];
         foreach ($items as $item) {
@@ -131,13 +133,7 @@
                     </tr>
                 </thead>
                 <tbody x-show="$store.partGAccordion.openSection === 'ln-emar'" x-transition>
-                    <tr class="bg-blue-50">
-                        <td class="border border-gray-300 font-bold text-gray-700 text-start pl-2 text-md">Items</td>
-                        <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">E</td>
-                        <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">S</td>
-                        <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">U</td>
-                        <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">N</td>
-                    </tr>
+                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($items as $index => $item)
                         @if($item['isParent'] ?? false)
                             @include('livewire.admin.facilities.checklist.part-g-sections.partials.nested-parent-row', [
@@ -146,26 +142,13 @@
                                 // No showToggle passed, so partial should not render a toggle
                             ])
                         @else
-                            <tr wire:key="lnemar-row-{{ $item['id'] }}" class="lnemar-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} lnemar-row-hover">
-                                <td class="border border-gray-300 py-0 text-sm" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
-                                    {{ $item['item'] ?? '' }}
-                                </td>
-                                @foreach(['E', 'S', 'U', 'N'] as $rating)
-                                    <td class="text-center border border-gray-300 py-0">
-                                        <input
-                                            type="radio"
-                                            name="lnemar-response-{{ $item['id'] }}"
-                                            value="{{ $rating }}"
-                                            wire:key="lnemar-response-{{ $item['id'] }}-{{ $rating }}"
-                                            @checked(($responses[$item['id']] ?? null) === $rating)
-                                            wire:click="setResponse({{ (int) $item['id'] }}, '{{ $rating }}')"
-                                            @click="setResponse({{ $item['id'] }}, '{{ $rating }}')"
-                                            @disabled($assessmentLocked || $sectionExcluded)
-                                            class="h-4 w-4 border-slate-400 text-slate-700 focus:ring-slate-400"
-                                        >
-                                    </td>
-                                @endforeach
-                            </tr>
+                            @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-scorable-item-row', [
+                                'item' => $item,
+                                'index' => $index,
+                                'wireKeyPrefix' => 'lnemar',
+                                'rowClassPrefix' => 'lnemar',
+                                'disabled' => $assessmentLocked || $sectionExcluded || ! $assessmentPeriodId,
+                            ])
                         @endif
                     @endforeach
                 </tbody>
@@ -298,5 +281,4 @@
             </div>
         </div>
     </div>
-
 </section>

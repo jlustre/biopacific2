@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->date('date_to');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
-            // No employee_num, periods are now global
+            // employee_num added in 2026_05_20_200001_add_employee_num_to_employee_assessment_periods_table
             $table->index(['period_year', 'period_sequence'], 'ea_periods_year_seq_idx');
         });
 

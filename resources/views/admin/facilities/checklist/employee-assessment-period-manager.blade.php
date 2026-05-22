@@ -14,27 +14,40 @@
 @endphp
 
 <div class="assessment-period-manager h-full rounded-md border border-slate-400 bg-slate-50 p-3 shadow-sm" data-manager-id="{{ $managerId }}" data-context-label="{{ $contextLabel }}">
-    <div class="flex flex-col gap-3">
-        <div class="min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-2">
-                <div class="flex flex-col">
-                <label for="assessmentPeriodSelect-{{ $managerId }}" class="mr-2 text-[11px] font-semibold uppercase tracking-wide text-slate-700">Assessment Period:</label>
-                <div class="flex flex-wrap items-center gap-2 relative">
+    @if(session('assessment_period_error'))
+        <p class="mb-2 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] text-amber-900">{{ session('assessment_period_error') }}</p>
+    @endif
+
+    <div class="flex flex-col gap-2.5">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_9.75rem] md:items-end">
+            <div class="min-w-0">
+                <label for="assessmentPeriodSelect-{{ $managerId }}" class="block text-[11px] font-semibold uppercase tracking-wide text-slate-700">
+                    Assessment Period
+                </label>
+                <div class="mt-1.5 flex min-w-0 items-center gap-2">
                     <select id="assessmentYearSelect-{{ $managerId }}"
-                        class="js-assessment-year-select rounded-md border border-slate-400 bg-white px-2 py-1 text-[11px] font-semibold text-slate-900 md:text-xs">
+                        class="js-assessment-year-select w-[4.25rem] shrink-0 rounded-md border border-slate-400 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-900 md:text-xs"
+                        aria-label="Assessment year">
                         @foreach($years as $year)
                         <option value="{{ $year }}" @if((string) $selectedYear === (string) $year) selected @endif>{{ $year }}</option>
                         @endforeach
                     </select>
-                    <form id="assessmentPeriodForm-{{ $managerId }}" class="js-assessment-period-form" method="GET" action="">
+
+                    <form id="assessmentPeriodForm-{{ $managerId }}" class="js-assessment-period-form min-w-0 flex-1" method="GET" action="">
                         <select id="assessmentPeriodSelect-{{ $managerId }}" name="assessment_period_id"
-                            class="js-assessment-period-select rounded-md border border-slate-400 bg-white px-2 py-1 text-[11px] font-semibold text-slate-900 md:text-xs"
-                            onchange="this.form.submit()">
+                            class="js-assessment-period-select w-full rounded-md border border-slate-400 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-900 md:text-xs"
+                            aria-label="Assessment period date range">
                             <option value="" @if(empty($selectedAssessmentPeriodId)) selected @endif>— Select/Create Assessment Period —</option>
                             @foreach($assessmentPeriods as $period)
+                            @php
+                                $periodLoadable = \App\Support\EmployeeAssessmentPeriodCalculator::isPeriodLoadable($period);
+                                $periodDeletable = $period->canBeDeleted();
+                            @endphp
                             <option value="{{ $period->id }}" data-year="{{ $period->period_year }}"
+                                data-loadable="{{ $periodLoadable ? '1' : '0' }}"
+                                data-can-delete="{{ $periodDeletable ? '1' : '0' }}"
                                 @if((int) $selectedAssessmentPeriodId === (int) $period->id) selected @endif>
-                                {{ $period->date_from }} to {{ $period->date_to }}
+                                {{ $period->displayDateRange() }}@unless($periodLoadable) (not loadable)@endunless
                             </option>
                             @endforeach
                         </select>
@@ -43,36 +56,46 @@
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
                     </form>
-                    <button type="button"
-                        class="js-assessment-period-action my-1 rounded-md bg-slate-700 px-2 py-1 text-[11px] text-white cursor-pointer"
-                        data-action="all-periods"
-                        title="Show all created assessment periods for this employee">All Periods</button>
-                    <button type="button"
-                        class="js-assessment-period-action my-1 rounded-md bg-slate-900 px-2 py-1 text-[11px] text-white cursor-pointer"
-                        data-action="new-period"
-                        title="Create new assessment period">New Period</button>
-                    <button type="button"
-                        class="js-assessment-period-action my-1 rounded-md bg-slate-600 px-2 py-1 text-[11px] text-white cursor-pointer"
-                        data-action="edit-period"
-                        title="Edit selected assessment period">Edit Period</button>
-                    <button type="button"
-                        class="js-assessment-period-action my-1 rounded-md bg-red-700 px-2 py-1 text-[11px] text-white cursor-pointer"
-                        data-action="delete-period"
-                        title="Delete selected assessment period">Delete</button>
-                    @if($showReviewedEmployees)
-                    <button type="button"
-                        class="js-assessment-period-action my-1 rounded-md bg-slate-500 px-2 py-1 text-[11px] text-white cursor-pointer"
-                        data-action="reviewed-employees"
-                        title="List all employees reviewed for this period and facility">Reviewed Employees</button>
-                    @endif
-                </div>
-                </div>
-                <div style="position:absolute; right:0; top:0; height:100%; display:flex; align-items:flex-start; gap:4px; background:inherit;">
-                    <label for="assessmentReviewDate-{{ $managerId }}" class="text-[11px] font-semibold text-slate-700 mr-1 mt-1">REVIEW DATE:</label>
-                    <input type="date" id="assessmentReviewDate-{{ $managerId }}" name="assessment_review_date" class="rounded-md border border-slate-400 bg-white px-2 py-1 text-[11px] font-semibold text-slate-900 md:text-xs mt-1" style="min-width:120px;" />
                 </div>
             </div>
+
+            <div class="shrink-0 md:w-[9.75rem]">
+                <label for="assessmentReviewDate-{{ $managerId }}" class="block text-[11px] font-semibold uppercase tracking-wide text-slate-700">
+                    Review Date
+                </label>
+                <input type="date" id="assessmentReviewDate-{{ $managerId }}" name="assessment_review_date"
+                    value="{{ request('assessment_review_date', date('Y-m-d')) }}"
+                    class="mt-1.5 w-full rounded-md border border-slate-400 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-900 md:text-xs" />
+            </div>
         </div>
+
+        <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button"
+                class="js-assessment-period-action rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800"
+                data-action="view-period"
+                title="View assessment periods and load an existing period">View Periods</button>
+            <button type="button"
+                class="js-assessment-period-action rounded-md bg-slate-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-700"
+                data-action="edit-period"
+                title="Edit selected assessment period">Edit Period</button>
+            <button type="button"
+                class="js-assessment-period-action rounded-md bg-red-700 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-red-800"
+                data-action="delete-period"
+                title="Delete selected assessment period">Delete</button>
+            @if($showReviewedEmployees)
+            <button type="button"
+                class="js-assessment-period-action rounded-md bg-slate-500 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-600"
+                data-action="reviewed-employees"
+                title="List all employees reviewed for this period and facility">Reviewed Employees</button>
+            @endif
+        </div>
+
+        <p class="text-[11px] leading-relaxed text-slate-600 md:text-xs">
+            Periods are unique to this employee. Annual windows follow the
+            <strong>Original Hire Date</strong> on the Personal tab, or <strong>Rehire Date</strong> when Action is Rehire
+            (each year runs from that anniversary through the day before the next anniversary&mdash;e.g. May 18 to May 17).
+            For the <strong>review date</strong>, the system selects the prior completed year by default, not the employment year still in progress.
+            Use the dropdown to change periods, or <strong>View Periods</strong> to browse history and load a period.
+        </p>
     </div>
 </div>
-

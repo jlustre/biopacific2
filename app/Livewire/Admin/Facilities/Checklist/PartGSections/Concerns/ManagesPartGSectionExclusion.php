@@ -8,6 +8,7 @@ use App\Models\EmployeeCompetencyAssessment;
 trait ManagesPartGSectionExclusion
 {
     use GuardsAgainstSelfAssessment;
+    use ManagesPartGItemReviews;
     use PersistsPartGCompetencyItemEntries;
     use PersistsPartGCompetencySectionResponses;
 

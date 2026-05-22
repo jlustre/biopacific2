@@ -6,6 +6,7 @@ use App\Models\BPEmployee;
 use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeeCompetencyItem;
+use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGItemReviews;
 use App\Support\PartGCompetencyScoring;
 use App\Support\PreventsSelfAssessment;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,8 @@ use Livewire\Component;
  */
 class LicensedNurseEmarCompetency extends Component
 {
+    use ManagesPartGItemReviews;
+
     public const SECTION = 'LICENSED NURSE eMAR COMPETENCY';
 
     public string $employeeNum = '';
@@ -165,6 +168,11 @@ class LicensedNurseEmarCompetency extends Component
             || $this->sectionExcluded
             || $this->evaluatorActionsDisabled
             || ! $this->assessmentPeriodId;
+    }
+
+    protected function denyEvaluatorAction(): bool
+    {
+        return $this->evaluatorActionsDisabled;
     }
 
     protected function persistRating(int $itemId, string $rating): void
@@ -381,7 +389,10 @@ class LicensedNurseEmarCompetency extends Component
         $assessment = $this->loadAssessment();
 
         if ($assessment) {
-            foreach ($this->decodeResponses($assessment->responses) as $itemKey => $entry) {
+            $decoded = $this->decodeResponses($assessment->responses);
+            $this->hydrateItemReviewMetaFromPayload($decoded);
+
+            foreach ($decoded as $itemKey => $entry) {
                 $sourceItemId = $this->normalizeKey($itemKey);
                 if (! in_array($sourceItemId, $sectionItemIds, true)) {
                     continue;
@@ -420,6 +431,15 @@ class LicensedNurseEmarCompetency extends Component
             if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
                 $this->responses[$sourceItemId] = $rating;
             }
+
+            $this->itemReviewMeta[$sourceItemId] = [
+                'review_date' => $entry->assessment_date?->format('Y-m-d'),
+                'reviewer_id' => $entry->assessed_by,
+                'reviewer_name' => $entry->assessed_by
+                    ? (\App\Models\User::query()->find($entry->assessed_by)?->name ?? '')
+                    : '',
+                'comments' => $entry->comments,
+            ];
         }
     }
 
@@ -482,13 +502,7 @@ class LicensedNurseEmarCompetency extends Component
         $row = $this->loadAssessment();
         $existing = $this->decodeResponses($row?->responses);
 
-        $payload = $existing;
-        foreach ($this->responses as $itemId => $rating) {
-            if ($rating === null || $rating === '') {
-                continue;
-            }
-            $payload[(int) $itemId] = ['response' => $rating];
-        }
+        $payload = $this->mergeItemReviewMetaIntoResponsesPayload($existing);
 
         $snapshot = is_array($row?->snapshot_json) ? $row->snapshot_json : [];
         $snapshot = $this->applyExclusionToSnapshot($snapshot);
@@ -529,6 +543,7 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $this->syncAssessmentSummaryColumns($row);
+        $this->dispatchPartGSummaryUpdated();
     }
 
     protected function upsertItemEntry(int $itemId, string $rating): void
@@ -543,7 +558,17 @@ class LicensedNurseEmarCompetency extends Component
             ->orderByDesc('id')
             ->first();
 
-        if ($latest && strtoupper((string) $latest->rating) === $rating) {
+        $meta = $this->itemReviewMeta[$itemId] ?? [];
+        $assessmentDate = (string) ($meta['review_date'] ?? now()->toDateString());
+        $assessedBy = isset($meta['reviewer_id']) ? (int) $meta['reviewer_id'] : Auth::id();
+        $comments = filled($meta['comments'] ?? null) ? (string) $meta['comments'] : null;
+
+        if (
+            $latest
+            && strtoupper((string) $latest->rating) === $rating
+            && (string) ($latest->comments ?? '') === (string) ($comments ?? '')
+            && $latest->assessment_date?->format('Y-m-d') === substr($assessmentDate, 0, 10)
+        ) {
             return;
         }
 
@@ -555,10 +580,30 @@ class LicensedNurseEmarCompetency extends Component
             'item_label' => $this->labelForItem($itemId),
             'source_item_id' => $itemId,
             'rating' => $rating,
-            'assessment_date' => now()->toDateString(),
-            'assessed_by' => Auth::id(),
-            'comments' => null,
+            'assessment_date' => $assessmentDate,
+            'assessed_by' => $assessedBy,
+            'comments' => $comments,
         ]);
+    }
+
+    protected function dispatchPartGSummaryUpdated(): void
+    {
+        $summary = $this->buildGlobalSummaryMetrics();
+
+        $payload = [
+            'totalScore' => $summary['total_score'],
+            'averageScore' => $summary['average_score'],
+            'overallRating' => $summary['overall_rating'],
+        ];
+
+        $this->dispatch(
+            'partg-summary-updated',
+            totalScore: $payload['totalScore'],
+            averageScore: $payload['averageScore'],
+            overallRating: $payload['overallRating'],
+        );
+
+        $this->js('window.updatePartGSummaryScores && window.updatePartGSummaryScores('.json_encode($payload).')');
     }
 
     protected function syncAssessmentSummaryColumns(EmployeeCompetencyAssessment $row): void
