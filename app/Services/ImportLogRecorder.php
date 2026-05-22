@@ -203,9 +203,11 @@ class ImportLogRecorder
                 'effseq' => $model->getAttribute('effseq'),
             ],
             'bp_emp_phones' => [
-                'id' => $model->getKey(),
+                'phone_id' => $model->getAttribute('phone_id') ?? $model->getKey(),
                 'employee_num' => $model->getAttribute('employee_num'),
                 'phone_type' => $model->getAttribute('phone_type'),
+                'effdt' => $model->getAttribute('effdt'),
+                'effseq' => $model->getAttribute('effseq'),
             ],
             'bp_emp_tax_data' => [
                 'tax_id' => $model->getAttribute('tax_id') ?? $model->getKey(),

@@ -59,6 +59,24 @@
 
                 <div id="presetImportStatus" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
 
+                <div id="presetImportValidationPanel" class="hidden space-y-3">
+                    <div id="presetImportValidationSummary" class="rounded-lg border px-4 py-3 text-sm"></div>
+                    <div class="max-h-64 overflow-auto rounded-lg border border-slate-200">
+                        <table class="min-w-full text-xs">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-semibold text-slate-600">#</th>
+                                    <th class="px-3 py-2 text-left font-semibold text-slate-600">Source</th>
+                                    <th class="px-3 py-2 text-left font-semibold text-slate-600">Target</th>
+                                    <th class="px-3 py-2 text-left font-semibold text-slate-600">Status</th>
+                                    <th class="px-3 py-2 text-left font-semibold text-slate-600">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="presetImportValidationBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div id="presetImportResults" class="hidden space-y-3">
                     <div id="presetImportSummary" class="rounded-lg border px-4 py-3 text-sm"></div>
                     <div id="presetImportDuplicatePanel" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -115,6 +133,11 @@
                         class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50">
                     <i class="fas fa-file-upload"></i>
                 </button>
+                <button type="button" id="presetImportValidateBtn" disabled
+                        title="Validate preset mappings against file and database" aria-label="Validate mappings"
+                        class="rounded-lg border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50">
+                    Validate
+                </button>
                 <button type="button" id="presetImportSubmitBtn"
                         class="rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">
                     Run import
@@ -159,6 +182,10 @@
         rowResultsPanel: document.getElementById('presetImportRowResultsPanel'),
         rowResultsBody: document.getElementById('presetImportRowResultsBody'),
         loadBtn: document.getElementById('presetImportLoadBtn'),
+        validateBtn: document.getElementById('presetImportValidateBtn'),
+        validationPanel: document.getElementById('presetImportValidationPanel'),
+        validationSummary: document.getElementById('presetImportValidationSummary'),
+        validationBody: document.getElementById('presetImportValidationBody'),
         submitBtn: document.getElementById('presetImportSubmitBtn'),
         confirmOverwrite: document.getElementById('presetImportConfirmOverwrite'),
     };
@@ -194,13 +221,27 @@
         els.status.classList.add('hidden');
     }
 
+    function clearValidation() {
+        els.validationPanel?.classList.add('hidden');
+        if (els.validationSummary) els.validationSummary.innerHTML = '';
+        if (els.validationBody) els.validationBody.innerHTML = '';
+    }
+
+    function setValidateEnabled(enabled) {
+        if (els.validateBtn) {
+            els.validateBtn.disabled = !enabled;
+        }
+    }
+
     function resetModal() {
         clearResults();
+        clearValidation();
         els.file.value = '';
         els.worksheet.innerHTML = '';
         els.worksheetWrap.classList.add('hidden');
         parsedWorksheets = [];
         pendingConfirmOverwrite = false;
+        setValidateEnabled(false);
         if (els.overwrite) els.overwrite.checked = false;
     }
 
@@ -306,11 +347,89 @@
                 els.worksheet.value = parsedWorksheets[0].name;
             }
             els.worksheetWrap.classList.remove('hidden');
-            setStatus('success', `Loaded ${parsedWorksheets.length} worksheet(s). Choose the primary data sheet, then click Run import.`);
+            setValidateEnabled(true);
+            setStatus('success', `Loaded ${parsedWorksheets.length} worksheet(s). Validate mappings, then run import.`);
         } catch (err) {
+            setValidateEnabled(false);
             setStatus('error', 'Could not read file: ' + (err?.message || 'Network error'));
         } finally {
             els.loadBtn.disabled = false;
+        }
+    }
+
+    function renderValidationResults(data) {
+        if (!els.validationPanel) return;
+
+        const summary = data.summary || {};
+        const results = data.results || [];
+        const allValid = !!data.valid;
+
+        els.validationPanel.classList.remove('hidden');
+        els.validationSummary.className = allValid
+            ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800'
+            : 'rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800';
+
+        const headline = allValid
+            ? `<strong>Validation passed.</strong> All ${summary.passed ?? 0} mapping(s) match the workbook and database tables.`
+            : `<strong>Validation failed.</strong> ${summary.failed ?? 0} of ${summary.total ?? 0} mapping(s) have issues. Fix the preset or spreadsheet before importing.`;
+
+        els.validationSummary.innerHTML = headline;
+
+        els.validationBody.innerHTML = results.map(r => {
+            const source = [r.worksheet, r.worksheet_column].filter(Boolean).join(' → ');
+            const target = [r.table, r.table_column].filter(Boolean).join('.');
+            const statusCls = r.valid ? 'text-emerald-700' : 'text-red-700';
+            const statusText = r.valid ? 'OK' : 'Failed';
+            const details = (r.issues || []).join(' ') || '—';
+            return `<tr class="${r.valid ? '' : 'bg-red-50/50'}">
+                <td class="px-3 py-2">${escapeHtml((r.index ?? 0) + 1)}</td>
+                <td class="px-3 py-2">${escapeHtml(source)}</td>
+                <td class="px-3 py-2 font-mono text-xs">${escapeHtml(target)}</td>
+                <td class="px-3 py-2 font-semibold ${statusCls}">${statusText}</td>
+                <td class="px-3 py-2 text-slate-600">${escapeHtml(details)}</td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="5" class="px-3 py-4 text-center text-slate-500">No mappings to validate.</td></tr>';
+
+        setStatus(allValid ? 'success' : 'error', allValid ? 'Preset mappings validated successfully.' : 'Validation found mapping issues — review the table below.');
+    }
+
+    async function validateMappings() {
+        if (!validateBeforeRun()) return;
+        if (!currentPreset?.validateUrl) {
+            setStatus('error', 'Validate URL is not configured for this preset.');
+            return;
+        }
+        if (!parsedWorksheets.length) {
+            setStatus('error', 'Load the workbook first, then validate.');
+            return;
+        }
+
+        const file = els.file.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        clearValidation();
+        els.validateBtn.disabled = true;
+        setStatus('info', 'Validating preset mappings against workbook and database…');
+
+        try {
+            const res = await fetch(currentPreset.validateUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: formData,
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok && !data.results) {
+                setStatus('error', data.message || data.error || 'Validation request failed.');
+                return;
+            }
+
+            renderValidationResults(data);
+        } catch (err) {
+            setStatus('error', 'Validation failed: ' + (err?.message || 'Network error'));
+        } finally {
+            els.validateBtn.disabled = false;
         }
     }
 
@@ -504,6 +623,7 @@
     }
 
     els.loadBtn?.addEventListener('click', parseFilePreview);
+    els.validateBtn?.addEventListener('click', validateMappings);
     els.submitBtn?.addEventListener('click', () => runImport(els.overwrite?.checked || pendingConfirmOverwrite));
     els.confirmOverwrite?.addEventListener('click', () => {
         pendingConfirmOverwrite = true;

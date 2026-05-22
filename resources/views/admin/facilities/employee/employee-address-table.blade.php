@@ -5,7 +5,7 @@
             <tr>
                 <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Eff. Date</th>
                 <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Eff. Seq</th>
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Address Type</th>
                 <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Address 1</th>
                 <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Address 2</th>
                 <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">City</th>
@@ -23,8 +23,11 @@
                 <td class="px-3 py-2 text-xs">{{ $addr->effdt }}</td>
                 <td class="px-3 py-2 text-sm">{{ $addr->effseq }}</td>
                 <td class="px-3 py-2 text-sm">
-                    @if($addr->address_type == 'h') Home @elseif($addr->address_type == 'w') Work
-                    @elseif($addr->address_type == 'o') Other @else {{ $addr->address_type }} @endif
+                    @if(strtoupper((string) $addr->address_type) === 'H') Home
+                    @elseif(strtoupper((string) $addr->address_type) === 'W') Work
+                    @elseif(strtoupper((string) $addr->address_type) === 'O') Other
+                    @elseif(strtoupper((string) $addr->address_type) === 'M') Mailing
+                    @else {{ $addr->address_type }} @endif
                 </td>
                 <td class="px-3 py-2 text-xs">{{ $addr->address1 }}</td>
                 <td class="px-3 py-2 text-xs">{{ $addr->address2 }}</td>
@@ -32,7 +35,7 @@
                 <td class="px-3 py-2 text-sm">{{ $addr->state }}</td>
                 <td class="px-3 py-2 text-sm">{{ $addr->zip }}</td>
                 <td class="px-3 py-2 text-sm">{{ $addr->country }}</td>
-                <td class="px-3 py-2 text-sm">@if($addr->is_primary) Yes @else No @endif</td>
+                <td class="px-3 py-2 text-sm">@if(strtoupper((string) $addr->is_primary) === 'Y') Yes @else No @endif</td>
                 <td class="px-3 py-2 text-sm">
                     <a href="#" class="text-blue-600 hover:underline" @click.prevent="setAddress({
                                 address1: '{{ $addr->address1 }}',
@@ -41,8 +44,8 @@
                                 state: '{{ $addr->state }}',
                                 zip: '{{ $addr->zip }}',
                                 country: '{{ $addr->country }}',
-                                is_primary: '{{ $addr->is_primary ? '1' : '0' }}',
-                                address_type: '{{ $addr->address_type }}',
+                                is_primary: '{{ strtoupper((string) $addr->is_primary) === 'Y' ? 'Y' : 'N' }}',
+                                address_type: '{{ strtoupper((string) $addr->address_type) }}',
                                 effdt: '{{ $addr->effdt }}',
                                 effseq: '{{ $addr->effseq }}'
                             })">View/Edit</a>

@@ -8,6 +8,7 @@ use App\Models\ImportLog;
 use App\Services\ImportLogReverter;
 use App\Support\ImportMappingPresetAccess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ImportLogAdminController extends Controller
 {
@@ -49,7 +50,12 @@ class ImportLogAdminController extends Controller
 
         $facilities = Facility::orderBy('name')->get(['id', 'name']);
 
-        return view('admin.import-logs.index', compact('logs', 'facilities', 'globalId'));
+        return view('admin.import-logs.index', [
+            'logs' => $logs,
+            'facilities' => $facilities,
+            'globalId' => $globalId,
+            'canDeleteImportLogs' => $this->canDeleteImportLogs(),
+        ]);
     }
 
     public function show(ImportLog $importLog)
@@ -67,7 +73,37 @@ class ImportLogAdminController extends Controller
             ->groupBy('table_name', 'action')
             ->get();
 
-        return view('admin.import-logs.show', compact('importLog', 'changeStats'));
+        $changesByTable = $importLog->changes->groupBy('table_name')->sortKeys();
+
+        return view('admin.import-logs.show', [
+            'importLog' => $importLog,
+            'changeStats' => $changeStats,
+            'changesByTable' => $changesByTable,
+            'canDeleteImportLogs' => $this->canDeleteImportLogs(),
+        ]);
+    }
+
+    public function destroy(ImportLog $importLog)
+    {
+        if (!$this->canDeleteImportLogs()) {
+            abort(403, 'Only administrators can delete import history records.');
+        }
+
+        if ($importLog->status === ImportLog::STATUS_RUNNING) {
+            return back()->with('error', 'Cannot delete an import that is still running.');
+        }
+
+        $importLog->delete();
+
+        return redirect()->route('admin.import-logs.index')
+            ->with('success', 'Import history record #' . $importLog->id . ' deleted. Database changes from that import were not modified.');
+    }
+
+    protected function canDeleteImportLogs(): bool
+    {
+        $user = Auth::user();
+
+        return $user !== null && $user->hasRole(['admin', 'super-admin']);
     }
 
     public function revert(ImportLog $importLog, ImportLogReverter $reverter)

@@ -7,20 +7,34 @@ $assignmentPositions = App\Models\Position::query()
     ->with('department:id,name')
     ->orderBy('title')
     ->get();
+$hourlyStatusTypeId = \App\Models\Optionstype::where('name', 'Hourly Status')->value('id');
+$compensationRateTypeId = \App\Models\Optionstype::where('name', 'Compensation Rate')->value('id');
+$hourlyStatusOptions = $hourlyStatusTypeId
+    ? \App\Models\SelectOption::where('type_id', $hourlyStatusTypeId)->where('isActive', 1)->orderBy('sort_order')->get()
+    : collect();
+$compensationRateOptions = $compensationRateTypeId
+    ? \App\Models\SelectOption::where('type_id', $compensationRateTypeId)->where('isActive', 1)->orderBy('sort_order')->get()
+    : collect();
+$unionCodeOptions = \App\Models\BPBargainingUnit::query()
+    ->whereNotNull('union_code')
+    ->orderBy('union_code')
+    ->pluck('union_code')
+    ->unique()
+    ->values();
 @endphp
-<div x-show="tab === 'assignment'" x-data="assignmentForm()" x-init="initAssignment()">
+<div x-show="tab === 'job-data'" x-data="assignmentForm()" x-init="initAssignment()">
     @if(isset($isAddMode) && $isAddMode)
         <div class="p-6 mb-6 bg-white rounded shadow text-gray-600">
             <div class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
                 <strong>Notice:</strong> Please complete and save the Personal tab form before continuing with the checklist.
             </div>
-            <em>Save the employee record before adding assignments.</em>
+            <em>Save the employee record before adding job data.</em>
         </div>
     @else
     <div class="flex justify-end items-center mb-4 space-x-4">
         <button type="button" @click="clearAssignment()"
             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
-            Add New Assignment
+            Add New Job Data
         </button>
         <template x-if="isLatestRecord()">
             <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest Record</span>
@@ -40,7 +54,7 @@ $assignmentPositions = App\Models\Position::query()
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Position</option>
                         @foreach($assignmentPositions as $pos)
-                        <option value="{{ $pos->position_id }}">{{ $pos->title }}</option>
+                        <option value="{{ $pos->id }}">{{ $pos->title }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -59,7 +73,7 @@ $assignmentPositions = App\Models\Position::query()
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Department</label>
                     <input type="hidden" name="dept_id" :value="currentAssignment.dept_id">
-                    <input type="text" :value="currentDepartmentName()"
+                    <input type="text" x-bind:value="currentDepartmentName()"
                         readonly
                         class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 bg-gray-100 cursor-not-allowed text-gray-700"
                         placeholder="Select Position First">
@@ -70,7 +84,7 @@ $assignmentPositions = App\Models\Position::query()
                         class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
                         <option value="">Select Supervisor</option>
                         @foreach(App\Models\Position::query()->supervisorRoles()->orderBy('title')->get() as $supervisor)
-                            <option value="{{ $supervisor->position_id }}">{{ $supervisor->title }}</option>
+                            <option value="{{ $supervisor->id }}">{{ $supervisor->title }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -92,24 +106,70 @@ $assignmentPositions = App\Models\Position::query()
                     </select>
                 </div>
                 <div class="mb-2">
-                    <label class="block text-sm font-medium mb-2">Bargaining Unit</label>
-                    <select name="bargaining_unit_id" x-model="currentAssignment.bargaining_unit_id"
-                        class="form-select w-full border border-teal-300 rounded-lg px-2 py-1">
-                        <option value="">Select Bargaining Unit</option>
-                        @foreach(App\Models\BPBargainingUnit::all() as $unit)
-                        <option value="{{ $unit->unit_id }}">{{ $unit->unit_name }}</option>
+                    <label class="block text-sm font-medium mb-2">Hourly Status</label>
+                    <select name="hourly_status_id" x-model="currentAssignment.hourly_status_id"
+                        class="form-select w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('hourly_status_id') ? 'border-red-500' : '' }}">
+                        <option value="">-- Select --</option>
+                        @foreach($hourlyStatusOptions as $option)
+                            <option value="{{ $option->id }}">{{ $option->name }}</option>
                         @endforeach
                     </select>
+                    @error('hourly_status_id')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="mb-2">
-                    <label class="block text-sm font-medium mb-2">Seniority Date</label>
-                    <input type="date" name="seniority_date" x-model="currentAssignment.seniority_date"
-                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                    <label class="block text-sm font-medium mb-2">Std. Hrs./Week</label>
+                    <input type="number" name="std_hrs_week" min="0" max="168" step="1"
+                        x-model="currentAssignment.std_hrs_week"
+                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('std_hrs_week') ? 'border-red-500' : '' }}">
+                    @error('std_hrs_week')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="mb-2">
-                    <label class="block text-sm font-medium mb-2">Union Seniority Date</label>
-                    <input type="date" name="union_seniority_dt" x-model="currentAssignment.union_seniority_dt"
-                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+                    <label class="block text-sm font-medium mb-2">Compensation Rate</label>
+                    <select name="compensation_rate_id" x-model="currentAssignment.compensation_rate_id"
+                        class="form-select w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('compensation_rate_id') ? 'border-red-500' : '' }}">
+                        <option value="">-- Select --</option>
+                        @foreach($compensationRateOptions as $option)
+                            <option value="{{ $option->id }}">{{ $option->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('compensation_rate_id')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium mb-2">Amount</label>
+                    <input type="number" name="amount" min="0" step="0.01"
+                        x-model="currentAssignment.amount"
+                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('amount') ? 'border-red-500' : '' }}">
+                    @error('amount')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium mb-2">Union Code</label>
+                    <input type="text" name="union_code" maxlength="50" list="job-data-union-code-options"
+                        x-model="currentAssignment.union_code"
+                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('union_code') ? 'border-red-500' : '' }}">
+                    <datalist id="job-data-union-code-options">
+                        @foreach($unionCodeOptions as $code)
+                            <option value="{{ $code }}"></option>
+                        @endforeach
+                    </datalist>
+                    @error('union_code')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium mb-2">Effective Date of Membership</label>
+                    <input type="date" name="effdt_of_membership" x-model="currentAssignment.effdt_of_membership"
+                        class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('effdt_of_membership') ? 'border-red-500' : '' }}">
+                    @error('effdt_of_membership')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Effective Date</label>
@@ -126,12 +186,12 @@ $assignmentPositions = App\Models\Position::query()
                         class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer">Cancel</a>
                     <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">Save
-                        Assignment</button>
+                        Job Data</button>
                 </div>
             </div>
         </div>
     </form>
     @endif
-    <!-- Assignment Info Table -->
+    <!-- Job Data History Table -->
     @include('admin.facilities.employee.employee-assignment-table')
 </div>

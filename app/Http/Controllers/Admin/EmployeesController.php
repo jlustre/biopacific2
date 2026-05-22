@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\BPEmpAddress;
+use App\Models\BPEmpPhone;
+use App\Models\BPEmpTaxData;
 use App\Models\BPEmployee;
 use App\Models\Upload;
 use App\Models\Facility;
@@ -466,6 +469,11 @@ class EmployeesController extends Controller
                 'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'required|string|max:255',
                 'dob' => 'nullable|date',
+                'badge_num' => 'nullable|string|max:50',
+                'badge_eff_dt' => 'nullable|date',
+                'union_code' => 'nullable|string|max:50',
+                'effdt_of_membership' => 'nullable|date',
+                'action_id' => 'nullable|integer|exists:selectoptions,id',
                 'marital_status_id' => 'nullable|integer|exists:selectoptions,id',
                 'ethnic_group_id' => 'nullable|integer|exists:selectoptions,id',
                 'military_status_id' => 'nullable|integer|exists:selectoptions,id',
@@ -537,22 +545,39 @@ class EmployeesController extends Controller
         $validated = $request->validate([
             'phone_type' => 'required|string|max:50',
             'phone_number' => 'required|string|max:50',
-            'is_primary' => 'nullable', // Remove boolean rule
+            'is_primary' => 'nullable|in:Y,N,y,n,1,0,on',
+            'effdt' => ['required', 'date', 'after_or_equal:' . now()->toDateString()],
+            'effseq' => 'nullable|integer',
         ]);
 
-        // Checkbox submits as 'on' if checked, so use has()
-        $isPrimary = $request->has('is_primary');
-        if ($isPrimary) {
-            \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
-                ->where('is_primary', 1)
-                ->update(['is_primary' => 0]);
+        $isPrimary = $this->normalizeYnPrimary($request->input('is_primary'));
+        if ($isPrimary === BPEmpPhone::PRIMARY_YES) {
+            BPEmpPhone::where('employee_num', $employeeModel->employee_num)
+                ->where('is_primary', BPEmpPhone::PRIMARY_YES)
+                ->update(['is_primary' => BPEmpPhone::PRIMARY_NO]);
         }
 
-        $phone = new \App\Models\BPEmpPhone();
+        $effseq = 0;
+        if ($request->filled('effseq')) {
+            $effseq = (int) $validated['effseq'];
+        } else {
+            $latest = BPEmpPhone::where('employee_num', $employeeModel->employee_num)
+                ->where('phone_type', $validated['phone_type'])
+                ->where('effdt', $validated['effdt'])
+                ->orderByDesc('effseq')
+                ->first();
+            if ($latest) {
+                $effseq = $latest->effseq + 1;
+            }
+        }
+
+        $phone = new BPEmpPhone();
         $phone->employee_num = $employeeModel->employee_num;
         $phone->phone_type = $validated['phone_type'];
+        $phone->effdt = $validated['effdt'];
+        $phone->effseq = $effseq;
         $phone->phone_number = $validated['phone_number'];
-        $phone->is_primary = $isPrimary ? 1 : 0;
+        $phone->is_primary = $isPrimary;
         $phone->save();
 
         return back()->with('success', 'Phone added successfully.');
@@ -569,20 +594,24 @@ class EmployeesController extends Controller
         $validated = $request->validate([
             'phone_type' => 'required|string|max:50',
             'phone_number' => 'required|string|max:50',
-            'is_primary' => 'nullable',
+            'is_primary' => 'nullable|in:Y,N,y,n,1,0,on',
+            'effdt' => 'required|date',
+            'effseq' => 'required|integer',
         ]);
-        $phoneModel = \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
+        $phoneModel = BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
 
-        $isPrimary = $request->has('is_primary');
-        if ($isPrimary) {
-            \App\Models\BPEmpPhone::where('employee_num', $employeeModel->employee_num)
-                ->where('is_primary', 1)
-                ->update(['is_primary' => 0]);
+        $isPrimary = $this->normalizeYnPrimary($request->input('is_primary'));
+        if ($isPrimary === BPEmpPhone::PRIMARY_YES) {
+            BPEmpPhone::where('employee_num', $employeeModel->employee_num)
+                ->where('is_primary', BPEmpPhone::PRIMARY_YES)
+                ->update(['is_primary' => BPEmpPhone::PRIMARY_NO]);
         }
 
         $phoneModel->phone_type = $validated['phone_type'];
+        $phoneModel->effdt = $validated['effdt'];
+        $phoneModel->effseq = (int) $validated['effseq'];
         $phoneModel->phone_number = $validated['phone_number'];
-        $phoneModel->is_primary = $isPrimary ? 1 : 0;
+        $phoneModel->is_primary = $isPrimary;
         $phoneModel->save();
 
         return back()->with('success', 'Phone updated successfully.');
@@ -604,8 +633,8 @@ class EmployeesController extends Controller
             'state' => 'required|string|max:100',
             'zip' => 'required|string|max:20',
             'country' => 'required|string|max:100',
-            'is_primary' => 'required|in:0,1',
-            'address_type' => 'required|in:h,w,o',
+            'is_primary' => 'required|in:Y,N,y,n,0,1',
+            'address_type' => 'required|in:H,W,O,M,h,w,o,m',
             'effdt' => ['required', 'date'],
             'effseq' => 'nullable|integer',
         ];
@@ -614,12 +643,14 @@ class EmployeesController extends Controller
             $rules['effdt'][] = 'after_or_equal:' . now()->toDateString();
         }
         $validated = $request->validate($rules);
+        $validated['is_primary'] = $this->normalizeYnPrimary($validated['is_primary']);
+        $validated['address_type'] = strtoupper($validated['address_type']);
 
         // Enforce only one default address per employee
-        if ($validated['is_primary'] == '1') {
+        if ($validated['is_primary'] === BPEmpAddress::PRIMARY_YES) {
             // If updating, allow this address to remain primary, but unset all others
-            $query = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
-                ->where('is_primary', 1);
+            $query = BPEmpAddress::where('employee_num', $employeeModel->employee_num)
+                ->where('is_primary', BPEmpAddress::PRIMARY_YES);
             if (isset($validated['effseq']) && $validated['effseq'] !== '') {
                 $query->where(function($q) use ($validated) {
                     $q->where('effdt', '!=', $validated['effdt'])
@@ -627,11 +658,11 @@ class EmployeesController extends Controller
                       ->orWhere('address_type', '!=', $validated['address_type']);
                 });
             }
-            $query->update(['is_primary' => 0]);
+            $query->update(['is_primary' => BPEmpAddress::PRIMARY_NO]);
         } else {
-            // If trying to set is_primary=0, but there is no other primary, prevent unsetting the last default
-            $otherPrimary = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
-                ->where('is_primary', 1);
+            // If trying to set is_primary=N, but there is no other primary, prevent unsetting the last default
+            $otherPrimary = BPEmpAddress::where('employee_num', $employeeModel->employee_num)
+                ->where('is_primary', BPEmpAddress::PRIMARY_YES);
             if (isset($validated['effseq']) && $validated['effseq'] !== '') {
                 $otherPrimary->where(function($q) use ($validated) {
                     $q->where('effdt', '!=', $validated['effdt'])
@@ -648,12 +679,10 @@ class EmployeesController extends Controller
         // If effseq is present, update existing address; else, add new with correct effseq
         if (isset($validated['effseq']) && $validated['effseq'] !== '') {
             // Update existing address
-            $address = \App\Models\BPEmpAddress::where([
-                'employee_num' => $employeeModel->employee_num,
-                'effdt' => $validated['effdt'],
-                'effseq' => $validated['effseq'],
-                'address_type' => $validated['address_type'],
-            ])->first();
+            $address = BPEmpAddress::where('employee_num', $employeeModel->employee_num)
+                ->where('effdt', $validated['effdt'])
+                ->where('effseq', $validated['effseq'])
+                ->first();
             if ($address) {
                 $address->fill($validated);
                 $address->save();
@@ -661,12 +690,12 @@ class EmployeesController extends Controller
             } else {
                 // fallback: create new if not found
                 $validated['employee_num'] = $employeeModel->employee_num;
-                \App\Models\BPEmpAddress::create($validated);
+                BPEmpAddress::create($validated);
                 $msg = 'Address added successfully.';
             }
         } else {
             // Add new address, determine effseq
-            $latest = \App\Models\BPEmpAddress::where('employee_num', $employeeModel->employee_num)
+            $latest = BPEmpAddress::where('employee_num', $employeeModel->employee_num)
                 ->where('address_type', $validated['address_type'])
                 ->orderByDesc('effdt')
                 ->orderByDesc('effseq')
@@ -677,21 +706,44 @@ class EmployeesController extends Controller
             }
             $validated['effseq'] = $effseq;
             $validated['employee_num'] = $employeeModel->employee_num;
-            \App\Models\BPEmpAddress::create($validated);
+            BPEmpAddress::create($validated);
             $msg = 'Address added successfully.';
         }
 
         return redirect()->route('admin.employees.edit', $employee)
             ->with('success', $msg);
     }
+
+    protected function normalizeYnPrimary(mixed $value): string
+    {
+        if (in_array($value, [BPEmpPhone::PRIMARY_YES, 'y', '1', 1, true, 'yes', 'on'], true)) {
+            return BPEmpPhone::PRIMARY_YES;
+        }
+
+        return BPEmpPhone::PRIMARY_NO;
+    }
+
     /**
-     * Add or update an assignment for an employee (tabbed form).
+     * Add or update job data for an employee (tabbed form).
      */
     public function updateAssignment(Request $request, $employee)
     {
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
         $employeeNum = $employeeModel->employee_num;
+
+        $request->merge([
+            'hourly_status_id' => $request->input('hourly_status_id') ?: null,
+            'compensation_rate_id' => $request->input('compensation_rate_id') ?: null,
+            'union_code' => $request->input('union_code') ?: null,
+            'effdt_of_membership' => $request->input('effdt_of_membership') ?: null,
+            'std_hrs_week' => $request->input('std_hrs_week') !== '' && $request->input('std_hrs_week') !== null
+                ? $request->input('std_hrs_week')
+                : null,
+            'amount' => $request->input('amount') !== '' && $request->input('amount') !== null
+                ? $request->input('amount')
+                : null,
+        ]);
 
         // If effseq is present, it's an update; otherwise, it's an add
         $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
@@ -701,8 +753,12 @@ class EmployeesController extends Controller
             'reports_to' => 'nullable|integer',
             'reg_temp' => 'required|in:r,t',
             'full_part_time' => 'required|in:ft,pt,pd',
-            'bargaining_unit_id' => 'nullable|integer',
-            'union_seniority_dt' => 'nullable|date',
+            'hourly_status_id' => 'nullable|integer|exists:selectoptions,id',
+            'std_hrs_week' => 'nullable|integer|min:0|max:168',
+            'compensation_rate_id' => 'nullable|integer|exists:selectoptions,id',
+            'amount' => 'nullable|numeric|min:0',
+            'union_code' => 'nullable|string|max:50',
+            'effdt_of_membership' => 'nullable|date',
             'effdt' => ['required', 'date'],
             'effseq' => 'nullable|integer',
         ];
@@ -720,6 +776,21 @@ class EmployeesController extends Controller
 
         $validated['dept_id'] = $position->department_id;
         $validated['reports_to'] = $position->reports_to_position_id ?: null;
+        $validated['hourly_status_id'] = $validated['hourly_status_id'] ?? null;
+        $validated['std_hrs_week'] = isset($validated['std_hrs_week']) && $validated['std_hrs_week'] !== ''
+            ? (int) $validated['std_hrs_week']
+            : null;
+        $validated['compensation_rate_id'] = $validated['compensation_rate_id'] ?? null;
+        $validated['amount'] = isset($validated['amount']) && $validated['amount'] !== ''
+            ? round((float) $validated['amount'], 2)
+            : null;
+
+        $employeeModel->union_code = $validated['union_code'] ?? null;
+        $employeeModel->effdt_of_membership = $validated['effdt_of_membership'] ?? null;
+        $employeeModel->save();
+
+        unset($validated['union_code'], $validated['effdt_of_membership']);
+
         $userId = Auth::id();
         $validated['created_by'] = $userId;
         $validated['updated_by'] = $userId;
@@ -730,25 +801,148 @@ class EmployeesController extends Controller
             ->orderByDesc('effseq')
             ->first();
 
+        $latestEffdt = $latest?->effdt?->format('Y-m-d');
+
         // If effdt is changed or no assignment exists, create new
-        if (!$latest || $validated['effdt'] !== $latest->effdt) {
+        if (!$latest || $validated['effdt'] !== $latestEffdt) {
             $effseq = 0;
-            if ($latest && $latest->effdt === $validated['effdt']) {
+            if ($latest && $latestEffdt === $validated['effdt']) {
                 $effseq = $latest->effseq + 1;
             }
             $validated['effseq'] = $effseq;
             $validated['employee_num'] = $employeeNum;
             \App\Models\BPEmpJobData::create($validated);
-            $msg = 'Assignment added successfully.';
+            $msg = 'Job data added successfully.';
         } else {
-            // Update the latest assignment
+            // Update the latest job data record
             $latest->fill($validated);
             $latest->save();
-            $msg = 'Assignment updated successfully.';
+            $msg = 'Job data updated successfully.';
         }
 
         return redirect()->route('admin.employees.edit', $employee)
-            ->with('success', $msg);
+            ->with('success', $msg)
+            ->with('employeeTab', 'job-data');
+    }
+
+    /**
+     * Add or update tax data for an employee (tabbed form).
+     */
+    public function updateTaxData(Request $request, $employee)
+    {
+        $employeeModel = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+        $employeeNum = $employeeModel->employee_num;
+
+        $request->merge([
+            'fed_tax_data' => $request->input('fed_tax_data') ?: null,
+            'state_tax_data' => $request->input('state_tax_data') ?: null,
+            'resident' => $request->input('resident') ?: null,
+            'fed_withholding_allowance' => $request->input('fed_withholding_allowance') !== '' && $request->input('fed_withholding_allowance') !== null
+                ? $request->input('fed_withholding_allowance') : null,
+            'state_withholding_allowance1' => $request->input('state_withholding_allowance1') !== '' && $request->input('state_withholding_allowance1') !== null
+                ? $request->input('state_withholding_allowance1') : null,
+            'local_withholding_allowance' => $request->input('local_withholding_allowance') !== '' && $request->input('local_withholding_allowance') !== null
+                ? $request->input('local_withholding_allowance') : null,
+            'addl_withholding_percentage1' => $request->input('addl_withholding_percentage1') !== '' && $request->input('addl_withholding_percentage1') !== null
+                ? $request->input('addl_withholding_percentage1') : null,
+            'addl_withholding_amount1' => $request->input('addl_withholding_amount1') !== '' && $request->input('addl_withholding_amount1') !== null
+                ? $request->input('addl_withholding_amount1') : null,
+            'addl_withholding_percentage2' => $request->input('addl_withholding_percentage2') !== '' && $request->input('addl_withholding_percentage2') !== null
+                ? $request->input('addl_withholding_percentage2') : null,
+            'addl_withholding_amount2' => $request->input('addl_withholding_amount2') !== '' && $request->input('addl_withholding_amount2') !== null
+                ? $request->input('addl_withholding_amount2') : null,
+        ]);
+
+        $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
+        $rules = [
+            'effdt' => ['required', 'date'],
+            'effseq' => 'nullable|integer',
+            'fed_tax_data' => 'nullable|in:1,2',
+            'fed_withholding_allowance' => 'nullable|numeric|min:0',
+            'state_tax_data' => 'nullable|in:1,2',
+            'state_withholding_allowance1' => 'nullable|numeric|min:0',
+            'resident' => 'nullable|in:Y,N',
+            'local_withholding_allowance' => 'nullable|numeric|min:0',
+            'locality' => 'nullable|string|max:100',
+            'county' => 'nullable|string|max:100',
+            'addl_withholding_percentage1' => 'nullable|numeric|min:0|max:100',
+            'addl_withholding_amount1' => 'nullable|numeric|min:0',
+            'addl_withholding_percentage2' => 'nullable|numeric|min:0|max:100',
+            'addl_withholding_amount2' => 'nullable|numeric|min:0',
+            'resident_state' => 'nullable|string|size:2',
+        ];
+        if (!$isUpdate) {
+            $rules['effdt'][] = 'after_or_equal:' . now()->toDateString();
+        }
+
+        $validated = $request->validate($rules);
+
+        foreach ([
+            'fed_withholding_allowance',
+            'state_withholding_allowance1',
+            'local_withholding_allowance',
+            'addl_withholding_percentage1',
+            'addl_withholding_amount1',
+            'addl_withholding_percentage2',
+            'addl_withholding_amount2',
+        ] as $decimalField) {
+            if (isset($validated[$decimalField]) && $validated[$decimalField] !== '') {
+                $validated[$decimalField] = round((float) $validated[$decimalField], 2);
+            } else {
+                $validated[$decimalField] = null;
+            }
+        }
+
+        $validated['resident_state'] = strtoupper($validated['resident_state'] ?? 'CA') ?: 'CA';
+        $validated['locality'] = $validated['locality'] ?? null;
+        $validated['county'] = $validated['county'] ?? null;
+
+        if ($isUpdate) {
+            $tax = BPEmpTaxData::query()
+                ->where('employee_num', $employeeNum)
+                ->where('effdt', $validated['effdt'])
+                ->where('effseq', $validated['effseq'])
+                ->first();
+
+            if ($tax) {
+                $tax->fill($validated);
+                $tax->save();
+                $msg = 'Tax data updated successfully.';
+            } else {
+                $validated['employee_num'] = $employeeNum;
+                $validated['effseq'] = (int) ($validated['effseq'] ?? 0);
+                BPEmpTaxData::create($validated);
+                $msg = 'Tax data added successfully.';
+            }
+        } else {
+            $latest = BPEmpTaxData::query()
+                ->where('employee_num', $employeeNum)
+                ->orderByDesc('effdt')
+                ->orderByDesc('effseq')
+                ->first();
+
+            $latestEffdt = $latest?->effdt?->format('Y-m-d');
+
+            if (!$latest || $validated['effdt'] !== $latestEffdt) {
+                $effseq = 0;
+                if ($latest && $latestEffdt === $validated['effdt']) {
+                    $effseq = $latest->effseq + 1;
+                }
+                $validated['effseq'] = $effseq;
+                $validated['employee_num'] = $employeeNum;
+                BPEmpTaxData::create($validated);
+                $msg = 'Tax data added successfully.';
+            } else {
+                $latest->fill($validated);
+                $latest->save();
+                $msg = 'Tax data updated successfully.';
+            }
+        }
+
+        return redirect()->route('admin.employees.edit', $employee)
+            ->with('success', $msg)
+            ->with('employeeTab', 'tax-data');
     }
 
     /**
@@ -1087,6 +1281,15 @@ class EmployeesController extends Controller
         $citizenOptions = DB::table('selectoptions')
             ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
             ->orderBy('sort_order')->get();
+        $actionOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Action')->value('id'))
+            ->orderBy('sort_order')->get();
+        $unionCodeOptions = \App\Models\BPBargainingUnit::query()
+            ->whereNotNull('union_code')
+            ->orderBy('union_code')
+            ->pluck('union_code')
+            ->unique()
+            ->values();
 
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
         return view('admin.facilities.employee.edit_employee', compact(
@@ -1120,6 +1323,8 @@ class EmployeesController extends Controller
             'ethnicOptions',
             'militaryOptions',
             'citizenOptions',
+            'actionOptions',
+            'unionCodeOptions',
             'uploadTypes'
         ));
     }
@@ -1138,6 +1343,11 @@ class EmployeesController extends Controller
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'dob' => 'nullable|date',
+            'badge_num' => 'nullable|string|max:50',
+            'badge_eff_dt' => 'nullable|date',
+            'union_code' => 'nullable|string|max:50',
+            'effdt_of_membership' => 'nullable|date',
+            'action_id' => 'nullable|integer|exists:selectoptions,id',
             'marital_status_id' => 'nullable|integer|exists:selectoptions,id',
             'ethnic_group_id' => 'nullable|integer|exists:selectoptions,id',
             'military_status_id' => 'nullable|integer|exists:selectoptions,id',
@@ -1173,6 +1383,11 @@ class EmployeesController extends Controller
             $employee->middle_name = $validated['middle_name'] ?? null;
             $employee->last_name = $validated['last_name'];
             $employee->dob = isset($validated['dob']) && $validated['dob'] ? date('Y-m-d', strtotime($validated['dob'])) : null;
+            $employee->badge_num = $validated['badge_num'] ?? null;
+            $employee->badge_eff_dt = $validated['badge_eff_dt'] ?? null;
+            $employee->union_code = $validated['union_code'] ?? null;
+            $employee->effdt_of_membership = $validated['effdt_of_membership'] ?? null;
+            $employee->action_id = $validated['action_id'] ?? null;
             $employee->gender = $validated['gender'];
             $employee->marital_status_id = $validated['marital_status_id'] ?? null;
             $employee->ethnic_group_id = $validated['ethnic_group_id'] ?? null;
@@ -1241,10 +1456,18 @@ class EmployeesController extends Controller
             'phones',
             'addresses',
             'user',
+            'taxData',
+            'assignments.hourlyStatus',
+            'assignments.compensationRate',
+            'assignments.facility',
+            'assignments.department',
+            'assignments.position',
             'currentAssignment',
             'currentAssignment.facility',
             'currentAssignment.position',
             'currentAssignment.position.reportsToPosition',
+            'currentAssignment.hourlyStatus',
+            'currentAssignment.compensationRate',
         ])->findOrFail($employee_num); // $employee_num is PK id
         $this->authorizeEmployeeFacilityAccess($request, $employee);
         $employeesListFacilityId = $this->resolveFacilityFilterId($request);
@@ -1750,6 +1973,15 @@ class EmployeesController extends Controller
         $citizenOptions = DB::table('selectoptions')
             ->where('type_id', DB::table('optionstypes')->where('name', 'Citizenship Status')->value('id'))
             ->orderBy('sort_order')->get();
+        $actionOptions = DB::table('selectoptions')
+            ->where('type_id', DB::table('optionstypes')->where('name', 'Action')->value('id'))
+            ->orderBy('sort_order')->get();
+        $unionCodeOptions = \App\Models\BPBargainingUnit::query()
+            ->whereNotNull('union_code')
+            ->orderBy('union_code')
+            ->pluck('union_code')
+            ->unique()
+            ->values();
 
         $evaluatorActionsDisabled = \App\Support\PreventsSelfAssessment::isSelfAssessment(
             auth()->user(),
@@ -1796,6 +2028,8 @@ class EmployeesController extends Controller
             'ethnicOptions',
             'militaryOptions',
             'citizenOptions',
+            'actionOptions',
+            'unionCodeOptions',
             'uploadTypes',
             // Add draft competency responses for Part G
             'draftResponses',

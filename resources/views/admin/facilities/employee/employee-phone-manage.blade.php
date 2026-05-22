@@ -5,26 +5,29 @@
 @endif
 <div x-show="showPhoneModal" style="display: none;" class="fixed inset-0 flex items-center justify-center z-50">
     <div class="fixed inset-0 bg-black opacity-40" @click="showPhoneModal = false"></div>
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl z-10">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl z-10">
         <h3 class="text-lg font-bold mb-4">Manage Phones</h3>
 
         @if(!empty($employee) && !empty($employee->employee_num))
             <!-- Add Phone Form -->
             <form x-show="addPhone" method="POST" action="{{ route('admin.employees.phones.add', $employee->employee_num) }}" class="mb-4">
                 @csrf
-                <div class="flex gap-2 mb-2">
+                <div class="flex flex-wrap gap-2 mb-2">
                     <select name="phone_type" class="form-select border rounded px-2 py-1" required>
                         <option value="">Type</option>
                         <option value="M">Mobile</option>
                         <option value="H">Home</option>
                         <option value="W">Work</option>
+                        <option value="O">Other</option>
                     </select>
-                    <input type="text" name="phone_number" class="form-input border rounded px-2 py-1" placeholder="Phone Number" required>
-                    <label class="flex items-center text-xs ml-2">
-                        <input type="checkbox" name="is_primary" class="mr-1"> Primary
-                    </label>
+                    <input type="date" name="effdt" value="{{ now()->toDateString() }}" class="form-input border rounded px-2 py-1" required>
+                    <input type="text" name="phone_number" class="form-input border rounded px-2 py-1 min-w-[10rem]" placeholder="Phone Number" required>
+                    <select name="is_primary" class="form-select border rounded px-2 py-1 text-sm">
+                        <option value="N">Not primary</option>
+                        <option value="Y">Primary</option>
+                    </select>
                     <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Save</button>
-                    <button type="button" @click="addPhone = false" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 ml-2">Cancel</button>
+                    <button type="button" @click="addPhone = false" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
                 </div>
             </form>
 
@@ -35,19 +38,23 @@
                     class="mb-4">
                     @csrf
                     @method('PUT')
-                    <div class="flex gap-2 mb-2">
+                    <div class="flex flex-wrap gap-2 mb-2">
                         <select name="phone_type" class="form-select border rounded px-2 py-1" x-model="editPhone.phone_type" required>
                             <option value="">Type</option>
                             <option value="M">Mobile</option>
                             <option value="H">Home</option>
                             <option value="W">Work</option>
+                            <option value="O">Other</option>
                         </select>
-                        <input type="text" name="phone_number" class="form-input border rounded px-2 py-1" x-model="editPhone.phone_number" required>
-                        <label class="flex items-center text-xs ml-2">
-                            <input type="checkbox" name="is_primary" x-model="editPhone.is_primary" class="mr-1"> Primary
-                        </label>
+                        <input type="date" name="effdt" class="form-input border rounded px-2 py-1" x-model="editPhone.effdt" required>
+                        <input type="number" name="effseq" class="form-input border rounded px-2 py-1 w-20 bg-gray-100" x-model="editPhone.effseq" readonly>
+                        <input type="text" name="phone_number" class="form-input border rounded px-2 py-1 min-w-[10rem]" x-model="editPhone.phone_number" required>
+                        <select name="is_primary" x-model="editPhone.is_primary" class="form-select border rounded px-2 py-1 text-sm">
+                            <option value="N">Not primary</option>
+                            <option value="Y">Primary</option>
+                        </select>
                         <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Update</button>
-                        <button type="button" @click="phoneAction = ''; editPhone = null" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 ml-2">Cancel</button>
+                        <button type="button" @click="phoneAction = ''; editPhone = null" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
                     </div>
                 </form>
             </template>
@@ -68,6 +75,8 @@
             <table class="min-w-full divide-y divide-gray-200 mb-4">
                 <thead>
                     <tr>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Eff. Date</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seq</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Number</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Primary</th>
@@ -76,21 +85,28 @@
                 </thead>
                 <tbody>
                     @if(!empty($employee->phones) && count($employee->phones))
-                        @foreach($employee->phones as $phone)
+                        @foreach($employee->phones->sortBy([['effdt', 'desc'], ['effseq', 'desc']]) as $phone)
+                        @php
+                            $phoneEffdt = $phone->effdt instanceof \Illuminate\Support\Carbon
+                                ? $phone->effdt->format('Y-m-d')
+                                : (string) ($phone->effdt ?? '');
+                        @endphp
                         <tr>
+                            <td class="px-3 py-2 text-xs">{{ $phoneEffdt }}</td>
+                            <td class="px-3 py-2 text-sm">{{ $phone->effseq ?? 0 }}</td>
                             <td class="px-3 py-2">{{ $phone->phone_type }}</td>
                             <td class="px-3 py-2">{{ $phone->phone_number }}</td>
-                            <td class="px-3 py-2">@if($phone->is_primary) Yes @else No @endif</td>
+                            <td class="px-3 py-2">@if(strtoupper((string) $phone->is_primary) === 'Y') Yes @else No @endif</td>
                             <td class="px-3 py-2">
                                 <button type="button" class="text-blue-600 hover:underline mr-2"
-                                    @click="addPhone = false; phoneAction = 'edit'; editPhone = { phone_id: {{ $phone->phone_id }}, phone_type: '{{ $phone->phone_type }}', phone_number: '{{ $phone->phone_number }}', is_primary: {{ $phone->is_primary ? 'true' : 'false' }} }">Edit</button>
+                                    @click="addPhone = false; phoneAction = 'edit'; editPhone = { phone_id: {{ $phone->phone_id }}, phone_type: '{{ $phone->phone_type }}', phone_number: '{{ $phone->phone_number }}', effdt: '{{ $phoneEffdt }}', effseq: {{ (int) ($phone->effseq ?? 0) }}, is_primary: '{{ strtoupper((string) $phone->is_primary) === 'Y' ? 'Y' : 'N' }}' }">Edit</button>
                                 <button type="button" class="text-red-600 hover:underline"
                                     @click="phoneAction = 'delete'; deletePhoneId = {{ $phone->phone_id }}">Delete</button>
                             </td>
                         </tr>
                         @endforeach
                     @else
-                        <tr><td colspan="4" class="text-center text-gray-400">No phones found.</td></tr>
+                        <tr><td colspan="6" class="text-center text-gray-400">No phones found.</td></tr>
                     @endif
                 </tbody>
             </table>

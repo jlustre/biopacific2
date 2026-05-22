@@ -125,6 +125,17 @@
                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                @if(($canDeleteImportLogs ?? false) && $log->status !== 'running')
+                                <form method="POST" action="{{ route('admin.import-logs.destroy', $log) }}" class="inline"
+                                      onsubmit="return confirm('Delete import history #{{ $log->id }}? This removes the audit record only — it does not undo changes made to employee data.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" title="Delete history record" aria-label="Delete history record"
+                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-700 hover:bg-red-50">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

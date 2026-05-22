@@ -9,7 +9,7 @@ class BPEmployee extends Model
     // Relationship: Employee has one phone (primary)
     public function phone()
     {
-        return $this->hasOne(\App\Models\BPEmpPhone::class, 'employee_num', 'employee_num')->where('is_primary', 1);
+        return $this->hasOne(BPEmpPhone::class, 'employee_num', 'employee_num')->where('is_primary', BPEmpPhone::PRIMARY_YES);
     }
 
     // Relationship: Employee has one address

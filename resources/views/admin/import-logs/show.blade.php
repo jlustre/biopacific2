@@ -30,6 +30,18 @@
                 Revert not available
             </span>
             @endif
+            @if(($canDeleteImportLogs ?? false) && $importLog->status !== 'running')
+            <form method="POST" action="{{ route('admin.import-logs.destroy', $importLog) }}"
+                  onsubmit="return confirm('Delete this import history record? This removes the audit trail only — it does not undo changes made to employee data.');">
+                @csrf
+                @method('DELETE')
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-800 hover:bg-red-100">
+                    <i class="fas fa-trash"></i>
+                    Delete history
+                </button>
+            </form>
+            @endif
         </div>
     </div>
 
@@ -170,47 +182,9 @@
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-200 px-6 py-4">
-            <h2 class="font-semibold text-slate-900">Recorded changes ({{ $importLog->changes->count() }})</h2>
-            <p class="text-xs text-slate-500">Used for revert — updated rows store a snapshot of data before the import.</p>
-        </div>
-        <div class="max-h-96 overflow-auto">
-            <table class="min-w-full text-xs">
-                <thead class="sticky top-0 border-b border-slate-200 bg-slate-50">
-                    <tr>
-                        <th class="px-4 py-2 text-left font-semibold text-slate-600">Table</th>
-                        <th class="px-4 py-2 text-left font-semibold text-slate-600">Employee</th>
-                        <th class="px-4 py-2 text-left font-semibold text-slate-600">Action</th>
-                        <th class="px-4 py-2 text-left font-semibold text-slate-600">Revertible</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse($importLog->changes as $change)
-                    <tr>
-                        <td class="px-4 py-2 font-mono">{{ $change->table_name }}</td>
-                        <td class="px-4 py-2 font-mono">{{ $change->employee_num ?? '—' }}</td>
-                        <td class="px-4 py-2">
-                            <span class="{{ $change->action === 'updated' ? 'text-amber-700' : 'text-emerald-700' }} font-semibold">{{ ucfirst($change->action) }}</span>
-                        </td>
-                        <td class="px-4 py-2 text-slate-500">
-                            @if($change->action === 'updated' && $change->before_data)
-                            Yes (restore previous)
-                            @elseif($change->action === 'inserted')
-                            Yes (delete row)
-                            @else
-                            —
-                            @endif
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-slate-500">No changes recorded.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+    @include('admin.import-logs.partials.changes-by-table', [
+        'changesByTable' => $changesByTable ?? $importLog->changes->groupBy('table_name'),
+        'totalChanges' => $importLog->changes->count(),
+    ])
 </div>
 @endsection

@@ -6,7 +6,7 @@
     $latestAddrEffdt = $latestAddr->effdt ?? '';
     $latestAddrEffseq = $latestAddr->effseq ?? '';
     $homeAddress = \App\Models\BPEmpAddress::where('employee_num', $employee->employee_num)
-    ->where('address_type', 'h')
+    ->where('address_type', 'H')
     ->orderByDesc('effdt')
     ->orderByDesc('effseq')
     ->first();
@@ -35,6 +35,20 @@
                 @method('PUT')
                 <div class="bg-white shadow rounded-lg p-4 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium mb-1">Address Type</label>
+                            <select name="address_type"
+                                class="form-select w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('address_type') ? 'border-red-500' : '' }}"
+                                x-model="currentAddress.address_type" required>
+                                <option value="H">Home</option>
+                                <option value="W">Work</option>
+                                <option value="O">Other</option>
+                                <option value="M">Mailing</option>
+                            </select>
+                            @error('address_type')
+                            <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
                         <div class="mb-2 lg:col-span-2">
                             <label class="block text-sm font-medium mb-1">Address 1</label>
                             <input type="text" name="address1" x-model="currentAddress.address1"
@@ -77,22 +91,12 @@
                             <label class="block text-sm font-medium mb-1">Is Primary</label>
                             <select name="is_primary" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
                                 x-model="currentAddress.is_primary" @change="handlePrimaryChange">
-                                <option value="1">Yes</option>
-                                <option value="0" :disabled="onlyOnePrimary && currentAddress.is_primary == '1'">No</option>
+                                <option value="Y">Yes</option>
+                                <option value="N" :disabled="onlyOnePrimary && currentAddress.is_primary == 'Y'">No</option>
                             </select>
                             <template x-if="showPrimaryWarning">
                                 <div class="text-red-600 text-xs mt-1">At least one address must be set as default.</div>
                             </template>
-                        </div>
-                        <div class="mb-2">
-                            <label class="block text-sm font-medium mb-1">Type</label>
-                            <select name="address_type"
-                                class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
-                                x-model="currentAddress.address_type">
-                                <option value="h">Home</option>
-                                <option value="w">Work</option>
-                                <option value="o">Other</option>
-                            </select>
                         </div>
                         <div class="mb-2">
                             <label class="block text-sm font-medium mb-1">Effective Date</label>
@@ -129,21 +133,21 @@
                         state: @json(old('state', $latestAddr->state ?? 'CA')),
                         zip: @json(old('zip', $latestAddr->zip ?? '')),
                         country: @json(old('country', $latestAddr->country ?? '')),
-                        is_primary: @json(old('is_primary', isset($latestAddr) ? ($latestAddr->is_primary ? '1' : '0') : '0')),
-                        address_type: @json(old('address_type', $latestAddr->address_type ?? 'h')),
+                        is_primary: @json(old('is_primary', isset($latestAddr) ? (strtoupper((string) $latestAddr->is_primary) === 'Y' ? 'Y' : 'N') : 'N')),
+                        address_type: @json(strtoupper((string) old('address_type', $latestAddr->address_type ?? 'H'))),
                         effdt: @json(old('effdt', $latestAddr->effdt ?? '')),
                         effseq: @json(old('effseq', $latestAddr->effseq ?? '')),
                     },
                     latestEffdt: @json($latestAddrEffdt),
                     latestEffseq: @json($latestAddrEffseq),
-                    onlyOnePrimary: (allAddresses.filter(a => a.is_primary == 1).length === 1),
+                    onlyOnePrimary: (allAddresses.filter(a => String(a.is_primary).toUpperCase() === 'Y').length === 1),
                     showPrimaryWarning: false,
                     setAddress(addr) {
-                        this.currentAddress = Object.assign({address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: '0', address_type: 'h', effdt: '', effseq: ''}, addr);
+                        this.currentAddress = Object.assign({address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: 'N', address_type: 'H', effdt: '', effseq: ''}, addr);
                         this.showAddAddress = false;
                     },
                     clearAddress() {
-                        this.currentAddress = {address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: '0', address_type: 'h', effdt: '', effseq: ''};
+                        this.currentAddress = {address1: '', address2: '', city: '', state: '', zip: '', country: '', is_primary: 'N', address_type: 'H', effdt: '', effseq: ''};
                         this.showAddAddress = true;
                     },
                     isLatestRecord() {
@@ -151,9 +155,9 @@
                     },
                     handlePrimaryChange(e) {
                         // If user tries to unset the last default, show warning and revert
-                        if (this.onlyOnePrimary && this.currentAddress.is_primary == '0') {
+                        if (this.onlyOnePrimary && this.currentAddress.is_primary == 'N') {
                             this.showPrimaryWarning = true;
-                            this.currentAddress.is_primary = '1';
+                            this.currentAddress.is_primary = 'Y';
                             setTimeout(() => { this.showPrimaryWarning = false; }, 2500);
                         }
                     },

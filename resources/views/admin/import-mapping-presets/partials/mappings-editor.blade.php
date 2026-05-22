@@ -2,6 +2,7 @@
     $mappings = old('mappings', $mappings ?? []);
     $targetTables = $targetTables ?? config('import-mapping.target_tables', []);
     $parseWorkbookUrl = $parseWorkbookUrl ?? '';
+    $validateDraftMappingsUrl = $validateDraftMappingsUrl ?? '';
     $tableColumnsUrl = $tableColumnsUrl ?? '';
 @endphp
 
@@ -9,6 +10,7 @@
      x-data="mappingPresetEditor({
         initialRows: @js($mappings),
         parseUrl: @js($parseWorkbookUrl),
+        validateUrl: @js($validateDraftMappingsUrl),
         tableColumnsUrl: @js($tableColumnsUrl),
         targetTables: @js($targetTables),
      })"
@@ -28,11 +30,54 @@
                     class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
                 <i class="fas" :class="parsing ? 'fa-spinner fa-spin' : 'fa-file-upload'"></i>
             </button>
+            <button type="button" @click="validateMappings()" :disabled="!fileLoaded || !rows.length || validating"
+                    title="Validate mappings against workbook and database"
+                    class="rounded-lg border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50">
+                <span x-show="!validating">Validate</span>
+                <span x-show="validating" x-cloak>Validating…</span>
+            </button>
         </div>
         <p x-show="parseError" x-cloak class="mt-2 text-sm text-red-700" x-text="parseError"></p>
         <p x-show="fileLoaded && !parseError" x-cloak class="mt-2 text-sm text-emerald-700">
             Workbook loaded — <span x-text="worksheetNames.length"></span> worksheet(s) available.
         </p>
+        <p x-show="validateError" x-cloak class="mt-2 text-sm text-red-700" x-text="validateError"></p>
+    </div>
+
+    <div x-show="validationResults" x-cloak class="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+        <div class="rounded-lg border px-4 py-3 text-sm"
+             :class="validationResults?.valid ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'">
+            <template x-if="validationResults?.valid">
+                <span><strong>Validation passed.</strong> All mappings exist in the workbook and target tables.</span>
+            </template>
+            <template x-if="validationResults && !validationResults.valid">
+                <span><strong>Validation failed.</strong> <span x-text="validationResults.summary?.failed"></span> of <span x-text="validationResults.summary?.total"></span> mapping(s) have issues.</span>
+            </template>
+        </div>
+        <div class="max-h-64 overflow-auto rounded-lg border border-slate-200">
+            <table class="min-w-full text-xs">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600">#</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600">Source</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600">Target</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600">Status</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="row in (validationResults?.results || [])" :key="row.index">
+                        <tr :class="row.valid ? '' : 'bg-red-50/50'">
+                            <td class="px-3 py-2" x-text="row.index + 1"></td>
+                            <td class="px-3 py-2" x-text="[row.worksheet, row.worksheet_column].filter(Boolean).join(' → ')"></td>
+                            <td class="px-3 py-2 font-mono" x-text="[row.table, row.table_column].filter(Boolean).join('.')"></td>
+                            <td class="px-3 py-2 font-semibold" :class="row.valid ? 'text-emerald-700' : 'text-red-700'" x-text="row.valid ? 'OK' : 'Failed'"></td>
+                            <td class="px-3 py-2 text-slate-600" x-text="(row.issues || []).join(' ') || '—'"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
@@ -216,10 +261,14 @@ function mappingPresetEditor(config) {
         targetColumns: [],
         targetTables: config.targetTables || [],
         parseUrl: config.parseUrl,
+        validateUrl: config.validateUrl,
         tableColumnsUrl: config.tableColumnsUrl,
         fileLoaded: false,
         parsing: false,
         parseError: '',
+        validating: false,
+        validateError: '',
+        validationResults: null,
         sortField: 'worksheet',
         sortDirection: 'asc',
 
@@ -269,6 +318,8 @@ function mappingPresetEditor(config) {
 
             this.parsing = true;
             this.parseError = '';
+            this.validationResults = null;
+            this.validateError = '';
 
             const formData = new FormData();
             formData.append('file', file);
@@ -315,6 +366,58 @@ function mappingPresetEditor(config) {
             this.draft.worksheet_column = '';
         },
 
+        async validateMappings() {
+            const input = this.$refs.workbookFile;
+            const file = input?.files?.[0];
+            if (!file) {
+                this.validateError = 'Please choose an Excel file first.';
+                return;
+            }
+            if (!this.rows.length) {
+                this.validateError = 'Add at least one mapping before validating.';
+                return;
+            }
+            if (!this.validateUrl) {
+                this.validateError = 'Validation is not available.';
+                return;
+            }
+
+            this.validating = true;
+            this.validateError = '';
+            this.validationResults = null;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            this.rows.forEach((row, index) => {
+                ['worksheet', 'worksheet_column', 'table', 'table_column'].forEach((field) => {
+                    formData.append(`mappings[${index}][${field}]`, row[field] ?? '');
+                });
+            });
+
+            try {
+                const res = await fetch(this.validateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('[name=_token]')?.value || '',
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok && !data.results) {
+                    this.validateError = data.message || data.error || 'Validation request failed.';
+                    return;
+                }
+
+                this.validationResults = data;
+            } catch (err) {
+                this.validateError = 'Validation failed: ' + (err?.message || 'Unknown error');
+            } finally {
+                this.validating = false;
+            }
+        },
+
         async loadTargetColumns() {
             this.draft.table_column = '';
             this.targetColumns = [];
@@ -348,6 +451,7 @@ function mappingPresetEditor(config) {
                 }
             }
             this.rows.push({ worksheet, worksheet_column, table, table_column });
+            this.validationResults = null;
             this.syncHiddenInputs();
             this.draft = {
                 worksheet: worksheet,
@@ -362,6 +466,7 @@ function mappingPresetEditor(config) {
 
         removeRow(index) {
             this.rows.splice(index, 1);
+            this.validationResults = null;
             this.syncHiddenInputs();
         },
 

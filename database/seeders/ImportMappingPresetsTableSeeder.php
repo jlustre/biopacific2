@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Auto-generated from Import Preset Management → Update seeder.
- * Last exported: 2026-05-20 18:30:30
+ * Last exported: 2026-05-21 15:49:35
  *
  * Do not edit preset data by hand; use the admin UI and re-export.
  */
@@ -19,8 +19,8 @@ class ImportMappingPresetsTableSeeder extends Seeder
         $presets = json_decode(<<<'IMPORT_MAPPING_PRESETS_JSON'
 [
     {
-        "name": "Vale HCC Employee Preset",
-        "facility_id": 17,
+        "name": "Employees Import Preset",
+        "facility_id": 99,
         "owner_email": "super-admin@biopacific.com",
         "mappings": [
             {
@@ -202,6 +202,174 @@ class ImportMappingPresetsTableSeeder extends Seeder
                 "worksheet": "JobData",
                 "table_column": "amount",
                 "worksheet_column": "Amount"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "employee_num",
+                "worksheet_column": "Employee Num"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "fed_tax_data",
+                "worksheet_column": "Federal Tax Data"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "fed_withholding_allowance",
+                "worksheet_column": "Fed Withholding Allowance"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "state_tax_data",
+                "worksheet_column": "State Tax Data"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "state_withholding_allowance1",
+                "worksheet_column": "State Withholding Allowance"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "resident",
+                "worksheet_column": "Resident"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "local_withholding_allowance",
+                "worksheet_column": "Local Withholding Allowance"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "locality",
+                "worksheet_column": "Locality"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "county",
+                "worksheet_column": "County"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "addl_withholding_amount1",
+                "worksheet_column": "Addl Withholding $"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "addl_withholding_percentage1",
+                "worksheet_column": "Addl Withholding %"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "addl_withholding_amount2",
+                "worksheet_column": "Addl Withholding2 $"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "addl_withholding_percentage2",
+                "worksheet_column": "Addl Withholding2 %"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "resident_state",
+                "worksheet_column": "Resident State"
+            },
+            {
+                "table": "bp_emp_tax_data",
+                "worksheet": "TaxData",
+                "table_column": "effdt",
+                "worksheet_column": "EffDt"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "employee_num",
+                "worksheet_column": "Employee Num"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "effdt",
+                "worksheet_column": "EffDt"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "address_type",
+                "worksheet_column": "Address Type"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "address1",
+                "worksheet_column": "Address1"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "address2",
+                "worksheet_column": "Address2"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "city",
+                "worksheet_column": "City"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "state",
+                "worksheet_column": "State"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "zip",
+                "worksheet_column": "Zipcode"
+            },
+            {
+                "table": "bp_emp_phones",
+                "worksheet": "Phones",
+                "table_column": "employee_num",
+                "worksheet_column": "Employee Num"
+            },
+            {
+                "table": "bp_emp_phones",
+                "worksheet": "Phones",
+                "table_column": "is_primary",
+                "worksheet_column": "Is Primary"
+            },
+            {
+                "table": "bp_emp_phones",
+                "worksheet": "Phones",
+                "table_column": "phone_number",
+                "worksheet_column": "Phone Number"
+            },
+            {
+                "table": "bp_emp_addresses",
+                "worksheet": "Addresses",
+                "table_column": "is_primary",
+                "worksheet_column": "Is Primary"
+            },
+            {
+                "table": "bp_emp_phones",
+                "worksheet": "Phones",
+                "table_column": "effdt",
+                "worksheet_column": "EffDt"
             }
         ]
     }

@@ -8,6 +8,7 @@ use App\Models\ImportMappingPreset;
 use App\Models\User;
 use App\Services\ExcelWorkbookParser;
 use App\Services\ImportMappingPresetSeederExporter;
+use App\Services\ImportMappingPresetValidator;
 use App\Services\ImportPresetImportRunner;
 use App\Support\ImportMappingPresetAccess;
 use Illuminate\Http\Request;
@@ -126,6 +127,93 @@ class ImportMappingPresetAdminController extends Controller
                 'error' => 'Failed to read workbook: ' . $e->getMessage(),
             ], 422);
         }
+    }
+
+    public function validatePresetMappings(
+        Request $request,
+        ImportMappingPreset $importMappingPreset,
+        ExcelWorkbookParser $parser,
+        ImportMappingPresetValidator $validator,
+    ) {
+        if (!ImportMappingPresetAccess::canUse()) {
+            return response()->json([
+                'valid' => false,
+                'error' => 'Permission denied',
+                'message' => 'You do not have permission to validate import presets.',
+            ], 403);
+        }
+
+        return $this->validateMappingsAgainstWorkbook(
+            $request,
+            $parser,
+            $validator,
+            $importMappingPreset->mappings ?? []
+        );
+    }
+
+    public function validateDraftMappings(
+        Request $request,
+        ExcelWorkbookParser $parser,
+        ImportMappingPresetValidator $validator,
+    ) {
+        if (!ImportMappingPresetAccess::canCreate()) {
+            return response()->json([
+                'valid' => false,
+                'error' => 'Permission denied',
+                'message' => 'You do not have permission to validate import presets.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+            'mappings' => 'required|array|min:1',
+            'mappings.*.worksheet' => 'required|string|max:255',
+            'mappings.*.worksheet_column' => 'required|string|max:255',
+            'mappings.*.table' => ['required', 'string', Rule::in($this->targetTables())],
+            'mappings.*.table_column' => 'required|string|max:255',
+        ]);
+
+        return $this->validateMappingsAgainstWorkbook(
+            $request,
+            $parser,
+            $validator,
+            array_values($validated['mappings'])
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $mappings
+     */
+    protected function validateMappingsAgainstWorkbook(
+        Request $request,
+        ExcelWorkbookParser $parser,
+        ImportMappingPresetValidator $validator,
+        array $mappings,
+    ) {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+        ]);
+
+        if ($mappings === []) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'No mappings to validate.',
+                'summary' => ['total' => 0, 'passed' => 0, 'failed' => 0],
+                'results' => [],
+            ], 422);
+        }
+
+        try {
+            $parsed = $parser->parseUploadedFile($request->file('file'));
+        } catch (\Throwable $e) {
+            return response()->json([
+                'valid' => false,
+                'error' => 'Failed to read workbook',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json($validator->validate($parsed['worksheets'] ?? [], $mappings));
     }
 
     public function create()
@@ -306,6 +394,7 @@ class ImportMappingPresetAdminController extends Controller
             'targetTables' => $this->targetTables(),
             'defaultUserId' => Auth::id(),
             'parseWorkbookUrl' => route('admin.import-mapping-presets.parse-workbook'),
+            'validateDraftMappingsUrl' => route('admin.import-mapping-presets.validate-draft'),
             'tableColumnsUrl' => route('admin.facility.files.table_columns'),
         ];
     }

@@ -129,8 +129,10 @@
                                             'isGlobal' => $preset->isGlobal(),
                                             'facilityId' => $preset->facility_id,
                                             'mappingsCount' => $preset->mappingsCount(),
+                                            'mappings' => $preset->mappings ?? [],
                                             'primaryWorksheet' => $preset->mappings[0]['worksheet'] ?? '',
                                             'runImportUrl' => route('admin.import-mapping-presets.run-import', $preset),
+                                            'validateUrl' => route('admin.import-mapping-presets.validate', $preset),
                                         ]))">
                                     <i class="fas fa-file-import"></i>
                                 </button>

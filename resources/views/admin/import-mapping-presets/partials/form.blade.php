@@ -112,6 +112,8 @@
 
             'parseWorkbookUrl' => $parseWorkbookUrl,
 
+            'validateDraftMappingsUrl' => $validateDraftMappingsUrl ?? '',
+
             'tableColumnsUrl' => $tableColumnsUrl,
 
         ])

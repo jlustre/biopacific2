@@ -11,9 +11,9 @@ class FacilityDashboardController extends Controller
     public function show(Facility $facility)
     {
         $user = auth()->user();
-        // If user is facility-admin or facility-dsd, only allow access to their assigned facility
-        if ($user->hasRole(['facility-admin', 'facility-dsd'])) {
-            if ($user->facility_id !== $facility->id) {
+        // Facility-scoped roles may only access their assigned facility; admin/super-admin/rdhr may access any
+        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor']) && !$user->hasRole(['admin', 'super-admin', 'rdhr'])) {
+            if ((int) $user->facility_id !== (int) $facility->id) {
                 abort(403, 'Unauthorized: You do not have access to this facility.');
             }
         }

@@ -24,6 +24,9 @@ class OptionTypesSeeder extends Seeder
             ['name' => 'Standard Hours', 'isActive' => 1],
             ['name' => 'Compensation Rate', 'isActive' => 1],
             ['name' => 'Action', 'isActive' => 1],
+            ['name' => 'Resident', 'isActive' => 1],
+            ['name' => 'Address Type', 'isActive' => 1],
+            ['name' => 'Phone Type', 'isActive' => 1],
         ];
 
         DB::table('optionstypes')->insert($optionTypes);

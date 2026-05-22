@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use App\Support\MemberPortalLayout;
 
 class QuickActionsController extends Controller
 {
@@ -42,8 +43,7 @@ class QuickActionsController extends Controller
     {
         $user = Auth::user();
         // ...existing code...
-        if ($user->hasRole('admin') || $user->hasRole('rdhr')) {
-            // ...existing code...
+        if (MemberPortalLayout::userIsSystemAdmin($user) || $user->hasRole('rdhr')) {
             return true;
         }
         if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
@@ -341,7 +341,7 @@ class QuickActionsController extends Controller
     {
         $this->authorizeFacilityAccess($facility);
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = MemberPortalLayout::userIsSystemAdmin($user);
         $isRdhr = $user->hasRole('rdhr');
         $roles = $user->getRoleNames()->toArray();
         $userFacilityIds = collect();
@@ -372,7 +372,8 @@ class QuickActionsController extends Controller
                 })
                 ->get();
         }
-        $canScheduleReports = $user->hasAnyRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
+        $canScheduleReports = MemberPortalLayout::userIsSystemAdmin($user)
+            || $user->hasAnyRole(['rdhr', 'facility-admin', 'facility-dsd']);
 
         return view('admin.facilities.reports', [
             'facility' => $facility,

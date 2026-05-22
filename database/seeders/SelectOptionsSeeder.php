@@ -114,11 +114,59 @@ class SelectOptionsSeeder extends Seeder
             ];
         }
 
+        // Compensation Rate
+        $compensationRate = ['Hourly', 'Annual', 'Biweekly', 'Monthly', 'Salary'];
+        foreach ($compensationRate as $i => $value) {
+            $selectOptions[] = [
+                'type_id' => $optionTypes['Compensation Rate'] ?? null,
+                'name' => $value,
+                'value' => $value,
+                'isActive' => 1,
+                'sort_order' => $i + 1
+            ];
+        }
+
         // Action
-        $action = ['New Hire', 'Rehire'];
+        $action = ['New Hire', 'Rehire', 'Current'];
         foreach ($action as $i => $value) {
             $selectOptions[] = [
                 'type_id' => $optionTypes['Action'] ?? null,
+                'name' => $value,
+                'value' => $value,
+                'isActive' => 1,
+                'sort_order' => $i + 1
+            ];
+        }
+
+        // Resident
+        $resident = ['Y', 'N'];
+        foreach ($resident as $i => $value) {
+            $selectOptions[] = [
+                'type_id' => $optionTypes['Resident'] ?? null,
+                'name' => $value,
+                'value' => $value,
+                'isActive' => 1,
+                'sort_order' => $i + 1
+            ];
+        }
+
+        // Address Type
+        $addressType = ['H', 'W', 'M', 'O']; // H = Home, W = Work, M = Mailing, O = Other
+        foreach ($addressType as $i => $value) {
+            $selectOptions[] = [
+                'type_id' => $optionTypes['Address Type'] ?? null,
+                'name' => $value,
+                'value' => $value,
+                'isActive' => 1,
+                'sort_order' => $i + 1
+            ];
+        }
+
+        // Phone Type
+        $phoneType = ['M', 'W', 'H', 'O'];
+        foreach ($phoneType as $i => $value) {
+            $selectOptions[] = [
+                'type_id' => $optionTypes['Phone Type'] ?? null,
                 'name' => $value,
                 'value' => $value,
                 'isActive' => 1,

@@ -244,7 +244,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 // Facility-specific admin dashboard
-Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|facility-editor'])->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor'])->group(function () {
     Route::get('/admin/facility/{facility}/dashboard', [\App\Http\Controllers\Admin\FacilityDashboardController::class, 'show'])->name('admin.facility.dashboard');
 
     // Facility Quick Actions
@@ -338,6 +338,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update', 'create', 'store']);
     // Custom route for updating employee assignment (tabbed form)
     Route::put('employees/{employee}/update-assignment', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAssignment'])->name('employees.update_assignment');
+    Route::put('employees/{employee}/update-tax', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateTaxData'])->name('employees.tax.update');
 
     // AJAX: Save checklist verification (modal)
     Route::post('employees/{employee}/checklist/verify', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveChecklistVerification'])->name('employees.checklist.verify');
@@ -466,6 +467,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
             ->name('import-mapping-presets.sync-seeder');
         Route::post('import-mapping-presets/parse-workbook', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'parseWorkbook'])
             ->name('import-mapping-presets.parse-workbook');
+        Route::post('import-mapping-presets/validate-draft', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'validateDraftMappings'])
+            ->name('import-mapping-presets.validate-draft');
+        Route::post('import-mapping-presets/{import_mapping_preset}/validate', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'validatePresetMappings'])
+            ->name('import-mapping-presets.validate');
         Route::post('import-mapping-presets/{import_mapping_preset}/duplicate', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'duplicate'])
             ->name('import-mapping-presets.duplicate');
         Route::post('import-mapping-presets/{import_mapping_preset}/run-import', [\App\Http\Controllers\Admin\ImportMappingPresetAdminController::class, 'runImport'])
@@ -476,7 +481,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
         Route::post('import-logs/{import_log}/revert', [\App\Http\Controllers\Admin\ImportLogAdminController::class, 'revert'])
             ->name('import-logs.revert');
         Route::resource('import-logs', \App\Http\Controllers\Admin\ImportLogAdminController::class)
-            ->only(['index', 'show'])
+            ->only(['index', 'show', 'destroy'])
             ->names('import-logs');
     });
 
@@ -734,7 +739,7 @@ Route::get('/home', function() {
 Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {
     $facility = \App\Models\Facility::where('slug', $facilitySlug)->firstOrFail();
     $user = \Illuminate\Support\Facades\Auth::user();
-    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('rdhr') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
+    if ($user && ($user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'facility-editor']))) {
         // Optionally check if user is assigned to this facility
         return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug]);
     }
@@ -784,7 +789,7 @@ Route::middleware(['auth', 'role:admin|rdhr|facility-admin'])->prefix('admin')->
 Route::get('/{facility:slug}/dashboard', function ($facilitySlug) {
     $facility = \App\Models\Facility::where('slug', $facilitySlug)->firstOrFail();
     $user = \Illuminate\Support\Facades\Auth::user();
-    if ($user && ($user->hasRole('facility-admin') || $user->hasRole('admin') || $user->hasRole('rdhr') || $user->hasRole('facility-dsd') || $user->hasRole('facility-editor'))) {
+    if ($user && ($user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'facility-editor']))) {
         // You may want to check if the user is assigned to this facility
         // Example: if ($user->facility_id == $facility->id) { ... }
         return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug]);

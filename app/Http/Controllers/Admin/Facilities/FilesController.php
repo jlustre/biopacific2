@@ -1095,20 +1095,12 @@ class FilesController extends Controller
             return null;
         }
 
-        if (in_array($column, ['hourly_status_id', 'compensation_rate_id'], true)) {
-            if (is_numeric($value)) {
-                return (int) $value;
-            }
-            $option = SelectOption::where('name', $value)->first();
-            if ($option) {
-                return $option->id;
-            }
+        if ($column === 'hourly_status_id') {
+            return $this->resolveSelectOptionIdForType('Hourly Status', $value);
+        }
 
-            return SelectOption::create([
-                'name' => $value,
-                'type_id' => 1,
-                'isActive' => 1,
-            ])->id;
+        if ($column === 'compensation_rate_id') {
+            return $this->resolveSelectOptionIdForType('Compensation Rate', $value);
         }
 
         if ($column === 'std_hrs_week') {
@@ -1116,10 +1108,76 @@ class FilesController extends Controller
         }
 
         if ($column === 'amount') {
-            return is_numeric($value) ? (float) $value : $value;
+            return $this->parseDecimalImportValue($value);
         }
 
         return $value;
+    }
+
+    protected function resolveSelectOptionIdForType(string $optionTypeName, mixed $value): ?int
+    {
+        $value = $this->normalizeCellValue($value);
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        $typeId = \Illuminate\Support\Facades\DB::table('optionstypes')
+            ->where('name', $optionTypeName)
+            ->value('id');
+
+        if (!$typeId) {
+            return null;
+        }
+
+        $option = SelectOption::query()
+            ->where('type_id', $typeId)
+            ->where('name', $value)
+            ->first();
+
+        if ($option) {
+            return (int) $option->id;
+        }
+
+        $nextSort = (int) (SelectOption::query()->where('type_id', $typeId)->max('sort_order') ?? 0) + 1;
+
+        return (int) SelectOption::create([
+            'name' => $value,
+            'value' => $value,
+            'type_id' => $typeId,
+            'isActive' => 1,
+            'sort_order' => $nextSort,
+        ])->id;
+    }
+
+    /**
+     * Parse spreadsheet decimals that may include currency symbols, commas, or percent signs.
+     */
+    protected function parseDecimalImportValue(mixed $value): ?float
+    {
+        $value = $this->normalizeCellValue($value);
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $str = trim((string) $value);
+        if ($str === '') {
+            return null;
+        }
+
+        $cleaned = preg_replace('/[^\d.\-+]/', '', $str) ?? '';
+        if ($cleaned === '' || !is_numeric($cleaned)) {
+            return null;
+        }
+
+        return (float) $cleaned;
     }
 
     /**
@@ -1160,7 +1218,7 @@ class FilesController extends Controller
             'addl_withholding_percentage2',
             'addl_withholding_amount2',
         ], true)) {
-            return is_numeric($value) ? (float) $value : $value;
+            return $this->parseDecimalImportValue($value);
         }
 
         if ($column === 'effdt') {
@@ -1426,7 +1484,7 @@ class FilesController extends Controller
 
     protected function mapEmployeeField(string $column, $value)
     {
-        if ($column === 'effdt_of_membership' && !empty($value)) {
+        if (in_array($column, ['effdt_of_membership', 'dob', 'original_hire_dt', 'badge_eff_dt'], true) && $value !== null && $value !== '') {
             $value = $this->convertExcelDate($value);
         }
         if (is_null($value) || is_numeric($value)) {
@@ -1568,6 +1626,14 @@ class FilesController extends Controller
                         $assignmentData[$jobCol] = $this->mapJobField($jobCol, $sourceVal);
                         continue;
                     }
+
+                    $sourceVal = !empty($worksheetDataMap)
+                        ? $this->resolveCrossWorksheetValue($row, $employeeData, $map, $worksheetDataMap)
+                        : null;
+                    if ($sourceVal === null || $sourceVal === '') {
+                        $sourceVal = $this->getSpreadsheetColumnValue($row, $sourceCol);
+                    }
+
                     try {
                         $employeeData[$targetCol] = $this->mapEmployeeField($targetCol, $sourceVal);
                     } catch (\Throwable $e) {
@@ -1778,11 +1844,14 @@ class FilesController extends Controller
 
                 if (!empty($addressData)) {
                     $addressData['employee_num'] = $empId;
-                    $addressData['address_type'] = $addressData['address_type'] ?? 'H';
+                    $addressData['address_type'] = strtoupper((string) ($addressData['address_type'] ?? 'H'));
+                    if (!in_array($addressData['address_type'], ['H', 'W', 'O', 'M'], true)) {
+                        $addressData['address_type'] = 'H';
+                    }
                     $addressData['effdt'] = date('Y-m-d');
                     $addressData['effseq'] = 0;
                     $addressData['country'] = 'USA';
-                    $addressData['is_primary'] = 1;
+                    $addressData['is_primary'] = \App\Models\BPEmpAddress::PRIMARY_YES;
                     if (!empty($addressData['address1'])) {
                         $existingAddress = \App\Models\BPEmpAddress::query()
                             ->where('employee_num', $empId)
@@ -1808,11 +1877,18 @@ class FilesController extends Controller
                 if (!empty($phoneData)) {
                     $phoneData['employee_num'] = $empId;
                     $phoneData['phone_type'] = $phoneData['phone_type'] ?? 'M';
-                    $phoneData['is_primary'] = (isset($phoneData['is_primary']) && ($phoneData['is_primary'] == 0 || $phoneData['is_primary'] === '0')) ? 0 : 1;
+                    $phoneData['effdt'] = $this->convertExcelDate($phoneData['effdt'] ?? null) ?? date('Y-m-d');
+                    $phoneData['effseq'] = (int) ($phoneData['effseq'] ?? 0);
+                    $phonePrimary = $phoneData['is_primary'] ?? null;
+                    $phoneData['is_primary'] = in_array($phonePrimary, [\App\Models\BPEmpPhone::PRIMARY_NO, '0', 0, false, 'n', 'N'], true)
+                        ? \App\Models\BPEmpPhone::PRIMARY_NO
+                        : \App\Models\BPEmpPhone::PRIMARY_YES;
                     if (!empty($phoneData['phone_number'])) {
                         $existingPhone = \App\Models\BPEmpPhone::query()
                             ->where('employee_num', $empId)
                             ->where('phone_type', $phoneData['phone_type'])
+                            ->where('effdt', $phoneData['effdt'])
+                            ->where('effseq', $phoneData['effseq'])
                             ->first();
                         $this->importLogRecorder->trackUpsert(
                             'bp_emp_phones',
@@ -1821,6 +1897,8 @@ class FilesController extends Controller
                                 [
                                     'employee_num' => $empId,
                                     'phone_type' => $phoneData['phone_type'],
+                                    'effdt' => $phoneData['effdt'],
+                                    'effseq' => $phoneData['effseq'],
                                 ],
                                 $phoneData
                             ),

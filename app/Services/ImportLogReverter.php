@@ -87,7 +87,7 @@ class ImportLogReverter
                 ->where('id', $key['id'] ?? 0)
                 ->delete(),
             'bp_emp_phones' => BPEmpPhone::query()
-                ->where('id', $key['id'] ?? 0)
+                ->where('phone_id', $key['phone_id'] ?? $key['id'] ?? 0)
                 ->delete(),
             'bp_emp_tax_data' => BPEmpTaxData::query()
                 ->where('tax_id', $key['tax_id'] ?? 0)
@@ -116,7 +116,7 @@ class ImportLogReverter
                 ->where('id', $key['id'] ?? $before['id'] ?? 0)
                 ->update($this->onlyFillable(BPEmpAddress::class, $before)),
             'bp_emp_phones' => BPEmpPhone::query()
-                ->where('id', $key['id'] ?? $before['id'] ?? 0)
+                ->where('phone_id', $key['phone_id'] ?? $before['phone_id'] ?? $key['id'] ?? 0)
                 ->update($this->onlyFillable(BPEmpPhone::class, $before)),
             'bp_emp_tax_data' => BPEmpTaxData::query()
                 ->where('tax_id', $key['tax_id'] ?? $before['tax_id'] ?? 0)

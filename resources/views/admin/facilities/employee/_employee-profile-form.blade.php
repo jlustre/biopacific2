@@ -1,4 +1,17 @@
-@php use Illuminate\Support\Facades\Auth; @endphp
+@php
+    use Illuminate\Support\Facades\Auth;
+
+    $formatDateInput = static function ($value): string {
+        if ($value === null || $value === '') {
+            return '';
+        }
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return (string) $value;
+    };
+@endphp
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {{-- Employee Id --}}
     <div class="mb-1">
@@ -67,7 +80,7 @@
     {{-- Date of Birth --}}
     <div class="mb-1">
         <label class="block text-sm font-medium mb-2">Date of Birth</label>
-        <input type="date" name="dob" value="{{ old('dob', (isset($employee) && isset($employee->dob)) ? $employee->dob : '') }}"
+        <input type="date" name="dob" value="{{ old('dob', isset($employee) ? $formatDateInput($employee->dob ?? null) : '') }}"
             class="form-input w-full rounded-lg px-2 py-1 {{ $errors->has('dob') ? 'border-red-500' : 'border border-teal-300' }}">
         @error('dob')
         <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
@@ -102,8 +115,8 @@
             class="form-select w-full border border-teal-300 rounded-lg px-2 py-1 text-sm">
             @if(isset($employee) && isset($employee->phones))
                 @forelse($employee->phones as $phone)
-                <option value="{{ $phone->phone_id }}" @if($phone->is_primary) selected @endif>
-                    {{ ucfirst($phone->phone_type) }}: {{ $phone->phone_number }}@if($phone->is_primary)
+                <option value="{{ $phone->phone_id }}" @if(strtoupper((string) $phone->is_primary) === 'Y') selected @endif>
+                    {{ ucfirst($phone->phone_type) }}: {{ $phone->phone_number }}@if(strtoupper((string) $phone->is_primary) === 'Y')
                     (Primary)@endif
                 </option>
                 @empty
@@ -132,8 +145,68 @@
     <div class="mb-1">
         <label class="block text-sm font-medium mb-2">Original Hire Date</label>
         <input type="date" name="original_hire_dt"
-            value="{{ old('original_hire_dt', (isset($employee) && isset($employee->original_hire_dt)) ? $employee->original_hire_dt : '') }}"
+            value="{{ old('original_hire_dt', isset($employee) ? $formatDateInput($employee->original_hire_dt ?? null) : '') }}"
             class="form-input w-full border border-teal-300 rounded-lg px-2 py-1">
+    </div>
+    {{-- Badge Number --}}
+    <div class="mb-1">
+        <label class="block text-sm font-medium mb-2">Badge Number</label>
+        <input type="text" name="badge_num" maxlength="50"
+            value="{{ old('badge_num', isset($employee) ? ($employee->badge_num ?? '') : '') }}"
+            class="form-input w-full rounded-lg px-2 py-1 border border-teal-300">
+        @error('badge_num')
+        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+        @enderror
+    </div>
+    {{-- Badge Effective Date --}}
+    <div class="mb-1">
+        <label class="block text-sm font-medium mb-2">Badge Effective Date</label>
+        <input type="date" name="badge_eff_dt"
+            value="{{ old('badge_eff_dt', isset($employee) ? $formatDateInput($employee->badge_eff_dt ?? null) : '') }}"
+            class="form-input w-full rounded-lg px-2 py-1 border border-teal-300">
+        @error('badge_eff_dt')
+        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+        @enderror
+    </div>
+    {{-- Union Code --}}
+    <div class="mb-1">
+        <label class="block text-sm font-medium mb-2">Union Code</label>
+        <input type="text" name="union_code" maxlength="50"
+            value="{{ old('union_code', isset($employee) ? ($employee->union_code ?? '') : '') }}"
+            class="form-input w-full rounded-lg px-2 py-1 border border-teal-300"
+            list="union-code-options">
+        <datalist id="union-code-options">
+            @foreach(($unionCodeOptions ?? collect()) as $code)
+                <option value="{{ $code }}"></option>
+            @endforeach
+        </datalist>
+        @error('union_code')
+        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+        @enderror
+    </div>
+    {{-- Effective Date of Membership --}}
+    <div class="mb-1">
+        <label class="block text-sm font-medium mb-2">Effective Date of Membership</label>
+        <input type="date" name="effdt_of_membership"
+            value="{{ old('effdt_of_membership', isset($employee) ? $formatDateInput($employee->effdt_of_membership ?? null) : '') }}"
+            class="form-input w-full rounded-lg px-2 py-1 border border-teal-300">
+        @error('effdt_of_membership')
+        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+        @enderror
+    </div>
+    {{-- Action --}}
+    <div class="mb-1">
+        <label class="block text-sm font-medium mb-2">Action</label>
+        <select name="action_id" class="form-select w-full rounded-lg px-2 py-1 border border-teal-300">
+            <option value="">-- Select --</option>
+            @php $selectedAction = old('action_id', isset($employee) ? ($employee->action_id ?? '') : ''); @endphp
+            @foreach(($actionOptions ?? collect()) as $option)
+                <option value="{{ $option->id }}" @if((string) $selectedAction === (string) $option->id) selected @endif>{{ $option->name }}</option>
+            @endforeach
+        </select>
+        @error('action_id')
+        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+        @enderror
     </div>
 
     {{-- Marital Status --}}

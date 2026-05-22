@@ -15,11 +15,14 @@ return new class extends Migration
             $table->id('phone_id');
             $table->string('employee_num'); // Foreign key to bp_employees.employee_num
             $table->enum('phone_type', ['M', 'H', 'W', 'O']); // mobile, home, work, other
+            $table->date('effdt');
+            $table->integer('effseq')->default(0);
             $table->string('phone_number', 30);
-            $table->boolean('is_primary')->default(false);
+            $table->enum('is_primary', ['Y', 'N'])->default('N');
             $table->timestamps();
             $table->foreign('employee_num')->references('employee_num')->on('bp_employees');
             $table->index(['employee_num', 'phone_type'], 'idx_emp_phone_type');
+            $table->index(['employee_num', 'effdt', 'effseq'], 'idx_bp_emp_phone_hist');
         });
     }
 

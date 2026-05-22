@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\EmployeeHelper;
+use App\Support\MemberPortalLayout;
 
 
 class UploadController extends Controller {
@@ -20,7 +21,7 @@ class UploadController extends Controller {
     protected function authorizeFacilityAccess(Facility $facility): void
     {
         $user = Auth::user();
-        if ($user->hasRole('admin') || $user->hasRole('rdhr')) {
+        if (MemberPortalLayout::userIsSystemAdmin($user) || $user->hasRole('rdhr')) {
             return;
         }
         if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
