@@ -27,9 +27,9 @@ use Illuminate\Support\Facades\Auth;
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
         </button>
-        <div x-show="open" @click.away="open = false"
+        <div x-show="open" x-cloak @click.away="open = false"
             class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50"
-            style="display: none;" x-transition:enter="transition ease-out duration-100"
+            x-transition:enter="transition ease-out duration-100"
             x-transition:enter-start="transform opacity-0 scale-95"
             x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
             x-transition:leave-start="transform opacity-100 scale-100"

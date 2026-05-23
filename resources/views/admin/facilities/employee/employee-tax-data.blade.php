@@ -1,7 +1,7 @@
 @php
 $states = \App\Models\State::orderBy('name')->get(['abbreviation', 'name']);
 @endphp
-<div x-show="tab === 'tax-data'" x-data="taxForm()" x-init="initTax()">
+<div x-show="tab === 'tax-data'" x-cloak data-employee-tab-panel="tax-data" x-data="taxForm()" x-init="initTax()">
     @if(isset($isAddMode) && $isAddMode)
         <div class="p-6 mb-6 bg-white rounded shadow text-gray-600">
             <div class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">

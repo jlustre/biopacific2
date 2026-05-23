@@ -15,8 +15,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\EmployeeAssessmentPeriodCalculator;
 use App\Support\PartFPerformanceScoring;
 use App\Support\PreventsSelfAssessment;
+use App\Services\EmployeeAssessmentPeriodService;
+use App\Models\EmployeeAssessmentPeriod;
 use Illuminate\Http\JsonResponse;
 
 
@@ -1303,35 +1306,125 @@ class EmployeePerformanceAssessmentController extends Controller {
     }
 
     /**
-     * Create a new assessment period (for New Period modal)
+     * Create or update an assessment period (View Periods modal / Edit Period).
      */
     public function createPeriod(Request $request)
     {
-        // Support JSON requests
-        if (0 === strpos($request->header('Content-Type'), 'application/json')) {
+        if (str_starts_with((string) $request->header('Content-Type'), 'application/json')) {
             $request->merge(json_decode($request->getContent(), true) ?? []);
         }
+
         $validated = $request->validate([
-            'date_from' => 'required|date',
-            'date_to' => 'required|date|after_or_equal:date_from',
-            'review_type' => 'required|string|max:2',
+            'employee_num' => 'required|string|exists:bp_employees,employee_num',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'review_type' => 'required|string|in:A,Q',
+            'id' => 'nullable|integer|exists:employee_assessment_periods,id',
+            'review_date' => 'nullable|date',
+            'use_rule' => 'sometimes|boolean',
+            'force' => 'sometimes|boolean',
+            'force_edit' => 'sometimes|boolean',
         ]);
 
-        $period = new \App\Models\EmployeeAssessmentPeriod();
-        $period->date_from = $validated['date_from'];
-        $period->date_to = $validated['date_to'];
-        $period->review_type = $validated['review_type'];
-        $period->created_by = Auth::id();
-        // Set period_year from date_from
-        $period->period_year = date('Y', strtotime($validated['date_from']));
-        // Optionally set period_sequence to 0 (or calculate as needed)
-        $period->period_sequence = 0;
-        $period->save();
+        $employee = BPEmployee::query()->where('employee_num', $validated['employee_num'])->firstOrFail();
+        $reviewType = $validated['review_type'];
+        $on = ! empty($validated['review_date'])
+            ? Carbon::parse($validated['review_date'])->startOfDay()
+            : now()->startOfDay();
+
+        if ($reviewType === 'A' && $request->boolean('use_rule')) {
+            $annual = EmployeeAssessmentPeriodCalculator::annualPeriodForAssessmentOn($employee, $on);
+            if (! $annual) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No prior completed annual period is available for this review date. Set hire/rehire dates on the Personal tab, or use a custom date range.',
+                ], 422);
+            }
+            $validated['date_from'] = $annual['date_from'];
+            $validated['date_to'] = $annual['date_to'];
+        } elseif ($reviewType === 'A' && (empty($validated['date_from']) || empty($validated['date_to']))) {
+            $annual = EmployeeAssessmentPeriodCalculator::annualPeriodForAssessmentOn($employee, $on);
+            if ($annual) {
+                $validated['date_from'] = $annual['date_from'];
+                $validated['date_to'] = $annual['date_to'];
+            }
+        }
+
+        if (empty($validated['date_from']) || empty($validated['date_to'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Assessment period start and end dates are required.',
+            ], 422);
+        }
+
+        $overlapQuery = EmployeeAssessmentPeriod::query()
+            ->where('employee_num', $employee->employee_num)
+            ->where('date_from', '<=', $validated['date_to'])
+            ->where('date_to', '>=', $validated['date_from']);
+
+        if (! empty($validated['id'])) {
+            $overlapQuery->where('id', '!=', $validated['id']);
+        }
+
+        if ($overlapQuery->exists() && ! $request->boolean('force')) {
+            return response()->json([
+                'success' => false,
+                'warning' => true,
+                'message' => 'This date range overlaps another assessment period for this employee. Save anyway?',
+            ], 409);
+        }
+
+        if (! empty($validated['id'])) {
+            $period = EmployeeAssessmentPeriod::query()
+                ->where('id', $validated['id'])
+                ->where('employee_num', $employee->employee_num)
+                ->firstOrFail();
+
+            if ($period->employeeHasAssessmentData() && ! $request->boolean('force_edit')) {
+                return response()->json([
+                    'success' => false,
+                    'warning' => true,
+                    'message' => 'This employee already has assessment data for this period. Edit anyway?',
+                ], 409);
+            }
+
+            $period->fill([
+                'date_from' => $validated['date_from'],
+                'date_to' => $validated['date_to'],
+                'review_type' => $reviewType,
+                'period_year' => (int) date('Y', strtotime($validated['date_from'])),
+            ]);
+            $period->save();
+        } else {
+            $period = EmployeeAssessmentPeriod::query()->firstOrCreate(
+                [
+                    'employee_num' => $employee->employee_num,
+                    'date_from' => $validated['date_from'],
+                    'date_to' => $validated['date_to'],
+                ],
+                [
+                    'review_type' => $reviewType,
+                    'period_year' => (int) date('Y', strtotime($validated['date_from'])),
+                    'period_sequence' => 0,
+                    'created_by' => Auth::id(),
+                ]
+            );
+
+            if ($period->review_type !== $reviewType) {
+                $period->review_type = $reviewType;
+                $period->save();
+            }
+        }
+
+        $fresh = $period->fresh();
+        $fresh->setAttribute('date_from', $fresh->date_from?->format('Y-m-d'));
+        $fresh->setAttribute('date_to', $fresh->date_to?->format('Y-m-d'));
 
         return response()->json([
             'success' => true,
-            'message' => 'Assessment period created.',
-            'data' => $period,
+            'message' => empty($validated['id']) ? 'Assessment period saved.' : 'Assessment period updated.',
+            'data' => $fresh,
+            'period' => $fresh,
         ]);
     }
 }

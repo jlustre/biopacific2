@@ -6,9 +6,8 @@
             class="absolute -top-1 -right-2 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">{{$unreadCount}}</span>
         @endif
     </button>
-    <div x-show="open" @click.away="open = false"
-        class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded shadow-lg z-50"
-        style="display: none;">
+    <div x-show="open" x-cloak @click.away="open = false"
+        class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded shadow-lg z-50">
         <div class="p-4 border-b font-semibold text-slate-700">Webmaster Messages</div>
         <ul class="max-h-72 overflow-y-auto divide-y divide-slate-100">
             @forelse($latestContacts as $contact)

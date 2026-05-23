@@ -71,20 +71,78 @@ $initialEmployeeTab = session('employeeTab') ?: request('tab');
 if ($initialEmployeeTab === 'assignment') {
     $initialEmployeeTab = 'job-data';
 }
+$employeeTabIds = ['personal', 'address', 'job-data', 'tax-data', 'documents', 'checklist'];
 @endphp
 
+@push('head')
+<style>
+    html[data-employee-tab]:not(.employee-tabs-ready) [data-employee-tab-panel] { display: none !important; }
+    @foreach($employeeTabIds as $tabId)
+    html[data-employee-tab="{{ $tabId }}"]:not(.employee-tabs-ready) [data-employee-tab-panel="{{ $tabId }}"] { display: block !important; }
+    html[data-employee-tab="{{ $tabId }}"]:not(.employee-tabs-ready) [data-employee-tab-btn="{{ $tabId }}"] { background-color: #2563eb !important; color: #fff !important; }
+    @endforeach
+</style>
+<script>
+    (function () {
+        function normalizeEmployeeTab(stored) {
+            if (!stored) return null;
+            return stored === 'assignment' ? 'job-data' : stored;
+        }
+        function resolveEmployeeTab() {
+            var fromServer = @json($initialEmployeeTab);
+            var normalized = normalizeEmployeeTab(fromServer);
+            if (normalized) return normalized;
+            try {
+                var stored = sessionStorage.getItem('employeeTab') || localStorage.getItem('employeeTab');
+                normalized = normalizeEmployeeTab(stored);
+                if (normalized) return normalized;
+            } catch (e) {}
+            return 'personal';
+        }
+        window.__employeeInitialTab = resolveEmployeeTab();
+        document.documentElement.setAttribute('data-employee-tab', window.__employeeInitialTab);
+        if (window.__employeeInitialTab === 'checklist') {
+            var checklistFromUrl = new URLSearchParams(window.location.search).get('checklist_tab');
+            var checklistTab = checklistFromUrl;
+            if (!checklistTab || !/^part[A-G]$/.test(checklistTab)) {
+                try {
+                    checklistTab = localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab');
+                } catch (e) {
+                    checklistTab = null;
+                }
+            }
+            if (checklistTab && /^part[A-G]$/.test(checklistTab)) {
+                window.__checklistInitialTab = checklistTab;
+            }
+        }
+    })();
+</script>
+@endpush
+
 <div class="container py-8 max-w-5xl mx-auto" x-data="{
-        tab: (() => {
-            const legacy = (stored) => stored === 'assignment' ? 'job-data' : stored;
-            return legacy(@js($initialEmployeeTab))
-                || legacy(sessionStorage.getItem('employeeTab'))
-                || legacy(localStorage.getItem('employeeTab'))
-                || 'personal';
-        })(),
+        tab: window.__employeeInitialTab || 'personal',
+        init() {
+            document.documentElement.classList.add('employee-tabs-ready');
+            document.documentElement.setAttribute('data-employee-tab', this.tab);
+        },
         setTab(newTab) {
             this.tab = newTab;
             sessionStorage.setItem('employeeTab', newTab);
             localStorage.setItem('employeeTab', newTab);
+            document.documentElement.setAttribute('data-employee-tab', newTab);
+            var url = new URL(window.location.href);
+            url.searchParams.set('tab', newTab);
+            if (newTab === 'checklist') {
+                try {
+                    var checklistPart = localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab');
+                    if (checklistPart) {
+                        url.searchParams.set('checklist_tab', checklistPart);
+                    }
+                } catch (e) {}
+            } else {
+                url.searchParams.delete('checklist_tab');
+            }
+            window.history.replaceState({}, '', url);
         }
     }">
     
@@ -149,25 +207,11 @@ if ($initialEmployeeTab === 'assignment') {
                 hasChecklistMessages = true;
             }
             if (hasChecklistMessages) {
-                // Show checklist tab and PART F
-                if (window.Alpine) {
-                    window.Alpine.store('tab', 'checklist');
-                }
                 localStorage.setItem('employeeTab', 'checklist');
+                sessionStorage.setItem('employeeTab', 'checklist');
+                document.documentElement.setAttribute('data-employee-tab', 'checklist');
+                window.__employeeInitialTab = 'checklist';
                 if (partF) partF.classList.remove('hidden');
-            }
-        });
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            // If a tab was set in sessionStorage (from a form submit), restore it
-            var preferredTab = @json($initialEmployeeTab);
-            if (preferredTab) {
-                sessionStorage.setItem('employeeTab', preferredTab);
-                localStorage.setItem('employeeTab', preferredTab);
-            }
-            var tab = sessionStorage.getItem('employeeTab');
-            if (tab) {
-                localStorage.setItem('employeeTab', tab);
             }
         });
 

@@ -11,6 +11,8 @@ use Livewire\Component;
 
 class LicensedNurseCompetencySkills extends Component
 {
+    use ManagesPartGSectionExclusion;
+
     public string $employeeNum;
 
     public ?int $assessmentPeriodId = null;
@@ -19,17 +21,23 @@ class LicensedNurseCompetencySkills extends Component
 
     public array $responses = [];
 
-    public bool $assessmentLocked = false;
+    public string $summaryComments = '';
 
-    public bool $sectionExcluded = false;
+    public string $employeeComments = '';
 
     public string $reviewerName = '';
 
     public string $reviewerTitle = '';
-    
+
     public string $employeeName = '';
 
     public string $employeeTitle = '';
+
+    public string $reviewSignDate = '';
+
+    public string $employeeSignDate = '';
+
+    public bool $assessmentLocked = false;
 
     public ?string $draftSaveMessage = null;
 
@@ -46,8 +54,23 @@ class LicensedNurseCompetencySkills extends Component
         $this->assessmentPeriodId = $assessmentPeriodId;
         $this->assessmentLocked = $assessmentLocked;
 
-        // Load competency items
+        $employee = BPEmployee::with('currentAssignment.position')
+            ->where('employee_num', $employeeNum)
+            ->first();
+
+        if ($employee) {
+            $this->employeeName = trim(($employee->last_name ?? '').', '.($employee->first_name ?? ''), ', ');
+            $this->employeeTitle = $employee->currentAssignment?->position?->title
+                ?? ($employee->position ?? '');
+        }
+
+        $user = Auth::user();
+        $this->reviewerName = $user?->name ?? '';
+        $this->reviewerTitle = $user?->title ?? '';
+
         $this->lnCompetencyItems = $this->buildCompetencyItems();
+        $this->loadDraftResponses();
+        $this->normalizeResponseKeys();
     }
 
     public function updatedResponses(): void
@@ -226,16 +249,6 @@ class LicensedNurseCompetencySkills extends Component
 
     public function render()
     {
-        return view('livewire.admin.facilities.checklist.part-g-sections.licensed-nurse-competency-skills', [
-            'lnCompetencyItems' => $this->lnCompetencyItems,
-            'responses' => $this->responses,
-            'assessmentLocked' => $this->assessmentLocked,
-            'sectionExcluded' => $this->sectionExcluded,
-            'reviewerName' => $this->reviewerName,
-            'reviewerTitle' => $this->reviewerTitle,
-            'employeeName' => $this->employeeName,
-            'employeeTitle' => $this->employeeTitle,
-            'draftSaveMessage' => $this->draftSaveMessage,
-        ]);
+        return view('livewire.admin.facilities.checklist.part-g-sections.licensed-nurse-competency-skills');
     }
 }

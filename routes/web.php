@@ -336,6 +336,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
 
     // Add resource route for employees (show, edit, update, create)
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update', 'create', 'store']);
+    Route::get('employees/{employee}/assessment-periods/modal-data', [\App\Http\Controllers\Admin\EmployeesController::class, 'assessmentPeriodModalData'])
+        ->name('employees.assessment-periods.modal-data');
     // Custom route for updating employee assignment (tabbed form)
     Route::put('employees/{employee}/update-assignment', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAssignment'])->name('employees.update_assignment');
     Route::put('employees/{employee}/update-tax', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateTaxData'])->name('employees.tax.update');

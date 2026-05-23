@@ -13,7 +13,7 @@
         ];
     })->values();
 @endphp
- <div x-show="tab === 'documents'">
+ <div x-show="tab === 'documents'" x-cloak data-employee-tab-panel="documents">
     @if(empty($employee->employee_num))
         <div x-show="tab === 'documents'">
             <div class="p-6 mb-6 bg-white rounded shadow text-gray-600">

@@ -89,13 +89,5 @@
                 title="List all employees reviewed for this period and facility">Reviewed Employees</button>
             @endif
         </div>
-
-        <p class="text-[11px] leading-relaxed text-slate-600 md:text-xs">
-            Periods are unique to this employee. Annual windows follow the
-            <strong>Original Hire Date</strong> on the Personal tab, or <strong>Rehire Date</strong> when Action is Rehire
-            (each year runs from that anniversary through the day before the next anniversary&mdash;e.g. May 18 to May 17).
-            For the <strong>review date</strong>, the system selects the prior completed year by default, not the employment year still in progress.
-            Use the dropdown to change periods, or <strong>View Periods</strong> to browse history and load a period.
-        </p>
     </div>
 </div>

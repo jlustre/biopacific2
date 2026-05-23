@@ -1,5 +1,5 @@
 <div x-data="{ showPhoneModal: false, phoneAction: '', editPhone: null, addPhone: false, deletePhoneId: null }">
-    <div x-show="tab === 'personal'">
+    <div x-show="tab === 'personal'" x-cloak data-employee-tab-panel="personal">
         @php use Illuminate\Support\Facades\Auth; @endphp
         <div class="bg-white shadow rounded-lg p-4 mb-6">
             <form method="POST" action="{{ $isAddMode ? route('admin.employees.store') : route('admin.employees.personal.update', $employee->id ?? '') }}">

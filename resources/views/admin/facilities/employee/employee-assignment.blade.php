@@ -22,7 +22,7 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
     ->unique()
     ->values();
 @endphp
-<div x-show="tab === 'job-data'" x-data="assignmentForm()" x-init="initAssignment()">
+<div x-show="tab === 'job-data'" x-cloak data-employee-tab-panel="job-data" x-data="assignmentForm()" x-init="initAssignment()">
     @if(isset($isAddMode) && $isAddMode)
         <div class="p-6 mb-6 bg-white rounded shadow text-gray-600">
             <div class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">

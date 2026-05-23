@@ -1,4 +1,4 @@
-<div x-show="tab === 'address'">
+<div x-show="tab === 'address'" x-cloak data-employee-tab-panel="address">
     @php
     $latestAddr = $employee->addresses ? $employee->addresses->sortBy([['effdt', 'desc'], ['effseq', 'desc']])->first()
     :

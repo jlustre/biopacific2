@@ -18,10 +18,66 @@ use App\Models\SelectOption;
 use App\Models\EmployeePerformanceAssessment;
 use App\Models\Optionstype;
 use App\Support\PartFPerformanceScoring;
+use App\Services\EmployeeAssessmentPeriodService;
+use App\Support\EmployeeAssessmentPeriodCalculator;
 
 
 class EmployeesController extends Controller
 {
+    protected function loadEmployeeAssessmentPeriods(BPEmployee $employee)
+    {
+        return app(EmployeeAssessmentPeriodService::class)->periodsForEmployee($employee);
+    }
+
+    protected function resolveSelectedAssessmentPeriodIdForEmployee(BPEmployee $employee, $assessmentPeriods): ?int
+    {
+        if (request()->has('assessment_period_id')) {
+            $requested = filled(request('assessment_period_id'))
+                ? (int) request('assessment_period_id')
+                : null;
+
+            if ($requested) {
+                $period = $assessmentPeriods->firstWhere('id', $requested);
+                if ($period && ! EmployeeAssessmentPeriodCalculator::isPeriodLoadable($period)) {
+                    session()->flash(
+                        'assessment_period_error',
+                        'That assessment period is outside the loadable year range and cannot be opened for assessment work.'
+                    );
+
+                    return null;
+                }
+
+                if ($period && (string) $period->employee_num !== (string) $employee->employee_num) {
+                    session()->flash('assessment_period_error', 'That assessment period does not belong to this employee.');
+
+                    return null;
+                }
+            }
+
+            return $requested;
+        }
+
+        $reviewDate = request('assessment_review_date') ?: request('review_date');
+
+        return app(EmployeeAssessmentPeriodService::class)->resolveDefaultPeriodId(
+            $employee,
+            $reviewDate ? \Illuminate\Support\Carbon::parse($reviewDate) : null
+        );
+    }
+
+    public function assessmentPeriodModalData(Request $request, $employee)
+    {
+        $employee = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
+
+        return response()->json([
+            'success' => true,
+            'data' => app(EmployeeAssessmentPeriodService::class)->modalDataForEmployee(
+                $employee,
+                $request->query('review_date')
+            ),
+        ]);
+    }
     protected function scopedFacilityId(Request $request): ?int
     {
         $user = $request->user();
@@ -1446,12 +1502,6 @@ class EmployeesController extends Controller
         // Always define draft responses and raw draft row for Part G
         $draftResponses = [];
         $rawDraftRow = null;
-        // PART F: Load all assessment periods for this employee
-        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
-        $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodId($assessmentPeriods);
-
-        // Load draft competency responses for Part G (if any)
-
         $employee = \App\Models\BPEmployee::with([
             'phones',
             'addresses',
@@ -1486,6 +1536,12 @@ class EmployeesController extends Controller
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $assessmentPeriods = $this->loadEmployeeAssessmentPeriods($employee);
+        $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodIdForEmployee($employee, $assessmentPeriods);
+        $suggestedAssessmentPeriod = app(EmployeeAssessmentPeriodService::class)->suggestedPeriodForEmployee(
+            $employee,
+            request('assessment_review_date') ? \Illuminate\Support\Carbon::parse(request('assessment_review_date')) : null
+        );
         $jsonRow = \App\Models\EmployeeCompetencyAssessment::where('employee_num', $employee->employee_num)
             ->where('assessment_period_id', $selectedAssessmentPeriodId)
             ->first();
@@ -1519,9 +1575,6 @@ class EmployeesController extends Controller
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
 
 
-        // PART F: Load all assessment periods for this employee
-        $assessmentPeriods = \App\Models\EmployeeAssessmentPeriod::orderBy('date_from', 'desc')->get();
-        $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodId($assessmentPeriods);
         // --- END: Load draft competency responses for Part G ---
 
         // --- END: Load draft competency responses for Part G ---
@@ -2012,6 +2065,7 @@ class EmployeesController extends Controller
             'assessmentItemHistories',
             'assessmentPeriods',
             'selectedAssessmentPeriodId',
+            'suggestedAssessmentPeriod',
             'sectionComments',
             'supervisorName',
             'areasForDevelopment',

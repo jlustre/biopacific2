@@ -35,6 +35,7 @@ class BPEmployee extends Model
     protected $casts = [
         'dob' => 'date',
         'original_hire_dt' => 'date',
+        'rehire_dt' => 'date',
         'badge_eff_dt' => 'date',
         'effdt_of_membership' => 'date',
     ];
@@ -51,6 +52,7 @@ class BPEmployee extends Model
         'gender',
         'dob',
         'original_hire_dt',
+        'rehire_dt',
         'marital_status_id',
         'ethnic_group_id',
         'military_status_id',
@@ -164,6 +166,22 @@ class BPEmployee extends Model
     {
         $assignment = $this->currentAssignment;
         return $assignment && $assignment->bargaining_unit_id ? true : false;
+    }
+
+    public function usesRehireDate(): bool
+    {
+        if (! $this->action_id) {
+            return false;
+        }
+
+        $name = SelectOption::query()->whereKey($this->action_id)->value('name');
+
+        return strcasecmp(trim((string) $name), 'Rehire') === 0;
+    }
+
+    public function assessmentPeriods()
+    {
+        return $this->hasMany(\App\Models\EmployeeAssessmentPeriod::class, 'employee_num', 'employee_num');
     }
 
     // Relationship: Employee has many phones

@@ -228,18 +228,69 @@
         z-index: 1000;
         pointer-events: none;
     }
+
+    #employee-checklist-root:not(.checklist-tabs-ready) [data-checklist-tab-panel] { display: none !important; }
+    @foreach(['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'] as $checklistPartId)
+    #employee-checklist-root[data-checklist-tab="{{ $checklistPartId }}"]:not(.checklist-tabs-ready) [data-checklist-tab-panel="{{ $checklistPartId }}"] { display: block !important; }
+    #employee-checklist-root[data-checklist-tab="{{ $checklistPartId }}"]:not(.checklist-tabs-ready) [data-checklist-tab-btn="{{ $checklistPartId }}"] { background-color: #2563eb !important; color: #fff !important; }
+    @endforeach
 </style>
-<div x-show="tab === 'checklist'" data-checklist-tabs="alpine" x-data="{
-    checklistTab: (@js(request('checklist_tab')) || localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab') || 'partA'),
+@php
+    $initialChecklistTab = request('checklist_tab');
+    if (! in_array($initialChecklistTab, ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'], true)) {
+        $initialChecklistTab = null;
+    }
+@endphp
+<div id="employee-checklist-root"
+    data-checklist-tab="{{ $initialChecklistTab ?? 'partA' }}"
+    x-show="tab === 'checklist'"
+    x-cloak
+    data-employee-tab-panel="checklist"
+    data-checklist-tabs="alpine"
+    x-data="{
+    checklistTab: window.__checklistInitialTab || 'partA',
     init() {
+        this.$el.classList.add('checklist-tabs-ready');
+        this.$el.setAttribute('data-checklist-tab', this.checklistTab);
         localStorage.setItem('checklistTab', this.checklistTab);
         localStorage.setItem('employeeChecklistActiveTab', this.checklistTab);
         this.$watch('checklistTab', value => {
+            this.$el.setAttribute('data-checklist-tab', value);
             localStorage.setItem('checklistTab', value);
             localStorage.setItem('employeeChecklistActiveTab', value);
         });
+    },
+    setChecklistTab(part) {
+        this.checklistTab = part;
+        this.$el.setAttribute('data-checklist-tab', part);
+        localStorage.setItem('checklistTab', part);
+        localStorage.setItem('employeeChecklistActiveTab', part);
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', 'checklist');
+        url.searchParams.set('checklist_tab', part);
+        window.history.replaceState({}, '', url);
     }
 }">
+<script>
+    (function () {
+        var root = document.getElementById('employee-checklist-root');
+        if (!root) return;
+        var fromUrl = new URLSearchParams(window.location.search).get('checklist_tab');
+        var tab = fromUrl;
+        if (!tab || !/^part[A-G]$/.test(tab)) {
+            try {
+                tab = localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab');
+            } catch (e) {
+                tab = null;
+            }
+        }
+        if (!tab || !/^part[A-G]$/.test(tab)) {
+            tab = root.getAttribute('data-checklist-tab') || 'partA';
+        }
+        window.__checklistInitialTab = tab;
+        root.setAttribute('data-checklist-tab', tab);
+    })();
+</script>
     <div class="bg-white p-4 rounded shadow">
         @php
         $empChecklistItems = optional($empChecklists->firstWhere('employee_num', $employee->employee_num))->items ?? [];
@@ -302,25 +353,25 @@
         <!-- Tabs -->
         <ul class="flex border-b mb-6" id="employeeFileTabs">
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partA'" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partA'] }}" title="{{ $checklistTabTooltips['partA'] }}" aria-label="{{ $checklistTabTooltips['partA'] }}">PART A</button>
+                <button type="button" data-checklist-tab-btn="partA" @click="setChecklistTab('partA')" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partA'] }}" title="{{ $checklistTabTooltips['partA'] }}" aria-label="{{ $checklistTabTooltips['partA'] }}">PART A</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partB'" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partB'] }}" title="{{ $checklistTabTooltips['partB'] }}" aria-label="{{ $checklistTabTooltips['partB'] }}">PART B</button>
+                <button type="button" data-checklist-tab-btn="partB" @click="setChecklistTab('partB')" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partB'] }}" title="{{ $checklistTabTooltips['partB'] }}" aria-label="{{ $checklistTabTooltips['partB'] }}">PART B</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partC'" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partC'] }}" title="{{ $checklistTabTooltips['partC'] }}" aria-label="{{ $checklistTabTooltips['partC'] }}">PART C</button>
+                <button type="button" data-checklist-tab-btn="partC" @click="setChecklistTab('partC')" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partC'] }}" title="{{ $checklistTabTooltips['partC'] }}" aria-label="{{ $checklistTabTooltips['partC'] }}">PART C</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partD'" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partD'] }}" title="{{ $checklistTabTooltips['partD'] }}" aria-label="{{ $checklistTabTooltips['partD'] }}">PART D</button>
+                <button type="button" data-checklist-tab-btn="partD" @click="setChecklistTab('partD')" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partD'] }}" title="{{ $checklistTabTooltips['partD'] }}" aria-label="{{ $checklistTabTooltips['partD'] }}">PART D</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partE'" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partE'] }}" title="{{ $checklistTabTooltips['partE'] }}" aria-label="{{ $checklistTabTooltips['partE'] }}">PART E</button>
+                <button type="button" data-checklist-tab-btn="partE" @click="setChecklistTab('partE')" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partE'] }}" title="{{ $checklistTabTooltips['partE'] }}" aria-label="{{ $checklistTabTooltips['partE'] }}">PART E</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partF'" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partF'] }}" title="{{ $checklistTabTooltips['partF'] }}" aria-label="{{ $checklistTabTooltips['partF'] }}">PART F</button>
+                <button type="button" data-checklist-tab-btn="partF" @click="setChecklistTab('partF')" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partF'] }}" title="{{ $checklistTabTooltips['partF'] }}" aria-label="{{ $checklistTabTooltips['partF'] }}">PART F</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" @click="checklistTab = 'partG'" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partG'] }}" title="{{ $checklistTabTooltips['partG'] }}" aria-label="{{ $checklistTabTooltips['partG'] }}">PART G</button>
+                <button type="button" data-checklist-tab-btn="partG" @click="setChecklistTab('partG')" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partG'] }}" title="{{ $checklistTabTooltips['partG'] }}" aria-label="{{ $checklistTabTooltips['partG'] }}">PART G</button>
             </li>
         </ul>
 
@@ -331,37 +382,37 @@
         @endif
 
         <!-- PART A -->
-        <div x-show="checklistTab === 'partA'">
+        <div x-show="checklistTab === 'partA'" x-cloak data-checklist-tab-panel="partA">
             @include('admin.facilities.checklist.employee-checklist-part_a')
         </div>
 
         <!-- PART B -->
-        <div x-show="checklistTab === 'partB'">
+        <div x-show="checklistTab === 'partB'" x-cloak data-checklist-tab-panel="partB">
             @include('admin.facilities.checklist.employee-checklist-part_b')
         </div>
 
         <!-- PART C -->
-        <div x-show="checklistTab === 'partC'">
+        <div x-show="checklistTab === 'partC'" x-cloak data-checklist-tab-panel="partC">
             @include('admin.facilities.checklist.employee-checklist-part_c')
         </div>
 
         <!-- PART D -->
-        <div x-show="checklistTab === 'partD'">
+        <div x-show="checklistTab === 'partD'" x-cloak data-checklist-tab-panel="partD">
             @include('admin.facilities.checklist.employee-checklist-part_d')
         </div>
 
         <!-- PART E -->
-        <div x-show="checklistTab === 'partE'">
+        <div x-show="checklistTab === 'partE'" x-cloak data-checklist-tab-panel="partE">
             @include('admin.facilities.checklist.employee-checklist-part_e')
         </div>
 
         <!-- PART F: Performance Appraisal -->
-        <div x-show="checklistTab === 'partF'">
+        <div x-show="checklistTab === 'partF'" x-cloak data-checklist-tab-panel="partF">
             @include('admin.facilities.checklist.employee-checklist-part_f')
         </div>
 
         <!-- PART G: Competencies Checklist -->
-        <div x-show="checklistTab === 'partG'">
+        <div x-show="checklistTab === 'partG'" x-cloak data-checklist-tab-panel="partG">
             @include('admin.facilities.checklist.employee-checklist-part_g')
         </div>
     </div>

@@ -53,7 +53,7 @@
           🔔
           <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">5</span>
         </button>
-        <div x-show="notifyOpen" x-transition @click.outside="notifyOpen = false"
+        <div x-show="notifyOpen" x-cloak x-transition @click.outside="notifyOpen = false"
           class="absolute right-0 mt-3 w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-soft z-50">
           <div class="mb-3 flex items-center justify-between">
             <p class="font-bold text-slate-950">Notifications</p>
@@ -83,7 +83,7 @@
           <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ $initials }}</div>
           <span class="hidden text-sm font-semibold sm:inline">{{ $firstName }}</span>
         </button>
-        <div x-show="profileOpen" x-transition @click.outside="profileOpen = false"
+        <div x-show="profileOpen" x-cloak x-transition @click.outside="profileOpen = false"
           class="absolute right-0 mt-3 w-56 rounded-3xl border border-slate-200 bg-white p-3 shadow-soft z-50">
           <div class="mb-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
             <span class="font-bold text-slate-800">Role</span>

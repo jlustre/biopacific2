@@ -227,8 +227,8 @@
                     if (recommendedMissing) {
                         recommendedMissing.classList.remove('hidden');
                         recommendedMissing.textContent = data.has_anchor
-                            ? 'No prior completed employment year is available yet for this review date. Use a custom range below or choose another period from history.'
-                            : 'Add hire or rehire dates on the Personal tab before the system can suggest an annual period.';
+                            ? 'No prior completed year for this review date. Pick from history or use Create custom period.'
+                            : 'Add hire or rehire dates on the Personal tab first.';
                     }
                 }
             }
@@ -285,6 +285,75 @@
             }
         }
 
+        function setPeriodModalHelpVisible(visible) {
+            var help = document.getElementById('periodModalHelp');
+            if (help) {
+                help.classList.toggle('hidden', !visible);
+            }
+        }
+
+        function setPeriodModalSubtitle(text) {
+            var subtitle = document.getElementById('periodModalSubtitle');
+            if (!subtitle) {
+                return;
+            }
+            if (text) {
+                subtitle.textContent = text;
+                subtitle.classList.remove('hidden');
+            } else {
+                subtitle.textContent = '';
+                subtitle.classList.add('hidden');
+            }
+        }
+
+        function setCustomPeriodVisible(visible) {
+            var customSection = document.getElementById('periodModalCustomSection');
+            var browseContent = document.getElementById('periodModalBrowseContent');
+            var showCustomBtn = document.getElementById('periodModalShowCustomBtn');
+
+            if (customSection) {
+                customSection.classList.toggle('hidden', !visible);
+            }
+            if (browseContent) {
+                browseContent.classList.toggle('hidden', visible);
+            }
+            if (showCustomBtn) {
+                showCustomBtn.classList.toggle('hidden', visible);
+            }
+            setPeriodModalHelpVisible(!visible);
+            setPeriodModalSubtitle(visible ? 'Enter a custom date range, then create and load it.' : '');
+        }
+
+        function showCustomPeriodForm() {
+            var customFrom = document.getElementById('newPeriodDateFromInput');
+            var customTo = document.getElementById('newPeriodDateToInput');
+            var recommended = periodModalPayload && periodModalPayload.recommended;
+
+            if (recommended && customFrom && customTo && !customFrom.value && !customTo.value) {
+                customFrom.value = formatDateOnly(recommended.date_from);
+                customTo.value = formatDateOnly(recommended.date_to);
+            }
+
+            setCustomPeriodVisible(true);
+        }
+
+        function hideCustomPeriodForm() {
+            var form = document.getElementById('newPeriodForm');
+            if (form) {
+                form.reset();
+            }
+            document.getElementById('newPeriodIdInput').value = '';
+            var reviewType = document.getElementById('newPeriodReviewTypeInput');
+            if (reviewType) {
+                reviewType.value = 'A';
+            }
+            var dateFromError = document.getElementById('newPeriodDateFromError');
+            var dateToError = document.getElementById('newPeriodDateToError');
+            if (dateFromError) dateFromError.classList.add('hidden');
+            if (dateToError) dateToError.classList.add('hidden');
+            setCustomPeriodVisible(false);
+        }
+
         function refreshPeriodModalData() {
             var loading = document.getElementById('periodModalLoading');
             var errorBox = document.getElementById('periodModalError');
@@ -294,12 +363,6 @@
             return fetchPeriodModalData(getPeriodModalReviewDate())
                 .then(function(data) {
                     renderPeriodModalData(data);
-                    var customFrom = document.getElementById('newPeriodDateFromInput');
-                    var customTo = document.getElementById('newPeriodDateToInput');
-                    if (data.recommended && customFrom && customTo && !customFrom.value && !customTo.value) {
-                        customFrom.value = formatDateOnly(data.recommended.date_from);
-                        customTo.value = formatDateOnly(data.recommended.date_to);
-                    }
                 })
                 .catch(function(err) {
                     if (errorBox) {
@@ -473,7 +536,6 @@
         window.openNewPeriodModal = function(root, period) {
             var newPeriodModal = document.getElementById('newPeriodModal');
             var title = document.getElementById('periodModalTitle');
-            var subtitle = document.getElementById('periodModalSubtitle');
             if (!newPeriodModal) {
                 alert('Modal elements missing.');
                 return;
@@ -482,9 +544,11 @@
             activePeriodModalRoot = root || activePeriodModalRoot || document.querySelector('.assessment-period-manager');
 
             if (period) {
+                hideCustomPeriodForm();
                 setPeriodModalMode('edit');
                 if (title) title.textContent = 'Edit Assessment Period';
-                if (subtitle) subtitle.textContent = 'Update dates or review type for the selected period.';
+                setPeriodModalHelpVisible(false);
+                setPeriodModalSubtitle('Update dates or review type for the selected period.');
                 document.getElementById('editPeriodIdInput').value = period.id || '';
                 document.getElementById('editPeriodDateFromInput').value = formatDateOnly(period.date_from);
                 document.getElementById('editPeriodDateToInput').value = formatDateOnly(period.date_to);
@@ -492,16 +556,10 @@
             } else {
                 setPeriodModalMode('select');
                 if (title) title.textContent = 'View Periods';
-                if (subtitle) {
-                    subtitle.textContent = 'Select an existing period, use the recommended prior-year window, or create a custom range.';
-                }
+                setPeriodModalHelpVisible(true);
+                setPeriodModalSubtitle('');
 
-                var newPeriodForm = document.getElementById('newPeriodForm');
-                if (newPeriodForm) {
-                    newPeriodForm.reset();
-                }
-                document.getElementById('newPeriodIdInput').value = '';
-                document.getElementById('newPeriodReviewTypeInput').value = 'A';
+                hideCustomPeriodForm();
 
                 var reviewDateInput = document.getElementById('periodModalReviewDate');
                 if (reviewDateInput) {
@@ -526,10 +584,7 @@
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }
-            var form = document.getElementById('newPeriodForm');
-            if (form) {
-                form.reset();
-            }
+            hideCustomPeriodForm();
             periodModalPayload = null;
             setPeriodModalMode('select');
         };
@@ -791,6 +846,18 @@
                     refreshPeriodModalData();
                 });
             }
+
+            var showCustomBtn = document.getElementById('periodModalShowCustomBtn');
+            if (showCustomBtn) {
+                showCustomBtn.addEventListener('click', showCustomPeriodForm);
+            }
+
+            ['periodModalHideCustomBtn', 'periodModalCancelCustomBtn'].forEach(function(id) {
+                var btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', hideCustomPeriodForm);
+                }
+            });
 
             var loadRecommendedBtn = document.getElementById('periodModalLoadRecommendedBtn');
             if (loadRecommendedBtn) {

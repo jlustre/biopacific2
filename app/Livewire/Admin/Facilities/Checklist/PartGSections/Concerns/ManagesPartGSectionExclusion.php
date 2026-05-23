@@ -213,6 +213,7 @@ trait ManagesPartGSectionExclusion
             'competencyItems',
             'handHygieneCompetencyItems',
             'licensedNurseCompetencyItems',
+            'lnCompetencyItems',
             'pointOfCareCompetencyItems',
             'matrixcareCompetencyItems',
             'bloodAdministrationCompetencyItems',
