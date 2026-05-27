@@ -31,7 +31,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'tracheostomy',
                                     ])
-                                    <span class="truncate">TRACHEOSTOMY CARE COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'TRACHEOSTOMY CARE',
+                                        'sectionItems' => $renderItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'tracheostomy',
@@ -41,7 +44,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'tracheostomy'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'tracheostomy'" x-transition>
                     <tr class="bg-white text-slate-900">
                         <td colspan="5" class="border border-gray-300 px-3 py-2 text-[11px] leading-snug md:text-xs">
                             <p>Tracheostomy care maintains a patient&rsquo;s airway by evacuating secretions, thereby preventing or reducing infections.</p>
@@ -132,9 +135,9 @@
                 </tbody>
             </table>
 
-            <div id="trach-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'tracheostomy'" x-transition>
+            <div id="trach-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'tracheostomy'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'TRACHEOSTOMY CARE COMPETENCY EVALUATION SUMMARY',
+                    'title' => 'TRACHEOSTOMY CARE EVALUATION SUMMARY',
                     'accordionKey' => 'tracheostomy',
                     'sectionHeadingId' => 'trach-section-heading',
                 ])

@@ -78,7 +78,7 @@ $metaDescription = $facility['meta_description'] ?? '';
         // Fallback: If Livewire doesn't include Alpine, load it
         if (typeof Alpine === 'undefined') {
             const script = document.createElement('script');
-            script.src = 'https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.10/dist/cdn.min.js';
             script.defer = true;
             document.head.appendChild(script);
             console.log('Alpine.js loaded as fallback');

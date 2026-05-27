@@ -23,7 +23,7 @@ class PartFPerformanceScoring
             preg_match('/^(-+)/', $nextRawItemText, $nextItemIndentMatches);
             $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
             $hasChildItems = (bool) ($nextItem && $nextIndentLevel > $indentLevel);
-            $collapsibleParentItems = ['PERINEAL CARE', 'CNA SKILLS CHECKLIST'];
+            $collapsibleParentItems = ['PERINEAL CARE', 'CNA SKILLS'];
             $displayItem = ltrim((string) preg_replace('/^(-+)/', '', $rawItemText), '-');
             $isMainParentItem = $indentLevel === 0 && $hasChildItems && in_array($displayItem, $collapsibleParentItems, true);
             $isStructuralParent = $hasChildItems && ! $isMainParentItem;

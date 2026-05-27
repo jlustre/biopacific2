@@ -20,6 +20,7 @@ use App\Support\PartFPerformanceScoring;
 use App\Support\PreventsSelfAssessment;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Models\EmployeeAssessmentPeriod;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
 
@@ -1217,6 +1218,515 @@ class EmployeePerformanceAssessmentController extends Controller {
         }
 
         return Storage::disk('public')->download($assessment->pdf_path, basename($assessment->pdf_path));
+    }
+
+    public function downloadCompetencySectionPdf(Request $request, EmployeeCompetencyAssessment $assessment)
+    {
+        $sectionLabel = trim((string) $request->query('section', ''));
+        if ($sectionLabel === '') {
+            abort(404, 'Competency section not specified.');
+        }
+
+        $items = $this->competencySectionPdfItems($assessment, $sectionLabel);
+        if ($items === []) {
+            abort(404, 'No competency items found for this section.');
+        }
+
+        $filePath = $this->competencySectionPdfPath($assessment, $sectionLabel);
+        $this->generateCompetencySectionPdf($assessment, $sectionLabel, $filePath, $items);
+
+        $filename = basename($filePath);
+
+        return response()->file(Storage::disk('public')->path($filePath), [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
+    /**
+     * @param  list<array{item_label: string, indent_level: int, rating: string, review_date: string, reviewer_name: string}>  $items
+     */
+    protected function generateCompetencySectionPdf(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+        string $filePath,
+        array $items,
+    ): string {
+        $employee = BPEmployee::query()
+            ->with('currentAssignment.facility')
+            ->where('employee_num', $assessment->employee_num)
+            ->first();
+        $period = EmployeeAssessmentPeriod::find($assessment->assessment_period_id);
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $sectionSummary = is_array($snapshot['section_summaries'][$sectionLabel] ?? null)
+            ? $snapshot['section_summaries'][$sectionLabel]
+            : $this->summarizeCompetencySectionItems($items);
+        $sectionComments = is_array($snapshot['section_comments'][$sectionLabel] ?? null)
+            ? $snapshot['section_comments'][$sectionLabel]
+            : [];
+
+        $ratedCount = $this->competencySectionPdfRatedCount($sectionLabel, $items, $snapshot);
+
+        $pdf = Pdf::loadView('admin.facilities.checklist.pdf.employee-competency-section-compact', [
+            'assessment' => $assessment,
+            'employee' => $employee,
+            'period' => $period,
+            'facilityName' => trim((string) ($employee?->currentAssignment?->facility?->name ?? '')),
+            'periodLabel' => $period instanceof EmployeeAssessmentPeriod
+                ? $period->displayDateRange()
+                : 'N/A',
+            'sectionLabel' => $sectionLabel,
+            'sectionSummary' => $sectionSummary,
+            'sectionComments' => $sectionComments,
+            'signatureBlock' => $this->competencySectionPdfSignatureBlock($assessment, $sectionComments),
+            'items' => $items,
+            'ratedCount' => $ratedCount,
+            'totalRateableOverride' => $sectionLabel === 'TRACHEOSTOMY CARE'
+                ? $this->countTracheostomyProcedureSteps(
+                    EmployeeCompetencyItem::query()->where('section', 'TRACHEOSTOMY CARE')->orderBy('order')->get()
+                )
+                : null,
+        ])->setPaper('letter');
+
+        Storage::disk('public')->put($filePath, $pdf->output());
+
+        return $filePath;
+    }
+
+    protected function competencySectionPdfPath(EmployeeCompetencyAssessment $assessment, string $sectionLabel): string
+    {
+        $sectionKey = substr(md5($sectionLabel), 0, 12);
+
+        return 'competency-assessments/'.$assessment->employee_num.'/assessment-'.$assessment->id.'/section-'.$sectionKey.'.pdf';
+    }
+
+    /**
+     * @return list<array{item_label: string, indent_level: int, is_parent?: bool, rating?: string, review_date?: string, reviewer_name?: string, comments?: string}>
+     */
+    protected function competencySectionPdfItems(EmployeeCompetencyAssessment $assessment, string $sectionLabel): array
+    {
+        if ($sectionLabel === 'TRACHEOSTOMY CARE') {
+            return $this->tracheostomyCompetencySectionPdfItems($assessment);
+        }
+
+        $competencyItems = EmployeeCompetencyItem::query()
+            ->where('section', $sectionLabel)
+            ->orderBy('order')
+            ->get();
+
+        if ($competencyItems->isEmpty()) {
+            return [];
+        }
+
+        $itemIds = $competencyItems->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $responses = $assessment->responses;
+        if (is_string($responses)) {
+            $responses = json_decode($responses, true);
+        }
+        $responses = is_array($responses) ? $responses : [];
+
+        $entries = EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $assessment->employee_num)
+            ->where('assessment_period_id', $assessment->assessment_period_id)
+            ->where('assessment_type', 'competency')
+            ->whereIn('source_item_id', $itemIds)
+            ->whereNull('revoked_at')
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('source_item_id')
+            ->map(fn ($group) => $group->first());
+
+        $reviewerIds = $entries->pluck('assessed_by')->filter()->unique()->values();
+        $reviewerNamesById = $reviewerIds->isEmpty()
+            ? collect()
+            : User::query()->whereIn('id', $reviewerIds)->pluck('name', 'id');
+
+        $structuredItems = [];
+        $rawItems = $competencyItems->values();
+
+        foreach ($rawItems as $index => $item) {
+            $indentLevel = 0;
+            if (preg_match('/^(-+)/', (string) $item->item, $matches)) {
+                $indentLevel = strlen($matches[1]);
+            }
+
+            $isParent = false;
+            if (isset($rawItems[$index + 1])) {
+                $next = $rawItems[$index + 1];
+                if (preg_match('/^(-+)/', (string) $next->item, $nextMatches)) {
+                    $isParent = strlen($nextMatches[1]) > $indentLevel;
+                }
+            }
+
+            $structuredItems[] = [
+                'id' => (int) $item->id,
+                'item_label' => ltrim((string) $item->item, '-'),
+                'indent_level' => $indentLevel,
+                'is_parent' => $isParent,
+            ];
+        }
+
+        $ratedItemIds = [];
+        foreach ($structuredItems as $structuredItem) {
+            if ($structuredItem['is_parent']) {
+                continue;
+            }
+
+            $itemId = $structuredItem['id'];
+            $responseData = $this->competencyResponsePayloadForItem($responses, $itemId);
+            $entry = $entries->get($itemId);
+            $rating = $responseData['response'] ?? null;
+
+            if (($rating === null || $rating === '') && $entry) {
+                $rating = $entry->rating;
+            }
+
+            $rating = strtoupper(trim((string) $rating));
+            if ($rating !== '') {
+                $ratedItemIds[$itemId] = true;
+            }
+        }
+
+        $items = [];
+
+        foreach ($structuredItems as $index => $structuredItem) {
+            if ($structuredItem['is_parent']) {
+                if (! $this->competencyParentHasRatedDescendant($structuredItems, $index, $ratedItemIds)) {
+                    continue;
+                }
+
+                $items[] = [
+                    'item_label' => $structuredItem['item_label'],
+                    'indent_level' => $structuredItem['indent_level'],
+                    'is_parent' => true,
+                ];
+
+                continue;
+            }
+
+            $itemId = $structuredItem['id'];
+            if (! isset($ratedItemIds[$itemId])) {
+                continue;
+            }
+
+            $responseData = $this->competencyResponsePayloadForItem($responses, $itemId);
+            $entry = $entries->get($itemId);
+            $rating = $responseData['response'] ?? $entry?->rating;
+            $rating = strtoupper(trim((string) $rating));
+
+            $reviewDate = $responseData['review_date']
+                ?? optional($entry?->assessment_date)->toDateString()
+                ?? '';
+            $reviewerName = trim((string) ($responseData['reviewer_name'] ?? ''));
+            if ($reviewerName === '' && $entry?->assessed_by) {
+                $reviewerName = trim((string) ($reviewerNamesById[$entry->assessed_by] ?? ''));
+            }
+            if ($reviewerName === '' && filled($assessment->reviewer_name)) {
+                $reviewerName = trim((string) $assessment->reviewer_name);
+            }
+
+            $items[] = [
+                'item_label' => $structuredItem['item_label'],
+                'indent_level' => $structuredItem['indent_level'],
+                'is_parent' => false,
+                'rating' => $rating,
+                'review_date' => $this->formatCompetencyPdfShortDate($reviewDate),
+                'reviewer_name' => $reviewerName,
+                'comments' => trim((string) ($responseData['comments'] ?? $entry?->comments ?? '')),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array{item_label: string, indent_level: int, is_parent?: bool, rating?: string, review_date?: string, reviewer_name?: string, comments?: string}>
+     */
+    protected function tracheostomyCompetencySectionPdfItems(EmployeeCompetencyAssessment $assessment): array
+    {
+        $competencyItems = EmployeeCompetencyItem::query()
+            ->where('section', 'TRACHEOSTOMY CARE')
+            ->orderBy('order')
+            ->get();
+
+        if ($competencyItems->isEmpty()) {
+            return [];
+        }
+
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $equipmentChecks = $this->normalizeTracheostomyChecks($snapshot['tracheostomy_equipment_checks'] ?? []);
+        $procedureReviews = $this->normalizeTracheostomyProcedureReviews($snapshot['tracheostomy_procedure_reviews'] ?? []);
+
+        if ($equipmentChecks === [] && $procedureReviews === []) {
+            return [];
+        }
+
+        $sectionComments = is_array($snapshot['section_comments']['TRACHEOSTOMY CARE'] ?? null)
+            ? $snapshot['section_comments']['TRACHEOSTOMY CARE']
+            : [];
+        $reviewDate = $this->formatCompetencyPdfShortDate(
+            $sectionComments['review_date'] ?? optional($assessment->review_date)->toDateString() ?? ''
+        );
+        $reviewerName = trim((string) ($sectionComments['reviewer_name'] ?? $assessment->reviewer_name ?? ''));
+
+        $equipmentCheckSet = array_flip($equipmentChecks);
+        $items = [];
+        $rawItems = $competencyItems->values();
+
+        foreach ($rawItems as $index => $item) {
+            $raw = (string) $item->item;
+
+            if (preg_match('/^-\d+\./', $raw) === 1) {
+                if (preg_match('/^-(\d+)\.\s*(.+)$/', $raw, $matches)) {
+                    $procedureKey = (string) $matches[1];
+                    $rating = $procedureReviews[$procedureKey] ?? null;
+
+                    if ($rating !== null) {
+                        $segments = array_map('trim', explode('||', $matches[2], 2));
+                        $label = ltrim($segments[0] ?? '', '-');
+                        if (! empty($segments[1])) {
+                            $label .= ' ('.$segments[1].')';
+                        }
+
+                        $items[] = [
+                            'item_label' => $procedureKey.'. '.$label,
+                            'indent_level' => 1,
+                            'is_parent' => false,
+                            'rating' => $rating,
+                            'review_date' => $reviewDate,
+                            'reviewer_name' => $reviewerName,
+                            'comments' => '',
+                        ];
+                    }
+                }
+
+                continue;
+            }
+
+            $indentLevel = 0;
+            if (preg_match('/^(-+)/', $raw, $indentMatches)) {
+                $indentLevel = strlen($indentMatches[1]);
+            }
+
+            $hasChildItems = false;
+            if (isset($rawItems[$index + 1])) {
+                $nextRaw = (string) $rawItems[$index + 1]->item;
+                if (preg_match('/^(-+)/', $nextRaw, $nextMatches)) {
+                    $hasChildItems = strlen($nextMatches[1]) > $indentLevel;
+                }
+            }
+
+            $isEquipmentHeader = $indentLevel === 1 && $hasChildItems;
+            $isEquipmentItem = $indentLevel >= 2;
+
+            if ($isEquipmentHeader) {
+                $hasCheckedChild = false;
+
+                for ($childIndex = $index + 1; $childIndex < $rawItems->count(); $childIndex++) {
+                    $childRaw = (string) $rawItems[$childIndex]->item;
+
+                    if (preg_match('/^-\d+\./', $childRaw) === 1) {
+                        break;
+                    }
+
+                    $childIndent = 0;
+                    if (preg_match('/^(-+)/', $childRaw, $childIndentMatches)) {
+                        $childIndent = strlen($childIndentMatches[1]);
+                    }
+
+                    if ($childIndent <= $indentLevel) {
+                        break;
+                    }
+
+                    if ($childIndent >= 2 && isset($equipmentCheckSet[$childRaw])) {
+                        $hasCheckedChild = true;
+                        break;
+                    }
+                }
+
+                if ($hasCheckedChild) {
+                    $items[] = [
+                        'item_label' => ltrim($raw, '-'),
+                        'indent_level' => $indentLevel,
+                        'is_parent' => true,
+                    ];
+                }
+
+                continue;
+            }
+
+            if ($isEquipmentItem && isset($equipmentCheckSet[$raw])) {
+                $items[] = [
+                    'item_label' => ltrim($raw, '-'),
+                    'indent_level' => $indentLevel,
+                    'is_parent' => false,
+                    'rating' => '✓',
+                    'review_date' => $reviewDate,
+                    'reviewer_name' => $reviewerName,
+                    'comments' => '',
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @param  list<array{item_label: string, indent_level: int, is_parent?: bool, rating?: string}>  $items
+     */
+    protected function competencySectionPdfRatedCount(string $sectionLabel, array $items, array $snapshot): int
+    {
+        if ($sectionLabel === 'TRACHEOSTOMY CARE') {
+            $equipmentChecks = $this->normalizeTracheostomyChecks($snapshot['tracheostomy_equipment_checks'] ?? []);
+            $procedureReviews = $this->normalizeTracheostomyProcedureReviews($snapshot['tracheostomy_procedure_reviews'] ?? []);
+
+            return count($equipmentChecks) + count($procedureReviews);
+        }
+
+        return collect($items)
+            ->filter(fn (array $item) => empty($item['is_parent']) && in_array($item['rating'] ?? '', ['E', 'S', 'U', 'N'], true))
+            ->count();
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, EmployeeCompetencyItem>  $sectionItems
+     */
+    protected function countTracheostomyProcedureSteps(\Illuminate\Support\Collection $sectionItems): int
+    {
+        return $sectionItems
+            ->filter(fn (EmployeeCompetencyItem $item) => preg_match('/^-\d+\./', (string) $item->item) === 1)
+            ->count();
+    }
+
+    /**
+     * @param  list<array{id: int, item_label: string, indent_level: int, is_parent: bool}>  $structuredItems
+     * @param  array<int, true>  $ratedItemIds
+     */
+    protected function competencyParentHasRatedDescendant(array $structuredItems, int $parentIndex, array $ratedItemIds): bool
+    {
+        $parentIndent = $structuredItems[$parentIndex]['indent_level'];
+
+        for ($index = $parentIndex + 1; $index < count($structuredItems); $index++) {
+            $candidate = $structuredItems[$index];
+
+            if ($candidate['indent_level'] <= $parentIndent) {
+                break;
+            }
+
+            if (! $candidate['is_parent'] && isset($ratedItemIds[$candidate['id']])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $responses
+     * @return array{response?: string, review_date?: string, reviewer_name?: string, comments?: string}
+     */
+    protected function competencyResponsePayloadForItem(array $responses, int $itemId): array
+    {
+        $raw = $responses[$itemId] ?? $responses[(string) $itemId] ?? null;
+
+        if (is_array($raw)) {
+            return [
+                'response' => isset($raw['response']) ? strtoupper(trim((string) $raw['response'])) : null,
+                'review_date' => $raw['review_date'] ?? null,
+                'reviewer_name' => $raw['reviewer_name'] ?? null,
+                'comments' => $raw['comments'] ?? null,
+            ];
+        }
+
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+
+        return [
+            'response' => strtoupper(trim((string) $raw)),
+        ];
+    }
+
+    protected function formatCompetencyPdfShortDate(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($value)->format('m-d-y');
+        } catch (\Throwable) {
+            $value = trim((string) $value);
+
+            return strlen($value) >= 10 ? Carbon::parse(substr($value, 0, 10))->format('m-d-y') : $value;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $sectionComments
+     * @return array<string, string>
+     */
+    protected function competencySectionPdfSignatureBlock(
+        EmployeeCompetencyAssessment $assessment,
+        array $sectionComments,
+    ): array {
+        $reviewDate = $sectionComments['review_date']
+            ?? optional($assessment->review_date)->toDateString()
+            ?? '';
+        $employeeSignDate = $sectionComments['employee_signed_at']
+            ?? optional($assessment->employee_signed_at)->toDateString()
+            ?? '';
+
+        return [
+            'reviewer_comments' => trim((string) ($sectionComments['reviewer_comments'] ?? $assessment->comments ?? '')),
+            'employee_comments' => trim((string) ($sectionComments['employee_comments'] ?? $assessment->employee_comments ?? '')),
+            'reviewer_name' => trim((string) ($assessment->reviewer_name ?? '')),
+            'reviewer_title' => trim((string) ($assessment->reviewer_title ?? '')),
+            'review_sign_date' => $this->formatCompetencyPdfShortDate($reviewDate),
+            'employee_name' => trim((string) ($assessment->employee_name ?? '')),
+            'employee_title' => trim((string) ($assessment->employee_title ?? '')),
+            'employee_sign_date' => $this->formatCompetencyPdfShortDate($employeeSignDate),
+        ];
+    }
+
+    /**
+     * @param  list<array{item_label: string, indent_level: int, rating: string, review_date?: string, reviewer_name?: string}>  $items
+     * @return array{total_score: int, average_score: float, overall_rating: string}
+     */
+    protected function summarizeCompetencySectionItems(array $items): array
+    {
+        $total = 0;
+        $count = 0;
+
+        foreach ($items as $item) {
+            $score = match ($item['rating'] ?? '') {
+                'E' => 3,
+                'S' => 2,
+                'U' => 1,
+                default => null,
+            };
+
+            if ($score === null) {
+                continue;
+            }
+
+            $total += $score;
+            $count++;
+        }
+
+        $average = $count > 0 ? round($total / $count, 2) : 0;
+
+        return [
+            'total_score' => $total,
+            'average_score' => $average,
+            'overall_rating' => $count === 0
+                ? 'N/A'
+                : ($average >= 2.5
+                    ? 'Excellent'
+                    : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory')),
+        ];
     }
 
     public function revoke(Request $request)

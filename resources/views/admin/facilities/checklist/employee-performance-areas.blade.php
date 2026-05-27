@@ -55,7 +55,7 @@
                 preg_match('/^(-+)/', $nextRawItemText, $nextItemIndentMatches);
                 $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
                 $hasChildItems = $nextItem && $nextIndentLevel > $indentLevel;
-                $collapsibleParentItems = ['PERINEAL CARE', 'CNA SKILLS CHECKLIST'];
+                $collapsibleParentItems = ['PERINEAL CARE', 'CNA SKILLS'];
                 $isMainParentItem = $indentLevel === 0 && $hasChildItems && in_array($displayItem, $collapsibleParentItems, true);
                 $indentClass = match ($indentLevel) {
                     1 => 'pl-6',

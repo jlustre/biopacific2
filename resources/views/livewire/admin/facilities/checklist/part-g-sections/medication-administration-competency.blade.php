@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'medication-admin',
                                     ])
-                                    <span class="truncate">MEDICATION ADMINISTRATION COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'MEDICATION ADMINISTRATION',
+                                        'sectionItems' => $medicationAdministrationCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'medication-admin',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'medication-admin'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'medication-admin'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($medicationAdministrationCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,9 +69,9 @@
                 </tbody>
             </table>
 
-            <div id="mac-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'medication-admin'" x-transition>
+            <div id="mac-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'medication-admin'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'MEDICATION ADMINISTRATION COMPETENCY EVALUATION SUMMARY',
+                    'title' => 'MEDICATION ADMINISTRATION EVALUATION SUMMARY',
                     'accordionKey' => 'medication-admin',
                     'sectionHeadingId' => 'mac-section-heading',
                 ])

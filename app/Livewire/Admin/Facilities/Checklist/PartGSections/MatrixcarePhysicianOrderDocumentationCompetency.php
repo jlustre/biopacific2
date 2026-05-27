@@ -44,7 +44,7 @@ class MatrixcarePhysicianOrderDocumentationCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION COMPETENCY';
+    public const SECTION = 'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION';
 
     public function mount(
         string $employeeNum,

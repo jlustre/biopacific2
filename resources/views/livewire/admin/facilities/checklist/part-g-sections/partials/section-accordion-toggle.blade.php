@@ -11,9 +11,9 @@
         data-accordion-key="{{ $accordionKey }}"
         data-expanded="1"
         aria-label="Collapse section items"
-        x-text="$store.{{ $store }}.openSection === '{{ $accordionKey }}' ? '▲' : '▼'"
-        x-bind:aria-label="$store.{{ $store }}.openSection === '{{ $accordionKey }}' ? 'Collapse section items' : 'Expand section items'"
-        x-on:click="$store.{{ $store }}.openSection = $store.{{ $store }}.openSection === '{{ $accordionKey }}' ? null : '{{ $accordionKey }}'"
-        x-bind:data-expanded="$store.{{ $store }}.openSection === '{{ $accordionKey }}' ? '1' : '0'"
+        x-text="$store.{{ $store }} && $store.{{ $store }}.openSection === '{{ $accordionKey }}' ? '▲' : '▼'"
+        x-bind:aria-label="$store.{{ $store }} && $store.{{ $store }}.openSection === '{{ $accordionKey }}' ? 'Collapse section items' : 'Expand section items'"
+        x-on:click="$store.{{ $store }} && ($store.{{ $store }}.openSection = $store.{{ $store }}.openSection === '{{ $accordionKey }}' ? null : '{{ $accordionKey }}')"
+        x-bind:data-expanded="$store.{{ $store }} && $store.{{ $store }}.openSection === '{{ $accordionKey }}' ? '1' : '0'"
     >▲</button>
 </div>

@@ -14,7 +14,7 @@ class DirectorOfStaffDevelopmentCompetency extends Component
     use ManagesPartGSectionExclusion;
 
     /** Umbrella label for Exclude / snapshot (not a DB section name). */
-    public const SECTION = 'DIRECTOR OF STAFF DEVELOPMENT COMPETENCIES';
+    public const SECTION = 'DIRECTOR OF STAFF DEVELOPMENT';
 
     public string $employeeNum;
 

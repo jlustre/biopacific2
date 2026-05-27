@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'ppe',
                                     ])
-                                    <span class="truncate">PERSONAL PROTECTIVE EQUIPMENT (PPE)</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'PERSONAL PROTECTIVE EQUIPMENT (PPE)',
+                                        'sectionItems' => $ppeCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'ppe',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'ppe'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ppe'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($ppeCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,7 +69,7 @@
                 </tbody>
             </table>
 
-            <div id="ppe-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'ppe'" x-transition>
+            <div id="ppe-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ppe'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
                     'title' => 'PERSONAL PROTECTIVE EQUIPMENT (PPE) EVALUATION SUMMARY',
                     'accordionKey' => 'ppe',

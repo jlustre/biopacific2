@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'mc-phys-doc',
                                     ])
-                                    <span class="truncate">MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION',
+                                        'sectionItems' => $matrixcareCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'mc-phys-doc',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'mc-phys-doc'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'mc-phys-doc'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($matrixcareCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,9 +69,9 @@
                 </tbody>
             </table>
 
-            <div id="mcpd-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'mc-phys-doc'" x-transition>
+            <div id="mcpd-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'mc-phys-doc'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION COMPETENCY EVALUATION SUMMARY',
+                    'title' => 'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION EVALUATION SUMMARY',
                     'accordionKey' => 'mc-phys-doc',
                     'sectionHeadingId' => 'mcpd-section-heading',
                 ])

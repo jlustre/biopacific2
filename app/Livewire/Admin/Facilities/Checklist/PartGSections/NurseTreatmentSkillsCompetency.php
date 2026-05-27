@@ -42,7 +42,7 @@ class NurseTreatmentSkillsCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'NURSE TREATMENT SKILLS COMPETENCY';
+    public const SECTION = 'NURSE TREATMENT SKILLS';
 
     public function mount(
         string $employeeNum,

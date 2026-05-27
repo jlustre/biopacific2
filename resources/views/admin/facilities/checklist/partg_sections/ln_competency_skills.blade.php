@@ -150,7 +150,18 @@
             <!-- EMPLOYEE COMMENTS (hidden by default, shown only for employee) -->
             <div class="mb-3" id="employee-comments-section" style="display:none;">
                 <label class="block text-xs font-semibold text-blue-700 mb-1">EMPLOYEE COMMENTS</label>
-                <textarea name="employee_comments" id="employee_comments" class="w-full rounded border border-blue-300 bg-blue-50 p-3 text-blue-700 min-h-[100px] resize-y" placeholder="Enter employee comments here...">{{ $rawDraftRow?->employee_comments ?? '' }}</textarea>
+                <textarea name="employee_comments" id="employee_comments" class="w-full rounded border border-blue-300 bg-blue-50 p-3 text-blue-700 min-h-[100px] resize-y" placeholder="Enter employee comments here..." disabled tabindex="-1">{{ $rawDraftRow?->employee_comments ?? '' }}</textarea>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var empComments = document.getElementById('employee_comments');
+    if (empComments) {
+        empComments.addEventListener('focus', function(e) { this.blur(); });
+    }
+});
+</script>
+@endpush
             </div>
             <button type="button" id="showEmployeeCommentsBtn" class="text-xs text-blue-700 underline mb-2" style="display:none;">Add/View Employee Comments</button>
             <div class="grid grid-cols-1 gap-4 mb-3">
@@ -244,6 +255,31 @@ document.addEventListener('alpine:init', () => {
             return 'Needs Improvement';
         },
     }));
+});
+// Add debug logs for Review Unchecked Items button
+document.addEventListener('DOMContentLoaded', function () {
+    var reviewBtn = document.getElementById('reviewMissingBtn');
+    if (reviewBtn) {
+        reviewBtn.addEventListener('click', function (e) {
+            console.log('DEBUG: Review button clicked');
+            try {
+                // Example debug lines for each step
+                console.log('DEBUG: Step 1');
+                // Add more debug lines as needed for each logical step
+                // If there is logic here, add it and log before/after
+                // For demonstration, just log the button
+                console.log('DEBUG: Button:', reviewBtn);
+                // If you have a function to call, log before and after
+                // e.g. console.log('DEBUG: Calling reviewFunction');
+                // reviewFunction();
+                // console.log('DEBUG: reviewFunction complete');
+            } catch (err) {
+                console.error('DEBUG: Error in Review button handler', err);
+            }
+        });
+    } else {
+        console.log('DEBUG: Review button not found');
+    }
 });
 </script>
 

@@ -52,18 +52,18 @@ class LnCompetencySkillsController extends Controller
 
         // Excluded sections and other state
         $partGDontIncludeSections = [
-            'BLOOD ADMINISTRATION COMPETENCY',
-            'BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY',
-            'TRACHEOSTOMY CARE COMPETENCY',
-            'NURSE TREATMENT SKILLS COMPETENCY',
-            'HAND HYGIENE COMPETENCY SKILLS',
-            'VENTILATOR MANAGEMENT SKILLS COMPETENCY',
+            'BLOOD ADMINISTRATION',
+            'BLOOD GLUCOSE SYSTEM SKILLS',
+            'TRACHEOSTOMY CARE',
+            'NURSE TREATMENT SKILLS',
+            'HAND HYGIENE SKILLS',
+            'VENTILATOR MANAGEMENT SKILLS',
             'PERSONAL PROTECTIVE EQUIPMENT (PPE)',
-            'MEDICATION ADMINISTRATION COMPETENCY',
-            'USE OF HOYER LIFT TRAINING',
-            'CNA SKILLS CHECKLIST',
+            'MEDICATION ADMINISTRATION',
+            'USE OF HOYER LIFT',
+            'CNA SKILLS',
             'PERINEAL CARE',
-            'DIRECTOR OF STAFF DEVELOPMENT COMPETENCIES',
+            'DIRECTOR OF STAFF DEVELOPMENT',
         ];
         $partGExcludedSectionLabels = [];
         $partGTracheostomyEquipmentChecks = [];

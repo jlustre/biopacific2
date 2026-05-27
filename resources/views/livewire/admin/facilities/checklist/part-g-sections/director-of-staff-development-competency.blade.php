@@ -38,7 +38,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'dsd',
                                     ])
-                                    <span class="truncate">DIRECTOR OF STAFF DEVELOPMENT COMPETENCIES</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'DIRECTOR OF STAFF DEVELOPMENT',
+                                        'sectionItems' => collect($dsdCompetencySections)->flatMap(fn (array $block) => $block['items'])->values()->all(),
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'dsd',
@@ -48,11 +51,15 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'dsd'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'dsd'" x-transition>
                     @forelse($dsdCompetencySections as $sectionBlock)
                         <tr wire:key="dsd-section-label-{{ $loop->index }}">
                             <td colspan="5" class="border border-gray-300 bg-slate-200 py-2 pl-2 pr-4 text-left text-sm font-bold text-slate-900">
-                                {{ $sectionBlock['section'] }}
+                                @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                    'title' => $sectionBlock['section'],
+                                    'sectionItems' => $sectionBlock['items'],
+                                    'variant' => 'subsection',
+                                ])
                             </td>
                         </tr>
                         @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
@@ -82,7 +89,7 @@
                 </tbody>
             </table>
 
-            <div id="dsd-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'dsd'" x-transition>
+            <div id="dsd-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'dsd'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
                     'title' => 'DIRECTOR OF STAFF DEVELOPMENT EVALUATION SUMMARY',
                     'accordionKey' => 'dsd',

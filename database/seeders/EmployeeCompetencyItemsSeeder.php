@@ -175,7 +175,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
         ];
 
         $cnaCompetencyItems = [
-            'CNA SKILLS CHECKLIST' => [
+            'CNA SKILLS' => [
                 'Ambulation',
                 'Back Rub',
                 'Bed Bath',
@@ -517,7 +517,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                 '-29. OTHER',
             ],
 
-            'BLOOD ADMINISTRATION COMPETENCY' => [
+            'BLOOD ADMINISTRATION' => [
                 '-Consider cultural and religious influences and educational level when administering blood and performing teaching with patients receiving blood and blood products.',
                 '-Utilize principles of body substance isolation, explain procedure to patient, and educate patient about transfusion reaction symptoms to report to nurse.',
                 '-Type and Screen is required for any red blood cell, whole blood product, platelet, or plasma administration. Draw and send this sample to blood bank in accordance with policy. (Cryoprecipitate does not require Type and Screen.)',
@@ -561,7 +561,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                 '-See policy for blood transfusion reaction signs/symptoms and for steps to take if transfusion reaction occurs.',
             ],
             
-            'BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY' => [
+            'BLOOD GLUCOSE SYSTEM SKILLS' => [
                                 '-User Assembles Equipment',
                                 '--Blood Glucose Monitor',
                                 '--Test strips',
@@ -601,7 +601,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                                 '--Demonstrates removal and replacement of batteries.',
             ],
             
-            'TRACHEOSTOMY CARE COMPETENCY' => [
+            'TRACHEOSTOMY CARE' => [
                                 '-Equipment/Supplies',
                                 '--Correct size & type of tube',
                                 '--Suction machine',
@@ -648,7 +648,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                                 '-23. Wash hands.',
             ],
 
-            'NURSE TREATMENT SKILLS COMPETENCY' => [
+            'NURSE TREATMENT SKILLS' => [
                	'-1. Ensure that Treatment Cart is adequately stocked.',
                 '-2. Follow Isolation Protocols-Enhanced Barrier Precautions (EBP), Standard Precautions, Transmission-Based Precautions-Airborne, Contact, Droplet; Use of proper PPE',
                 '-3. Bring Treatment Cart to resident’s doorway. Face cart towards doorway. If you are able to visually see Treatment Cart from resident’s bedside, it is not necessary to lock cart. However, if you cannot see the cart, lock cart while you are doing the treatment in the resident’s room.',
@@ -674,7 +674,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                 '-23. Sign eMAR/Treatment Book for treatment provided.',
             ],
 
-            'HAND HYGIENE COMPETENCY SKILLS' => [
+            'HAND HYGIENE SKILLS' => [
                 '-1. Ensure that Treatment Cart is adequately stocked.',
                 '-2. Follow Isolation Protocols-Enhanced Barrier Precautions (EBP), Standard Precautions, Transmission-Based Precautions-Airborne, Contact, Droplet; Use of proper PPE',
                 '-3. Bring Treatment Cart to resident’s doorway. Face cart towards doorway. If you are able to visually see Treatment Cart from resident’s bedside, it is not necessary to lock cart. However, if you cannot see the cart, lock cart while you are doing the treatment in the resident’s room.',
@@ -700,7 +700,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                 '-23. Sign eMAR/Treatment Book for treatment provided.',
             ],
 
-            'VENTILATOR MANAGEMENT SKILLS COMPETENCY' => [
+            'VENTILATOR MANAGEMENT SKILLS' => [
                 'VENTILATOR',
                 '-Mode:',
                 '--AC (Assist Control)',
@@ -787,7 +787,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                 '-6. Employee verbalizes that re-using of PPE is allowed only in a crisis situation as allowed by CDC.',
             ],
 
-            'MEDICATION ADMINISTRATION COMPETENCY' => [
+            'MEDICATION ADMINISTRATION' => [
                 '--1. Nurse is wearing ID badge.',
                 '--2. Medication Cart prepared for pass.',
                 '--3. Medication Cart was clean, organized and secured during pass.',
@@ -878,7 +878,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
                 '-10. Other (please specify)',
             ],
 
-            'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION COMPETENCY' => [
+            'MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION' => [
                 '-eLearning',
                 '--Admission and Census, Physician Orders, Observations, Resident Care',
                 '-The Matrix Medical Record',
@@ -922,7 +922,7 @@ class EmployeeCompetencyItemsSeeder extends Seeder
         ];
 
         $sharedNurseAndCnaCompetencyItems = [
-            'USE OF HOYER LIFT TRAINING' => [
+            'USE OF HOYER LIFT' => [
                 '-1. Caregiver Safety Tips',
                 '--Use lifts for these activities to avoid sustaining a back injury:',
                 '---Lifting from floor',
@@ -1054,9 +1054,11 @@ class EmployeeCompetencyItemsSeeder extends Seeder
         $this->seedCompetencySet($dsdCompetencyItems, $dsdPositionIds, $order);
 
         $sharedNurseAndCnaPositionIds = $this->getPositionIdsByTitles($sharedNurseAndCnaPositionTitles);
-        if ($sharedNurseAndCnaPositionIds !== []) {
-            $this->seedCompetencySet($sharedNurseAndCnaCompetencyItems, $sharedNurseAndCnaPositionIds, $order);
+        // If no positions found, fallback to global so items are always seeded
+        if (empty($sharedNurseAndCnaPositionIds)) {
+            $sharedNurseAndCnaPositionIds = ['global'];
         }
+        $this->seedCompetencySet($sharedNurseAndCnaCompetencyItems, $sharedNurseAndCnaPositionIds, $order);
 
         if ($licensedNursePositionIds !== []) {
             $this->seedCompetencySet($licensedNurseCompetencyItems, $licensedNursePositionIds, $order);

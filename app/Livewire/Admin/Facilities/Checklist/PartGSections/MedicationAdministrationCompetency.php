@@ -42,7 +42,7 @@ class MedicationAdministrationCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'MEDICATION ADMINISTRATION COMPETENCY';
+    public const SECTION = 'MEDICATION ADMINISTRATION';
 
     public function mount(
         string $employeeNum,

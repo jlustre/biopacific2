@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'blood-glucose',
                                     ])
-                                    <span class="truncate">BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'BLOOD GLUCOSE SYSTEM SKILLS',
+                                        'sectionItems' => $glucoseCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'blood-glucose',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'blood-glucose'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'blood-glucose'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($glucoseCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,9 +69,9 @@
                 </tbody>
             </table>
 
-            <div id="bgs-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'blood-glucose'" x-transition>
+            <div id="bgs-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'blood-glucose'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY EVALUATION SUMMARY',
+                    'title' => 'BLOOD GLUCOSE SYSTEM SKILLS EVALUATION SUMMARY',
                     'accordionKey' => 'blood-glucose',
                     'sectionHeadingId' => 'bgs-section-heading',
                 ])

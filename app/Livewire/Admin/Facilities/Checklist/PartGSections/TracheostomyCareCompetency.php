@@ -50,7 +50,7 @@ class TracheostomyCareCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'TRACHEOSTOMY CARE COMPETENCY';
+    public const SECTION = 'TRACHEOSTOMY CARE';
 
     public function mount(
         string $employeeNum,
@@ -79,9 +79,13 @@ class TracheostomyCareCompetency extends Component
         $this->loadDraftData();
     }
 
-    public function updatedResponses(): void
+    protected function persistDraftIfPossible(): void
     {
-        $this->persistDraftIfPossible();
+        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
+            return;
+        }
+
+        $this->persistAssessment('draft');
     }
 
     public function toggleEquipmentCheckById(int $itemId): void
@@ -314,6 +318,7 @@ class TracheostomyCareCompetency extends Component
         ];
 
         $updateData = $this->applySectionScopedFormFields($updateData, $row);
+        $updateData = $this->upsertSectionSummarySnapshot($updateData, $row, $intent === 'section_submit');
 
         if ($intent === 'section_submit') {
             $updateData = $this->withSectionSubmissionSnapshot($updateData, $row);

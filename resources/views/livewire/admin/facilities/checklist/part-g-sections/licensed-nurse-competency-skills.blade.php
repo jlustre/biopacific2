@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'ln',
                                     ])
-                                    <span class="truncate">LICENSED NURSE COMPETENCIES</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'LICENSED NURSE COMPETENCIES',
+                                        'sectionItems' => $lnCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'ln',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'ln'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ln'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($lnCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -67,7 +70,7 @@
                 </tbody>
             </table>
 
-            <div id="lnc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'ln'" x-transition>
+            <div id="lnc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ln'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
                     'title' => 'LICENSED NURSE COMPETENCY EVALUATION SUMMARY',
                     'accordionKey' => 'ln',

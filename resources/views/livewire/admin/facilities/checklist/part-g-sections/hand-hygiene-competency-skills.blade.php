@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'hand-hygiene',
                                     ])
-                                    <span class="truncate">HAND HYGIENE COMPETENCY SKILLS</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'HAND HYGIENE SKILLS',
+                                        'sectionItems' => $hygieneCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'hand-hygiene',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'hand-hygiene'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'hand-hygiene'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($hygieneCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,9 +69,9 @@
                 </tbody>
             </table>
 
-            <div id="hhc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'hand-hygiene'" x-transition>
+            <div id="hhc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'hand-hygiene'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'HAND HYGIENE COMPETENCY SKILLS EVALUATION SUMMARY',
+                    'title' => 'HAND HYGIENE SKILLS EVALUATION SUMMARY',
                     'accordionKey' => 'hand-hygiene',
                     'sectionHeadingId' => 'hhc-section-heading',
                 ])

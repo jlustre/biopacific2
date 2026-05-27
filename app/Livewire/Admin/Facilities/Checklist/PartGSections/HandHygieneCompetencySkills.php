@@ -42,7 +42,7 @@ class HandHygieneCompetencySkills extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'HAND HYGIENE COMPETENCY SKILLS';
+    public const SECTION = 'HAND HYGIENE SKILLS';
 
     public function mount(
         string $employeeNum,

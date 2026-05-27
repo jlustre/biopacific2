@@ -1,10 +1,11 @@
 @extends('layouts.base')
 
 @push('head')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 {{-- Admin layout specific head content --}}
 @push('alpine-plugins')
 {{-- Alpine.js Collapse plugin for admin layout --}}
-<script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.10/dist/cdn.min.js"></script>
 @endpush
 
 @section('body')

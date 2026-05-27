@@ -22,7 +22,7 @@
             ], key('licensed-nurse-point-of-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION COMPETENCY'))
+        <!-- @if($partGSections->has('MATRIXCARE PHYSICIAN ORDER AND DOCUMENTATION'))
             @livewire('admin.facilities.checklist.part-g-sections.matrixcare-physician-order-documentation-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -30,7 +30,7 @@
             ], key('matrixcare-physician-order-documentation-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('BLOOD ADMINISTRATION COMPETENCY'))
+        <!-- @if($partGSections->has('BLOOD ADMINISTRATION'))
             @livewire('admin.facilities.checklist.part-g-sections.blood-administration-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -38,7 +38,7 @@
             ], key('blood-administration-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY'))
+        <!-- @if($partGSections->has('BLOOD GLUCOSE SYSTEM SKILLS'))
             @livewire('admin.facilities.checklist.part-g-sections.blood-glucose-system-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -46,7 +46,7 @@
             ], key('blood-glucose-system-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('TRACHEOSTOMY CARE COMPETENCY'))
+        <!-- @if($partGSections->has('TRACHEOSTOMY CARE'))
             @livewire('admin.facilities.checklist.part-g-sections.tracheostomy-care-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -54,7 +54,7 @@
             ], key('tracheostomy-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('NURSE TREATMENT SKILLS COMPETENCY'))
+        <!-- @if($partGSections->has('NURSE TREATMENT SKILLS'))
             @livewire('admin.facilities.checklist.part-g-sections.nurse-treatment-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -62,7 +62,7 @@
             ], key('nurse-treatment-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('HAND HYGIENE COMPETENCY SKILLS'))
+        <!-- @if($partGSections->has('HAND HYGIENE SKILLS'))
             @livewire('admin.facilities.checklist.part-g-sections.hand-hygiene-competency-skills', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -70,7 +70,7 @@
             ], key('hand-hygiene-competency-skills-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        <!-- @if($partGSections->has('VENTILATOR MANAGEMENT SKILLS COMPETENCY'))
+        <!-- @if($partGSections->has('VENTILATOR MANAGEMENT SKILLS'))
             @livewire('admin.facilities.checklist.part-g-sections.ventilator-management-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
@@ -86,7 +86,7 @@
             ], key('personal-protective-equipment-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif -->
 
-        @if($partGSections->has('MEDICATION ADMINISTRATION COMPETENCY'))
+        @if($partGSections->has('MEDICATION ADMINISTRATION'))
             @livewire('admin.facilities.checklist.part-g-sections.medication-administration-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,

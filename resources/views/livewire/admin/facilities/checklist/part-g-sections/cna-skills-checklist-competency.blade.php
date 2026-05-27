@@ -33,7 +33,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'cna-skills',
                                     ])
-                                    <span class="truncate">CNA SKILLS CHECKLIST</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'CNA SKILLS',
+                                        'sectionItems' => $cnaSkillsChecklistItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'cna-skills',
@@ -43,7 +46,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'cna-skills'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'cna-skills'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($cnaSkillsChecklistItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -64,9 +67,9 @@
                 </tbody>
             </table>
 
-            <div id="csc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'cna-skills'" x-transition>
+            <div id="csc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'cna-skills'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'CNA SKILLS CHECKLIST EVALUATION SUMMARY',
+                    'title' => 'CNA SKILLS EVALUATION SUMMARY',
                     'accordionKey' => 'cna-skills',
                     'sectionHeadingId' => 'csc-section-heading',
                 ])

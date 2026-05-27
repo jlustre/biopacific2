@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'nurse-treatment',
                                     ])
-                                    <span class="truncate">NURSE TREATMENT SKILLS COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'NURSE TREATMENT SKILLS',
+                                        'sectionItems' => $treatmentCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'nurse-treatment',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'nurse-treatment'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'nurse-treatment'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($treatmentCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,9 +69,9 @@
                 </tbody>
             </table>
 
-            <div id="nts-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'nurse-treatment'" x-transition>
+            <div id="nts-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'nurse-treatment'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'NURSE TREATMENT SKILLS COMPETENCY EVALUATION SUMMARY',
+                    'title' => 'NURSE TREATMENT SKILLS EVALUATION SUMMARY',
                     'accordionKey' => 'nurse-treatment',
                     'sectionHeadingId' => 'nts-section-heading',
                 ])

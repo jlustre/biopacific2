@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'ln-poc',
                                     ])
-                                    <span class="truncate">LICENSED NURSE POINT OF CARE COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'LICENSED NURSE POINT OF CARE COMPETENCY',
+                                        'sectionItems' => $pocCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'ln-poc',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'ln-poc'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ln-poc'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($pocCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,7 +69,7 @@
                 </tbody>
             </table>
 
-            <div id="lnpoc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'ln-poc'" x-transition>
+            <div id="lnpoc-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ln-poc'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
                     'title' => 'LICENSED NURSE POINT OF CARE COMPETENCY EVALUATION SUMMARY',
                     'accordionKey' => 'ln-poc',

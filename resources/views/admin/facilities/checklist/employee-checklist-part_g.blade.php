@@ -17,9 +17,9 @@
             'IP Nurse',
         ];
         $partGShowLicensedNurseGuidance = in_array($partGPosition, $partGLicensedNurseGuidancePositions, true);
-        $partGShowCnaSkillsChecklist = $partGSections->has('CNA SKILLS CHECKLIST');
+        $partGShowCnaSkillsChecklist = $partGSections->has('CNA SKILLS');
         $partGShowPerinealCare = $partGSections->has('PERINEAL CARE');
-        $partGShowHoyerLiftTraining = $partGSections->has('USE OF HOYER LIFT TRAINING');
+        $partGShowHoyerLiftTraining = $partGSections->has('USE OF HOYER LIFT');
         $partGShowCnaCompetencyGuidance = ! $partGShowLicensedNurseGuidance
             && ($partGShowCnaSkillsChecklist || $partGShowPerinealCare || $partGShowHoyerLiftTraining);
         $partGShowDsdCompetency = $partGSections->keys()
@@ -29,18 +29,18 @@
         $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
         $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
         $partGDontIncludeSections = [
-            'BLOOD ADMINISTRATION COMPETENCY',
-            'BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY',
-            'TRACHEOSTOMY CARE COMPETENCY',
-            'NURSE TREATMENT SKILLS COMPETENCY',
-            'HAND HYGIENE COMPETENCY SKILLS',
-            'VENTILATOR MANAGEMENT SKILLS COMPETENCY',
+            'BLOOD ADMINISTRATION',
+            'BLOOD GLUCOSE SYSTEM SKILLS',
+            'TRACHEOSTOMY CARE',
+            'NURSE TREATMENT SKILLS',
+            'HAND HYGIENE SKILLS',
+            'VENTILATOR MANAGEMENT SKILLS',
             'PERSONAL PROTECTIVE EQUIPMENT (PPE)',
-            'MEDICATION ADMINISTRATION COMPETENCY',
-            'USE OF HOYER LIFT TRAINING',
-            'CNA SKILLS CHECKLIST',
+            'MEDICATION ADMINISTRATION',
+            'USE OF HOYER LIFT',
+            'CNA SKILLS',
             'PERINEAL CARE',
-            'DIRECTOR OF STAFF DEVELOPMENT COMPETENCIES',
+            'DIRECTOR OF STAFF DEVELOPMENT',
         ];
         $partGExcludedSectionLabels = collect($selectedCompetencyAssessment?->snapshot_json['excluded_section_labels'] ?? [])
             ->filter(fn ($sectionLabel) => filled($sectionLabel))
@@ -221,6 +221,11 @@
             ], key('director-of-staff-development-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
         @endif
+
+        @livewire('admin.facilities.checklist.competency-assessment-history-table', [
+            'employeeNum' => $employee->employee_num,
+            'selectedAssessmentPeriodId' => $selectedAssessmentPeriodId,
+        ], key('competency-assessment-history-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
     </div>
 </div>

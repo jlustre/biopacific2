@@ -42,7 +42,7 @@ class UseOfHoyerLiftTrainingCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'USE OF HOYER LIFT TRAINING';
+    public const SECTION = 'USE OF HOYER LIFT';
 
     public function mount(
         string $employeeNum,

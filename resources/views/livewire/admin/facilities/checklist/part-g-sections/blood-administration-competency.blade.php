@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'blood',
                                     ])
-                                    <span class="truncate">BLOOD ADMINISTRATION COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'BLOOD ADMINISTRATION',
+                                        'sectionItems' => $bloodCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'blood',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'blood'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'blood'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($bloodCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -114,9 +117,9 @@
                 </tbody>
             </table>
 
-            <div id="bac-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'blood'" x-transition>
+            <div id="bac-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'blood'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'BLOOD ADMINISTRATION COMPETENCY EVALUATION SUMMARY',
+                    'title' => 'BLOOD ADMINISTRATION EVALUATION SUMMARY',
                     'accordionKey' => 'blood',
                     'sectionHeadingId' => 'bac-section-heading',
                 ])

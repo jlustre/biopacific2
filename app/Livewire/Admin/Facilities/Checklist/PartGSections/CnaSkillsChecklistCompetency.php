@@ -42,7 +42,7 @@ class CnaSkillsChecklistCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'CNA SKILLS CHECKLIST';
+    public const SECTION = 'CNA SKILLS';
 
     public function mount(
         string $employeeNum,

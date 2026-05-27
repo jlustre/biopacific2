@@ -30,21 +30,21 @@
                     <td class="px-3 py-2">{{ $tax->locality ?? '—' }}</td>
                     <td class="px-3 py-2">
                         <a href="#" class="text-blue-600 hover:underline cursor-pointer" @click.prevent="setTax({
-                            effdt: '{{ $tax->effdt ? \Illuminate\Support\Carbon::parse($tax->effdt)->format('Y-m-d') : '' }}',
-                            effseq: '{{ $tax->effseq }}',
-                            fed_tax_data: '{{ $tax->fed_tax_data ?? '' }}',
-                            fed_withholding_allowance: '{{ $tax->fed_withholding_allowance ?? '' }}',
-                            state_tax_data: '{{ $tax->state_tax_data ?? '' }}',
-                            state_withholding_allowance1: '{{ $tax->state_withholding_allowance1 ?? '' }}',
-                            resident: '{{ strtoupper((string) $tax->resident) }}',
-                            local_withholding_allowance: '{{ $tax->local_withholding_allowance ?? '' }}',
+                            effdt: @json($tax->effdt ? \Illuminate\Support\Carbon::parse($tax->effdt)->format('Y-m-d') : ''),
+                            effseq: @json($tax->effseq),
+                            fed_tax_data: @json($tax->fed_tax_data ?? ''),
+                            fed_withholding_allowance: @json($tax->fed_withholding_allowance ?? ''),
+                            state_tax_data: @json($tax->state_tax_data ?? ''),
+                            state_withholding_allowance1: @json($tax->state_withholding_allowance1 ?? ''),
+                            resident: @json(strtoupper((string) $tax->resident)),
+                            local_withholding_allowance: @json($tax->local_withholding_allowance ?? ''),
                             locality: @json($tax->locality ?? ''),
                             county: @json($tax->county ?? ''),
-                            addl_withholding_percentage1: '{{ $tax->addl_withholding_percentage1 ?? '' }}',
-                            addl_withholding_amount1: '{{ $tax->addl_withholding_amount1 ?? '' }}',
-                            addl_withholding_percentage2: '{{ $tax->addl_withholding_percentage2 ?? '' }}',
-                            addl_withholding_amount2: '{{ $tax->addl_withholding_amount2 ?? '' }}',
-                            resident_state: '{{ $tax->resident_state ?? 'CA' }}'
+                            addl_withholding_percentage1: @json($tax->addl_withholding_percentage1 ?? ''),
+                            addl_withholding_amount1: @json($tax->addl_withholding_amount1 ?? ''),
+                            addl_withholding_percentage2: @json($tax->addl_withholding_percentage2 ?? ''),
+                            addl_withholding_amount2: @json($tax->addl_withholding_amount2 ?? ''),
+                            resident_state: @json($tax->resident_state ?? 'CA')
                         })">View/Edit</a>
                     </td>
                 </tr>

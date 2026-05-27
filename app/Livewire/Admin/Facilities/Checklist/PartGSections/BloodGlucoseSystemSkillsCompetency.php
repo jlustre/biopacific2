@@ -42,7 +42,7 @@ class BloodGlucoseSystemSkillsCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'BLOOD GLUCOSE SYSTEM SKILLS COMPETENCY';
+    public const SECTION = 'BLOOD GLUCOSE SYSTEM SKILLS';
 
     public function mount(
         string $employeeNum,

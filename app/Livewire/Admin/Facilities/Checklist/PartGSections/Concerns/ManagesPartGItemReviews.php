@@ -6,6 +6,16 @@ use Illuminate\Support\Facades\Auth;
 
 trait ManagesPartGItemReviews
 {
+    /**
+     * @return array<int|string, mixed>
+     */
+    protected function partGResponses(): array
+    {
+        return property_exists($this, 'responses') && is_array($this->responses)
+            ? $this->responses
+            : [];
+    }
+
     public bool $reviewModalOpen = false;
 
     public ?int $reviewModalItemId = null;
@@ -34,7 +44,7 @@ trait ManagesPartGItemReviews
         $this->reviewModalOpen = true;
         $this->reviewModalDate = now()->toDateString();
         $this->reviewModalReviewerName = $user?->name ?? '';
-        $this->reviewModalRating = $this->extractRatingValue($this->responses[$itemId] ?? null);
+        $this->reviewModalRating = $this->extractRatingValue($this->partGResponses()[$itemId] ?? null);
         $this->reviewModalComments = (string) ($this->itemReviewMeta[$itemId]['comments'] ?? '');
     }
 
@@ -72,7 +82,9 @@ trait ManagesPartGItemReviews
         $itemId = (int) $this->reviewModalItemId;
         $user = Auth::user();
 
-        $this->responses[$itemId] = $rating;
+        if (property_exists($this, 'responses') && is_array($this->responses)) {
+            $this->responses[$itemId] = $rating;
+        }
         $this->itemReviewMeta[$itemId] = [
             'review_date' => $this->reviewModalDate ?: now()->toDateString(),
             'reviewer_id' => $user?->id,
@@ -111,7 +123,10 @@ trait ManagesPartGItemReviews
             return;
         }
 
-        unset($this->responses[$itemId], $this->itemReviewMeta[$itemId]);
+        if (property_exists($this, 'responses') && is_array($this->responses)) {
+            unset($this->responses[$itemId]);
+        }
+        unset($this->itemReviewMeta[$itemId]);
 
         if (method_exists($this, 'normalizeResponseKeys')) {
             $this->normalizeResponseKeys();
@@ -181,7 +196,7 @@ trait ManagesPartGItemReviews
 
     protected function mergeItemReviewMetaIntoResponsesPayload(array $payload): array
     {
-        foreach ($this->responses as $itemId => $rating) {
+        foreach ($this->partGResponses() as $itemId => $rating) {
             $rating = $this->extractRatingValue($rating);
             if ($rating === '') {
                 continue;
@@ -202,9 +217,58 @@ trait ManagesPartGItemReviews
 
     public function itemHasReview(int $itemId): bool
     {
-        $rating = $this->extractRatingValue($this->responses[$itemId] ?? null);
+        $rating = $this->extractRatingValue($this->partGResponses()[$itemId] ?? null);
 
         return in_array($rating, ['E', 'S', 'U', 'N'], true);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $sectionItems
+     */
+    public function sectionProgressStatusLabel(array $sectionItems): string
+    {
+        if ($this->sectionExcluded ?? false) {
+            return 'Excluded';
+        }
+
+        if (! ($this->assessmentPeriodId ?? null)) {
+            return 'Not Started';
+        }
+
+        return $this->sectionHasAtLeastOneReviewedItem($sectionItems)
+            ? 'In Progress'
+            : 'Not Started';
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $sectionItems
+     */
+    protected function sectionHasAtLeastOneReviewedItem(array $sectionItems): bool
+    {
+        foreach ($sectionItems as $item) {
+            if ($item['isParent'] ?? false) {
+                continue;
+            }
+
+            $itemId = (int) ($item['id'] ?? 0);
+            if ($itemId > 0 && $this->itemHasReview($itemId)) {
+                return true;
+            }
+        }
+
+        if (property_exists($this, 'procedureReviews') && is_array($this->procedureReviews)) {
+            foreach ($this->procedureReviews as $rating) {
+                if (in_array(strtoupper(trim((string) $rating)), ['E', 'S', 'U'], true)) {
+                    return true;
+                }
+            }
+        }
+
+        if (property_exists($this, 'equipmentChecks') && is_array($this->equipmentChecks) && $this->equipmentChecks !== []) {
+            return true;
+        }
+
+        return false;
     }
 
     public function itemReviewDisplayDate(int $itemId): string
@@ -223,6 +287,6 @@ trait ManagesPartGItemReviews
 
     public function itemReviewDisplayRating(int $itemId): string
     {
-        return $this->extractRatingValue($this->responses[$itemId] ?? null);
+        return $this->extractRatingValue($this->partGResponses()[$itemId] ?? null);
     }
 }

@@ -1672,100 +1672,15 @@ class EmployeesController extends Controller
             ->filter(fn ($entry) => $entry->assessment_type === 'competency')
             ->groupBy('assessment_period_id');
 
-        $competencyAssessmentHistory = $competencyEntriesByPeriod
-            ->keys()
-            ->merge($competencyAssessmentSubmissions->keys())
-            ->unique()
-            ->map(function ($assessmentPeriodId) use ($competencyEntriesByPeriod, $assessmentPeriodLabels, $competencyAssessmentSubmissions, $selectedAssessmentPeriodId, $draftResponses, $employeeCompetencyItems) {
-                $entries = $competencyEntriesByPeriod->get($assessmentPeriodId, collect());
-                $latestStates = $entries
-                    ->filter(fn ($entry) => $entry->revoked_at === null)
-                    ->groupBy('item_key')
-                    ->map(function ($groupedEntries) {
-                        return $groupedEntries
-                            ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
-                            ->first();
-                    })
-                    ->filter();
-
-                $submission = $competencyAssessmentSubmissions->get((int) $assessmentPeriodId);
-                $status = $submission?->status
-                    ? ucwords(str_replace('_', ' ', (string) $submission->status))
-                    : 'Draft';
-                $snapshotItems = collect($submission?->snapshot_json['items'] ?? []);
-                $snapshotRatedCount = $snapshotItems
-                    ->filter(fn ($item) => in_array(($item['rating'] ?? null), ['E', 'S', 'U'], true))
-                    ->count();
-
-                // --- Fix: For current period and no finalized submission, use draft responses for summary ---
-                $useDraft = !$submission || ($status === 'Draft' && (int)$assessmentPeriodId === (int)$selectedAssessmentPeriodId);
-                if ($useDraft && !empty($draftResponses)) {
-                    $total = 0;
-                    $count = 0;
-                    foreach ($employeeCompetencyItems as $item) {
-                        $id = $item->id;
-                        $resp = $draftResponses[$id] ?? null;
-                        $score = match ($resp) {
-                            'E' => 3,
-                            'S' => 2,
-                            'U' => 1,
-                            default => null,
-                        };
-                        if ($score === null) continue;
-                        $total += $score;
-                        $count++;
-                    }
-                    $average = $count > 0 ? round($total / $count, 2) : 0;
-                    $overall = $count === 0
-                        ? 'N/A'
-                        : ($average >= 2.5
-                            ? 'Excellent'
-                            : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
-                } else {
-                    $total = 0;
-                    $count = 0;
-                    foreach ($latestStates as $state) {
-                        $score = match ($state->rating) {
-                            'E' => 3,
-                            'S' => 2,
-                            'U' => 1,
-                            default => null,
-                        };
-                        if ($score === null) continue;
-                        $total += $score;
-                        $count++;
-                    }
-                    $average = $count > 0 ? round($total / $count, 2) : 0;
-                    $overall = $count === 0
-                        ? 'N/A'
-                        : ($average >= 2.5
-                            ? 'Excellent'
-                            : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
-                }
-
-                $period = $assessmentPeriodLabels->get($assessmentPeriodId);
-                $latestAssessment = $entries
-                    ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
-                    ->first();
-
-                return [
-                    'assessment_period_id' => (int) $assessmentPeriodId,
-                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
-                    'assessment_date' => optional($submission?->submitted_at)->toDateString()
-                        ?? optional($submission?->updated_at)->toDateString()
-                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
-                    'items_count' => $submission ? max($count, $snapshotRatedCount) : $count,
-                    'total_score' => $submission?->total_score ?? $total,
-                    'average_score' => $submission ? number_format((float) $submission->average_score, 2) : number_format($average, 2),
-                    'overall_rating' => $submission?->overall_rating ?? $overall,
-                    'status' => $status,
-                    'competency_assessment_id' => $submission?->id,
-                    'pdf_available' => !empty($submission?->pdf_path),
-                ];
-            })
-            ->sortByDesc('assessment_date')
-            ->values()
-            ->all();
+        $competencyAssessmentHistory = \App\Support\CompetencyAssessmentHistoryBuilder::build(
+            $employeeCompetencyItems,
+            $competencyAssessmentSubmissions,
+            $competencyEntriesByPeriod,
+            $assessmentPeriodLabels,
+            $selectedAssessmentPeriodId,
+            $draftResponses ?? [],
+            $users,
+        );
 
         $performanceEntriesByPeriod = $allAssessmentEntries
             ->filter(fn ($entry) => $entry->assessment_type === 'performance')

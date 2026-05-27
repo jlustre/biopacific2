@@ -17,11 +17,11 @@
         $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
         $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
         $partGDontIncludeSections = [
-            'BLOOD ADMINISTRATION COMPETENCY',
+            'BLOOD ADMINISTRATION',
             'BLOOD GLUCOSE MONITORING COMPETENCY',
-            'TRACHEOSTOMY CARE COMPETENCY',
+            'TRACHEOSTOMY CARE',
             'TREATMENT NURSE SKILLS COMPETENCY',
-            'MEDICATION ADMINISTRATION COMPETENCY',
+            'MEDICATION ADMINISTRATION',
         ];
         $partGExcludedSectionLabels = collect($selectedCompetencyAssessment?->snapshot_json['excluded_section_labels'] ?? [])
             ->filter(fn ($sectionLabel) => filled($sectionLabel))
@@ -103,7 +103,7 @@
                     $partGSectionRenderItems = $partGSectionItems;
                     $partGSectionTracheostomyProcedureRows = collect();
 
-                    if ($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY') {
+                    if ($sectionLabel === 'TRACHEOSTOMY CARE') {
                         $partGSectionTracheostomyProcedureRows = $partGSectionItems
                             ->filter(fn ($item) => preg_match('/^-\d+\./', (string) $item->item) === 1)
                             ->map(function ($item) {
@@ -144,7 +144,7 @@
                             </div>
                         </td>
                     </tr>
-                    @if($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY')
+                    @if($sectionLabel === 'TRACHEOSTOMY CARE')
                     <tr class="bg-white text-slate-900" data-section-body="1">
                         <td colspan="5" class="border border-slate-500 px-3 py-1.5 text-[11px] leading-snug md:text-xs">
                             <p>Tracheostomy care maintains a patient&rsquo;s airway by evacuating secretions, thereby preventing or reducing infections.</p>
@@ -169,8 +169,8 @@
                     preg_match('/^(-+)/', $nextItem?->item ?? '', $nextItemIndentMatches);
                     $nextIndentLevel = min(strlen($nextItemIndentMatches[1] ?? ''), 2);
                     $hasChildItems = $nextItem && $nextIndentLevel > $indentLevel;
-                    $isTracheostomyEquipmentHeader = $sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $indentLevel === 1 && $hasChildItems;
-                    $isTracheostomyEquipmentItem = $sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $indentLevel >= 2;
+                    $isTracheostomyEquipmentHeader = $sectionLabel === 'TRACHEOSTOMY CARE' && $indentLevel === 1 && $hasChildItems;
+                    $isTracheostomyEquipmentItem = $sectionLabel === 'TRACHEOSTOMY CARE' && $indentLevel >= 2;
                     $isAssessableItem = !$hasChildItems && !$isTracheostomyEquipmentItem;
                     $indentClass = match ($indentLevel) {
                         1 => 'pl-8',
@@ -261,7 +261,7 @@
                         </td>
                         @endif
                     </tr>
-                    @if($sectionLabel === 'BLOOD ADMINISTRATION COMPETENCY' && $item->item === $bloodTransfusionTableInsertAfterItem)
+                    @if($sectionLabel === 'BLOOD ADMINISTRATION' && $item->item === $bloodTransfusionTableInsertAfterItem)
                     <tr class="bg-white text-slate-900" data-section-body="1">
                         <td colspan="5" class="border border-slate-500 px-2 py-2">
                             <div class="overflow-x-auto">
@@ -308,7 +308,7 @@
                         </td>
                     </tr>
                     @endif
-                    @if($sectionLabel === 'TRACHEOSTOMY CARE COMPETENCY' && $loop->last && $partGSectionTracheostomyProcedureRows->isNotEmpty())
+                    @if($sectionLabel === 'TRACHEOSTOMY CARE' && $loop->last && $partGSectionTracheostomyProcedureRows->isNotEmpty())
                     <tr class="bg-white text-slate-900" data-section-body="1">
                         <td colspan="5" class="border border-slate-500 px-2 py-2">
                             <div class="overflow-x-auto">

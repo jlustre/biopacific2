@@ -171,7 +171,10 @@ trait ManagesPartGSectionExclusion
             }
 
             $total++;
-            $response = $this->responses[$item['id']] ?? null;
+            $responses = property_exists($this, 'responses') && is_array($this->responses)
+                ? $this->responses
+                : [];
+            $response = $responses[$item['id']] ?? null;
 
             if ($response === null || $response === '') {
                 continue;

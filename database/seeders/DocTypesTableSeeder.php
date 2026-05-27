@@ -28,7 +28,7 @@ class DocTypesTableSeeder extends Seeder
             'Blood Administration LN Competency Skills',
             'Blood Glucose Skills checklist',
             'CNA Competency Perineal Care Checklist',
-            'CNA skills checklist',
+            'CNA SKILLS',
             'DON Orientation Checklist',
             'Dietary Orientation Checklist',
             'Dietary_Department-Skills Checklist',

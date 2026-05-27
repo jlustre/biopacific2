@@ -42,7 +42,7 @@ class BloodAdministrationCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'BLOOD ADMINISTRATION COMPETENCY';
+    public const SECTION = 'BLOOD ADMINISTRATION';
 
     public const TRANSFUSION_TABLE_AFTER_ITEM = '-See blood transfusion policy for usual lengths of transfusion. (for whole blood 2-4 hours, must be infused within 4 hours of leaving Blood Bank)';
 

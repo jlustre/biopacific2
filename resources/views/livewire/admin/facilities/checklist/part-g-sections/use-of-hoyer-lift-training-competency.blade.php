@@ -35,7 +35,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'hoyer-lift',
                                     ])
-                                    <span class="truncate">USE OF HOYER LIFT TRAINING</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'USE OF HOYER LIFT',
+                                        'sectionItems' => $hoyerLiftCompetencyItems,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'hoyer-lift',
@@ -45,7 +48,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'hoyer-lift'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'hoyer-lift'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($hoyerLiftCompetencyItems as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -66,9 +69,9 @@
                 </tbody>
             </table>
 
-            <div id="hlt-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'hoyer-lift'" x-transition>
+            <div id="hlt-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'hoyer-lift'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
-                    'title' => 'USE OF HOYER LIFT TRAINING EVALUATION SUMMARY',
+                    'title' => 'USE OF HOYER LIFT EVALUATION SUMMARY',
                     'accordionKey' => 'hoyer-lift',
                     'sectionHeadingId' => 'hlt-section-heading',
                 ])

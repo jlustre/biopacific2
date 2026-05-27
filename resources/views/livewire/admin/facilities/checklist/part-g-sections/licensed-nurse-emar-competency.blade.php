@@ -122,7 +122,10 @@
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-accordion-toggle', [
                                         'accordionKey' => 'ln-emar',
                                     ])
-                                    <span class="truncate">LICENSED NURSE eMAR COMPETENCY</span>
+                                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
+                                        'title' => 'LICENSED NURSE eMAR COMPETENCY',
+                                        'sectionItems' => $items,
+                                    ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
                                     'accordionKey' => 'ln-emar',
@@ -132,7 +135,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody x-show="$store.partGAccordion.openSection === 'ln-emar'" x-transition>
+                <tbody x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ln-emar'" x-transition>
                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
                     @foreach($items as $index => $item)
                         @if($item['isParent'] ?? false)
@@ -154,7 +157,7 @@
                 </tbody>
             </table>
 
-            <div id="lnemar-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion.openSection === 'ln-emar'" x-transition>
+            <div id="lnemar-summary-form" tabindex="-1" class="mt-8 rounded-lg border border-gray-300 bg-slate-50 p-4 scroll-mt-4 outline-none" x-show="$store.partGAccordion && $store.partGAccordion.openSection === 'ln-emar'" x-transition>
                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-evaluation-summary-heading', [
                     'title' => 'LICENSED NURSE eMAR COMPETENCY EVALUATION SUMMARY',
                     'accordionKey' => 'ln-emar',

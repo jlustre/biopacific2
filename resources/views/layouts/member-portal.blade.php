@@ -24,29 +24,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{{ $portalTitle }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="{{ mix('css/app.css') }}">
+  {{-- Alpine.js loaded via Livewire or base layout; do not include multiple times --}}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="{{ asset('css/member-portal-sidebar.css') }}">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
-              400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
-              800: '#115e59', 900: '#134e4a'
-            }
-          },
-          boxShadow: {
-            soft: '0 18px 45px rgba(15, 23, 42, 0.08)',
-            card: '0 10px 30px rgba(15, 23, 42, 0.06)'
-          }
-        }
-      }
-    }
-  </script>
   @stack('head')
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased pb-20 lg:pb-0"

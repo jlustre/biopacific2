@@ -123,7 +123,13 @@ trait PersistsPartGCompetencyItemEntries
             ->first();
 
         if ($assessment) {
-            foreach ($this->decodeCompetencyResponses($assessment->responses ?? null) as $itemId => $data) {
+            $decodedResponses = $this->decodeCompetencyResponses($assessment->responses ?? null);
+
+            if (method_exists($this, 'hydrateItemReviewMetaFromPayload')) {
+                $this->hydrateItemReviewMetaFromPayload($decodedResponses);
+            }
+
+            foreach ($decodedResponses as $itemId => $data) {
                 $sourceItemId = $this->normalizeCompetencyResponseKey($itemId);
                 if (! in_array($sourceItemId, $sectionItemIds, true)) {
                     continue;

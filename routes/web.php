@@ -816,6 +816,7 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/competency-assessment/employee-sign', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'employeeSignCompetencyAssessment'])->name('admin.employees.competency-assessment.employee-sign');
     Route::post('/employees/competency-assessment/reviewer-sign', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'reviewerSignCompetencyAssessment'])->name('admin.employees.competency-assessment.reviewer-sign');
     Route::get('/employees/competency-assessment/{assessment}/pdf', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'downloadCompetencyAssessmentPdf'])->name('admin.employees.competency-assessment.pdf');
+    Route::get('/employees/competency-assessment/{assessment}/section/pdf', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'downloadCompetencySectionPdf'])->name('admin.employees.competency-section.pdf');
     Route::post('/employees/performance-assessment/revoke', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'revoke'])->name('admin.employees.performance-assessment.revoke');
     Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
 });

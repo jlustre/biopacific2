@@ -42,7 +42,7 @@ class VentilatorManagementSkillsCompetency extends Component
 
     public string $draftSaveType = '';
 
-    public const SECTION = 'VENTILATOR MANAGEMENT SKILLS COMPETENCY';
+    public const SECTION = 'VENTILATOR MANAGEMENT SKILLS';
 
     public function mount(
         string $employeeNum,

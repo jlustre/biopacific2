@@ -70,6 +70,7 @@ trait PersistsPartGCompetencySectionResponses
         ];
 
         $updateData = $this->applySectionScopedFormFields($updateData, $row);
+        $updateData = $this->upsertSectionSummarySnapshot($updateData, $row, $intent === 'section_submit');
         $updateData = $this->withExcludedSnapshot($updateData, $row);
 
         if ($intent === 'section_submit') {
@@ -99,12 +100,18 @@ trait PersistsPartGCompetencySectionResponses
     {
         $payload = $existing;
 
-        foreach ($this->responses as $itemId => $response) {
-            if ($response === null || $response === '') {
-                continue;
-            }
+        if (method_exists($this, 'mergeItemReviewMetaIntoResponsesPayload')) {
+            return $this->mergeItemReviewMetaIntoResponsesPayload($payload);
+        }
 
-            $payload[(int) $itemId] = ['response' => $response];
+        if (property_exists($this, 'responses') && is_array($this->responses)) {
+            foreach ($this->responses as $itemId => $response) {
+                if ($response === null || $response === '') {
+                    continue;
+                }
+
+                $payload[(int) $itemId] = ['response' => $response];
+            }
         }
 
         return $payload;
@@ -135,6 +142,44 @@ trait PersistsPartGCompetencySectionResponses
     }
 
     /**
+     * Keep per-section summary metrics current for history/PDF,
+     * even during draft/review updates after initial section submit.
+     *
+     * @param  array<string, mixed>  $updateData
+     * @return array<string, mixed>
+     */
+    protected function upsertSectionSummarySnapshot(
+        array $updateData,
+        ?EmployeeCompetencyAssessment $row,
+        bool $markSubmittedAt = false,
+    ): array {
+        $snapshot = is_array($updateData['snapshot_json'] ?? null)
+            ? $updateData['snapshot_json']
+            : (is_array($row?->snapshot_json) ? $row->snapshot_json : []);
+
+        $scores = $this->calculateScores();
+        $existing = is_array($snapshot['section_summaries'][static::SECTION] ?? null)
+            ? $snapshot['section_summaries'][static::SECTION]
+            : [];
+
+        $snapshot['section_summaries'] ??= [];
+        $snapshot['section_summaries'][static::SECTION] = array_merge($existing, [
+            'total_score' => $scores['totalPoints'],
+            'average_score' => $scores['average'],
+            'overall_rating' => $scores['overallRating'],
+            'review_date' => $this->reviewSignDate ?: ($existing['review_date'] ?? null),
+        ]);
+
+        if ($markSubmittedAt || empty($snapshot['section_summaries'][static::SECTION]['submitted_at'])) {
+            $snapshot['section_summaries'][static::SECTION]['submitted_at'] = now()->toDateTimeString();
+        }
+
+        $updateData['snapshot_json'] = $snapshot;
+
+        return $updateData;
+    }
+
+    /**
      * @param  array<string, mixed>  $updateData
      * @return array<string, mixed>
      */
@@ -144,16 +189,9 @@ trait PersistsPartGCompetencySectionResponses
             ? $updateData['snapshot_json']
             : (is_array($row?->snapshot_json) ? $row->snapshot_json : []);
 
-        $scores = $this->calculateScores();
-
-        $snapshot['section_summaries'] ??= [];
-        $snapshot['section_summaries'][static::SECTION] = [
-            'total_score' => $scores['totalPoints'],
-            'average_score' => $scores['average'],
-            'overall_rating' => $scores['overallRating'],
-            'submitted_at' => now()->toDateTimeString(),
-            'review_date' => $this->reviewSignDate ?: null,
-        ];
+        $updateData['snapshot_json'] = $snapshot;
+        $updateData = $this->upsertSectionSummarySnapshot($updateData, $row, true);
+        $snapshot = is_array($updateData['snapshot_json'] ?? null) ? $updateData['snapshot_json'] : [];
 
         $submittedLabels = collect($snapshot['submitted_section_labels'] ?? [])
             ->map(fn ($label) => trim((string) $label))
@@ -211,6 +249,10 @@ trait PersistsPartGCompetencySectionResponses
     protected function normalizeResponseKeys(): void
     {
         $normalized = [];
+
+        if (! property_exists($this, 'responses') || ! is_array($this->responses)) {
+            return;
+        }
 
         foreach ($this->responses as $itemId => $response) {
             if ($response === null || $response === '') {

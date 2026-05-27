@@ -56,7 +56,7 @@
                                 </th>
                             </tr>
                         </thead>
-                        <tbody x-show="$store.partFAccordion.openSection === '{{ $accordionKey }}'" x-transition>
+                        <tbody x-show="$store.partFAccordion && $store.partFAccordion.openSection === '{{ $accordionKey }}'" x-transition>
                             <tr class="bg-blue-50">
                                 <td class="border border-gray-300 pl-2 text-start text-md font-bold text-gray-700">Items</td>
                                 <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">E</td>
@@ -136,7 +136,7 @@
                 <div
                     class="mb-2 rounded-md border border-slate-400 bg-slate-50 px-3 py-2 shadow-sm"
                     wire:ignore
-                    x-show="$store.partFAccordion.openSection === '{{ $accordionKey }}'"
+                    x-show="$store.partFAccordion && $store.partFAccordion.openSection === '{{ $accordionKey }}'"
                     x-transition
                 >
                     <div class="flex flex-col items-center gap-2 md:flex-row">
