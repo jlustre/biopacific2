@@ -4,6 +4,7 @@
         window.currentUserId = {{ auth()->user()->id }};
         window.currentUserName = @json(auth()->user()->name);
     @endif
+    window.users = @json(isset($users) ? $users->pluck('name', 'id') : []);
 
     function bpDenySelfAssessmentAction() {
         if (window.bpEvaluatorActionsDisabled) {
@@ -157,6 +158,27 @@
         }
     }
 
+    function resolveVerifiedByFieldsFromLink(link) {
+        var verifiedById = link ? (link.getAttribute('data-verified-by-id') || '') : '';
+        var verifiedByName = link ? (link.getAttribute('data-verified-by') || '') : '';
+
+        if (!verifiedById && verifiedByName && /^\d+$/.test(String(verifiedByName).trim())) {
+            verifiedById = String(verifiedByName).trim();
+            verifiedByName = '';
+        }
+
+        if (verifiedById && window.users && window.users[verifiedById]) {
+            verifiedByName = window.users[verifiedById];
+        } else if (!verifiedByName && verifiedById && window.users && window.users[verifiedById]) {
+            verifiedByName = window.users[verifiedById];
+        }
+
+        return {
+            id: verifiedById,
+            name: verifiedByName,
+        };
+    }
+
     function findChecklistLink(itemName, empId, itemId = null, checklistKey = null) {
         return Array.from(document.querySelectorAll('.verify-link, .view-link')).find((link) => {
             if (String(link.getAttribute('data-emp-id')) !== String(empId)) {
@@ -223,8 +245,9 @@
                 expDtField.value = link.getAttribute('data-exp-dt') || '';
             }
             if (commentsField && link.hasAttribute('data-comments')) commentsField.value = link.getAttribute('data-comments') || '';
-            if (verifiedByField && link.hasAttribute('data-verified-by')) verifiedByField.value = link.getAttribute('data-verified-by') || '';
-            if (verifiedByIdField && link.hasAttribute('data-verified-by')) verifiedByIdField.value = link.getAttribute('data-verified-by') || '';
+            var verifiedByFields = resolveVerifiedByFieldsFromLink(link);
+            if (verifiedByField) verifiedByField.value = verifiedByFields.name;
+            if (verifiedByIdField) verifiedByIdField.value = verifiedByFields.id;
         }
         
         // Only default to the current user when editing a new confirmation.
@@ -646,7 +669,8 @@
                 ` data-verified-dt="${item.verified_dt || ''}"` +
                 ` data-exp-dt="${item.exp_dt || ''}"` +
                 ` data-comments="${item.comments || ''}"` +
-                ` data-verified-by="${item.verified_by_name || item.verified_by || ''}"${expDtNotRequiredAttr}>View</a>`;
+                ` data-verified-by="${item.verified_by_name || item.verified_by || ''}"` +
+                ` data-verified-by-id="${item.verified_by || ''}"${expDtNotRequiredAttr}>View</a>`;
         } else {
             // If not verified, show Verify link with tooltip and all relevant data attributes
             actionLinks =

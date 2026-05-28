@@ -232,11 +232,11 @@
                             @endif
                             @elseif(!$isAssessableItem && empty($empChecklist['verified_by']))
                             @elseif(!empty($empChecklist['verified_by']))
-                            <a href="#" class="text-red-600 underline mr-1 unverify-link cursor-pointer text-xs" title="Revoke Assessment"
+                            <a href="#" class="text-red-600 underline mr-1 unverify-link cursor-pointer text-xs" title="Click to Unconfirm Assessment"
                                 data-item-key="{{ $itemKey }}"
                                 data-emp-id="{{ $employee->employee_num }}"
                                 data-item-label="{{ $item->item }}"
-                                data-source-item-id="{{ $item->id }}">Revoke</a>
+                                data-source-item-id="{{ $item->id }}">Confirmed</a>
                             <span>|</span>
                             <a href="#" class="text-teal-600 underline ml-1 view-link cursor-pointer text-xs" title="View Assessment Details"
                                 data-item-key="{{ $itemKey }}"

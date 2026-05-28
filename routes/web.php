@@ -112,7 +112,7 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/reports')->
 Route::post('/admin/reports/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('admin.reports.validate-sql');
 
 // Scheduled Report Runs Management (Admin)
-Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'index'])->name('index');
     Route::get('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'show'])->name('show');
     Route::get('/{run}/report', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'showReport'])->name('show-report');
@@ -817,6 +817,7 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/employees/competency-assessment/reviewer-sign', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'reviewerSignCompetencyAssessment'])->name('admin.employees.competency-assessment.reviewer-sign');
     Route::get('/employees/competency-assessment/{assessment}/pdf', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'downloadCompetencyAssessmentPdf'])->name('admin.employees.competency-assessment.pdf');
     Route::get('/employees/competency-assessment/{assessment}/section/pdf', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'downloadCompetencySectionPdf'])->name('admin.employees.competency-section.pdf');
+    Route::get('/employees/performance-assessment/{assessment}/pdf', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'downloadPerformanceAssessmentPdf'])->name('admin.employees.performance-assessment.pdf');
     Route::post('/employees/performance-assessment/revoke', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'revoke'])->name('admin.employees.performance-assessment.revoke');
     Route::post('/employees/performance-assessment/period', [\App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'createPeriod'])->name('admin.employees.performance-assessment.period');
 });

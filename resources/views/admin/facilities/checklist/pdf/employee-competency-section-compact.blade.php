@@ -64,7 +64,7 @@
                 return $carry;
             }, ['E' => 0, 'S' => 0, 'U' => 0, 'N' => 0]);
         $unsatisfactoryCommentItems = collect($items ?? [])
-            ->filter(fn ($item) => empty($item['is_parent']))
+            ->filter(fn ($item) => empty($item['is_parent']) && empty($item['is_section_comment']))
             ->filter(fn ($item) => strtoupper(trim((string) ($item['rating'] ?? ''))) === 'U')
             ->filter(fn ($item) => trim((string) ($item['comments'] ?? '')) !== '')
             ->values();
@@ -75,7 +75,8 @@
         $numberedItems = collect($items ?? [])->map(function (array $item) use (&$itemCounter) {
             if (! empty($item['is_parent'])
                 || ! empty($item['is_subsection_heading'])
-                || ! empty($item['skip_item_number'])) {
+                || ! empty($item['skip_item_number'])
+                || ! empty($item['is_section_comment'])) {
                 $item['item_no'] = '';
 
                 return $item;
@@ -87,7 +88,7 @@
             return $item;
         });
         $commentReferences = $numberedItems
-            ->filter(fn (array $item) => empty($item['is_parent']) && trim((string) ($item['comments'] ?? '')) !== '')
+            ->filter(fn (array $item) => empty($item['is_parent']) && empty($item['is_section_comment']) && trim((string) ($item['comments'] ?? '')) !== '')
             ->values();
         $totalRateableCount = isset($totalRateableOverride) && is_numeric($totalRateableOverride) && (int) $totalRateableOverride > 0
             ? (int) $totalRateableOverride
@@ -96,6 +97,11 @@
                 ->count();
         $logoPath = public_path('images/bplogo.png');
         $hasLogo = is_string($logoPath) && file_exists($logoPath);
+        $isPerformanceAssessment = ! empty($isPerformanceAssessment);
+        $areasForDevelopmentText = trim((string) ($areasForDevelopment ?? ''));
+        $developmentPlansText = trim((string) ($developmentPlans ?? ''));
+        $showUnsatisfactoryReason = $isPerformanceAssessment
+            && strcasecmp(trim((string) ($sectionSummary['overall_rating'] ?? '')), 'Unsatisfactory') === 0;
     @endphp
 
     <div class="section">
@@ -129,7 +135,7 @@
                 <td class="meta-label">Title/Position</td>
                 <td class="meta-value">{{ $signatureBlock['employee_title'] ?? ($assessment->employee_title ?? '') }}</td>
                 <td class="meta-label">Status</td>
-                <td class="meta-value">{{ ucwords(str_replace('_', ' ', (string) ($assessment->status ?? 'draft'))) }}</td>
+                <td class="meta-value">{{ $assessmentStatusLabel ?? ucwords(str_replace('_', ' ', (string) ($assessment->status ?? 'draft'))) }}</td>
             </tr>
         </table>
     </div>
@@ -195,6 +201,14 @@
                             {{ $item['item_label'] ?? '' }}
                         </td>
                     </tr>
+                    @elseif(!empty($item['is_section_comment']))
+                    <tr>
+                        <td class="col-item-no"></td>
+                        <td class="col-item" colspan="4" style="background: #f8fafc; padding: 6px 4px;">
+                            <div style="font-weight: bold; font-size: 9px; margin-bottom: 4px;">Comments:</div>
+                            <div style="font-size: 9px;">{!! nl2br(e($item['comments'] ?? '')) !!}</div>
+                        </td>
+                    </tr>
                     @else
                     <tr class="child-row">
                         <td class="col-item-no">{{ $item['item_no'] ?? '' }}</td>
@@ -251,12 +265,35 @@
 
     <div class="section">
         <table class="form-table">
+            @if($isPerformanceAssessment)
+            @if($showUnsatisfactoryReason)
+            <tr>
+                <td class="field-label" colspan="3">UNSATISFACTORY REASON</td>
+            </tr>
+            <tr>
+                <td class="field-box" colspan="3">{!! nl2br(e($signatureBlock['reviewer_comments'] ?? '')) !!}</td>
+            </tr>
+            @endif
+            <tr>
+                <td class="field-label" colspan="3">AREAS REQUIRING FURTHER DEVELOPMENT</td>
+            </tr>
+            <tr>
+                <td class="field-box" colspan="3">{!! nl2br(e($areasForDevelopmentText)) !!}</td>
+            </tr>
+            <tr>
+                <td class="field-label" colspan="3">DEVELOPMENT PLANS</td>
+            </tr>
+            <tr>
+                <td class="field-box" colspan="3">{!! nl2br(e($developmentPlansText)) !!}</td>
+            </tr>
+            @else
             <tr>
                 <td class="field-label" colspan="3">REVIEWER COMMENTS</td>
             </tr>
             <tr>
                 <td class="field-box" colspan="3">{!! nl2br(e($signatureBlock['reviewer_comments'] ?? '')) !!}</td>
             </tr>
+            @endif
             <tr>
                 <td class="field-label" colspan="3">EMPLOYEE COMMENTS</td>
             </tr>

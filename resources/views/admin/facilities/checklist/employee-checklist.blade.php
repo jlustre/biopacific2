@@ -17,6 +17,18 @@
     });
 </script>
 <style>
+    #employee-checklist-root [data-checklist-tab-btn].bg-white:hover {
+        color: #1e40af !important;
+        background-color: #eff6ff !important;
+        border-color: #3b82f6 !important;
+    }
+
+    #employee-checklist-root [data-checklist-tab-btn].bg-blue-600:hover {
+        color: #fff !important;
+        background-color: #1d4ed8 !important;
+        border-color: #1d4ed8 !important;
+    }
+
     #partA table,
     #partB table,
     #partC table,
@@ -354,25 +366,25 @@
         <!-- Tabs -->
         <ul class="flex border-b mb-6" id="employeeFileTabs">
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partA" @click="setChecklistTab('partA')" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partA'] }}" title="{{ $checklistTabTooltips['partA'] }}" aria-label="{{ $checklistTabTooltips['partA'] }}">PART A</button>
+                <button type="button" data-checklist-tab-btn="partA" @click="setChecklistTab('partA')" :class="checklistTab === 'partA' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partA'] }}" title="{{ $checklistTabTooltips['partA'] }}" aria-label="{{ $checklistTabTooltips['partA'] }}">PART A</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partB" @click="setChecklistTab('partB')" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partB'] }}" title="{{ $checklistTabTooltips['partB'] }}" aria-label="{{ $checklistTabTooltips['partB'] }}">PART B</button>
+                <button type="button" data-checklist-tab-btn="partB" @click="setChecklistTab('partB')" :class="checklistTab === 'partB' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partB'] }}" title="{{ $checklistTabTooltips['partB'] }}" aria-label="{{ $checklistTabTooltips['partB'] }}">PART B</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partC" @click="setChecklistTab('partC')" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partC'] }}" title="{{ $checklistTabTooltips['partC'] }}" aria-label="{{ $checklistTabTooltips['partC'] }}">PART C</button>
+                <button type="button" data-checklist-tab-btn="partC" @click="setChecklistTab('partC')" :class="checklistTab === 'partC' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partC'] }}" title="{{ $checklistTabTooltips['partC'] }}" aria-label="{{ $checklistTabTooltips['partC'] }}">PART C</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partD" @click="setChecklistTab('partD')" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partD'] }}" title="{{ $checklistTabTooltips['partD'] }}" aria-label="{{ $checklistTabTooltips['partD'] }}">PART D</button>
+                <button type="button" data-checklist-tab-btn="partD" @click="setChecklistTab('partD')" :class="checklistTab === 'partD' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partD'] }}" title="{{ $checklistTabTooltips['partD'] }}" aria-label="{{ $checklistTabTooltips['partD'] }}">PART D</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partE" @click="setChecklistTab('partE')" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partE'] }}" title="{{ $checklistTabTooltips['partE'] }}" aria-label="{{ $checklistTabTooltips['partE'] }}">PART E</button>
+                <button type="button" data-checklist-tab-btn="partE" @click="setChecklistTab('partE')" :class="checklistTab === 'partE' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partE'] }}" title="{{ $checklistTabTooltips['partE'] }}" aria-label="{{ $checklistTabTooltips['partE'] }}">PART E</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partF" @click="setChecklistTab('partF')" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partF'] }}" title="{{ $checklistTabTooltips['partF'] }}" aria-label="{{ $checklistTabTooltips['partF'] }}">PART F</button>
+                <button type="button" data-checklist-tab-btn="partF" @click="setChecklistTab('partF')" :class="checklistTab === 'partF' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partF'] }}" title="{{ $checklistTabTooltips['partF'] }}" aria-label="{{ $checklistTabTooltips['partF'] }}">PART F</button>
             </li>
             <li class="-mb-px mr-1">
-                <button type="button" data-checklist-tab-btn="partG" @click="setChecklistTab('partG')" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150 hover:text-blue-100 hover:border-blue-500" data-tooltip="{{ $checklistTabTooltips['partG'] }}" title="{{ $checklistTabTooltips['partG'] }}" aria-label="{{ $checklistTabTooltips['partG'] }}">PART G</button>
+                <button type="button" data-checklist-tab-btn="partG" @click="setChecklistTab('partG')" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partG'] }}" title="{{ $checklistTabTooltips['partG'] }}" aria-label="{{ $checklistTabTooltips['partG'] }}">PART G</button>
             </li>
         </ul>
 
@@ -429,3 +441,4 @@
 @include('admin.facilities.checklist.employee-assessment-period-scripts')
 @include('admin.facilities.checklist.employee-checklist-scripts_f')
 @include('admin.facilities.checklist.employee-checklist-scripts_g')
+@include('admin.facilities.checklist.employee-checklist-pdf-loader')

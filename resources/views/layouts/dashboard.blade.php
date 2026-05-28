@@ -28,7 +28,7 @@
   <title>{{ $portalTitle }}</title>
   <style>[x-cloak]{display:none!important}</style>
   @include('layouts.partials.facility-portal-head')
-  <link rel="stylesheet" href="{{ mix('css/app.css') }}">
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
   {{-- Alpine.js loaded via Livewire or base layout; do not include multiple times --}}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="{{ asset('css/member-portal-sidebar.css') }}">

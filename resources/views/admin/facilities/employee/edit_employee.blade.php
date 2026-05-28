@@ -76,6 +76,16 @@ $employeeTabIds = ['personal', 'address', 'job-data', 'tax-data', 'documents', '
 
 @push('head')
 <style>
+    .employee-main-tabs [data-employee-tab-btn].bg-gray-200:hover {
+        background-color: #d1d5db !important;
+        color: #111827 !important;
+    }
+
+    .employee-main-tabs [data-employee-tab-btn].bg-blue-600:hover {
+        background-color: #1d4ed8 !important;
+        color: #fff !important;
+    }
+
     html[data-employee-tab]:not(.employee-tabs-ready) [data-employee-tab-panel] { display: none !important; }
     @foreach($employeeTabIds as $tabId)
     html[data-employee-tab="{{ $tabId }}"]:not(.employee-tabs-ready) [data-employee-tab-panel="{{ $tabId }}"] { display: block !important; }

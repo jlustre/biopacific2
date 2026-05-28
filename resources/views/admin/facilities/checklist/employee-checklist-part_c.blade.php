@@ -29,8 +29,8 @@
                         disabled @endif>
                         @if(empty($item->disabled))
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
-                            data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}">Revoke</a>
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Click to Unconfirm Verification"
+                            data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}">Confirmed</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ $item->name }}" data-item-id="{{ $item->id }}" data-checklist-key="{{ $checklistKey }}" data-emp-id="{{ $employee->employee_num }}">View</a>

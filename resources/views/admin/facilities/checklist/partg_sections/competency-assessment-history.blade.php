@@ -59,16 +59,11 @@
                     <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['status'] ?? 'Draft' }}</td>
                     <td class="border border-slate-500 px-2 py-1.5 text-center">
                         @if(!empty($historyRow['can_view_pdf']) && !empty($historyRow['competency_assessment_id']) && !empty($historyRow['competency_section']))
-                        <a
-                            href="{{ route('admin.employees.competency-section.pdf', ['assessment' => $historyRow['competency_assessment_id'], 'section' => $historyRow['competency_section']]) }}"
-                            target="_blank"
-                            rel="noopener"
-                            class="inline-flex h-7 w-7 items-center justify-center rounded border border-slate-400 bg-white text-red-700 hover:bg-red-50"
-                            title="View compact PDF"
-                            aria-label="View compact PDF for {{ $historyRow['competency_name'] ?? 'competency' }}"
-                        >
-                            <i class="fas fa-file-pdf text-sm" aria-hidden="true"></i>
-                        </a>
+                        @include('admin.facilities.checklist.partials.assessment-pdf-link', [
+                            'href' => route('admin.employees.competency-section.pdf', ['assessment' => $historyRow['competency_assessment_id'], 'section' => $historyRow['competency_section']]),
+                            'title' => 'View compact PDF',
+                            'ariaLabel' => 'View compact PDF for ' . ($historyRow['competency_name'] ?? 'competency'),
+                        ])
                         @else
                         <span class="text-slate-400">—</span>
                         @endif

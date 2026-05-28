@@ -116,7 +116,7 @@
                             <th class="w-[26%] border border-slate-400 px-2 py-1.5 text-left font-semibold tracking-wide">Assessment Period</th>
                             <th class="w-[14%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Assessed Date</th>
                             <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Items Rated</th>
-                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Total</th>
+                            <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Total Points</th>
                             <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Average</th>
                             <th class="w-[12%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Overall</th>
                             <th class="w-[10%] border border-slate-400 px-2 py-1.5 text-center font-semibold tracking-wide">Status</th>
@@ -138,27 +138,53 @@
                             $historyLoadUrl = route('admin.employees.edit', $employee->id).'?'.http_build_query($historyLoadQuery);
                             $historyActionLabel = $historyIsFinalized ? 'View' : 'Load';
                         @endphp
+                        @php
+                            $periodLabel = (string) ($history['period_label'] ?? '');
+                            $periodParts = explode(' to ', $periodLabel);
+                            $formattedPeriodLabel = $periodLabel;
+                            if (count($periodParts) === 2 && !empty($periodParts[0]) && !empty($periodParts[1])) {
+                                try {
+                                    $formattedPeriodLabel = \Illuminate\Support\Carbon::parse($periodParts[0])->format('m-d-y')
+                                        .' to '.
+                                        \Illuminate\Support\Carbon::parse($periodParts[1])->format('m-d-y');
+                                } catch (\Throwable) {
+                                    $formattedPeriodLabel = $periodLabel;
+                                }
+                            }
+                            $formattedAssessmentDate = !empty($history['assessment_date'])
+                                ? \Illuminate\Support\Carbon::parse($history['assessment_date'])->format('m-d-y')
+                                : 'N/A';
+                        @endphp
                         <tr class="{{ $loop->odd ? 'bg-white' : 'bg-slate-50' }}">
                             <td class="border border-slate-400 px-2 py-1.5 whitespace-nowrap">
-                                <div>{{ $history['period_label'] }}</div>
+                                <div>{{ $formattedPeriodLabel }}</div>
                                 @if($historyIsCurrent)
                                 <div class="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">Current</div>
                                 @endif
                             </td>
-                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['assessment_date'] ?: 'N/A' }}</td>
-                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['items_count'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $formattedAssessmentDate }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['items_count'] }}/{{ $history['total_items'] ?? $history['items_count'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['total_score'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['average_score'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['overall_rating'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['status'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">
-                                @if($historyIsCurrent)
-                                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Loaded</span>
-                                @else
-                                <a href="{{ $historyLoadUrl }}"
-                                    class="load-employee-btn inline-flex rounded-md bg-slate-700 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-slate-800"
-                                    title="{{ $historyIsFinalized ? 'Open this completed assessment in read-only mode' : 'Load this assessment for editing' }}">{{ $historyActionLabel }}</a>
-                                @endif
+                                <div class="flex flex-wrap items-center justify-center gap-1">
+                                    @if(!empty($history['can_view_pdf']) && !empty($history['performance_assessment_id']))
+                                    @include('admin.facilities.checklist.partials.assessment-pdf-link', [
+                                        'href' => route('admin.employees.performance-assessment.pdf', ['assessment' => $history['performance_assessment_id']]),
+                                        'title' => 'View performance assessment PDF',
+                                        'ariaLabel' => 'View performance assessment PDF',
+                                    ])
+                                    @endif
+                                    @if($historyIsCurrent)
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Loaded</span>
+                                    @else
+                                    <a href="{{ $historyLoadUrl }}"
+                                        class="load-employee-btn inline-flex rounded-md bg-slate-700 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-slate-800"
+                                        title="{{ $historyIsFinalized ? 'Open this completed assessment in read-only mode' : 'Load this assessment for editing' }}">{{ $historyActionLabel }}</a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @empty

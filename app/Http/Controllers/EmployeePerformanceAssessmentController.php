@@ -8,7 +8,11 @@ use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeeCompetencyItem;
 use App\Models\EmployeePerformanceAssessment;
+use App\Models\EmployeePerformanceItem;
+use App\Models\EmployeePerformanceSectionComment;
+use App\Models\DocType;
 use App\Models\BPEmployee;
+use App\Support\PartFPerformancePdfItemsBuilder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -1220,6 +1224,24 @@ class EmployeePerformanceAssessmentController extends Controller {
         return Storage::disk('public')->download($assessment->pdf_path, basename($assessment->pdf_path));
     }
 
+    public function downloadPerformanceAssessmentPdf(EmployeePerformanceAssessment $assessment)
+    {
+        $items = PartFPerformancePdfItemsBuilder::build($assessment);
+        if ($items === []) {
+            abort(404, 'No performance assessment items found for this period.');
+        }
+
+        $filePath = $this->performanceAssessmentPdfPath($assessment);
+        $this->generatePerformanceAssessmentPdf($assessment, $filePath, $items);
+
+        $filename = basename($filePath);
+
+        return response()->file(Storage::disk('public')->path($filePath), [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
     public function downloadCompetencySectionPdf(Request $request, EmployeeCompetencyAssessment $assessment)
     {
         $sectionLabel = trim((string) $request->query('section', ''));
@@ -1291,6 +1313,139 @@ class EmployeePerformanceAssessmentController extends Controller {
         Storage::disk('public')->put($filePath, $pdf->output());
 
         return $filePath;
+    }
+
+    /**
+     * @param  list<array{item_label: string, indent_level: int, is_parent?: bool, rating?: string, review_date?: string, reviewer_name?: string, comments?: string}>  $items
+     */
+    protected function generatePerformanceAssessmentPdf(
+        EmployeePerformanceAssessment $assessment,
+        string $filePath,
+        array $items,
+    ): string {
+        $employee = BPEmployee::query()
+            ->with('currentAssignment.facility')
+            ->where('employee_num', $assessment->employee_num)
+            ->first();
+        $period = EmployeeAssessmentPeriod::find($assessment->assessment_period_id);
+
+        $ratedCount = collect($items)
+            ->filter(fn (array $item) => empty($item['is_parent']) && in_array($item['rating'] ?? '', ['E', 'S', 'U', 'N'], true))
+            ->count();
+
+        $periodLabel = $period instanceof EmployeeAssessmentPeriod
+            ? $this->formatPerformanceHistoryPeriodLabel($period)
+            : 'N/A';
+
+        $developmentNotes = $this->performanceAssessmentPdfDevelopmentNotes($assessment);
+
+        $pdf = Pdf::loadView('admin.facilities.checklist.pdf.employee-competency-section-compact', [
+            'assessment' => $assessment,
+            'employee' => $employee,
+            'period' => $period,
+            'facilityName' => trim((string) ($employee?->currentAssignment?->facility?->name ?? '')),
+            'periodLabel' => $periodLabel,
+            'sectionLabel' => 'PART F — Performance Appraisal',
+            'isPerformanceAssessment' => true,
+            'areasForDevelopment' => $developmentNotes['areas_for_development'],
+            'developmentPlans' => $developmentNotes['development_plans'],
+            'sectionSummary' => [
+                'total_score' => $assessment->total_score ?? 0,
+                'average_score' => is_numeric($assessment->average_score ?? null)
+                    ? number_format((float) $assessment->average_score, 2)
+                    : ($assessment->average_score ?? '0.00'),
+                'overall_rating' => $assessment->overall_rating ?? 'N/A',
+            ],
+            'sectionComments' => [],
+            'signatureBlock' => $this->performanceAssessmentPdfSignatureBlock($assessment, $developmentNotes),
+            'items' => $items,
+            'ratedCount' => $ratedCount,
+            'totalRateableOverride' => count(PartFPerformanceScoring::scorableItemIds()),
+            'assessmentStatusLabel' => ! empty($assessment->finalized) ? 'Completed' : 'In Progress',
+        ])->setPaper('letter');
+
+        Storage::disk('public')->put($filePath, $pdf->output());
+
+        return $filePath;
+    }
+
+    protected function performanceAssessmentPdfPath(EmployeePerformanceAssessment $assessment): string
+    {
+        return 'performance-assessments/'.$assessment->employee_num.'/assessment-'.$assessment->id.'.pdf';
+    }
+
+    /**
+     * @return array{areas_for_development: string, development_plans: string, employee_comments: string}
+     */
+    protected function performanceAssessmentPdfDevelopmentNotes(EmployeePerformanceAssessment $assessment): array
+    {
+        $docTypesByName = DocType::query()
+            ->whereIn('name', [
+                'Areas Requiring Further Development',
+                'Development Plans',
+                'Employee Comments',
+            ])
+            ->pluck('id', 'name');
+
+        $commentsByDocTypeId = EmployeePerformanceSectionComment::query()
+            ->where('employee_num', $assessment->employee_num)
+            ->where('assessment_period_id', $assessment->assessment_period_id)
+            ->whereIn('doc_type_id', $docTypesByName->values())
+            ->pluck('comment', 'doc_type_id');
+
+        $commentFor = static function (string $name) use ($docTypesByName, $commentsByDocTypeId): string {
+            $docTypeId = $docTypesByName->get($name);
+            if (! $docTypeId) {
+                return '';
+            }
+
+            return trim((string) ($commentsByDocTypeId->get($docTypeId) ?? ''));
+        };
+
+        return [
+            'areas_for_development' => $commentFor('Areas Requiring Further Development'),
+            'development_plans' => $commentFor('Development Plans'),
+            'employee_comments' => $commentFor('Employee Comments'),
+        ];
+    }
+
+    /**
+     * @param  array{areas_for_development?: string, development_plans?: string, employee_comments?: string}  $developmentNotes
+     * @return array<string, string>
+     */
+    protected function performanceAssessmentPdfSignatureBlock(
+        EmployeePerformanceAssessment $assessment,
+        array $developmentNotes = [],
+    ): array {
+        $reviewerName = '';
+        if ($assessment->assessed_by) {
+            $reviewerName = trim((string) (User::query()->where('id', $assessment->assessed_by)->value('name') ?? ''));
+        }
+
+        return [
+            'reviewer_comments' => trim((string) ($assessment->comments ?? '')),
+            'employee_comments' => trim((string) ($developmentNotes['employee_comments'] ?? '')),
+            'reviewer_name' => $reviewerName,
+            'reviewer_title' => '',
+            'review_sign_date' => $this->formatCompetencyPdfShortDate($assessment->review_dt),
+            'employee_name' => trim(($employee = BPEmployee::query()->where('employee_num', $assessment->employee_num)->first())
+                ? trim(($employee->last_name ?? '').', '.($employee->first_name ?? ''), ', ')
+                : ''),
+            'employee_title' => trim((string) ($employee?->currentAssignment?->position?->title ?? $employee?->position ?? '')),
+            'employee_sign_date' => $this->formatCompetencyPdfShortDate($assessment->acknowledge_dt),
+        ];
+    }
+
+    protected function formatPerformanceHistoryPeriodLabel(EmployeeAssessmentPeriod $period): string
+    {
+        try {
+            $from = Carbon::parse(EmployeeAssessmentPeriod::formatDateForDisplay($period->date_from))->format('m-d-y');
+            $to = Carbon::parse(EmployeeAssessmentPeriod::formatDateForDisplay($period->date_to))->format('m-d-y');
+
+            return $from.' to '.$to;
+        } catch (\Throwable) {
+            return $period->displayDateRange();
+        }
     }
 
     protected function competencySectionPdfPath(EmployeeCompetencyAssessment $assessment, string $sectionLabel): string

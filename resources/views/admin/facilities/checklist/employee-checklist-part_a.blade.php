@@ -30,6 +30,9 @@
                 @php
                 $empChecklist = $resolveChecklistEntry($item);
                 $checklistKey = $resolveChecklistKey($item);
+                $verifiedByName = ($empChecklist && $empChecklist->verified_by)
+                    ? (optional($users->firstWhere('id', $empChecklist->verified_by))->name ?? $empChecklist->verified_by)
+                    : '';
                 @endphp
                 <tr data-doc-type-id="{{ $item->doc_type_id }}">
                     <td class="border px-2 py-1">{{ $item->name }}</td>
@@ -37,12 +40,12 @@
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Click to Unconfirm Verification"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
                             data-item-id="{{ $item->id }}"
                             data-checklist-key="{{ $checklistKey }}"
                             data-is-expiring="{{ ($item->isExpiring ?? false) ? 1 : 0 }}"
-                            data-emp-id="{{ $employee->employee_num }}">Revoke</a>
+                            data-emp-id="{{ $employee->employee_num }}">Confirmed</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ is_array($item) ? $item['name'] : $item->name }}"
@@ -54,7 +57,8 @@
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
                             data-comments="{{ $empChecklist->comments ?? '' }}"
-                            data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                            data-verified-by="{{ $verifiedByName }}"
+                            data-verified-by-id="{{ $empChecklist->verified_by ?? '' }}"
                             data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
@@ -113,6 +117,9 @@
                 @php
                 $empChecklist = $resolveChecklistEntry($item);
                 $checklistKey = $resolveChecklistKey($item);
+                $verifiedByName = ($empChecklist && $empChecklist->verified_by)
+                    ? (optional($users->firstWhere('id', $empChecklist->verified_by))->name ?? $empChecklist->verified_by)
+                    : '';
                 @endphp
                 <tr data-doc-type-id="{{ $item->doc_type_id }}">
                     <td class="border px-2 py-1">{{ $item->name }}</td>
@@ -120,12 +127,12 @@
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Click to Unconfirm Verification"
                             data-item-name="{{ $item->name }}"
                             data-item-id="{{ $item->id }}"
                             data-checklist-key="{{ $checklistKey }}"
                             data-is-expiring="{{ $item->isExpiring ? 1 : 0 }}"
-                            data-emp-id="{{ $employee->employee_num }}">Revoke</a>
+                            data-emp-id="{{ $employee->employee_num }}">Confirmed</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ $item->name }}"
@@ -137,7 +144,8 @@
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
                             data-comments="{{ $empChecklist->comments ?? '' }}"
-                            data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                            data-verified-by="{{ $verifiedByName }}"
+                            data-verified-by-id="{{ $empChecklist->verified_by ?? '' }}"
                             data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"
@@ -196,6 +204,9 @@
                 @php
                 $empChecklist = $resolveChecklistEntry($item);
                 $checklistKey = $resolveChecklistKey($item);
+                $verifiedByName = ($empChecklist && $empChecklist->verified_by)
+                    ? (optional($users->firstWhere('id', $empChecklist->verified_by))->name ?? $empChecklist->verified_by)
+                    : '';
                 @endphp
                 <tr data-doc-type-id="{{ $item->doc_type_id }}">
                     <td class="border px-2 py-1">{{ $item->name }}</td>
@@ -203,12 +214,12 @@
                         <input type="checkbox" {{ $empChecklist && $empChecklist->on_file ?
                         'checked' : '' }} readonly tabindex="-1" style="pointer-events:none;">
                         @if($empChecklist && $empChecklist->verified_by)
-                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Revoke Verification"
+                        <a href="#" class="text-red-600 underline ml-2 mr-1 unverify-link" title="Click to Unconfirm Verification"
                             data-item-name="{{ $item->name }}"
                             data-item-id="{{ $item->id }}"
                             data-checklist-key="{{ $checklistKey }}"
                             data-is-expiring="{{ $item->isExpiring ? 1 : 0 }}"
-                            data-emp-id="{{ $employee->employee_num }}">Revoke</a>
+                            data-emp-id="{{ $employee->employee_num }}">Confirmed</a>
                         <span>|</span>
                         <a href="#" class="text-teal-600 underline ml-1 view-link" title="View Verification Details"
                             data-item-name="{{ $item->name }}"
@@ -220,7 +231,8 @@
                             data-verified-dt="{{ $empChecklist->verified_dt ?? '' }}"
                             data-exp-dt="{{ $empChecklist->exp_dt ?? '' }}"
                             data-comments="{{ $empChecklist->comments ?? '' }}"
-                            data-verified-by="{{ $empChecklist->verified_by ?? '' }}"
+                            data-verified-by="{{ $verifiedByName }}"
+                            data-verified-by-id="{{ $empChecklist->verified_by ?? '' }}"
                             data-exp-dt-not-required="{{ ($empChecklist && ($empChecklist->exp_dt === null || $empChecklist->exp_dt === '')) ? 1 : 0 }}">View</a>
                         @else
                         <a href="#" class="text-teal-600 underline ml-2 verify-link" title="Verify Item"

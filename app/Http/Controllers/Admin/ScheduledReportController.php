@@ -29,7 +29,7 @@ class ScheduledReportController extends Controller
 
     protected function canManageScheduledReports(Request $request): bool
     {
-        return (bool) $request->user()?->hasAnyRole(['admin', 'rdhr', 'facility-admin', 'facility-dsd']);
+        return (bool) $request->user()?->hasAnyRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']);
     }
 
     protected function ensureCanManage(Request $request): void

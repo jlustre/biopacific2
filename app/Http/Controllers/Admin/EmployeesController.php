@@ -1733,15 +1733,18 @@ class EmployeesController extends Controller
                 $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
 
                 $isFinalized = ! empty($submission?->finalized);
+                $totalRateableItems = count(PartFPerformanceScoring::scorableItemIds());
+                $assessmentDateRaw = optional($submission?->review_dt)->toDateString()
+                    ?? optional($submission?->updated_at)->toDateString()
+                    ?? optional(optional($latestAssessment)->assessment_date)->toDateString();
 
                 return [
                     'assessment_period_id' => (int) $assessmentPeriodId,
-                    'period_label' => $period ? ($period->date_from . ' to ' . $period->date_to) : ('Period #' . $assessmentPeriodId),
+                    'period_label' => $period ? $period->displayDateRange() : ('Period #' . $assessmentPeriodId),
                     'period_year' => $period?->period_year,
-                    'assessment_date' => optional($submission?->review_dt)->toDateString()
-                        ?? optional($submission?->updated_at)->toDateString()
-                        ?? optional(optional($latestAssessment)->assessment_date)->toDateString(),
+                    'assessment_date' => $assessmentDateRaw,
                     'items_count' => $count,
+                    'total_items' => $totalRateableItems,
                     'total_score' => $submission?->total_score ?? $total,
                     'average_score' => $submission
                         ? number_format((float) $submission->average_score, 2)
@@ -1753,6 +1756,7 @@ class EmployeesController extends Controller
                     'is_finalized' => $isFinalized,
                     'is_current' => (int) $assessmentPeriodId === (int) $selectedAssessmentPeriodId,
                     'performance_assessment_id' => $submission?->id,
+                    'can_view_pdf' => ! empty($submission?->id) && $count > 0,
                 ];
             })
             ->sortByDesc('assessment_date')
