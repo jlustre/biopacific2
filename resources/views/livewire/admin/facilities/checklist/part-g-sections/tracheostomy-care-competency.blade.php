@@ -1,18 +1,23 @@
 @php
-    $trachJsProcedures = collect($procedureRows)->map(fn ($row) => [
-        'key' => $row['key'],
-        'text' => $row['text'],
-        'note' => $row['note'] ?? null,
-        'response' => $procedureReviews[$row['key']] ?? null,
-    ])->values()->all();
+    $trachJsItems = [];
+    foreach ($procedureCompetencyItems as $item) {
+        $trachJsItems[] = [
+            'id' => $item['id'],
+            'label' => $item['item'] ?? '',
+            'isParent' => false,
+            'indentLevel' => $item['indentLevel'] ?? 0,
+            'response' => $responses[$item['id']] ?? null,
+        ];
+    }
+    $trachStatusItems = array_merge($renderItems, $procedureCompetencyItems);
 @endphp
 
 <section class="mb-4 mt-6">
     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-review-modal')
 
     <div
-        x-data="partGTrachSummary(@js($trachJsProcedures))"
-        @trach-procedure-updated.window="syncReviews($event.detail.reviews)"
+        x-data="partGSectionSummary(@js($trachJsItems))"
+        @trach-responses-updated.window="syncResponses($event.detail.responses)"
     >
         <style>
             .trach-row-even { background-color: #f1f5f9; }
@@ -33,7 +38,7 @@
                                     ])
                                     @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-title-with-status', [
                                         'title' => 'TRACHEOSTOMY CARE',
-                                        'sectionItems' => $renderItems,
+                                        'sectionItems' => $trachStatusItems,
                                     ])
                                 </div>
                                 @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-header-actions', [
@@ -53,17 +58,13 @@
                         </td>
                     </tr>
 
-                    <tr class="bg-blue-50">
-                        <td class="border border-gray-300 font-bold text-gray-700 text-start pl-2 text-md" colspan="4">Equipment / Supplies</td>
-                        <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">Check</td>
-                    </tr>
-
                     @foreach($renderItems as $index => $item)
                         @if(($item['type'] ?? '') === 'equipment_header')
-                            <tr wire:key="trach-header-{{ $item['id'] }}">
-                                <td colspan="5" class="border border-gray-300 font-bold text-gray-700 bg-blue-50 text-md" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
+                            <tr wire:key="trach-header-{{ $item['id'] }}" class="bg-blue-50">
+                                <td colspan="4" class="border border-gray-300 font-bold text-gray-700 text-start text-md" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
                                     {{ $item['item'] ?? '' }}
                                 </td>
+                                <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">Check</td>
                             </tr>
                         @elseif(($item['type'] ?? '') === 'equipment_item')
                             <tr wire:key="trach-equip-{{ $item['id'] }}" class="trach-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} trach-row-hover">
@@ -85,52 +86,29 @@
                         @endif
                     @endforeach
 
-                    @if(count($procedureRows) > 0)
-                        <tr class="bg-white">
-                            <td colspan="5" class="border border-gray-300 px-2 py-2">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full border border-slate-500 text-[10px] leading-tight text-slate-900 md:text-[11px]">
-                                        <thead>
-                                            <tr class="bg-slate-50 text-slate-900">
-                                                <th rowspan="2" class="border border-slate-500 px-2 py-2 text-center font-bold">Procedure</th>
-                                                <th colspan="3" class="border border-slate-500 px-2 py-2 text-center font-semibold">Check if</th>
-                                            </tr>
-                                            <tr class="bg-slate-50 text-slate-900">
-                                                <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">E</th>
-                                                <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">S</th>
-                                                <th class="w-12 border border-slate-500 px-2 py-1 text-center font-bold">U</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($procedureRows as $procedureRow)
-                                                <tr wire:key="trach-procedure-{{ $procedureRow['key'] }}-{{ $procedureReviews[$procedureRow['key']] ?? 'none' }}">
-                                                    <td class="border border-slate-500 px-3 py-2">
-                                                        {{ $procedureRow['key'] }}. {{ $procedureRow['text'] }}
-                                                        @if(!empty($procedureRow['note']))
-                                                            <br><span class="italic">({{ $procedureRow['note'] }})</span>
-                                                        @endif
-                                                    </td>
-                                                    @foreach(['E', 'S', 'U'] as $procedureRating)
-                                                        <td class="border border-slate-500 px-2 py-2 text-center align-middle">
-                                                            <input
-                                                                type="radio"
-                                                                name="trach-procedure-{{ $procedureRow['key'] }}"
-                                                                value="{{ $procedureRating }}"
-                                                                wire:key="trach-procedure-{{ $procedureRow['key'] }}-{{ $procedureRating }}"
-                                                                wire:model.live="procedureReviews.{{ $procedureRow['key'] }}"
-                                                                @disabled($assessmentLocked || $sectionExcluded)
-                                                                class="h-4 w-4 border-slate-400 text-slate-700 focus:ring-slate-400"
-                                                                aria-label="Procedure {{ $procedureRow['key'] }} rating {{ $procedureRating }}"
-                                                            >
-                                                        </td>
-                                                    @endforeach
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
+                    @if(count($procedureCompetencyItems) > 0)
+                        <tr class="bg-blue-50">
+                            <td colspan="5" class="border border-gray-300 px-2 py-1.5 text-sm font-bold text-gray-700">
+                                Competency Items
                             </td>
                         </tr>
+                        @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-items-column-header')
+                        @foreach($procedureCompetencyItems as $index => $item)
+                            @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-scorable-item-row', [
+                                'item' => $item,
+                                'index' => $index,
+                                'wireKeyPrefix' => 'trach',
+                                'rowClassPrefix' => 'trach',
+                                'disabled' => $assessmentLocked || $sectionExcluded || ! $assessmentPeriodId,
+                            ])
+                            @if(!empty($item['note']))
+                                <tr wire:key="trach-note-{{ $item['id'] }}" class="bg-white">
+                                    <td colspan="5" class="border border-gray-300 px-3 py-1 text-[11px] italic text-slate-600" style="padding-left: calc(1.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
+                                        Note: {{ $item['note'] }}
+                                    </td>
+                                </tr>
+                            @endif
+                        @endforeach
                     @endif
                 </tbody>
             </table>
@@ -255,7 +233,7 @@
                         @endif
                     @endif
 
-                    @error('procedureReviews')
+                    @error('responses')
                         <span class="mt-2 block text-red-700 bg-red-100 border border-red-300 rounded px-3 py-1 text-sm">{{ $message }}</span>
                     @enderror
                 </div>

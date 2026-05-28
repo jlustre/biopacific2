@@ -5,13 +5,14 @@ namespace App\Livewire\Admin\Facilities\Checklist\PartGSections;
 use App\Models\BPEmployee;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeeCompetencyItem;
-use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGSectionExclusion;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class TracheostomyCareCompetency extends Component
 {
     use ManagesPartGSectionExclusion;
+
     public string $employeeNum;
 
     public ?int $assessmentPeriodId = null;
@@ -20,13 +21,13 @@ class TracheostomyCareCompetency extends Component
     public array $renderItems = [];
 
     /** @var list<array<string, mixed>> */
-    public array $procedureRows = [];
+    public array $procedureCompetencyItems = [];
 
     /** @var list<string> */
     public array $equipmentChecks = [];
 
-    /** @var array<string, string> */
-    public array $procedureReviews = [];
+    /** @var array<int, string> */
+    public array $responses = [];
 
     public string $summaryComments = '';
 
@@ -77,6 +78,7 @@ class TracheostomyCareCompetency extends Component
 
         $this->buildSectionData();
         $this->loadDraftData();
+        $this->normalizeResponseKeys();
     }
 
     protected function persistDraftIfPossible(): void
@@ -116,24 +118,6 @@ class TracheostomyCareCompetency extends Component
         }
 
         $this->persistDraftIfPossible();
-    }
-
-    public function updatedProcedureReviews(mixed $value = null, ?string $key = null): void
-    {
-        if ($this->assessmentLocked || $this->sectionExcluded) {
-            return;
-        }
-
-        if ($key !== null && $value !== null && $value !== '') {
-            $normalizedRating = strtoupper(trim((string) $value));
-            if (in_array($normalizedRating, ['E', 'S', 'U'], true)) {
-                $this->procedureReviews[(string) $key] = $normalizedRating;
-            }
-        }
-
-        $this->procedureReviews = $this->normalizeProcedureReviews($this->procedureReviews);
-        $this->persistDraftIfPossible();
-        $this->dispatch('trach-procedure-updated', reviews: $this->procedureReviews);
     }
 
     public function updatedSummaryComments(): void
@@ -188,10 +172,10 @@ class TracheostomyCareCompetency extends Component
         ]);
 
         if (! $this->sectionExcluded) {
-            foreach ($this->procedureRowKeys() as $procedureKey) {
-                $rating = $this->procedureReviews[$procedureKey] ?? null;
-                if (! in_array($rating, ['E', 'S', 'U'], true)) {
-                    $this->addError('procedureReviews', 'Please rate all procedure steps before submitting.');
+            foreach ($this->scorableItemIds() as $itemId) {
+                $response = $this->responses[$itemId] ?? null;
+                if (! in_array($response, ['E', 'S', 'U'], true)) {
+                    $this->addError('responses', 'Please rate all competency procedure steps before submitting.');
 
                     return;
                 }
@@ -219,7 +203,7 @@ class TracheostomyCareCompetency extends Component
             ->orderBy('order')
             ->get();
 
-        $this->procedureRows = [];
+        $this->procedureCompetencyItems = [];
         $this->renderItems = [];
 
         foreach ($rawItems as $index => $item) {
@@ -228,10 +212,17 @@ class TracheostomyCareCompetency extends Component
             if (preg_match('/^-\d+\./', $raw) === 1) {
                 if (preg_match('/^-(\d+)\.\s*(.+)$/', $raw, $matches)) {
                     $segments = array_map('trim', explode('||', $matches[2], 2));
-                    $this->procedureRows[] = [
-                        'key' => (string) $matches[1],
-                        'text' => ltrim($segments[0] ?? '', '-'),
-                        'note' => $segments[1] ?? null,
+                    $label = ltrim($segments[0] ?? '', '-');
+                    $note = $segments[1] ?? null;
+                    $display = $matches[1].'. '.$label;
+
+                    $this->procedureCompetencyItems[] = [
+                        'id' => $item->id,
+                        'item' => $display,
+                        'procedureKey' => (string) $matches[1],
+                        'note' => $note,
+                        'indentLevel' => 1,
+                        'isParent' => false,
                     ];
                 }
 
@@ -284,12 +275,30 @@ class TracheostomyCareCompetency extends Component
         $this->equipmentChecks = $this->normalizeEquipmentChecks(
             $snapshot['tracheostomy_equipment_checks'] ?? []
         );
-        $this->procedureReviews = $this->normalizeProcedureReviews(
+
+        $legacyProcedureReviews = $this->normalizeProcedureReviewsFromSnapshot(
             $snapshot['tracheostomy_procedure_reviews'] ?? []
         );
 
-        $this->loadSectionExcludedFromAssessment($assessment);
-        $this->loadSectionCommentsFromAssessment($assessment);
+        $this->hydrateSectionResponsesFromStorage($this->procedureCompetencyItems);
+
+        foreach ($this->procedureCompetencyItems as $procedureItem) {
+            $itemId = (int) ($procedureItem['id'] ?? 0);
+            $procedureKey = (string) ($procedureItem['procedureKey'] ?? '');
+
+            if ($itemId <= 0 || $procedureKey === '') {
+                continue;
+            }
+
+            if (isset($this->responses[$itemId])) {
+                continue;
+            }
+
+            $legacyRating = $legacyProcedureReviews[$procedureKey] ?? null;
+            if (in_array($legacyRating, ['E', 'S', 'U'], true)) {
+                $this->responses[$itemId] = $legacyRating;
+            }
+        }
     }
 
     protected function persistAssessment(string $intent): void
@@ -303,12 +312,16 @@ class TracheostomyCareCompetency extends Component
             ->where('assessment_period_id', $this->assessmentPeriodId)
             ->first();
 
+        $existing = $this->decodeResponses($row?->responses);
+        $payload = $this->mergeItemReviewMetaIntoResponsesPayload($existing);
+
         $snapshot = is_array($row?->snapshot_json) ? $row->snapshot_json : [];
         $snapshot['tracheostomy_equipment_checks'] = $this->normalizeEquipmentChecks($this->equipmentChecks);
-        $snapshot['tracheostomy_procedure_reviews'] = $this->normalizeProcedureReviews($this->procedureReviews);
+        $snapshot['tracheostomy_procedure_reviews'] = $this->buildProcedureReviewsFromResponses();
         $snapshot = $this->applySectionExclusionToSnapshot($snapshot);
 
         $updateData = [
+            'responses' => $payload,
             'snapshot_json' => $snapshot,
             'reviewer_name' => $this->reviewerName,
             'reviewer_title' => $this->reviewerTitle,
@@ -335,6 +348,7 @@ class TracheostomyCareCompetency extends Component
             $updateData
         );
 
+        $this->syncCompetencyItemEntriesFromResponses($payload);
         $this->dispatchPartGSummaryUpdated();
     }
 
@@ -347,8 +361,8 @@ class TracheostomyCareCompetency extends Component
         $ratedCount = 0;
         $points = 0;
 
-        foreach ($this->procedureRowKeys() as $procedureKey) {
-            $response = $this->procedureReviews[$procedureKey] ?? null;
+        foreach ($this->procedureCompetencyItems as $item) {
+            $response = $this->responses[$item['id']] ?? null;
             if (! in_array($response, ['E', 'S', 'U'], true)) {
                 continue;
             }
@@ -378,14 +392,39 @@ class TracheostomyCareCompetency extends Component
     }
 
     /**
-     * @return list<string>
+     * @return list<int>
      */
-    protected function procedureRowKeys(): array
+    protected function scorableItemIds(): array
     {
-        return collect($this->procedureRows)
-            ->pluck('key')
-            ->map(fn ($key) => (string) $key)
+        return collect($this->procedureCompetencyItems)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
             ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function buildProcedureReviewsFromResponses(): array
+    {
+        $reviews = [];
+
+        foreach ($this->procedureCompetencyItems as $item) {
+            $procedureKey = trim((string) ($item['procedureKey'] ?? ''));
+            $itemId = (int) ($item['id'] ?? 0);
+
+            if ($procedureKey === '' || $itemId <= 0) {
+                continue;
+            }
+
+            $rating = strtoupper(trim((string) ($this->responses[$itemId] ?? '')));
+            if (in_array($rating, ['E', 'S', 'U'], true)) {
+                $reviews[$procedureKey] = $rating;
+            }
+        }
+
+        return $reviews;
     }
 
     /**
@@ -406,7 +445,7 @@ class TracheostomyCareCompetency extends Component
      * @param  mixed  $reviews
      * @return array<string, string>
      */
-    protected function normalizeProcedureReviews(mixed $reviews): array
+    protected function normalizeProcedureReviewsFromSnapshot(mixed $reviews): array
     {
         return collect(is_array($reviews) ? $reviews : [])
             ->mapWithKeys(function ($rating, $procedureKey) {

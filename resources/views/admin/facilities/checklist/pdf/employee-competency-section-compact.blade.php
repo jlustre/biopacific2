@@ -23,6 +23,7 @@
         .items-table td.col-reviewer,
         .items-table td.col-item-no { font-size: 8px; }
         .parent-row td { background: #dbeafe; font-weight: bold; font-size: 9px; color: #1e3a8a; }
+        .subsection-heading-row td { background: #e2e8f0; font-weight: bold; font-size: 11px; color: #0f172a; padding: 6px 4px; }
         .child-row td.col-item { font-size: 9px; }
         .facility-name { font-size: 18px; font-weight: bold; color: #0f172a; margin: 0 0 3px; text-align: center; line-height: 1.2; }
         .competency-title { font-size: 14px; font-weight: bold; color: #1e293b; margin: 0; text-align: center; line-height: 1.25; }
@@ -67,9 +68,14 @@
             ->filter(fn ($item) => strtoupper(trim((string) ($item['rating'] ?? ''))) === 'U')
             ->filter(fn ($item) => trim((string) ($item['comments'] ?? '')) !== '')
             ->values();
+        $isTracheostomySection = ($sectionLabel ?? '') === 'TRACHEOSTOMY CARE';
+        $hasTracheostomyEquipment = $isTracheostomySection
+            && collect($items ?? [])->contains(fn (array $item) => ! empty($item['skip_item_number']));
         $itemCounter = 0;
         $numberedItems = collect($items ?? [])->map(function (array $item) use (&$itemCounter) {
-            if (! empty($item['is_parent'])) {
+            if (! empty($item['is_parent'])
+                || ! empty($item['is_subsection_heading'])
+                || ! empty($item['skip_item_number'])) {
                 $item['item_no'] = '';
 
                 return $item;
@@ -149,10 +155,16 @@
     </div>
 
     <div class="section">
+        @if($isTracheostomySection && $hasTracheostomyEquipment)
+        <h3>Equipment / Supplies</h3>
+        @elseif(! $isTracheostomySection || ! $hasTracheostomyEquipment)
         <h3>Competency Items</h3>
+        @endif
+        @if(! $isTracheostomySection || ! $hasTracheostomyEquipment)
         <div class="muted" style="margin-bottom: 4px;">
             <strong>Rating Legend:</strong> E = Excellent (3) | S = Satisfactory (2) | U = Unsatisfactory (1) | N = Not Applicable
         </div>
+        @endif
         <table class="items-table">
             <thead>
                 <tr>
@@ -165,7 +177,18 @@
             </thead>
             <tbody>
                 @foreach($numberedItems as $item)
-                    @if(!empty($item['is_parent']))
+                    @if(!empty($item['is_subsection_heading']))
+                    <tr class="subsection-heading-row">
+                        <td colspan="5">{{ $item['item_label'] ?? '' }}</td>
+                    </tr>
+                    @if(!empty($item['with_rating_legend']))
+                    <tr>
+                        <td colspan="5" class="muted" style="font-size: 9px; padding: 4px; border: 1px solid #94a3b8;">
+                            <strong>Rating Legend:</strong> E = Excellent (3) | S = Satisfactory (2) | U = Unsatisfactory (1) | N = Not Applicable
+                        </td>
+                    </tr>
+                    @endif
+                    @elseif(!empty($item['is_parent']))
                     <tr class="parent-row">
                         <td class="col-item-no"></td>
                         <td class="col-item" colspan="4" style="padding-left: {{ 4 + (($item['indent_level'] ?? 0) * 8) }}px;">

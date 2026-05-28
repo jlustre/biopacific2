@@ -409,6 +409,7 @@ trait PersistsPartGCompetencyItemEntries
             'PerinealCareCompetency' => 'pcc-responses-updated',
             'UseOfHoyerLiftTrainingCompetency' => 'hlt-responses-updated',
             'DirectorOfStaffDevelopmentCompetency' => 'dsd-responses-updated',
+            'TracheostomyCareCompetency' => 'trach-responses-updated',
         ];
 
         $classBase = class_basename(static::class);

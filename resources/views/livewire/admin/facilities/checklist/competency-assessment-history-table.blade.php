@@ -176,7 +176,7 @@
                 </div>
             </div>
             <dl class="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
-                <div><dt class="font-semibold text-slate-600">Date</dt><dd>{{ !empty($historyRow['assessment_date']) ? \Illuminate\Support\Carbon::parse($historyRow['assessment_date'])->format('m-d-y') : '—' }}</dd></div>
+                <div><dt class="font-semibold text-slate-600">Review Date</dt><dd>{{ !empty($historyRow['assessment_date']) ? \Illuminate\Support\Carbon::parse($historyRow['assessment_date'])->format('m-d-y') : '—' }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Reviewer</dt><dd class="truncate">{{ $historyRow['reviewer_name'] ?: '—' }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Rated Items</dt><dd>{{ $historyRow['items_count'] }}/{{ $historyRow['total_items'] ?? $historyRow['items_count'] }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Total Points</dt><dd class="font-semibold">{{ $historyRow['total_score'] }}</dd></div>
@@ -214,7 +214,7 @@
             <thead>
                 <tr class="bg-slate-200 text-slate-900">
                     @include('livewire.admin.facilities.checklist.partials.competency-history-sortable-th', ['column' => 'competency', 'label' => 'COMPETENCY', 'class' => 'px-1.5'])
-                    @include('livewire.admin.facilities.checklist.partials.competency-history-sortable-th', ['column' => 'assessment_date', 'label' => 'DATE', 'align' => 'center'])
+                    @include('livewire.admin.facilities.checklist.partials.competency-history-sortable-th', ['column' => 'assessment_date', 'label' => 'REVIEW<br>DATE', 'align' => 'center'])
                     @include('livewire.admin.facilities.checklist.partials.competency-history-sortable-th', ['column' => 'reviewer', 'label' => 'REVIEWER', 'class' => 'px-1.5'])
                     @include('livewire.admin.facilities.checklist.partials.competency-history-sortable-th', ['column' => 'rated', 'label' => 'RATED<br>ITEMS', 'align' => 'center'])
                     @include('livewire.admin.facilities.checklist.partials.competency-history-sortable-th', ['column' => 'total_score', 'label' => 'TOTAL<br>POINTS', 'align' => 'center'])

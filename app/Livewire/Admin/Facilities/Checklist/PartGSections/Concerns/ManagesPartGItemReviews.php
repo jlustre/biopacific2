@@ -256,9 +256,10 @@ trait ManagesPartGItemReviews
             }
         }
 
-        if (property_exists($this, 'procedureReviews') && is_array($this->procedureReviews)) {
-            foreach ($this->procedureReviews as $rating) {
-                if (in_array(strtoupper(trim((string) $rating)), ['E', 'S', 'U'], true)) {
+        if (property_exists($this, 'procedureCompetencyItems') && is_array($this->procedureCompetencyItems)) {
+            foreach ($this->procedureCompetencyItems as $item) {
+                $itemId = (int) ($item['id'] ?? 0);
+                if ($itemId > 0 && $this->itemHasReview($itemId)) {
                     return true;
                 }
             }

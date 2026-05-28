@@ -1342,6 +1342,9 @@ class EmployeePerformanceAssessmentController extends Controller {
             ? collect()
             : User::query()->whereIn('id', $reviewerIds)->pluck('name', 'id');
 
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $sectionReviewDate = $this->resolveCompetencySectionReviewDate($assessment, $snapshot, $sectionLabel);
+
         $structuredItems = [];
         $rawItems = $competencyItems->values();
 
@@ -1415,9 +1418,12 @@ class EmployeePerformanceAssessmentController extends Controller {
             $rating = $responseData['response'] ?? $entry?->rating;
             $rating = strtoupper(trim((string) $rating));
 
-            $reviewDate = $responseData['review_date']
-                ?? optional($entry?->assessment_date)->toDateString()
-                ?? '';
+            $reviewDate = $this->formatCompetencyPdfShortDate(
+                $responseData['review_date'] ?? optional($entry?->assessment_date)->toDateString()
+            );
+            if ($reviewDate === '') {
+                $reviewDate = $sectionReviewDate;
+            }
             $reviewerName = trim((string) ($responseData['reviewer_name'] ?? ''));
             if ($reviewerName === '' && $entry?->assessed_by) {
                 $reviewerName = trim((string) ($reviewerNamesById[$entry->assessed_by] ?? ''));
@@ -1431,7 +1437,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'indent_level' => $structuredItem['indent_level'],
                 'is_parent' => false,
                 'rating' => $rating,
-                'review_date' => $this->formatCompetencyPdfShortDate($reviewDate),
+                'review_date' => $reviewDate,
                 'reviewer_name' => $reviewerName,
                 'comments' => trim((string) ($responseData['comments'] ?? $entry?->comments ?? '')),
             ];
@@ -1458,21 +1464,53 @@ class EmployeePerformanceAssessmentController extends Controller {
         $equipmentChecks = $this->normalizeTracheostomyChecks($snapshot['tracheostomy_equipment_checks'] ?? []);
         $procedureReviews = $this->normalizeTracheostomyProcedureReviews($snapshot['tracheostomy_procedure_reviews'] ?? []);
 
-        if ($equipmentChecks === [] && $procedureReviews === []) {
+        $responses = $assessment->responses;
+        if (is_string($responses)) {
+            $responses = json_decode($responses, true);
+        }
+        $responses = is_array($responses) ? $responses : [];
+
+        $hasProcedureActivity = $procedureReviews !== [];
+        if (! $hasProcedureActivity) {
+            foreach ($responses as $responseData) {
+                $rating = is_array($responseData)
+                    ? strtoupper(trim((string) ($responseData['response'] ?? '')))
+                    : strtoupper(trim((string) $responseData));
+                if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                    $hasProcedureActivity = true;
+                    break;
+                }
+            }
+        }
+
+        $hasEquipmentItemsInSection = $competencyItems->contains(function (EmployeeCompetencyItem $item) {
+            $raw = (string) $item->item;
+            if (preg_match('/^-\d+\./', $raw) === 1) {
+                return false;
+            }
+
+            if (preg_match('/^(-+)/', $raw, $matches)) {
+                return strlen($matches[1]) >= 2;
+            }
+
+            return false;
+        });
+
+        if (! $hasEquipmentItemsInSection && ! $hasProcedureActivity) {
             return [];
         }
 
         $sectionComments = is_array($snapshot['section_comments']['TRACHEOSTOMY CARE'] ?? null)
             ? $snapshot['section_comments']['TRACHEOSTOMY CARE']
             : [];
-        $reviewDate = $this->formatCompetencyPdfShortDate(
-            $sectionComments['review_date'] ?? optional($assessment->review_date)->toDateString() ?? ''
-        );
-        $reviewerName = trim((string) ($sectionComments['reviewer_name'] ?? $assessment->reviewer_name ?? ''));
+        $sectionReviewDate = $this->resolveCompetencySectionReviewDate($assessment, $snapshot, 'TRACHEOSTOMY CARE');
+        $sectionReviewerName = trim((string) ($sectionComments['reviewer_name'] ?? $assessment->reviewer_name ?? ''));
 
         $equipmentCheckSet = array_flip($equipmentChecks);
         $items = [];
         $rawItems = $competencyItems->values();
+        $hasEquipmentRows = false;
+        $competencyItemsHeadingAdded = false;
 
         foreach ($rawItems as $index => $item) {
             $raw = (string) $item->item;
@@ -1480,13 +1518,35 @@ class EmployeePerformanceAssessmentController extends Controller {
             if (preg_match('/^-\d+\./', $raw) === 1) {
                 if (preg_match('/^-(\d+)\.\s*(.+)$/', $raw, $matches)) {
                     $procedureKey = (string) $matches[1];
-                    $rating = $procedureReviews[$procedureKey] ?? null;
+                    $itemId = (int) $item->id;
+                    $responseData = $this->competencyResponsePayloadForItem($responses, $itemId);
+                    $rating = $responseData['response'] ?? ($procedureReviews[$procedureKey] ?? null);
+                    $rating = strtoupper(trim((string) $rating));
 
-                    if ($rating !== null) {
+                    if ($rating !== '' && in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                        if ($hasEquipmentRows && ! $competencyItemsHeadingAdded) {
+                            $items[] = [
+                                'item_label' => 'Competency Items',
+                                'is_subsection_heading' => true,
+                                'with_rating_legend' => true,
+                            ];
+                            $competencyItemsHeadingAdded = true;
+                        }
+
                         $segments = array_map('trim', explode('||', $matches[2], 2));
                         $label = ltrim($segments[0] ?? '', '-');
                         if (! empty($segments[1])) {
                             $label .= ' ('.$segments[1].')';
+                        }
+
+                        $itemReviewDate = $this->formatCompetencyPdfShortDate($responseData['review_date'] ?? null);
+                        if ($itemReviewDate === '') {
+                            $itemReviewDate = $sectionReviewDate;
+                        }
+
+                        $itemReviewerName = trim((string) ($responseData['reviewer_name'] ?? ''));
+                        if ($itemReviewerName === '') {
+                            $itemReviewerName = $sectionReviewerName;
                         }
 
                         $items[] = [
@@ -1494,9 +1554,9 @@ class EmployeePerformanceAssessmentController extends Controller {
                             'indent_level' => 1,
                             'is_parent' => false,
                             'rating' => $rating,
-                            'review_date' => $reviewDate,
-                            'reviewer_name' => $reviewerName,
-                            'comments' => '',
+                            'review_date' => $itemReviewDate,
+                            'reviewer_name' => $itemReviewerName,
+                            'comments' => trim((string) ($responseData['comments'] ?? '')),
                         ];
                     }
                 }
@@ -1521,7 +1581,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             $isEquipmentItem = $indentLevel >= 2;
 
             if ($isEquipmentHeader) {
-                $hasCheckedChild = false;
+                $hasEquipmentChildren = false;
 
                 for ($childIndex = $index + 1; $childIndex < $rawItems->count(); $childIndex++) {
                     $childRaw = (string) $rawItems[$childIndex]->item;
@@ -1539,33 +1599,36 @@ class EmployeePerformanceAssessmentController extends Controller {
                         break;
                     }
 
-                    if ($childIndent >= 2 && isset($equipmentCheckSet[$childRaw])) {
-                        $hasCheckedChild = true;
+                    if ($childIndent >= 2) {
+                        $hasEquipmentChildren = true;
                         break;
                     }
                 }
 
-                if ($hasCheckedChild) {
+                if ($hasEquipmentChildren) {
                     $items[] = [
                         'item_label' => ltrim($raw, '-'),
                         'indent_level' => $indentLevel,
                         'is_parent' => true,
                     ];
+                    $hasEquipmentRows = true;
                 }
 
                 continue;
             }
 
-            if ($isEquipmentItem && isset($equipmentCheckSet[$raw])) {
+            if ($isEquipmentItem) {
                 $items[] = [
                     'item_label' => ltrim($raw, '-'),
                     'indent_level' => $indentLevel,
                     'is_parent' => false,
-                    'rating' => '✓',
-                    'review_date' => $reviewDate,
-                    'reviewer_name' => $reviewerName,
+                    'skip_item_number' => true,
+                    'rating' => isset($equipmentCheckSet[$raw]) ? '✓' : 'x',
+                    'review_date' => $sectionReviewDate,
+                    'reviewer_name' => $sectionReviewerName,
                     'comments' => '',
                 ];
+                $hasEquipmentRows = true;
             }
         }
 
@@ -1662,6 +1725,40 @@ class EmployeePerformanceAssessmentController extends Controller {
 
             return strlen($value) >= 10 ? Carbon::parse(substr($value, 0, 10))->format('m-d-y') : $value;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     */
+    protected function resolveCompetencySectionReviewDate(
+        EmployeeCompetencyAssessment $assessment,
+        array $snapshot,
+        string $sectionLabel,
+    ): string {
+        $sectionComments = is_array($snapshot['section_comments'][$sectionLabel] ?? null)
+            ? $snapshot['section_comments'][$sectionLabel]
+            : [];
+        $sectionSummary = is_array($snapshot['section_summaries'][$sectionLabel] ?? null)
+            ? $snapshot['section_summaries'][$sectionLabel]
+            : [];
+
+        $candidates = [
+            $sectionComments['review_date'] ?? null,
+            $sectionSummary['review_date'] ?? null,
+            $sectionSummary['submitted_at'] ?? null,
+            optional($assessment->review_date)->toDateString(),
+            optional($assessment->submitted_at)->toDateString(),
+            optional($assessment->updated_at)->toDateString(),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $formatted = $this->formatCompetencyPdfShortDate($candidate);
+            if ($formatted !== '') {
+                return $formatted;
+            }
+        }
+
+        return $this->formatCompetencyPdfShortDate(now()->toDateString());
     }
 
     /**
