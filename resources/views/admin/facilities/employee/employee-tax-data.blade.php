@@ -19,7 +19,7 @@ $states = \App\Models\State::orderBy('name')->get(['abbreviation', 'name']);
             <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest Record</span>
         </template>
     </div>
-    <form method="POST" action="{{ route('admin.employees.tax.update', $employee->id) }}" @submit="confirmTaxSubmit($event)">
+    <form method="POST" action="{{ $employeeFormRoutes['tax'] ?? route('admin.employees.tax.update', $employee->id) }}" @submit="confirmTaxSubmit($event)">
         @csrf
         @method('PUT')
 

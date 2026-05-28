@@ -4,23 +4,20 @@
         <div>
             <label class="block font-semibold">Skill 1:</label>
             <label><input type="radio" name="skill1" value="E"> E</label>
-            <label><input type="radio" name="skill1" value="S"> S</label>
-            <label><input type="radio" name="skill1" value="U"> U</label>
-            <label><input type="radio" name="skill1" value="N"> N</label>
+            <label><input type="radio" name="skill1" value="M"> M</label>
+            <label><input type="radio" name="skill1" value="B"> B</label>
         </div>
         <div>
             <label class="block font-semibold">Skill 2:</label>
             <label><input type="radio" name="skill2" value="E"> E</label>
-            <label><input type="radio" name="skill2" value="S"> S</label>
-            <label><input type="radio" name="skill2" value="U"> U</label>
-            <label><input type="radio" name="skill2" value="N"> N</label>
+            <label><input type="radio" name="skill2" value="M"> M</label>
+            <label><input type="radio" name="skill2" value="B"> B</label>
         </div>
         <div>
             <label class="block font-semibold">Skill 3:</label>
             <label><input type="radio" name="skill3" value="E"> E</label>
-            <label><input type="radio" name="skill3" value="S"> S</label>
-            <label><input type="radio" name="skill3" value="U"> U</label>
-            <label><input type="radio" name="skill3" value="N"> N</label>
+            <label><input type="radio" name="skill3" value="M"> M</label>
+            <label><input type="radio" name="skill3" value="B"> B</label>
         </div>
     </div>
 </div>
@@ -46,8 +43,8 @@
 
     function getScore(val) {
         if (val === 'E') return 3;
-        if (val === 'S') return 2;
-        if (val === 'U') return 1;
+        if (val === 'M' || val === 'S') return 2;
+        if (val === 'B' || val === 'U') return 1;
         return 0;
     }
 
@@ -55,7 +52,7 @@
         let total = 0, rated = 0;
         skillNames.forEach(name => {
             const checked = root.querySelector('input[name="' + name + '"]:checked');
-            if (checked && checked.value !== 'N') {
+            if (checked) {
                 total += getScore(checked.value);
                 rated++;
             }
@@ -115,3 +112,4 @@
         });
     }
 })();
+</script>

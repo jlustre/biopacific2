@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections;
 
+use App\Support\PartGCompetencyScoring;
+
 use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGSectionExclusion;
 use App\Models\BPEmployee;
 use App\Models\EmployeeCompetencyAssessment;
@@ -134,7 +136,7 @@ class LicensedNursePointOfCareCompetency extends Component
         if (! $this->sectionExcluded) {
             foreach ($this->scorableItemIds() as $itemId) {
                 $response = $this->responses[$itemId] ?? null;
-                if (! in_array($response, ['E', 'S', 'U', 'N'], true)) {
+                if (! PartGCompetencyScoring::isValidItemRating($response)) {
                     $this->addError('responses', 'Please rate all competency items before submitting.');
 
                     return;
@@ -220,21 +222,16 @@ class LicensedNursePointOfCareCompetency extends Component
             }
 
             $response = $this->responses[$item['id']] ?? null;
-            if ($response === null || $response === '' || $response === 'N') {
+            if ($response === null || $response === '' || ! PartGCompetencyScoring::isValidItemRating($response)) {
                 continue;
             }
 
-            if (! in_array($response, ['E', 'S', 'U'], true)) {
+            if (! PartGCompetencyScoring::numericScore($response) !== null) {
                 continue;
             }
 
             $ratedCount++;
-            $points += match ($response) {
-                'E' => 3,
-                'S' => 2,
-                'U' => 1,
-                default => 0,
-            };
+            $points += PartGCompetencyScoring::numericScore($response) ?? 0;
         }
 
         $average = $ratedCount > 0 ? round($points / $ratedCount, 2) : 0;
@@ -242,13 +239,7 @@ class LicensedNursePointOfCareCompetency extends Component
         return [
             'totalPoints' => $points,
             'average' => $average,
-            'overallRating' => match (true) {
-                $ratedCount === 0 => '—',
-                $average >= 2.5 => 'Excellent',
-                $average >= 1.5 => 'Satisfactory',
-                $average > 0 => 'Unsatisfactory',
-                default => 'Needs Improvement',
-            },
+            'overallRating' => PartGCompetencyScoring::overallLabel($average, $ratedCount),
         ];
     }
 

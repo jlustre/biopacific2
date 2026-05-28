@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
 
+use App\Support\PartGCompetencyScoring;
+
 use Illuminate\Support\Facades\Auth;
 
 trait ManagesPartGItemReviews
@@ -66,15 +68,15 @@ trait ManagesPartGItemReviews
             return;
         }
 
-        $rating = strtoupper(trim($this->reviewModalRating));
-        if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+        $rating = PartGCompetencyScoring::normalizeItemRating($this->reviewModalRating);
+        if ($rating === null) {
             $this->addError('reviewModalRating', 'Please select a rating.');
 
             return;
         }
 
-        if ($rating === 'U' && trim($this->reviewModalComments) === '') {
-            $this->addError('reviewModalComments', 'Comments are required when rating is Unsatisfactory (U).');
+        if (PartGCompetencyScoring::isBelowExpectationsItemRating($rating) && trim($this->reviewModalComments) === '') {
+            $this->addError('reviewModalComments', 'Comments are required when rating is Below Expectations (B).');
 
             return;
         }
@@ -89,7 +91,7 @@ trait ManagesPartGItemReviews
             'review_date' => $this->reviewModalDate ?: now()->toDateString(),
             'reviewer_id' => $user?->id,
             'reviewer_name' => $user?->name ?? $this->reviewModalReviewerName,
-            'comments' => $rating === 'U' ? trim($this->reviewModalComments) : null,
+            'comments' => PartGCompetencyScoring::isBelowExpectationsItemRating($rating) ? trim($this->reviewModalComments) : null,
         ];
 
         if (method_exists($this, 'normalizeResponseKeys')) {
@@ -166,11 +168,11 @@ trait ManagesPartGItemReviews
 
     protected function extractRatingValue(mixed $value): string
     {
-        if (is_array($value)) {
-            return strtoupper(trim((string) ($value['response'] ?? '')));
-        }
+        $raw = is_array($value)
+            ? strtoupper(trim((string) ($value['response'] ?? '')))
+            : strtoupper(trim((string) $value));
 
-        return strtoupper(trim((string) $value));
+        return PartGCompetencyScoring::normalizeItemRating($raw) ?? '';
     }
 
     protected function hydrateItemReviewMetaFromPayload(array $payload): void
@@ -204,7 +206,7 @@ trait ManagesPartGItemReviews
 
             $meta = $this->itemReviewMeta[(int) $itemId] ?? [];
             $payload[(int) $itemId] = array_filter([
-                'response' => $rating,
+                'response' => PartGCompetencyScoring::normalizeItemRating($rating) ?? $rating,
                 'review_date' => $meta['review_date'] ?? now()->toDateString(),
                 'reviewer_id' => $meta['reviewer_id'] ?? Auth::id(),
                 'reviewer_name' => $meta['reviewer_name'] ?? (Auth::user()?->name ?? ''),
@@ -219,7 +221,7 @@ trait ManagesPartGItemReviews
     {
         $rating = $this->extractRatingValue($this->partGResponses()[$itemId] ?? null);
 
-        return in_array($rating, ['E', 'S', 'U', 'N'], true);
+        return PartGCompetencyScoring::isValidItemRating($rating);
     }
 
     /**

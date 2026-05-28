@@ -46,6 +46,11 @@
         .pdf-header-logo img { width: 70px; height: auto; display: block; }
         .pdf-header-center { text-align: center; vertical-align: middle; padding: 0 8px; }
         .pdf-header-spacer { width: 84px; }
+        .part-f-instructions { margin-bottom: 10px; }
+        .part-f-instructions-title { margin: 0 0 8px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #0f172a; }
+        .part-f-instructions-heading { margin: 0 0 4px; font-size: 9px; font-weight: bold; text-transform: uppercase; color: #0f172a; }
+        .part-f-instructions-body { margin: 0 0 8px; font-size: 9px; line-height: 1.45; color: #334155; text-align: left; }
+        .part-f-instructions-divider { border: 0; border-top: 1px solid #cbd5e1; margin: 8px 0; }
     </style>
 </head>
 <body>
@@ -53,21 +58,21 @@
         $sectionSummary = $sectionSummary ?? [];
         $signatureBlock = $signatureBlock ?? [];
         $employeeName = trim(($employee->last_name ?? '').', '.($employee->first_name ?? '').(($employee->middle_name ?? null) ? ' '.$employee->middle_name : ''), ', ');
+        $isPerformanceAssessment = ! empty($isPerformanceAssessment);
+        $ratingCountDefaults = ['E' => 0, 'M' => 0, 'B' => 0];
         $ratingCounts = collect($items ?? [])
-            ->filter(fn ($item) => empty($item['is_parent']))
-            ->reduce(function (array $carry, array $item) {
-                $rating = strtoupper(trim((string) ($item['rating'] ?? '')));
-                if (isset($carry[$rating])) {
+            ->filter(fn ($item) => empty($item['is_parent']) && empty($item['is_section_comment']))
+            ->reduce(function (array $carry, array $item) use ($isPerformanceAssessment) {
+                $rating = ! empty($isPerformanceAssessment)
+                    ? (\App\Support\PartFPerformanceScoring::normalizeItemRating($item['rating'] ?? null) ?? '')
+                    : (\App\Support\PartGCompetencyScoring::normalizeItemRating($item['rating'] ?? null) ?? '');
+                if ($rating !== '' && isset($carry[$rating])) {
                     $carry[$rating]++;
                 }
 
                 return $carry;
-            }, ['E' => 0, 'S' => 0, 'U' => 0, 'N' => 0]);
-        $unsatisfactoryCommentItems = collect($items ?? [])
-            ->filter(fn ($item) => empty($item['is_parent']) && empty($item['is_section_comment']))
-            ->filter(fn ($item) => strtoupper(trim((string) ($item['rating'] ?? ''))) === 'U')
-            ->filter(fn ($item) => trim((string) ($item['comments'] ?? '')) !== '')
-            ->values();
+            }, $ratingCountDefaults);
+        $belowExpectationsRating = 'B';
         $isTracheostomySection = ($sectionLabel ?? '') === 'TRACHEOSTOMY CARE';
         $hasTracheostomyEquipment = $isTracheostomySection
             && collect($items ?? [])->contains(fn (array $item) => ! empty($item['skip_item_number']));
@@ -88,20 +93,48 @@
             return $item;
         });
         $commentReferences = $numberedItems
-            ->filter(fn (array $item) => empty($item['is_parent']) && empty($item['is_section_comment']) && trim((string) ($item['comments'] ?? '')) !== '')
+            ->filter(function (array $item) use ($isPerformanceAssessment, $belowExpectationsRating) {
+                if (! empty($item['is_parent']) || ! empty($item['is_section_comment'])) {
+                    return false;
+                }
+                if (trim((string) ($item['comments'] ?? '')) === '') {
+                    return false;
+                }
+                if (! $isPerformanceAssessment) {
+                    $rating = \App\Support\PartGCompetencyScoring::normalizeItemRating($item['rating'] ?? null);
+
+                    return $rating === $belowExpectationsRating;
+                }
+
+                $rating = \App\Support\PartFPerformanceScoring::normalizeItemRating($item['rating'] ?? null)
+                    ?? strtoupper(trim((string) ($item['rating'] ?? '')));
+
+                return $rating === $belowExpectationsRating;
+            })
             ->values();
         $totalRateableCount = isset($totalRateableOverride) && is_numeric($totalRateableOverride) && (int) $totalRateableOverride > 0
             ? (int) $totalRateableOverride
             : $numberedItems
-                ->filter(fn (array $item) => empty($item['is_parent']))
+                ->filter(fn (array $item) => empty($item['is_parent']) && empty($item['is_section_comment']))
                 ->count();
+        $performanceOverallCode = $isPerformanceAssessment
+            ? ($overallRatingCode ?? \App\Support\PartFPerformanceScoring::overallRatingCode(
+                $sectionSummary['overall_rating'] ?? null,
+                is_numeric($sectionSummary['average_score'] ?? null) ? (float) $sectionSummary['average_score'] : null,
+            ))
+            : '';
+        $competencyOverallCode = ! $isPerformanceAssessment
+            ? \App\Support\PartFPerformanceScoring::overallRatingCode(
+                $sectionSummary['overall_rating'] ?? null,
+                is_numeric($sectionSummary['average_score'] ?? null) ? (float) $sectionSummary['average_score'] : null,
+            )
+            : '';
         $logoPath = public_path('images/bplogo.png');
         $hasLogo = is_string($logoPath) && file_exists($logoPath);
-        $isPerformanceAssessment = ! empty($isPerformanceAssessment);
         $areasForDevelopmentText = trim((string) ($areasForDevelopment ?? ''));
         $developmentPlansText = trim((string) ($developmentPlans ?? ''));
         $showUnsatisfactoryReason = $isPerformanceAssessment
-            && strcasecmp(trim((string) ($sectionSummary['overall_rating'] ?? '')), 'Unsatisfactory') === 0;
+            && \App\Support\PartFPerformanceScoring::isBelowExpectationsRating($sectionSummary['overall_rating'] ?? null);
     @endphp
 
     <div class="section">
@@ -140,10 +173,26 @@
         </table>
     </div>
 
+    @if($isPerformanceAssessment)
+    @include('admin.facilities.checklist.partials.part-f-performance-appraisal-instructions', ['instructionsVariant' => 'pdf'])
+    @endif
+
     <div class="section">
-        <div class="muted" style="margin-bottom: 4px;">
-            <strong>Average Legend:</strong> Below 1.5 = Unsatisfactory | 1.5 to 2.49 = Satisfactory | 2.5 and above = Excellent
-        </div>
+        @if($isPerformanceAssessment)
+        <h3 style="margin-bottom: 6px;">Performance Evaluation Summary</h3>
+        @include('admin.facilities.checklist.partials.part-f-rating-legend', [
+            'legendVariant' => 'pdf',
+            'showOverallFooter' => true,
+            'overallRatingLabel' => $sectionSummary['overall_rating'] ?? null,
+            'overallAverage' => is_numeric($sectionSummary['average_score'] ?? null) ? (float) $sectionSummary['average_score'] : null,
+            'overallRatingCode' => $performanceOverallCode,
+        ])
+        @elseif(! $isPerformanceAssessment)
+        @include('admin.facilities.checklist.partials.part-f-rating-legend', [
+            'legendVariant' => 'pdf',
+            'showOverallFooter' => false,
+        ])
+        @endif
         <table class="summary-grid">
             <tr>
                 <td class="summary-label">Items Rated</td>
@@ -155,7 +204,21 @@
                 <td>{{ ($ratedCount ?? 0).'/'.$totalRateableCount }}</td>
                 <td>{{ $sectionSummary['total_score'] ?? 0 }}</td>
                 <td>{{ is_numeric($sectionSummary['average_score'] ?? null) ? number_format((float) $sectionSummary['average_score'], 2) : ($sectionSummary['average_score'] ?? '0.00') }}</td>
-                <td>{{ $sectionSummary['overall_rating'] ?? 'N/A' }}</td>
+                <td>
+                    @if($isPerformanceAssessment && $performanceOverallCode !== '')
+                    <strong>{{ $performanceOverallCode }}</strong>
+                    @if(!empty($sectionSummary['overall_rating']))
+                    — {{ $sectionSummary['overall_rating'] }}
+                    @endif
+                    @elseif(! $isPerformanceAssessment && $competencyOverallCode !== '')
+                    <strong>{{ $competencyOverallCode }}</strong>
+                    @if(!empty($sectionSummary['overall_rating']))
+                    — {{ $sectionSummary['overall_rating'] }}
+                    @endif
+                    @else
+                    {{ $sectionSummary['overall_rating'] ?? 'N/A' }}
+                    @endif
+                </td>
             </tr>
         </table>
     </div>
@@ -163,12 +226,14 @@
     <div class="section">
         @if($isTracheostomySection && $hasTracheostomyEquipment)
         <h3>Equipment / Supplies</h3>
+        @elseif($isPerformanceAssessment)
+        <h3>Performance Areas</h3>
         @elseif(! $isTracheostomySection || ! $hasTracheostomyEquipment)
         <h3>Competency Items</h3>
         @endif
-        @if(! $isTracheostomySection || ! $hasTracheostomyEquipment)
+        @if($isPerformanceAssessment)
         <div class="muted" style="margin-bottom: 4px;">
-            <strong>Rating Legend:</strong> E = Excellent (3) | S = Satisfactory (2) | U = Unsatisfactory (1) | N = Not Applicable
+            <strong>Item Rating Scale:</strong> E = 3 points | M = 2 points | B = 1 point
         </div>
         @endif
         <table class="items-table">
@@ -190,7 +255,7 @@
                     @if(!empty($item['with_rating_legend']))
                     <tr>
                         <td colspan="5" class="muted" style="font-size: 9px; padding: 4px; border: 1px solid #94a3b8;">
-                            <strong>Rating Legend:</strong> E = Excellent (3) | S = Satisfactory (2) | U = Unsatisfactory (1) | N = Not Applicable
+                            <strong>Item Rating Scale:</strong> {{ \App\Support\PartGCompetencyScoring::itemRatingLegendText() }}
                         </td>
                     </tr>
                     @endif
@@ -205,7 +270,7 @@
                     <tr>
                         <td class="col-item-no"></td>
                         <td class="col-item" colspan="4" style="background: #f8fafc; padding: 6px 4px;">
-                            <div style="font-weight: bold; font-size: 9px; margin-bottom: 4px;">Comments:</div>
+                            <div style="font-weight: bold; font-size: 9px; margin-bottom: 4px;">Section Comments:</div>
                             <div style="font-size: 9px;">{!! nl2br(e($item['comments'] ?? '')) !!}</div>
                         </td>
                     </tr>
@@ -215,7 +280,13 @@
                         <td class="col-item" style="padding-left: {{ 4 + (($item['indent_level'] ?? 0) * 8) }}px;">{{ $item['item_label'] ?? '' }}</td>
                         <td class="col-date">{{ $item['review_date'] ?? '' }}</td>
                         <td class="col-reviewer">{{ $item['reviewer_name'] ?? '' }}</td>
-                        <td class="col-rating">{{ $item['rating'] ?? '' }}</td>
+                        <td class="col-rating">
+                            @if($isPerformanceAssessment)
+                            {{ \App\Support\PartFPerformanceScoring::normalizeItemRating($item['rating'] ?? null) ?? ($item['rating'] ?? '') }}
+                            @else
+                            {{ \App\Support\PartGCompetencyScoring::normalizeItemRating($item['rating'] ?? null) ?? ($item['rating'] ?? '') }}
+                            @endif
+                        </td>
                     </tr>
                     @endif
                 @endforeach
@@ -226,24 +297,35 @@
     <div class="section">
         <h3>Rating Summary</h3>
         <table class="summary-grid">
+            @if($isPerformanceAssessment)
             <tr>
-                <td class="summary-label">Excellent (E)</td>
-                <td class="summary-label">Satisfactory (S)</td>
-                <td class="summary-label">Unsatisfactory (U)</td>
-                <td class="summary-label">Not Applicable (N)</td>
+                <td class="summary-label">Exceeds (E)</td>
+                <td class="summary-label">Meets (M)</td>
+                <td class="summary-label">Below (B)</td>
             </tr>
             <tr>
-                <td>{{ $ratingCounts['E'] }}</td>
-                <td>{{ $ratingCounts['S'] }}</td>
-                <td>{{ $ratingCounts['U'] }}</td>
-                <td>{{ $ratingCounts['N'] }}</td>
+                <td>{{ $ratingCounts['E'] ?? 0 }}</td>
+                <td>{{ $ratingCounts['M'] ?? 0 }}</td>
+                <td>{{ $ratingCounts['B'] ?? 0 }}</td>
             </tr>
+            @else
+            <tr>
+                <td class="summary-label">Exceeds (E)</td>
+                <td class="summary-label">Meets (M)</td>
+                <td class="summary-label">Below (B)</td>
+            </tr>
+            <tr>
+                <td>{{ $ratingCounts['E'] ?? 0 }}</td>
+                <td>{{ $ratingCounts['M'] ?? 0 }}</td>
+                <td>{{ $ratingCounts['B'] ?? 0 }}</td>
+            </tr>
+            @endif
         </table>
     </div>
 
     @if($commentReferences->isNotEmpty())
     <div class="section">
-        <h3>Item Comments Reference</h3>
+        <h3>Below Expectations (B) Item Comments</h3>
         <table class="items-table">
             <thead>
                 <tr>
@@ -268,7 +350,7 @@
             @if($isPerformanceAssessment)
             @if($showUnsatisfactoryReason)
             <tr>
-                <td class="field-label" colspan="3">UNSATISFACTORY REASON</td>
+                <td class="field-label" colspan="3">BELOW EXPECTATIONS REASON</td>
             </tr>
             <tr>
                 <td class="field-box" colspan="3">{!! nl2br(e($signatureBlock['reviewer_comments'] ?? '')) !!}</td>

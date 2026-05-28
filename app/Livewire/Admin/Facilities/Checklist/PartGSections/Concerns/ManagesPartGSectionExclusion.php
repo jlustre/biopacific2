@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
 
+use App\Support\PartGCompetencyScoring;
+
 use App\Livewire\Concerns\GuardsAgainstSelfAssessment;
 use App\Models\EmployeeCompetencyAssessment;
 
@@ -163,7 +165,6 @@ trait ManagesPartGSectionExclusion
 
         $total = 0;
         $rated = 0;
-        $notApplicable = 0;
 
         foreach ($sectionItems as $item) {
             if ($item['isParent'] ?? false) {
@@ -176,24 +177,12 @@ trait ManagesPartGSectionExclusion
                 : [];
             $response = $responses[$item['id']] ?? null;
 
-            if ($response === null || $response === '') {
-                continue;
-            }
-
-            if ($response === 'N') {
-                $notApplicable++;
-
-                continue;
-            }
-
-            if (in_array($response, ['E', 'S', 'U'], true)) {
+            if (PartGCompetencyScoring::numericScore($response) !== null) {
                 $rated++;
             }
         }
 
-        $checkedOfTotal = $notApplicable > 0
-            ? $rated.' of '.$total.' rated ('.$notApplicable.' N/A)'
-            : $rated.' of '.$total.' rated';
+        $checkedOfTotal = $rated.' of '.$total.' rated';
 
         $average = (float) ($scores['average'] ?? 0);
 

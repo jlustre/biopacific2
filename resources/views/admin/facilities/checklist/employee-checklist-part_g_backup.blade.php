@@ -60,8 +60,8 @@
             </div>
         </div>
 
-        <div class="mb-2 rounded-md border border-slate-400 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
-            Rating Legend: E = Excellent (3) &nbsp;&nbsp;&nbsp; S = Satisfactory (2) &nbsp;&nbsp;&nbsp; U = Unsatisfactory (1) &nbsp;&nbsp;&nbsp; N = Not Applicable
+        <div class="mb-4">
+            @include('admin.facilities.checklist.partials.part-g-average-legend')
         </div>
         @if($partGShowLicensedNurseGuidance)
             <p class="mb-1 text-[11px] leading-relaxed text-slate-700 md:text-xs">

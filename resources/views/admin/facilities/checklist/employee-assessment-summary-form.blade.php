@@ -3,7 +3,14 @@
     $assessmentWord = $assessmentWord ?? ucfirst($assessmentSummaryMode);
     $assessmentSummaryTitle = $assessmentSummaryTitle ?? ($assessmentWord . ' Evaluation Summary');
     $assessmentSummaryDescription = $assessmentSummaryDescription ?? 'Review the calculated result, add notes, and complete the signatures.';
-    $assessmentLegendText = $assessmentLegendText ?? 'Average Legend: Below 1.5 = Unsatisfactory   1.5 to 2.49 = Satisfactory   2.5 and above = Excellent';
+    $partFSummaryOverallForLegend = ($assessmentSummaryMode ?? 'performance') === 'performance'
+        ? old('overall_rating', $selectedPerformanceAssessment?->overall_rating ?? '')
+        : '';
+    $partFSummaryAverageForLegend = ($assessmentSummaryMode ?? 'performance') === 'performance'
+        ? ($selectedPerformanceAssessment?->average_score !== null
+            ? (float) $selectedPerformanceAssessment->average_score
+            : null)
+        : null;
 @endphp
 
 <div class="mt-5 rounded-md border border-slate-400 bg-slate-50 p-3 shadow-sm">
@@ -14,9 +21,19 @@
         </div>
     </div>
 
-    <div class="mb-3 rounded-md border border-slate-400 bg-white px-3 py-2 text-[11px] font-semibold text-slate-800 shadow-sm">
-        {{ $assessmentLegendText }}
+    @if($assessmentSummaryMode === 'performance')
+    <div class="mb-3">
+        @include('admin.facilities.checklist.partials.part-f-rating-legend', [
+            'showOverallFooter' => true,
+            'overallRatingLabel' => $partFSummaryOverallForLegend,
+            'overallAverage' => $partFSummaryAverageForLegend,
+        ])
     </div>
+    @else
+    <div class="mb-3">
+        @include('admin.facilities.checklist.partials.part-g-average-legend')
+    </div>
+    @endif
 
     @if($assessmentSummaryMode === 'performance')
     @php
@@ -51,9 +68,9 @@
             <input type="hidden" name="overall_rating" id="partFOverallRatingValue" value="{{ old('overall_rating', $partFSummaryOverall) }}">
 
             <div id="partFUnsatisfactoryReasonWrapper" class="hidden rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-3 shadow-sm">
-                <label for="partFUnsatisfactoryReason" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-amber-900">Unsatisfactory Reason</label>
-                <p class="mb-2 text-[11px] text-amber-800">Explain why the overall performance rating is unsatisfactory.</p>
-                <textarea name="overall_unsatisfactory_reason" id="partFUnsatisfactoryReason" class="min-h-[88px] w-full resize-y rounded-md border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200" placeholder="Required when the overall rating is unsatisfactory." @readonly($partFAssessmentLocked)>{{ old('overall_unsatisfactory_reason', $selectedPerformanceAssessment?->comments ?? '') }}</textarea>
+                <label for="partFUnsatisfactoryReason" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-amber-900">Below Expectations Reason</label>
+                <p class="mb-2 text-[11px] text-amber-800">Explain why the overall performance rating is below expectations.</p>
+                <textarea name="overall_unsatisfactory_reason" id="partFUnsatisfactoryReason" class="min-h-[88px] w-full resize-y rounded-md border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200" placeholder="Required when the overall rating is below expectations." @readonly($partFAssessmentLocked)>{{ old('overall_unsatisfactory_reason', $selectedPerformanceAssessment?->comments ?? '') }}</textarea>
             </div>
 
             @include('admin.facilities.checklist.employee-areas-development')

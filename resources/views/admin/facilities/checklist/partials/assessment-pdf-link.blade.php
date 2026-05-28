@@ -12,10 +12,7 @@
     aria-label="{{ $ariaLabel ?? $title }}"
     role="button"
 >
-    <span data-pdf-icon class="inline-flex items-center justify-center" aria-hidden="true">
+    <span class="inline-flex items-center justify-center" aria-hidden="true">
         <i class="fas fa-file-pdf text-sm"></i>
-    </span>
-    <span data-pdf-loader class="absolute inset-0 hidden items-center justify-center" aria-hidden="true">
-        <i class="fas fa-spinner fa-spin text-sm text-slate-600"></i>
     </span>
 </a>

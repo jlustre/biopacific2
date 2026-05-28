@@ -5,16 +5,17 @@
 ])
 
 @php
+    use App\Support\PartGCompetencyScoring;
+
     $itemId = (int) $itemId;
     $hasReview = $this->itemHasReview($itemId);
     $reviewDate = $this->itemReviewDisplayDate($itemId);
     $reviewer = $this->itemReviewDisplayReviewer($itemId);
-    $rating = $this->itemReviewDisplayRating($itemId);
+    $rating = PartGCompetencyScoring::normalizeItemRating($this->itemReviewDisplayRating($itemId)) ?? '';
     $ratingClasses = match ($rating) {
         'E' => 'bg-emerald-100 text-emerald-800',
-        'S' => 'bg-sky-100 text-sky-800',
-        'U' => 'bg-red-100 text-red-800',
-        'N' => 'bg-slate-200 text-slate-700',
+        'M' => 'bg-sky-100 text-sky-800',
+        'B' => 'bg-red-100 text-red-800',
         default => 'bg-slate-100 text-slate-500',
     };
 @endphp
@@ -61,4 +62,3 @@
         @endif
     </div>
 </td>
-

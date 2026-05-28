@@ -2,7 +2,7 @@
     <div x-show="tab === 'personal'" x-cloak data-employee-tab-panel="personal">
         @php use Illuminate\Support\Facades\Auth; @endphp
         <div class="bg-white shadow rounded-lg p-4 mb-6">
-            <form method="POST" action="{{ $isAddMode ? route('admin.employees.store') : route('admin.employees.personal.update', $employee->id ?? '') }}">
+            <form method="POST" action="{{ $isAddMode ? route('admin.employees.store') : ($employeeFormRoutes['personal'] ?? route('admin.employees.personal.update', $employee->id ?? '')) }}">
                 @csrf
                 @if(!$isAddMode)
                     @method('PUT')

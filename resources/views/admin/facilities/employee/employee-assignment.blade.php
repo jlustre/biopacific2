@@ -31,6 +31,42 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
             <em>Save the employee record before adding job data.</em>
         </div>
     @else
+    @if($isSelfService ?? false)
+        @php
+            $current = $employee->currentAssignment;
+        @endphp
+        <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Job assignment details are managed by HR. Contact your facility administrator if anything looks incorrect.
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Facility</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->facility?->name ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Position</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->position?->title ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Department</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->department?->name ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Employment type</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ strtoupper((string) ($current?->full_part_time ?? '')) ?: '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Standard hours / week</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->std_hrs_week ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Effective date</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->effdt?->format('Y-m-d') ?? '—' }}</p>
+                </div>
+            </div>
+        </div>
+    @else
     <div class="flex justify-end items-center mb-4 space-x-4">
         <button type="button" @click="clearAssignment()"
             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
@@ -191,6 +227,7 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
             </div>
         </div>
     </form>
+    @endif
     @endif
     <!-- Job Data History Table -->
     @include('admin.facilities.employee.employee-assignment-table')

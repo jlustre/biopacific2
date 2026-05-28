@@ -166,6 +166,7 @@
         var tableContainer = document.getElementById('partFTableContainer');
         var unsatisfactoryReasonWrapper = document.getElementById('partFUnsatisfactoryReasonWrapper');
         var unsatisfactoryReasonField = document.getElementById('partFUnsatisfactoryReason');
+        var overallRatingCodeField = document.getElementById('partFOverallRatingCode');
 
         if (!tableContainer || !totalScoreField || !averageScoreField || !overallRatingField || !overallRatingCard) {
             return;
@@ -173,9 +174,9 @@
 
         function parsePerformanceRating(rawRating) {
             var rating = (rawRating || '').trim().toUpperCase();
-            if (rating === 'EXCELLENT' || rating === 'E' || rating === 'EXCEEDS' || rating === '3') return 3;
-            if (rating === 'SATISFACTORY' || rating === 'S' || rating === 'MEETS' || rating === 'M' || rating === '2') return 2;
-            if (rating === 'UNSATISFACTORY' || rating === 'U' || rating === 'BELOW' || rating === 'B' || rating === '1') return 1;
+            if (rating === 'E' || rating === 'EXCEEDS' || rating === 'EXCEEDS EXPECTATIONS' || rating === 'EXCELLENT' || rating === '3') return 3;
+            if (rating === 'M' || rating === 'MEETS' || rating === 'MEETS EXPECTATIONS' || rating === 'SATISFACTORY' || rating === 'S' || rating === '2') return 2;
+            if (rating === 'B' || rating === 'BELOW' || rating === 'BELOW EXPECTATIONS' || rating === 'UNSATISFACTORY' || rating === 'U' || rating === '1') return 1;
             return null;
         }
 
@@ -185,14 +186,14 @@
 
             cardClassList.remove('border-teal-400', 'bg-teal-100', 'border-slate-400', 'bg-white', 'border-amber-300', 'bg-amber-100');
 
-            if (average >= 2.5) {
-                overallLabel = 'Excellent';
+            if (average >= 2.51) {
+                overallLabel = 'Exceeds Expectations';
                 cardClassList.add('border-teal-400', 'bg-teal-100');
-            } else if (average >= 1.5) {
-                overallLabel = 'Satisfactory';
+            } else if (average >= 1.75) {
+                overallLabel = 'Meets Expectations';
                 cardClassList.add('border-slate-400', 'bg-white');
             } else if (average > 0) {
-                overallLabel = 'Unsatisfactory';
+                overallLabel = 'Below Expectations';
                 cardClassList.add('border-amber-300', 'bg-amber-100');
             } else {
                 cardClassList.add('border-slate-400', 'bg-white');
@@ -204,8 +205,20 @@
                 overallRatingValueField.value = overallLabel;
             }
 
+            if (overallRatingCodeField) {
+                var overallCode = '';
+                if (average >= 2.51) {
+                    overallCode = 'E';
+                } else if (average >= 1.75) {
+                    overallCode = 'M';
+                } else if (average > 0) {
+                    overallCode = 'B';
+                }
+                overallRatingCodeField.textContent = overallCode;
+            }
+
             if (unsatisfactoryReasonWrapper && unsatisfactoryReasonField) {
-                var showUnsatisfactoryReason = overallLabel === 'Unsatisfactory';
+                var showUnsatisfactoryReason = overallLabel === 'Below Expectations' || overallLabel === 'Unsatisfactory';
                 unsatisfactoryReasonWrapper.classList.toggle('hidden', !showUnsatisfactoryReason);
                 unsatisfactoryReasonField.disabled = !showUnsatisfactoryReason;
                 unsatisfactoryReasonField.required = showUnsatisfactoryReason;
@@ -248,7 +261,7 @@
         } else {
             tableContainer.querySelectorAll('tbody tr').forEach(function(row) {
                 var cells = row.querySelectorAll('td');
-                if (cells.length !== 6) {
+                if (cells.length !== 5 && cells.length !== 4) {
                     return;
                 }
 
@@ -391,10 +404,9 @@
         } else if (row && row.children[2]) {
             // Try to map text to value if user refreshed page
             var cellText = row.children[2].textContent.trim().toLowerCase();
-            if (cellText === 'excellent' || cellText === 'e') ratingValue = 'E';
-            else if (cellText === 'satisfactory' || cellText === 's') ratingValue = 'S';
-            else if (cellText === 'unsatisfactory' || cellText === 'u') ratingValue = 'U';
-            else if (cellText === 'not applicable' || cellText === 'n') ratingValue = 'N';
+            if (cellText === 'excellent' || cellText === 'exceeds' || cellText === 'e') ratingValue = 'E';
+            else if (cellText === 'satisfactory' || cellText === 'meets' || cellText === 'm' || cellText === 's') ratingValue = 'M';
+            else if (cellText === 'unsatisfactory' || cellText === 'below' || cellText === 'b' || cellText === 'u') ratingValue = 'B';
         }
         ratingField.value = ratingValue;
         // Set assessment date to today if not present
@@ -511,10 +523,9 @@
         if (item && item.rating) {
             if (isCompetencyRow) {
                 ratingText = item.rating;
-            } else if (item.rating === 'E') ratingText = 'Excellent';
-            else if (item.rating === 'S') ratingText = 'Satisfactory';
-            else if (item.rating === 'U') ratingText = 'Unsatisfactory';
-            else if (item.rating === 'N') ratingText = 'Not Applicable';
+            } else if (item.rating === 'E') ratingText = 'Exceeds Expectations';
+            else if (item.rating === 'M') ratingText = 'Meets Expectations';
+            else if (item.rating === 'B') ratingText = 'Below Expectations';
         }
         row.setAttribute('data-current-rating', item && item.rating ? item.rating : '');
         if (row.hasAttribute('data-current-comments')) {
@@ -767,7 +778,7 @@
             if (ratingError) ratingError.classList.add('hidden');
         }
 
-        if (rating === 'U' && (!commentsField || !commentsField.value.trim())) {
+        if (rating === 'B' && (!commentsField || !commentsField.value.trim())) {
             if (commentsError) commentsError.classList.remove('hidden');
             if (commentsField) commentsField.focus();
             return;

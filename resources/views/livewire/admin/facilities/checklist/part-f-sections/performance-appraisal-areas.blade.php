@@ -4,12 +4,6 @@
 @endphp
 
 <div class="mb-4">
-    <h3 class="mb-2 font-bold">PERFORMANCE AREAS</h3>
-    <p class="mb-2 text-xs italic text-slate-600">
-        Assess each item below. Select <strong>E</strong>, <strong>S</strong>, <strong>U</strong>, or <strong>N</strong> for every applicable line; ratings save when selected.
-        Use <strong>Save</strong> under each section to store that section&rsquo;s comments and sync all ratings for the period.
-    </p>
-
     @if($evaluatorActionsDisabled)
         <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="status">
             {{ \App\Support\PreventsSelfAssessment::DEFAULT_MESSAGE }}
@@ -60,9 +54,8 @@
                             <tr class="bg-blue-50">
                                 <td class="border border-gray-300 pl-2 text-start text-md font-bold text-gray-700">Items</td>
                                 <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">E</td>
-                                <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">S</td>
-                                <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">U</td>
-                                <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">N</td>
+                                <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">M</td>
+                                <td class="border border-gray-300 px-3 text-center text-md font-semibold text-gray-700">B</td>
                             </tr>
                             @foreach ($section['rows'] as $rIdx => $row)
                                 @if (! empty($row['isMainParentItem']))
@@ -71,7 +64,7 @@
                                         data-indent-level="{{ $row['indentLevel'] }}"
                                         data-has-child-items="1"
                                     >
-                                        <td colspan="5" class="border border-gray-300 px-2 py-1.5 text-sm font-semibold">
+                                        <td colspan="4" class="border border-gray-300 px-2 py-1.5 text-sm font-semibold">
                                             <span class="inline-flex items-center gap-2">
                                                 <span wire:ignore>
                                                     <button type="button" class="hierarchy-toggle inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100" data-expanded="1" aria-label="Collapse child items">▲</button>
@@ -85,7 +78,7 @@
                                         data-indent-level="{{ $row['indentLevel'] }}"
                                         data-has-child-items="1"
                                     >
-                                        <td class="border border-gray-300 text-md font-bold text-gray-700" colspan="5" style="padding-left: calc(0.5rem + {{ ($row['indentLevel'] ?? 0) * 20 }}px);">
+                                        <td class="border border-gray-300 text-md font-bold text-gray-700" colspan="4" style="padding-left: calc(0.5rem + {{ ($row['indentLevel'] ?? 0) * 20 }}px);">
                                             <span class="inline-flex items-center gap-2">
                                                 <span wire:ignore>
                                                     <button type="button" class="hierarchy-toggle inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-400 bg-white text-[10px] font-bold text-slate-700 shadow-sm hover:bg-slate-100" data-expanded="1" aria-label="Collapse child items">▲</button>
@@ -113,7 +106,7 @@
                                         <td class="border border-gray-300 py-0 text-sm" style="padding-left: calc(0.5rem + {{ ($row['indentLevel'] ?? 0) * 20 }}px);">
                                             {{ $itemCell }}
                                         </td>
-                                        @foreach (['E', 'S', 'U', 'N'] as $ratingCode)
+                                        @foreach (\App\Support\PartFPerformanceScoring::ratingCodes() as $ratingCode)
                                             <td class="border border-gray-300 py-0 text-center">
                                                 <input
                                                     type="radio"

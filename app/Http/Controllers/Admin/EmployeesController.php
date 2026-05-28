@@ -20,10 +20,12 @@ use App\Models\Optionstype;
 use App\Support\PartFPerformanceScoring;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Support\EmployeeAssessmentPeriodCalculator;
+use App\Http\Controllers\Concerns\HandlesEmployeeEditRedirects;
 
 
 class EmployeesController extends Controller
 {
+    use HandlesEmployeeEditRedirects;
     protected function loadEmployeeAssessmentPeriods(BPEmployee $employee)
     {
         return app(EmployeeAssessmentPeriodService::class)->periodsForEmployee($employee);
@@ -200,10 +202,9 @@ class EmployeesController extends Controller
         $employee = BPEmployee::with('currentAssignment')->findOrFail($employee_num); // $employee_num is actually the PK id
         $facilityId = $employee->currentAssignment?->facility_id;
         if (!$facilityId) {
-            return redirect()->route('admin.employees.edit', $employee->id)
-                ->with('employeeTab', 'documents')
-                ->with('error', 'The employee must have a current assignment with a facility before documents can be uploaded.')
-                ->withInput();
+            return $this->redirectToEmployeeEdit($employee->id, 'documents', [
+                'error' => 'The employee must have a current assignment with a facility before documents can be uploaded.',
+            ])->withInput();
         }
 
         $file = $request->file('document');
@@ -223,9 +224,9 @@ class EmployeesController extends Controller
             'expires_at' => $validated['expires_at'] ?? null,
         ]);
 
-        return redirect()->route('admin.employees.edit', $employee->id)
-            ->with('employeeTab', 'documents')
-            ->with('success', 'Document uploaded successfully.');
+        return $this->redirectToEmployeeEdit($employee->id, 'documents', [
+            'success' => 'Document uploaded successfully.',
+        ]);
     }
 
         /**
@@ -270,9 +271,9 @@ class EmployeesController extends Controller
             ->whereKey($upload_id)
             ->firstOrFail();
         $upload->delete();
-        return redirect()->route('admin.employees.edit', $employee->id)
-            ->with('employeeTab', 'documents')
-            ->with('success', 'Document deleted successfully.');
+        return $this->redirectToEmployeeEdit($employee->id, 'documents', [
+            'success' => 'Document deleted successfully.',
+        ]);
     }
 
      /**
@@ -324,9 +325,9 @@ class EmployeesController extends Controller
 
         $upload->save();
 
-        return redirect()->route('admin.employees.edit', $employee->id)
-            ->with('employeeTab', 'documents')
-            ->with('success', 'Document updated successfully.');
+        return $this->redirectToEmployeeEdit($employee->id, 'documents', [
+            'success' => 'Document updated successfully.',
+        ]);
     }
 
        /**
@@ -574,19 +575,15 @@ class EmployeesController extends Controller
             }
 
             $msg = $dirty ? 'Personal information updated successfully.' : 'No changes were made, but your profile is up to date.';
-            return redirect()->route('admin.employees.edit', $employee->id)
-                ->with('success', $msg)
-                ->with('employeeTab', 'personal');
+            return $this->redirectToEmployeeEdit($employee->id, 'personal', ['success' => $msg]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->route('admin.employees.edit', $employee->id)
+            return $this->redirectToEmployeeEdit($employee->id, 'personal')
                 ->withErrors($e->validator)
-                ->withInput()
-                ->with('employeeTab', 'personal');
+                ->withInput();
         } catch (\Exception $e) {
-            return redirect()->route('admin.employees.edit', $employee->id)
-                ->with('error', 'Failed to update personal information: ' . $e->getMessage())
-                ->withInput()
-                ->with('employeeTab', 'personal');
+            return $this->redirectToEmployeeEdit($employee->id, 'personal', [
+                'error' => 'Failed to update personal information: ' . $e->getMessage(),
+            ])->withInput();
         }
     }
 
@@ -727,8 +724,9 @@ class EmployeesController extends Controller
                 });
             }
             if ($otherPrimary->count() === 0) {
-                return redirect()->route('admin.employees.edit', $employee)
-                    ->with('error', 'At least one address must be set as default.');
+                return $this->redirectToEmployeeEdit($employee, 'address', [
+                    'error' => 'At least one address must be set as default.',
+                ]);
             }
         }
 
@@ -766,8 +764,7 @@ class EmployeesController extends Controller
             $msg = 'Address added successfully.';
         }
 
-        return redirect()->route('admin.employees.edit', $employee)
-            ->with('success', $msg);
+        return $this->redirectToEmployeeEdit($employee, 'address', ['success' => $msg]);
     }
 
     protected function normalizeYnPrimary(mixed $value): string
@@ -876,9 +873,7 @@ class EmployeesController extends Controller
             $msg = 'Job data updated successfully.';
         }
 
-        return redirect()->route('admin.employees.edit', $employee)
-            ->with('success', $msg)
-            ->with('employeeTab', 'job-data');
+        return $this->redirectToEmployeeEdit($employee, 'job-data', ['success' => $msg]);
     }
 
     /**
@@ -996,9 +991,7 @@ class EmployeesController extends Controller
             }
         }
 
-        return redirect()->route('admin.employees.edit', $employee)
-            ->with('success', $msg)
-            ->with('employeeTab', 'tax-data');
+        return $this->redirectToEmployeeEdit($employee, 'tax-data', ['success' => $msg]);
     }
 
     /**
@@ -1161,7 +1154,7 @@ class EmployeesController extends Controller
             'employee_name' => 'required|string|max:255',
             'review_dt' => ($request->input('action') === 'submit' ? 'required' : 'nullable') . '|date',
             'employee_acknowledge_dt' => 'nullable|date',
-            'overall_rating' => 'nullable|string|in:Excellent,Satisfactory,Unsatisfactory,Not Rated',
+            'overall_rating' => 'nullable|string|in:Exceeds Expectations,Meets Expectations,Below Expectations,Excellent,Satisfactory,Unsatisfactory,Not Rated',
             'overall_unsatisfactory_reason' => 'nullable|string',
         ];
         // Make areas_for_development required if submitting
@@ -1170,9 +1163,10 @@ class EmployeesController extends Controller
         }
         $validated = $request->validate($rules);
 
-        if (($validated['overall_rating'] ?? null) === 'Unsatisfactory' && blank($validated['overall_unsatisfactory_reason'] ?? null)) {
+        if (PartFPerformanceScoring::isBelowExpectationsRating($validated['overall_rating'] ?? null)
+            && blank($validated['overall_unsatisfactory_reason'] ?? null)) {
             return back()
-                ->withErrors(['overall_unsatisfactory_reason' => 'Explain why the overall performance rating is unsatisfactory.'])
+                ->withErrors(['overall_unsatisfactory_reason' => 'Explain why the overall performance rating is below expectations.'])
                 ->withInput();
         }
 
@@ -1277,7 +1271,7 @@ class EmployeesController extends Controller
             if (filled($validated['overall_rating'] ?? null)) {
                 $assessment->overall_rating = $validated['overall_rating'];
             }
-            $assessment->comments = ($validated['overall_rating'] ?? null) === 'Unsatisfactory'
+            $assessment->comments = PartFPerformanceScoring::isBelowExpectationsRating($validated['overall_rating'] ?? null)
                 ? ($validated['overall_unsatisfactory_reason'] ?? null)
                 : null;
             // If submitted, finalize and send email
@@ -1705,12 +1699,7 @@ class EmployeesController extends Controller
                 $total = 0;
                 $count = 0;
                 foreach ($latestStates as $state) {
-                    $score = match ($state->rating) {
-                        'E' => 3,
-                        'S' => 2,
-                        'U' => 1,
-                        default => null,
-                    };
+                    $score = PartFPerformanceScoring::numericScore((string) $state->rating);
 
                     if ($score === null) {
                         continue;
@@ -1723,9 +1712,7 @@ class EmployeesController extends Controller
                 $average = $count > 0 ? round($total / $count, 2) : 0;
                 $overall = $count === 0
                     ? 'N/A'
-                    : ($average >= 2.5
-                        ? 'Excellent'
-                        : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+                    : PartFPerformanceScoring::overallLabel($average, $count);
                 $period = $assessmentPeriodLabels->get($assessmentPeriodId);
                 $latestAssessment = $entries
                     ->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))
@@ -1960,7 +1947,12 @@ class EmployeesController extends Controller
             $employee->employee_num
         );
 
-        return view('admin.facilities.employee.edit_employee', compact(
+        $editOptions = $request->attributes->get('employee_edit_options', []);
+        $isSelfService = (bool) ($editOptions['isSelfService'] ?? false);
+        $viewName = $isSelfService ? 'employment.my-employment' : 'admin.facilities.employee.edit_employee';
+        $employeeFormRoutes = $this->employeeFormRoutes($employee, $isSelfService);
+
+        return view($viewName, compact(
             'employee',
             'employeesListFacility',
             'employeesListFacilityId',
@@ -2004,9 +1996,10 @@ class EmployeesController extends Controller
             'actionOptions',
             'unionCodeOptions',
             'uploadTypes',
-            // Add draft competency responses for Part G
             'draftResponses',
             'rawDraftRow',
+            'isSelfService',
+            'employeeFormRoutes',
         ));
     }
-    }
+}

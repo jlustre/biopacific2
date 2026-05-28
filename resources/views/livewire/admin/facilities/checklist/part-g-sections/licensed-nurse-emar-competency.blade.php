@@ -56,39 +56,35 @@
                     this.updateSummary();
                 },
                 updateSummary() {
-                    let total = 0, rated = 0, notApplicable = 0, points = 0;
+                    let total = 0, rated = 0, points = 0;
                     this.items.forEach(item => {
                         if (!item.isParent) {
                             total++;
                             if (!item.response) {
                                 return;
                             }
-                            if (item.response === 'N') {
-                                notApplicable++;
+                            const score = this.responseToPoints(item.response);
+                            if (score <= 0) {
                                 return;
                             }
                             rated++;
-                            points += this.responseToPoints(item.response);
+                            points += score;
                         }
                     });
                     this.summary.totalItems = total;
-                    this.summary.checkedOfTotal = notApplicable > 0
-                        ? `${rated} of ${total} rated (${notApplicable} N/A)`
-                        : `${rated} of ${total} rated`;
+                    this.summary.checkedOfTotal = `${rated} of ${total} rated`;
                     this.summary.totalPoints = points;
                     this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
                     this.summary.overallRating = this.getOverallRating(points, rated);
                 },
                 responseToPoints(val) {
-                    return val === 'E' ? 3 : val === 'S' ? 2 : val === 'U' ? 1 : 0;
+                    if (val === 'E') return 3;
+                    if (val === 'M' || val === 'S') return 2;
+                    if (val === 'B' || val === 'U') return 1;
+                    return 0;
                 },
                 getOverallRating(points, ratedCount) {
-                    if (ratedCount === 0) return '—';
-                    const avg = points / ratedCount;
-                    if (avg >= 2.5) return 'Excellent';
-                    if (avg >= 1.5) return 'Satisfactory';
-                    if (avg > 0) return 'Unsatisfactory';
-                    return 'Needs Improvement';
+                    return window.partGOverallRatingFromAverage(points, ratedCount);
                 },
             };
         };
@@ -169,7 +165,7 @@
                 @if(! $sectionExcluded)
                 <div class="mb-3">
                     <div class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800">
-                        Average Legend: <span class="font-normal">Below 1.5 = Unsatisfactory 1.5 to 2.49 = Satisfactory 2.5 and above = Excellent</span>
+                        @include('admin.facilities.checklist.partials.part-g-average-legend')
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">

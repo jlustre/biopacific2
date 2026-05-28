@@ -28,6 +28,7 @@
   {{-- Alpine.js loaded via Livewire or base layout; do not include multiple times --}}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="{{ asset('css/member-portal-sidebar.css') }}">
+  @livewireStyles
   @stack('head')
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased pb-20 lg:pb-0"
@@ -86,6 +87,7 @@
     ])
   @endif
 
+  @livewireScripts(['vite' => true])
   @stack('scripts')
 </body>
 </html>

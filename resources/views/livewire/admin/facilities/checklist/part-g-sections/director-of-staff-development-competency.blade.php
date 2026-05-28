@@ -101,7 +101,7 @@
                 @if(! $sectionExcluded)
                 <div class="mb-3">
                     <div class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800">
-                        Average Legend: <span class="font-normal">Below 1.5 = Unsatisfactory 1.5 to 2.49 = Satisfactory 2.5 and above = Excellent</span>
+                        @include('admin.facilities.checklist.partials.part-g-average-legend')
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">

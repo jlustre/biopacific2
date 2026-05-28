@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
 
+use App\Support\PartGCompetencyScoring;
+
 use App\Models\EmployeeCompetencyAssessment;
 use Illuminate\Support\Facades\Auth;
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PartFPerformanceScoring;
 use Illuminate\Database\Eloquent\Model;
 
 class EmployeePerformanceAssessment extends Model
@@ -64,12 +65,12 @@ class EmployeePerformanceAssessment extends Model
 
     public static function itemRating(mixed $item): ?string
     {
-        if (is_string($item) && in_array($item, ['E', 'S', 'U', 'N'], true)) {
-            return $item;
+        if (is_string($item)) {
+            return PartFPerformanceScoring::normalizeItemRating($item);
         }
 
         if (is_array($item) && ! empty($item['rating'])) {
-            return (string) $item['rating'];
+            return PartFPerformanceScoring::normalizeItemRating((string) $item['rating']);
         }
 
         return null;

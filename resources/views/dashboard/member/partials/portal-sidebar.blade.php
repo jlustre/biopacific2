@@ -81,10 +81,29 @@
         <p class="mt-2 text-xs text-teal-100">{{ $profileComplete }}% complete</p>
       </div>
       @else
-      <div class="member-portal-help-card rounded-2xl bg-teal-600 p-4">
-        <p class="font-semibold">Need help?</p>
-        <p class="mt-1 text-xs text-brand-50">Contact HR or submit a support ticket.</p>
-        <a href="#support" class="member-portal-nav-link mt-3 block w-full rounded-xl bg-white px-3 py-2 text-center text-sm font-bold text-brand-700">Open Support</a>
+      <div class="member-portal-help-card overflow-hidden rounded-2xl p-4">
+        <div class="member-portal-help-card-glow pointer-events-none absolute inset-0" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="flex items-start gap-3">
+            <span class="member-portal-help-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm" aria-hidden="true">
+              <i class="fa-solid fa-circle-question"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-bold leading-snug text-white">Need help?</p>
+              <p class="mt-1 text-xs leading-relaxed text-teal-100">Contact HR for payroll, benefits, onboarding, or account questions.</p>
+            </div>
+          </div>
+          <div class="mt-4 grid gap-2">
+            <a href="mailto:hr@biopacific.com" class="member-portal-help-action member-portal-help-action-primary">
+              <i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>
+              <span>Email HR</span>
+            </a>
+            <a href="mailto:hr@biopacific.com?subject=Support%20Request" class="member-portal-help-action member-portal-help-action-secondary">
+              <i class="fa-solid fa-ticket text-xs" aria-hidden="true"></i>
+              <span>Submit support request</span>
+            </a>
+          </div>
+        </div>
       </div>
       @endif
     </div>

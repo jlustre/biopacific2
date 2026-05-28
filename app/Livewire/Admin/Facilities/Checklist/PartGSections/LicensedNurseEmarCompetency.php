@@ -42,7 +42,7 @@ class LicensedNurseEmarCompetency extends Component
     public array $items = [];
 
 
-    /** @var array<int,string> source_item_id => 'E'|'S'|'U'|'N' */
+    /** @var array<int,string> source_item_id => 'E'|'M'|'B' */
     public array $responses = [];
 
     // For draft save feedback
@@ -121,9 +121,9 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $itemId = (int) $key;
-        $rating = strtoupper(trim((string) $value));
+        $rating = PartGCompetencyScoring::normalizeItemRating((string) $value);
 
-        if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+        if ($rating === null) {
             unset($this->responses[$itemId]);
 
             return;
@@ -140,9 +140,8 @@ class LicensedNurseEmarCompetency extends Component
             return;
         }
 
-        $rating = strtoupper(trim($rating));
-
-        if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+        $rating = PartGCompetencyScoring::normalizeItemRating($rating);
+        if ($rating === null) {
             return;
         }
 
@@ -216,7 +215,6 @@ class LicensedNurseEmarCompetency extends Component
 
         $total = 0;
         $rated = 0;
-        $notApplicable = 0;
         $points = 0;
 
         foreach ($this->items as $item) {
@@ -225,31 +223,17 @@ class LicensedNurseEmarCompetency extends Component
             }
 
             $total++;
-            $rating = $this->responses[$item['id']] ?? null;
+            $rating = PartGCompetencyScoring::normalizeItemRating($this->responses[$item['id']] ?? null);
 
-            if ($rating === null || $rating === '') {
+            if ($rating === null) {
                 continue;
             }
 
-            if ($rating === 'N') {
-                $notApplicable++;
-
-                continue;
-            }
-
-            if (in_array($rating, ['E', 'S', 'U'], true)) {
-                $rated++;
-                $points += match ($rating) {
-                    'E' => 3,
-                    'S' => 2,
-                    'U' => 1,
-                };
-            }
+            $rated++;
+            $points += PartGCompetencyScoring::numericScore($rating) ?? 0;
         }
 
-        $checkedOfTotal = $notApplicable > 0
-            ? $rated.' of '.$total.' rated ('.$notApplicable.' N/A)'
-            : $rated.' of '.$total.' rated';
+        $checkedOfTotal = $rated.' of '.$total.' rated';
 
         $average = $rated > 0 ? round($points / $rated, 2) : 0.0;
 
@@ -258,13 +242,7 @@ class LicensedNurseEmarCompetency extends Component
             'checkedOfTotal' => $checkedOfTotal,
             'totalPoints' => $points,
             'average' => $rated > 0 ? number_format($average, 2, '.', '') : '—',
-            'overallRating' => match (true) {
-                $rated === 0 => '—',
-                $average >= 2.5 => 'Excellent',
-                $average >= 1.5 => 'Satisfactory',
-                $average > 0 => 'Unsatisfactory',
-                default => 'Needs Improvement',
-            },
+            'overallRating' => PartGCompetencyScoring::overallLabel($average, $rated),
         ];
     }
 
@@ -294,7 +272,7 @@ class LicensedNurseEmarCompetency extends Component
                 }
 
                 $rating = strtoupper(trim((string) $entry->rating));
-                if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                if (PartGCompetencyScoring::isValidItemRating($rating)) {
                     $ratings[$sourceItemId] = $rating;
                 }
             }
@@ -306,7 +284,7 @@ class LicensedNurseEmarCompetency extends Component
                     continue;
                 }
                 $normalized = strtoupper(trim($rating));
-                if (in_array($normalized, ['E', 'S', 'U', 'N'], true)) {
+                if (PartGCompetencyScoring::isValidItemRating($normalized)) {
                     $ratings[(int) $itemId] = $normalized;
                 }
             }
@@ -399,11 +377,9 @@ class LicensedNurseEmarCompetency extends Component
                 }
 
                 $rating = is_array($entry) ? ($entry['response'] ?? null) : $entry;
-                if (is_string($rating) && $rating !== '') {
-                    $rating = strtoupper(trim($rating));
-                    if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
-                        $this->responses[$sourceItemId] = $rating;
-                    }
+                $normalized = PartGCompetencyScoring::normalizeItemRating(is_string($rating) ? $rating : null);
+                if ($normalized !== null) {
+                    $this->responses[$sourceItemId] = $normalized;
                 }
             }
         }
@@ -427,9 +403,9 @@ class LicensedNurseEmarCompetency extends Component
                 continue;
             }
 
-            $rating = strtoupper(trim((string) $entry->rating));
-            if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
-                $this->responses[$sourceItemId] = $rating;
+            $normalized = PartGCompetencyScoring::normalizeItemRating((string) $entry->rating);
+            if ($normalized !== null) {
+                $this->responses[$sourceItemId] = $normalized;
             }
 
             $this->itemReviewMeta[$sourceItemId] = [
@@ -565,7 +541,7 @@ class LicensedNurseEmarCompetency extends Component
 
         if (
             $latest
-            && strtoupper((string) $latest->rating) === $rating
+            && PartGCompetencyScoring::normalizeItemRating((string) $latest->rating) === PartGCompetencyScoring::normalizeItemRating($rating)
             && (string) ($latest->comments ?? '') === (string) ($comments ?? '')
             && $latest->assessment_date?->format('Y-m-d') === substr($assessmentDate, 0, 10)
         ) {
@@ -628,7 +604,7 @@ class LicensedNurseEmarCompetency extends Component
                 continue;
             }
             $rating = strtoupper(trim((string) $entry->rating));
-            if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+            if (PartGCompetencyScoring::isValidItemRating($rating)) {
                 $ratings[$sourceItemId] = $rating;
             }
         }

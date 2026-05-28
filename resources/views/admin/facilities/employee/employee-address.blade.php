@@ -30,7 +30,7 @@
                         Record</span>
                 </template>
             </div>
-            <form method="POST" action="{{ route('admin.employees.address.update', $employee->id) }}">
+            <form method="POST" action="{{ $employeeFormRoutes['address'] ?? route('admin.employees.address.update', $employee->id) }}">
                 @csrf
                 @method('PUT')
                 <div class="bg-white shadow rounded-lg p-4 mb-6">

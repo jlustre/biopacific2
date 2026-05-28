@@ -32,8 +32,8 @@ trait PersistsPartGCompetencyItemEntries
                 continue;
             }
 
-            $rating = strtoupper(trim($rating));
-            if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+            $rating = PartGCompetencyScoring::normalizeItemRating($rating);
+            if ($rating === null) {
                 continue;
             }
 
@@ -67,7 +67,7 @@ trait PersistsPartGCompetencyItemEntries
             ->orderByDesc('id')
             ->first();
 
-        if ($latest && strtoupper((string) $latest->rating) === $rating) {
+        if ($latest && PartGCompetencyScoring::normalizeItemRating((string) $latest->rating) === PartGCompetencyScoring::normalizeItemRating($rating)) {
             return;
         }
 
@@ -177,7 +177,7 @@ trait PersistsPartGCompetencyItemEntries
             }
 
             $rating = strtoupper(trim((string) $entry->rating));
-            if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+            if (PartGCompetencyScoring::isValidItemRating($rating)) {
                 $this->responses[$sourceItemId] = $rating;
             }
         }
@@ -241,8 +241,8 @@ trait PersistsPartGCompetencyItemEntries
                 continue;
             }
 
-            $rating = strtoupper(trim($rating));
-            if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+            $rating = PartGCompetencyScoring::normalizeItemRating($rating);
+            if ($rating === null) {
                 continue;
             }
 
@@ -333,7 +333,7 @@ trait PersistsPartGCompetencyItemEntries
 
         if ($key !== null && $value !== null && $value !== '') {
             $normalizedRating = strtoupper(trim((string) $value));
-            if (in_array($normalizedRating, ['E', 'S', 'U', 'N'], true)) {
+            if (PartGCompetencyScoring::isValidItemRating($normalizedRating)) {
                 $this->responses[(int) $key] = $normalizedRating;
             }
         }
@@ -365,7 +365,7 @@ trait PersistsPartGCompetencyItemEntries
         }
 
         $rating = strtoupper(trim($rating));
-        if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+        if (! PartGCompetencyScoring::isValidItemRating($rating)) {
             return;
         }
 

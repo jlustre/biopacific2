@@ -14,10 +14,9 @@
                 <label class="block font-semibold mb-1">Rating <span class="text-red-600">*</span></label>
                 <select name="rating" id="verifyRatingF" class="border rounded px-2 py-1 w-full" required>
                     <option value="">Select rating</option>
-                    <option value="E">Excellent (3)</option>
-                    <option value="S">Satisfactory (2)</option>
-                    <option value="U">Unsatisfactory (1)</option>
-                    <option value="N">Not Applicable</option>
+                    <option value="E">Exceeds Expectations (3)</option>
+                    <option value="M">Meets Expectations (2)</option>
+                    <option value="B">Below Expectations (1)</option>
                 </select>
                 <span id="ratingFError" class="text-red-600 text-sm hidden">Rating is required.</span>
             </div>
@@ -35,7 +34,7 @@
             <div class="mb-3">
                 <label class="block font-semibold mb-1">Comments</label>
                 <textarea name="comments" id="verifyCommentsF" class="border rounded px-2 py-1 w-full"></textarea>
-                <span id="commentsFError" class="text-red-600 text-sm hidden">Comments are required for an unsatisfactory rating.</span>
+                <span id="commentsFError" class="text-red-600 text-sm hidden">Comments are required for a below expectations rating.</span>
             </div>
             <div class="mb-3 border-t pt-3">
                 <div class="block font-semibold mb-1">Assessment History</div>

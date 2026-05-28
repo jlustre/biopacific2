@@ -46,7 +46,7 @@
             </div>
         @endif
         <div x-data="employeeDocumentInlineEdit()" wire:ignore>
-            <div class="p-6 mb-6 bg-white rounded shadow">
+            <div id="employee-upload-section" class="p-6 mb-6 bg-white rounded shadow" tabindex="-1">
                 <!-- Inline Edit/Upload Form -->
                 <form id="employee-upload-form" method="POST" :action="formAction" enctype="multipart/form-data" @submit.prevent="submitForm($event)" @reset.prevent="resetForm()">
                     <input type="hidden" name="_token" :value="csrf">
@@ -93,58 +93,11 @@
                     </div>
                 </form>
             </div>
-            <div class="p-6 bg-white rounded shadow">
-                <table class="min-w-full border border-gray-200 table-auto">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="px-3 py-2 border text-sm">Type</th>
-                            <th class="px-3 py-2 border text-sm">Uploaded By</th>
-                            <th class="px-3 py-2 border text-sm">Expires</th>
-                            <th class="px-3 py-2 border text-sm">Uploaded</th>
-                            <th class="px-3 py-2 border text-sm">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($uploads as $upload)
-                        <tr>
-                            <td class="px-3 py-2 border text-xs">{{ $upload->uploadType->name ?? '-' }}</td>
-                            <td class="px-3 py-2 border text-xs">{{ $upload->user->name ?? '-' }}</td>
-                            <td class="px-3 py-2 border text-xs">{{ $upload->expires_at ?? '-' }}</td>
-                            <td class="px-3 py-2 border text-xs">{{ $upload->uploaded_at ? \Carbon\Carbon::parse($upload->uploaded_at)->format('M d, Y g:i A') : '-' }}</td>
-                            <td class="px-3 py-2 border text-sm flex items-center space-x-2">
-                                <a href="{{ route('admin.employees.documents.download', [$employee->id, $upload->id]) }}" title="Download" class="text-blue-600 hover:text-blue-800">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
-                                </a>
-                                <a href="{{ route('admin.employees.documents.view', [$employee->id, $upload->id]) }}" title="View" class="text-green-600 hover:text-green-800" target="_blank" rel="noopener noreferrer">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                </a>
-                                <button type="button" @click="startEdit({
-                                    id: {{ $upload->id }},
-                                    upload_type_id: '{{ $upload->upload_type_id }}',
-                                    effective_start_date: '{{ $upload->effective_start_date ?? '' }}',
-                                    expires_at: '{{ $upload->expires_at ?? '' }}',
-                                    comments: @js($upload->comments),
-                                })" title="Edit" class="text-yellow-600 hover:text-yellow-800">
-                                    <!-- Pencil Icon -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.768-6.768a2.5 2.5 0 113.536 3.536L12.5 17H9v-3.5z" /></svg>
-                                </button>
-                                <form action="{{ route('admin.employees.documents.delete', [$employee->id, $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" title="Delete" class="text-red-600 hover:text-red-800 bg-transparent border-none p-0 m-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="py-6 text-center text-gray-500">No uploads found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+            @include('admin.facilities.partials.upload-table', [
+                'tableScope' => 'employee',
+                'employee' => $employee,
+                'isSelfService' => $isSelfService ?? false,
+            ])
         </div>
     </div>
     @endif
@@ -209,7 +162,7 @@
                     if (this.editMode && this.form.id) {
                         return `/admin/employees/{{ $employee->id }}/documents/${this.form.id}`;
                     }
-                    return `{{ (isset($employee) && $employee->id) ? route('admin.employees.documents.upload', $employee->id) : '#' }}`;
+                    return @json($employeeFormRoutes['documents_upload'] ?? ((isset($employee) && $employee->id) ? route('admin.employees.documents.upload', $employee->id) : '#'));
                 },
                 startEdit(upload) {
                     this.editMode = true;
@@ -218,8 +171,13 @@
                     this.form.effective_start_date = upload.effective_start_date || '';
                     this.form.expires_at = upload.expires_at || '';
                     this.form.comments = upload.comments || '';
-                    // Focus the upload_type_id select in the form
                     this.$nextTick(() => {
+                        const uploadSection = document.getElementById('employee-upload-section');
+                        if (uploadSection) {
+                            uploadSection.setAttribute('tabindex', '-1');
+                            uploadSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            uploadSection.focus({ preventScroll: true });
+                        }
                         const select = document.querySelector('#employee-upload-form select[name="upload_type_id"]');
                         if (select) select.focus();
                     });

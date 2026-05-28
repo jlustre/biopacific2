@@ -46,7 +46,7 @@
             <table class="table w-full border border-gray-300">
                 <thead>
                     <tr>
-                        <th colspan="5" class="bg-blue-100 text-gray-700 font-bold text-base border border-gray-300 px-4 py-1 text-left">
+                        <th colspan="4" class="bg-blue-100 text-gray-700 font-bold text-base border border-gray-300 px-4 py-1 text-left">
                             <div class="flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-2 min-w-0">
                                     <button type="button"
@@ -83,33 +83,32 @@
                 <tr class="bg-blue-50">
                     <td class="border border-gray-300 font-bold text-gray-700 text-start pl-2 text-md">Items</td>
                     <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">E</td>
-                    <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">S</td>
-                    <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">U</td>
-                    <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">N</td>
+                    <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">M</td>
+                    <td class="text-center border border-gray-300 font-semibold text-gray-700 px-3">B</td>
                 </tr>
                 @foreach($lnCompetencyItems as $index => $item)
                     @if($item['isParent'] ?? false)
                         <tr>
-                            <td class="border border-gray-300 font-bold text-gray-700 bg-blue-50 text-md" colspan="5" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
+                            <td class="border border-gray-300 font-bold text-gray-700 bg-blue-50 text-md" colspan="4" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
                                 {{ $item['item'] ?? '' }}
                             </td>
                         </tr>
                     @else
+                        @php
+                            $normalizedResponse = \App\Support\PartGCompetencyScoring::normalizeItemRating($draftResponses[$item['id']] ?? null);
+                        @endphp
                         <tr class="lnc-row-{{ $index % 2 === 0 ? 'even' : 'odd' }} lnc-row-hover">
                             <td class="border border-gray-300 py-0 text-sm" style="padding-left: calc(0.5rem + {{ ($item['indentLevel'] ?? 0) * 20 }}px);">
                                 {{ $item['item'] ?? '' }}
                             </td>
                             <td class="text-center border border-gray-300 py-0">
-                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="E" {{ (isset($draftResponses[$item['id']]) && $draftResponses[$item['id']] === 'E') ? 'checked' : '' }}>
+                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="E" {{ $normalizedResponse === 'E' ? 'checked' : '' }}>
                             </td>
                             <td class="text-center border border-gray-300 py-0">
-                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="S" {{ (isset($draftResponses[$item['id']]) && $draftResponses[$item['id']] === 'S') ? 'checked' : '' }}>
+                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="M" {{ $normalizedResponse === 'M' ? 'checked' : '' }}>
                             </td>
                             <td class="text-center border border-gray-300 py-0">
-                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="U" {{ (isset($draftResponses[$item['id']]) && $draftResponses[$item['id']] === 'U') ? 'checked' : '' }}>
-                            </td>
-                            <td class="text-center border border-gray-300 py-0">
-                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="N" {{ (isset($draftResponses[$item['id']]) && $draftResponses[$item['id']] === 'N') ? 'checked' : '' }}>
+                                <input type="radio" name="items[{{ $item['id'] }}][response]" value="B" {{ $normalizedResponse === 'B' ? 'checked' : '' }}>
                             </td>
                         </tr>
                     @endif
@@ -121,7 +120,7 @@
             <div class="text-sm text-gray-700 mb-3">Review the calculated result, add notes, and complete the signatures.</div>
             <div class="mb-3">
                 <div class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800">
-                    Average Legend: <span class="font-normal">Below 1.5 = Unsatisfactory 1.5 to 2.49 = Satisfactory 2.5 and above = Excellent</span>
+                    @include('admin.facilities.checklist.partials.part-g-average-legend')
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
@@ -244,15 +243,22 @@ document.addEventListener('alpine:init', () => {
             this.summary.overallRating = this.getOverallRating(points, total);
         },
         responseToPoints(val) {
-            return val === 'E' ? 3 : val === 'S' ? 2 : val === 'U' ? 1 : 0;
+            if (val === 'E') return 3;
+            if (val === 'M' || val === 'S') return 2;
+            if (val === 'B' || val === 'U') return 1;
+            return 0;
         },
         getOverallRating(points, total) {
+            if (typeof window.partGOverallRatingFromAverage === 'function') {
+                return window.partGOverallRatingFromAverage(points, total);
+            }
+
             if (total === 0) return '—';
             const avg = points / total;
-            if (avg >= 2.5) return 'Excellent';
-            if (avg >= 1.5) return 'Satisfactory';
-            if (avg > 0) return 'Unsatisfactory';
-            return 'Needs Improvement';
+            if (avg >= 2.51) return 'Exceeds Expectations';
+            if (avg >= 1.75) return 'Meets Expectations';
+            if (avg > 0) return 'Below Expectations';
+            return '—';
         },
     }));
 });

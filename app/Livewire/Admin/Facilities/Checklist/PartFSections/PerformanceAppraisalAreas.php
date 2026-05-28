@@ -66,7 +66,8 @@ class PerformanceAppraisalAreas extends Component
         $sourceItemId = (int) $key;
         $rating = is_string($value) ? strtoupper(trim($value)) : '';
 
-        if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+        $rating = PartFPerformanceScoring::normalizeItemRating($rating) ?? '';
+        if ($rating === '') {
             $this->reloadRatingState($sourceItemId);
 
             return;
@@ -96,11 +97,12 @@ class PerformanceAppraisalAreas extends Component
             $items = $assessment->itemsArray();
 
             foreach ($this->latestRatings as $sourceItemId => $rating) {
-                if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                $normalizedRating = PartFPerformanceScoring::normalizeItemRating($rating);
+                if ($normalizedRating === null) {
                     continue;
                 }
 
-                $items[$this->itemKeyFor((int) $sourceItemId)] = ['rating' => $rating];
+                $items[$this->itemKeyFor((int) $sourceItemId)] = ['rating' => $normalizedRating];
             }
 
             $assessment->items = $items;
@@ -108,11 +110,12 @@ class PerformanceAppraisalAreas extends Component
             $assessment->save();
 
             foreach ($this->latestRatings as $sourceItemId => $rating) {
-                if (! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                $normalizedRating = PartFPerformanceScoring::normalizeItemRating($rating);
+                if ($normalizedRating === null) {
                     continue;
                 }
 
-                $this->createItemEntryIfChanged((int) $sourceItemId, $rating, $assessmentDate, $assessedBy);
+                $this->createItemEntryIfChanged((int) $sourceItemId, $normalizedRating, $assessmentDate, $assessedBy);
             }
         });
 
@@ -121,7 +124,8 @@ class PerformanceAppraisalAreas extends Component
 
     protected function persistRating(int $sourceItemId, string $rating): bool
     {
-        if (! $this->canPersistRatings() || ! in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+        $rating = PartFPerformanceScoring::normalizeItemRating($rating) ?? '';
+        if (! $this->canPersistRatings() || $rating === '') {
             return false;
         }
 
@@ -389,7 +393,11 @@ class PerformanceAppraisalAreas extends Component
             if (! $sourceId || ! $latest->rating) {
                 continue;
             }
-            $this->latestRatings[$sourceId] = (string) $latest->rating;
+
+            $normalizedRating = PartFPerformanceScoring::normalizeItemRating((string) $latest->rating);
+            if ($normalizedRating !== null) {
+                $this->latestRatings[$sourceId] = $normalizedRating;
+            }
         }
 
         $assessment = EmployeePerformanceAssessment::query()
@@ -431,7 +439,7 @@ class PerformanceAppraisalAreas extends Component
     }
 
     /**
-     * Leaf rows: E/S/U/N radios. Structural parents use colspan headers (Part G style).
+     * Leaf rows: E/M/B radios. Structural parents use colspan headers (Part G style).
      */
     public function rowIsRatingRow(array $row): bool
     {

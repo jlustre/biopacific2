@@ -758,9 +758,20 @@ Route::get('/my-pre-employment', [PreEmploymentController::class, 'portal'])
     ->name('pre-employment.portal');
 
 // Employment Portal (authenticated users)
-Route::get('/my-employment', [\App\Http\Controllers\EmploymentController::class, 'portal'])
-    ->middleware(['auth'])
-    ->name('employment.portal');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/my-employment', [\App\Http\Controllers\EmploymentController::class, 'portal'])
+        ->name('employment.portal');
+
+    Route::prefix('my-employment')->name('employment.')->group(function () {
+        Route::put('/personal', [\App\Http\Controllers\EmploymentController::class, 'updatePersonal'])->name('personal.update');
+        Route::put('/address', [\App\Http\Controllers\EmploymentController::class, 'updateAddress'])->name('address.update');
+        Route::put('/tax', [\App\Http\Controllers\EmploymentController::class, 'updateTaxData'])->name('tax.update');
+        Route::post('/phones', [\App\Http\Controllers\EmploymentController::class, 'addPhone'])->name('phones.add');
+        Route::put('/phones/{phone}/update', [\App\Http\Controllers\EmploymentController::class, 'updatePhone'])->name('phones.update');
+        Route::post('/documents/upload', [\App\Http\Controllers\EmploymentController::class, 'uploadDocument'])->name('documents.upload');
+        Route::get('/documents/{document}/download', [\App\Http\Controllers\EmploymentController::class, 'downloadDocument'])->name('documents.download');
+    });
+});
 
 Route::post('/my-pre-employment/checklist/{employeeChecklist}', [\App\Http\Controllers\PreEmploymentChecklistController::class, 'update'])
     ->middleware(['auth'])

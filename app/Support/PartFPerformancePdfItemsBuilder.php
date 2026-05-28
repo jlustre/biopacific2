@@ -59,8 +59,10 @@ class PartFPerformancePdfItemsBuilder
                 continue;
             }
 
-            $rating = self::ratingForItem($structuredItem['id'], $entries, $assessmentItems);
-            if ($rating !== null && $rating !== '') {
+            $rating = PartFPerformanceScoring::normalizeItemRating(
+                self::ratingForItem($structuredItem['id'], $entries, $assessmentItems)
+            );
+            if ($rating !== null) {
                 $ratedItemIds[$structuredItem['id']] = true;
             }
         }
@@ -142,8 +144,9 @@ class PartFPerformancePdfItemsBuilder
             }
 
             $entry = $entries->get($itemId);
-            $rating = self::ratingForItem($itemId, $entries, $assessmentItems);
-            $rating = strtoupper(trim((string) $rating));
+            $rating = PartFPerformanceScoring::normalizeItemRating(
+                self::ratingForItem($itemId, $entries, $assessmentItems)
+            ) ?? '';
             $reviewDate = optional($entry?->assessment_date)->toDateString() ?? '';
             $reviewerName = trim((string) ($reviewerNamesById[$entry?->assessed_by] ?? ''));
 
@@ -230,7 +233,7 @@ class PartFPerformancePdfItemsBuilder
     {
         $entry = $entries->get($itemId);
         if ($entry && filled($entry->rating)) {
-            return strtoupper(trim((string) $entry->rating));
+            return PartFPerformanceScoring::normalizeItemRating((string) $entry->rating);
         }
 
         $raw = $assessmentItems['F_'.$itemId] ?? $assessmentItems[(string) $itemId] ?? null;

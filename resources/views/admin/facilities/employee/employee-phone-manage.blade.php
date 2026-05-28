@@ -10,7 +10,7 @@
 
         @if(!empty($employee) && !empty($employee->employee_num))
             <!-- Add Phone Form -->
-            <form x-show="addPhone" method="POST" action="{{ route('admin.employees.phones.add', $employee->employee_num) }}" class="mb-4">
+            <form x-show="addPhone" method="POST" action="{{ $employeeFormRoutes['phones_add'] ?? route('admin.employees.phones.add', $employee->id) }}" class="mb-4">
                 @csrf
                 <div class="flex flex-wrap gap-2 mb-2">
                     <select name="phone_type" class="form-select border rounded px-2 py-1" required>
@@ -34,7 +34,7 @@
             <!-- Edit Phone Form -->
             <template x-if="phoneAction === 'edit' && editPhone">
                 <form method="POST"
-                    :action="editPhone ? `{{ url('admin/employees') }}/{{ $employee->employee_num }}/phones/${editPhone.phone_id}/update` : ''"
+                    :action="editPhone ? `{{ $employeeFormRoutes['phones_update_base'] ?? url('admin/employees/' . $employee->id . '/phones') }}/${editPhone.phone_id}/update` : ''"
                     class="mb-4">
                     @csrf
                     @method('PUT')

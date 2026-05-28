@@ -2,37 +2,120 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Admin\EmployeesController;
 use App\Http\Controllers\Concerns\ProvidesMemberPortalContext;
+use App\Models\BPEmployee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EmploymentController extends Controller
 {
     use ProvidesMemberPortalContext;
+
     /**
-     * Display the authenticated employment portal.
-     *
-     * This is the authenticated area where employees complete their onboarding forms.
+     * Display the authenticated employee's own employment record.
      */
-    public function portal()
+    public function portal(Request $request)
+    {
+        $user = Auth::user();
+        $employee = $this->resolveOwnEmployee();
+
+        if (! $employee) {
+            return view('employment.no-record', array_merge($this->memberPortalContext($user), [
+                'portalActive' => 'employment',
+                'portalTitle' => 'My Employment | Bio Pacific HR Portal',
+                'portalEyebrow' => 'Employment',
+                'portalPageTitle' => 'My Employment',
+                'showPortalSearch' => false,
+                'showPortalNotifications' => true,
+            ]));
+        }
+
+        if (! $request->filled('facility') && $employee->currentAssignment?->facility_id) {
+            $request->merge(['facility' => $employee->currentAssignment->facility_id]);
+        }
+
+        $request->attributes->set('employee_edit_options', [
+            'isSelfService' => true,
+        ]);
+
+        $view = app(EmployeesController::class)->edit($request, $employee->id);
+
+        return $view->with(array_merge($this->memberPortalContext($user), [
+            'portalActive' => 'employment',
+            'portalTitle' => 'My Employment | Bio Pacific HR Portal',
+            'portalEyebrow' => 'Employment',
+            'portalPageTitle' => 'My Employment',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+            'isSelfService' => true,
+        ]));
+    }
+
+    public function updatePersonal(Request $request)
+    {
+        return app(EmployeesController::class)->updatePersonal($request, $this->resolveOwnEmployeeOrFail()->id);
+    }
+
+    public function updateAddress(Request $request)
+    {
+        return app(EmployeesController::class)->updateAddress($request, $this->resolveOwnEmployeeOrFail()->id);
+    }
+
+    public function updateTaxData(Request $request)
+    {
+        return app(EmployeesController::class)->updateTaxData($request, $this->resolveOwnEmployeeOrFail()->id);
+    }
+
+    public function addPhone(Request $request)
+    {
+        return app(EmployeesController::class)->addPhone($request, $this->resolveOwnEmployeeOrFail()->id);
+    }
+
+    public function updatePhone(Request $request, $phone)
+    {
+        return app(EmployeesController::class)->updatePhone($request, $this->resolveOwnEmployeeOrFail()->id, $phone);
+    }
+
+    public function uploadDocument(Request $request)
+    {
+        return app(EmployeesController::class)->uploadDocument($request, $this->resolveOwnEmployeeOrFail()->id);
+    }
+
+    public function downloadDocument($document)
+    {
+        return app(EmployeesController::class)->downloadDocument($this->resolveOwnEmployeeOrFail()->id, $document);
+    }
+
+    protected function resolveOwnEmployee(): ?BPEmployee
     {
         $user = Auth::user();
 
-        // You can customize the checklist for employment onboarding here
-        $checklistDefaults = [
-            ['key' => 'onboarding_form', 'label' => 'Onboarding Form'],
-            ['key' => 'policy_acknowledgement', 'label' => 'Policy Acknowledgement'],
-            ['key' => 'benefits_enrollment', 'label' => 'Benefits Enrollment'],
-        ];
+        if (! $user) {
+            return null;
+        }
 
-        return view('employment.portal', array_merge($this->memberPortalContext($user), [
-            'portalActive' => 'employment',
-            'portalTitle' => 'Employment Portal | Bio Pacific HR Portal',
-            'portalEyebrow' => 'Onboarding',
-            'portalPageTitle' => 'Employment Portal',
-            'showPortalSearch' => false,
-            'showPortalNotifications' => true,
-            'checklistDefaults' => $checklistDefaults,
-        ]));
+        return $user->resolvedBpEmployee([
+            'phones',
+            'addresses',
+            'user',
+            'taxData',
+            'assignments.hourlyStatus',
+            'assignments.compensationRate',
+            'assignments.facility',
+            'assignments.department',
+            'assignments.position',
+            'currentAssignment',
+            'currentAssignment.facility',
+            'currentAssignment.position',
+            'currentAssignment.position.reportsToPosition',
+            'currentAssignment.hourlyStatus',
+            'currentAssignment.compensationRate',
+        ]);
+    }
+
+    protected function resolveOwnEmployeeOrFail(): BPEmployee
+    {
+        return $this->resolveOwnEmployee() ?? abort(404, 'No employee record linked to your account.');
     }
 }

@@ -203,6 +203,23 @@ class CompetencyAssessmentHistoryBuilder
     }
 
     /**
+     * Total scorable rows for a competency section (non-parent items), matching on-screen summaries.
+     */
+    public static function rateableItemCountForSection(string $sectionLabel): int
+    {
+        $sectionItems = EmployeeCompetencyItem::query()
+            ->where('section', $sectionLabel)
+            ->orderBy('order')
+            ->get();
+
+        if ($sectionLabel === 'TRACHEOSTOMY CARE') {
+            return self::countTracheostomyProcedureSteps($sectionItems);
+        }
+
+        return self::countRateableSectionItems($sectionItems);
+    }
+
+    /**
      * @param  Collection<int, EmployeeCompetencyItem>  $sectionItems
      */
     protected static function countRateableSectionItems(Collection $sectionItems): int
@@ -271,11 +288,7 @@ class CompetencyAssessmentHistoryBuilder
         }
 
         $average = $count > 0 ? round($total / $count, 2) : 0;
-        $overall = $count === 0
-            ? 'N/A'
-            : ($average >= 2.5
-                ? 'Excellent'
-                : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+        $overall = PartGCompetencyScoring::overallLabelOrNa($average, $count);
 
         return [
             'total' => $total,
@@ -313,7 +326,7 @@ class CompetencyAssessmentHistoryBuilder
                 $rating = $latestStates->get($itemId)?->rating;
             }
 
-            if (self::ratingToScore($rating) !== null || strtoupper(trim((string) $rating)) === 'N') {
+            if (PartGCompetencyScoring::isValidItemRating($rating)) {
                 $count++;
             }
         }
@@ -333,7 +346,7 @@ class CompetencyAssessmentHistoryBuilder
 
         foreach (is_array($snapshot['tracheostomy_procedure_reviews'] ?? null) ? $snapshot['tracheostomy_procedure_reviews'] : [] as $rating) {
             $normalized = strtoupper(trim((string) $rating));
-            if (in_array($normalized, ['E', 'S', 'U', 'N'], true)) {
+            if (PartGCompetencyScoring::isValidItemRating($normalized)) {
                 return true;
             }
         }
@@ -378,9 +391,7 @@ class CompetencyAssessmentHistoryBuilder
         $average = $procedureRated > 0 ? round($total / $procedureRated, 2) : 0.0;
         $overall = match (true) {
             $procedureRated === 0 => $equipmentRated > 0 ? 'In Progress' : 'N/A',
-            $average >= 2.5 => 'Excellent',
-            $average >= 1.5 => 'Satisfactory',
-            default => 'Unsatisfactory',
+            default => PartGCompetencyScoring::overallLabelOrNa($average, $procedureRated),
         };
 
         return [
@@ -404,14 +415,7 @@ class CompetencyAssessmentHistoryBuilder
 
     protected static function ratingToScore(mixed $rating): ?int
     {
-        $rating = strtoupper(trim((string) $rating));
-
-        return match ($rating) {
-            'E' => 3,
-            'S' => 2,
-            'U' => 1,
-            default => null,
-        };
+        return PartGCompetencyScoring::numericScore((string) $rating);
     }
 
     protected static function resolveSectionStatus(?string $assessmentStatus, bool $isSubmitted): string

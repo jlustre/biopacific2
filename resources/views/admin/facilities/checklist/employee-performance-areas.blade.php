@@ -39,11 +39,10 @@
                 $itemKey = 'F_' . $item->id;
                 $legacyItemKey = 'F_' . md5($sectionLabel . '_' . $item->id);
                 $empChecklist = $empPerformanceChecklist[$itemKey] ?? ($empPerformanceChecklist[$legacyItemKey] ?? null);
-                $ratingText = match ($empChecklist['rating'] ?? null) {
-                    'E' => 'Excellent',
-                    'S' => 'Satisfactory',
-                    'U' => 'Unsatisfactory',
-                    'N' => 'Not Applicable',
+                $ratingText = match (\App\Support\PartFPerformanceScoring::normalizeItemRating($empChecklist['rating'] ?? null)) {
+                    'E' => 'Exceeds Expectations',
+                    'M' => 'Meets Expectations',
+                    'B' => 'Below Expectations',
                     default => '',
                 };
                 $rawItemText = trim(strip_tags($item->item ?? ''));

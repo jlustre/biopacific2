@@ -1,4 +1,23 @@
 <script>
+    window.partGOverallRatingFromAverage = function partGOverallRatingFromAverage(points, ratedCount) {
+        if (!ratedCount || ratedCount === 0) {
+            return '—';
+        }
+
+        var avg = points / ratedCount;
+        if (avg >= 2.51) {
+            return 'Exceeds Expectations';
+        }
+        if (avg >= 1.75) {
+            return 'Meets Expectations';
+        }
+        if (avg > 0) {
+            return 'Below Expectations';
+        }
+
+        return '—';
+    };
+
     window.partGSectionSummary = function partGSectionSummary(items) {
         return {
             items: Array.isArray(items) ? items : [],
@@ -35,7 +54,6 @@
             updateSummary: function() {
                 var total = 0;
                 var rated = 0;
-                var notApplicable = 0;
                 var points = 0;
                 var self = this;
                 this.items.forEach(function(item) {
@@ -44,40 +62,28 @@
                         if (!item.response) {
                             return;
                         }
-                        if (item.response === 'N') {
-                            notApplicable++;
+                        var score = self.responseToPoints(item.response);
+                        if (score <= 0) {
                             return;
                         }
                         rated++;
-                        points += self.responseToPoints(item.response);
+                        points += score;
                     }
                 });
                 this.summary.totalItems = total;
-                this.summary.checkedOfTotal = notApplicable > 0
-                    ? rated + ' of ' + total + ' rated (' + notApplicable + ' N/A)'
-                    : rated + ' of ' + total + ' rated';
+                this.summary.checkedOfTotal = rated + ' of ' + total + ' rated';
                 this.summary.totalPoints = points;
                 this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
-                this.summary.overallRating = this.getOverallRating(points, rated);
+                this.summary.overallRating = window.partGOverallRatingFromAverage(points, rated);
             },
             responseToPoints: function(val) {
-                return val === 'E' ? 3 : val === 'S' ? 2 : val === 'U' ? 1 : 0;
+                if (val === 'E') return 3;
+                if (val === 'M' || val === 'S') return 2;
+                if (val === 'B' || val === 'U') return 1;
+                return 0;
             },
             getOverallRating: function(points, ratedCount) {
-                if (ratedCount === 0) {
-                    return '—';
-                }
-                var avg = points / ratedCount;
-                if (avg >= 2.5) {
-                    return 'Excellent';
-                }
-                if (avg >= 1.5) {
-                    return 'Satisfactory';
-                }
-                if (avg > 0) {
-                    return 'Unsatisfactory';
-                }
-                return 'Needs Improvement';
+                return window.partGOverallRatingFromAverage(points, ratedCount);
             },
         };
     };
@@ -112,7 +118,7 @@
                     if (!row.response) {
                         return;
                     }
-                    if (['E', 'S', 'U'].indexOf(row.response) === -1) {
+                    if (['E', 'M', 'B', 'S', 'U'].indexOf(row.response) === -1) {
                         return;
                     }
                     rated++;
@@ -122,23 +128,10 @@
                 this.summary.checkedOfTotal = rated + ' of ' + total + ' rated';
                 this.summary.totalPoints = points;
                 this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
-                this.summary.overallRating = this.getOverallRating(points, rated);
+                this.summary.overallRating = window.partGOverallRatingFromAverage(points, rated);
             },
             getOverallRating: function(points, ratedCount) {
-                if (ratedCount === 0) {
-                    return '—';
-                }
-                var avg = points / ratedCount;
-                if (avg >= 2.5) {
-                    return 'Excellent';
-                }
-                if (avg >= 1.5) {
-                    return 'Satisfactory';
-                }
-                if (avg > 0) {
-                    return 'Unsatisfactory';
-                }
-                return 'Needs Improvement';
+                return window.partGOverallRatingFromAverage(points, ratedCount);
             },
         };
     };

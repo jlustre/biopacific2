@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\CompetencyAssessmentHistoryBuilder;
 use App\Support\EmployeeAssessmentPeriodCalculator;
 use App\Support\PartFPerformanceScoring;
+use App\Support\PartGCompetencyScoring;
 use App\Support\PreventsSelfAssessment;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Models\EmployeeAssessmentPeriod;
@@ -105,12 +107,7 @@ class EmployeePerformanceAssessmentController extends Controller {
 
     protected function competencyScore(?string $rating): ?int
     {
-        return match (strtoupper((string) $rating)) {
-            'E' => 3,
-            'S' => 2,
-            'U' => 1,
-            default => null,
-        };
+        return PartGCompetencyScoring::numericScore($rating);
     }
 
     protected function syncPerformanceAssessmentSummary(EmployeePerformanceAssessment $assessment): void
@@ -344,15 +341,30 @@ class EmployeePerformanceAssessmentController extends Controller {
     protected function generateCompetencyAssessmentPdf(EmployeeCompetencyAssessment $assessment): string
     {
         $employee = BPEmployee::query()
+            ->with('currentAssignment.facility')
             ->where('employee_num', $assessment->employee_num)
             ->first();
         $period = \App\Models\EmployeeAssessmentPeriod::find($assessment->assessment_period_id);
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $summary = is_array($snapshot['summary'] ?? null) ? $snapshot['summary'] : [];
+        $averageScore = is_numeric($summary['average_score'] ?? $assessment->average_score ?? null)
+            ? (float) ($summary['average_score'] ?? $assessment->average_score)
+            : null;
+        $overallRatingLabel = (string) ($summary['overall_rating'] ?? $assessment->overall_rating ?? 'N/A');
 
         $pdf = Pdf::loadView('admin.facilities.checklist.pdf.employee-competency-assessment', [
             'assessment' => $assessment,
-            'snapshot' => $assessment->snapshot_json ?? [],
+            'snapshot' => $snapshot,
             'employee' => $employee,
             'period' => $period,
+            'facilityName' => trim((string) ($employee?->currentAssignment?->facility?->name ?? '')),
+            'periodLabel' => $period instanceof EmployeeAssessmentPeriod
+                ? $period->displayDateRange()
+                : 'N/A',
+            'overallRatingCode' => PartFPerformanceScoring::overallRatingCode($overallRatingLabel, $averageScore),
+            'ratedCount' => collect($snapshot['items'] ?? [])
+                ->filter(fn ($item) => is_array($item) && PartGCompetencyScoring::isValidItemRating($item['rating'] ?? null))
+                ->count(),
         ])->setPaper('letter');
 
         $filePath = 'competency-assessments/' . $assessment->employee_num . '/assessment-' . $assessment->id . '.pdf';
@@ -412,9 +424,9 @@ class EmployeePerformanceAssessmentController extends Controller {
         return collect(is_array($reviews) ? $reviews : [])
             ->mapWithKeys(function ($rating, $procedureKey) {
                 $normalizedProcedureKey = trim((string) $procedureKey);
-                $normalizedRating = strtoupper(trim((string) $rating));
+                $normalizedRating = PartGCompetencyScoring::normalizeItemRating((string) $rating);
 
-                if ($normalizedProcedureKey === '' || !in_array($normalizedRating, ['E', 'S', 'U'], true)) {
+                if ($normalizedProcedureKey === '' || $normalizedRating === null) {
                     return [];
                 }
 
@@ -559,7 +571,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'item_key' => 'required',
                 'item_label' => 'nullable|string|max:255',
                 'source_item_id' => 'nullable|integer',
-                'rating' => 'required|in:E,S,U,N',
+                'rating' => 'required|in:E,M,B,S,U,N',
                 'assessment_date' => 'required|date',
                 'comments' => 'nullable|string',
                 'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
@@ -614,8 +626,17 @@ class EmployeePerformanceAssessmentController extends Controller {
         $assessment->assessed_by = Auth::id();
 
         if (str_starts_with((string) $validated['item_key'], 'F_')) {
+            $normalizedRating = PartFPerformanceScoring::normalizeItemRating($validated['rating']);
+            if ($normalizedRating === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Performance item ratings must be E, M, or B.',
+                ], 422);
+            }
+
+            $validated['rating'] = $normalizedRating;
             $items = $assessment->itemsArray();
-            $items[(string) $validated['item_key']] = ['rating' => $validated['rating']];
+            $items[(string) $validated['item_key']] = ['rating' => $normalizedRating];
             $assessment->items = $items;
             $this->syncPerformanceAssessmentSummary($assessment);
         }
@@ -662,7 +683,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             'tracheostomy_equipment_checks' => 'nullable|array',
             'tracheostomy_equipment_checks.*' => 'string',
             'tracheostomy_procedure_reviews' => 'nullable|array',
-            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
+            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,M,B,S,U',
             'hand_hygiene_observation' => 'nullable|array',
             'hand_hygiene_observation.checks' => 'nullable|array',
             'hand_hygiene_observation.checks.*' => 'string',
@@ -739,7 +760,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'source_item_id' => $item->id,
                 'section' => $item->section,
                 'item_label' => $item->item,
-                'rating' => $entry?->rating,
+                'rating' => PartGCompetencyScoring::normalizeItemRating($entry?->rating) ?? '',
                 'assessment_date' => optional($entry?->assessment_date)->toDateString(),
                 'assessed_by' => $entry?->assessed_by,
                 'comments' => $entry?->comments,
@@ -759,16 +780,12 @@ class EmployeePerformanceAssessmentController extends Controller {
         }
 
         $averageScore = $ratedCount > 0 ? round($totalScore / $ratedCount, 2) : 0;
-        $overallRating = $ratedCount === 0
-            ? 'N/A'
-            : ($averageScore >= 2.5
-                ? 'Excellent'
-                : ($averageScore >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+        $overallRating = PartGCompetencyScoring::overallLabelOrNa($averageScore, $ratedCount);
 
-        if ($overallRating === 'Unsatisfactory' && blank($validated['further_action_required'] ?? null)) {
+        if (PartFPerformanceScoring::isBelowExpectationsRating($overallRating) && blank($validated['further_action_required'] ?? null)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Describe the further action required before submitting an unsatisfactory assessment.',
+                'message' => 'Describe the further action required before submitting a below expectations assessment.',
             ], 422);
         }
 
@@ -856,7 +873,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             'tracheostomy_equipment_checks' => 'nullable|array',
             'tracheostomy_equipment_checks.*' => 'string',
             'tracheostomy_procedure_reviews' => 'nullable|array',
-            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
+            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,M,B,S,U',
             'hand_hygiene_observation' => 'nullable|array',
             'hand_hygiene_observation.checks' => 'nullable|array',
             'hand_hygiene_observation.checks.*' => 'string',
@@ -945,7 +962,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'source_item_id' => $item->id,
                 'section' => $item->section,
                 'item_label' => $item->item,
-                'rating' => $entry?->rating,
+                'rating' => PartGCompetencyScoring::normalizeItemRating($entry?->rating) ?? '',
                 'assessment_date' => optional($entry?->assessment_date)->toDateString(),
                 'assessed_by' => $entry?->assessed_by,
                 'comments' => $entry?->comments,
@@ -965,11 +982,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         }
 
         $averageScore = $ratedCount > 0 ? round($totalScore / $ratedCount, 2) : 0;
-        $overallRating = $ratedCount === 0
-            ? 'N/A'
-            : ($averageScore >= 2.5
-                ? 'Excellent'
-                : ($averageScore >= 1.5 ? 'Satisfactory' : 'Unsatisfactory'));
+        $overallRating = PartGCompetencyScoring::overallLabelOrNa($averageScore, $ratedCount);
 
         $assessment = EmployeeCompetencyAssessment::updateOrCreate(
             [
@@ -1051,7 +1064,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             'tracheostomy_equipment_checks' => 'nullable|array',
             'tracheostomy_equipment_checks.*' => 'string',
             'tracheostomy_procedure_reviews' => 'nullable|array',
-            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,S,U',
+            'tracheostomy_procedure_reviews.*' => 'nullable|string|in:E,M,B,S,U',
             'hand_hygiene_observation' => 'nullable|array',
             'hand_hygiene_observation.checks' => 'nullable|array',
             'hand_hygiene_observation.checks.*' => 'string',
@@ -1226,6 +1239,9 @@ class EmployeePerformanceAssessmentController extends Controller {
 
     public function downloadPerformanceAssessmentPdf(EmployeePerformanceAssessment $assessment)
     {
+        $this->syncPerformanceAssessmentSummary($assessment);
+        $assessment->save();
+
         $items = PartFPerformancePdfItemsBuilder::build($assessment);
         if ($items === []) {
             abort(404, 'No performance assessment items found for this period.');
@@ -1280,9 +1296,13 @@ class EmployeePerformanceAssessmentController extends Controller {
             ->first();
         $period = EmployeeAssessmentPeriod::find($assessment->assessment_period_id);
         $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
-        $sectionSummary = is_array($snapshot['section_summaries'][$sectionLabel] ?? null)
-            ? $snapshot['section_summaries'][$sectionLabel]
-            : $this->summarizeCompetencySectionItems($items);
+        $computedSectionSummary = $this->summarizeCompetencySectionItems($items);
+        $sectionSummary = array_merge(
+            is_array($snapshot['section_summaries'][$sectionLabel] ?? null)
+                ? $snapshot['section_summaries'][$sectionLabel]
+                : [],
+            $computedSectionSummary,
+        );
         $sectionComments = is_array($snapshot['section_comments'][$sectionLabel] ?? null)
             ? $snapshot['section_comments'][$sectionLabel]
             : [];
@@ -1303,11 +1323,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             'signatureBlock' => $this->competencySectionPdfSignatureBlock($assessment, $sectionComments),
             'items' => $items,
             'ratedCount' => $ratedCount,
-            'totalRateableOverride' => $sectionLabel === 'TRACHEOSTOMY CARE'
-                ? $this->countTracheostomyProcedureSteps(
-                    EmployeeCompetencyItem::query()->where('section', 'TRACHEOSTOMY CARE')->orderBy('order')->get()
-                )
-                : null,
+            'totalRateableOverride' => CompetencyAssessmentHistoryBuilder::rateableItemCountForSection($sectionLabel),
         ])->setPaper('letter');
 
         Storage::disk('public')->put($filePath, $pdf->output());
@@ -1330,7 +1346,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         $period = EmployeeAssessmentPeriod::find($assessment->assessment_period_id);
 
         $ratedCount = collect($items)
-            ->filter(fn (array $item) => empty($item['is_parent']) && in_array($item['rating'] ?? '', ['E', 'S', 'U', 'N'], true))
+            ->filter(fn (array $item) => empty($item['is_parent']) && PartFPerformanceScoring::isValidItemRating($item['rating'] ?? null))
             ->count();
 
         $periodLabel = $period instanceof EmployeeAssessmentPeriod
@@ -1338,6 +1354,11 @@ class EmployeePerformanceAssessmentController extends Controller {
             : 'N/A';
 
         $developmentNotes = $this->performanceAssessmentPdfDevelopmentNotes($assessment);
+        $averageScore = is_numeric($assessment->average_score ?? null)
+            ? (float) $assessment->average_score
+            : null;
+        $overallRatingLabel = (string) ($assessment->overall_rating ?? 'N/A');
+        $overallRatingCode = PartFPerformanceScoring::overallRatingCode($overallRatingLabel, $averageScore);
 
         $pdf = Pdf::loadView('admin.facilities.checklist.pdf.employee-competency-section-compact', [
             'assessment' => $assessment,
@@ -1349,12 +1370,13 @@ class EmployeePerformanceAssessmentController extends Controller {
             'isPerformanceAssessment' => true,
             'areasForDevelopment' => $developmentNotes['areas_for_development'],
             'developmentPlans' => $developmentNotes['development_plans'],
+            'overallRatingCode' => $overallRatingCode,
             'sectionSummary' => [
                 'total_score' => $assessment->total_score ?? 0,
-                'average_score' => is_numeric($assessment->average_score ?? null)
-                    ? number_format((float) $assessment->average_score, 2)
+                'average_score' => $averageScore !== null
+                    ? number_format($averageScore, 2, '.', '')
                     : ($assessment->average_score ?? '0.00'),
-                'overall_rating' => $assessment->overall_rating ?? 'N/A',
+                'overall_rating' => $overallRatingLabel,
             ],
             'sectionComments' => [],
             'signatureBlock' => $this->performanceAssessmentPdfSignatureBlock($assessment, $developmentNotes),
@@ -1540,8 +1562,17 @@ class EmployeePerformanceAssessmentController extends Controller {
                 $rating = $entry->rating;
             }
 
-            $rating = strtoupper(trim((string) $rating));
-            if ($rating !== '') {
+            $rating = PartGCompetencyScoring::normalizeItemRating(
+                $responseData['response'] ?? null
+            ) ?? PartGCompetencyScoring::normalizeItemRating($entry?->rating);
+
+            if ($rating === null && ($entry?->rating || filled($responseData['response'] ?? null))) {
+                $rating = PartGCompetencyScoring::normalizeItemRating(
+                    (string) ($responseData['response'] ?? $entry?->rating)
+                );
+            }
+
+            if ($rating !== null) {
                 $ratedItemIds[$itemId] = true;
             }
         }
@@ -1570,8 +1601,9 @@ class EmployeePerformanceAssessmentController extends Controller {
 
             $responseData = $this->competencyResponsePayloadForItem($responses, $itemId);
             $entry = $entries->get($itemId);
-            $rating = $responseData['response'] ?? $entry?->rating;
-            $rating = strtoupper(trim((string) $rating));
+            $rating = PartGCompetencyScoring::normalizeItemRating(
+                $responseData['response'] ?? $entry?->rating
+            ) ?? '';
 
             $reviewDate = $this->formatCompetencyPdfShortDate(
                 $responseData['review_date'] ?? optional($entry?->assessment_date)->toDateString()
@@ -1631,7 +1663,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 $rating = is_array($responseData)
                     ? strtoupper(trim((string) ($responseData['response'] ?? '')))
                     : strtoupper(trim((string) $responseData));
-                if (in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                if (PartGCompetencyScoring::isValidItemRating($rating)) {
                     $hasProcedureActivity = true;
                     break;
                 }
@@ -1675,10 +1707,11 @@ class EmployeePerformanceAssessmentController extends Controller {
                     $procedureKey = (string) $matches[1];
                     $itemId = (int) $item->id;
                     $responseData = $this->competencyResponsePayloadForItem($responses, $itemId);
-                    $rating = $responseData['response'] ?? ($procedureReviews[$procedureKey] ?? null);
-                    $rating = strtoupper(trim((string) $rating));
+                    $rating = PartGCompetencyScoring::normalizeItemRating(
+                        $responseData['response'] ?? ($procedureReviews[$procedureKey] ?? null)
+                    );
 
-                    if ($rating !== '' && in_array($rating, ['E', 'S', 'U', 'N'], true)) {
+                    if ($rating !== null) {
                         if ($hasEquipmentRows && ! $competencyItemsHeadingAdded) {
                             $items[] = [
                                 'item_label' => 'Competency Items',
@@ -1804,7 +1837,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         }
 
         return collect($items)
-            ->filter(fn (array $item) => empty($item['is_parent']) && in_array($item['rating'] ?? '', ['E', 'S', 'U', 'N'], true))
+            ->filter(fn (array $item) => empty($item['is_parent']) && PartGCompetencyScoring::isValidItemRating($item['rating'] ?? null))
             ->count();
     }
 
@@ -1850,8 +1883,10 @@ class EmployeePerformanceAssessmentController extends Controller {
         $raw = $responses[$itemId] ?? $responses[(string) $itemId] ?? null;
 
         if (is_array($raw)) {
+            $normalized = PartGCompetencyScoring::normalizeItemRating($raw['response'] ?? null);
+
             return [
-                'response' => isset($raw['response']) ? strtoupper(trim((string) $raw['response'])) : null,
+                'response' => $normalized,
                 'review_date' => $raw['review_date'] ?? null,
                 'reviewer_name' => $raw['reviewer_name'] ?? null,
                 'comments' => $raw['comments'] ?? null,
@@ -1863,7 +1898,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         }
 
         return [
-            'response' => strtoupper(trim((string) $raw)),
+            'response' => PartGCompetencyScoring::normalizeItemRating((string) $raw),
         ];
     }
 
@@ -1953,12 +1988,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         $count = 0;
 
         foreach ($items as $item) {
-            $score = match ($item['rating'] ?? '') {
-                'E' => 3,
-                'S' => 2,
-                'U' => 1,
-                default => null,
-            };
+            $score = PartGCompetencyScoring::numericScore($item['rating'] ?? null);
 
             if ($score === null) {
                 continue;
@@ -1973,11 +2003,7 @@ class EmployeePerformanceAssessmentController extends Controller {
         return [
             'total_score' => $total,
             'average_score' => $average,
-            'overall_rating' => $count === 0
-                ? 'N/A'
-                : ($average >= 2.5
-                    ? 'Excellent'
-                    : ($average >= 1.5 ? 'Satisfactory' : 'Unsatisfactory')),
+            'overall_rating' => PartGCompetencyScoring::overallLabelOrNa($average, $count),
         ];
     }
 
