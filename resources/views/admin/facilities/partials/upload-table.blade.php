@@ -3,16 +3,39 @@
 
     $tableScope = $tableScope ?? 'facility';
     $isEmployeeTable = $tableScope === 'employee';
+    $compactEmployeeTable = ($isSelfService ?? false) && $isEmployeeTable && isset($employee);
+    $employeeTableColspan = $compactEmployeeTable ? 4 : ($isEmployeeTable ? 8 : 6);
     $filterFormAction = $isEmployeeTable && isset($employee)
         ? (($isSelfService ?? false)
             ? route('employment.portal', ['tab' => 'documents'])
             : route('admin.employees.edit', $employee))
         : null;
+
+    if ($compactEmployeeTable) {
+        $documentsFacility = $employee->currentAssignment?->facility;
+
+        if (! $documentsFacility && request('facility')) {
+            $documentsFacility = \App\Models\Facility::find(request('facility'));
+        }
+
+        if (! $documentsFacility && $employee->employee_num) {
+            $documentsFacility = \App\Models\Upload::query()
+                ->where('employee_num', $employee->employee_num)
+                ->whereNotNull('facility_id')
+                ->with('facility')
+                ->latest('uploaded_at')
+                ->first()
+                ?->facility;
+        }
+    }
 @endphp
 <div id="upload-table" class="p-6 bg-white rounded shadow" tabindex="-1">
     <form id="upload-table-filter-form" method="GET" @if($filterFormAction) action="{{ $filterFormAction }}" @endif class="flex flex-wrap items-end gap-4 mb-4">
         @if($isEmployeeTable)
             <input type="hidden" name="tab" value="documents">
+        @endif
+        @if($compactEmployeeTable && request('facility'))
+            <input type="hidden" name="facility" value="{{ request('facility') }}">
         @endif
         <div x-data="{
             selectedType: '{{ request('upload_type_id') }}',
@@ -30,8 +53,14 @@
         x-init="updateShowExpiry(); $watch('selectedType', () => updateShowExpiry())"
         class="flex flex-wrap items-end gap-4 w-full">
             <div>
-                <label class="block mb-1 text-xs font-semibold">Search by Name</label>
-                <input type="text" name="search" value="{{ request('search') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="{{ $isEmployeeTable ? 'File name...' : 'Employee or file name...' }}">
+                <label class="block mb-1 text-xs font-semibold">
+                    @if($compactEmployeeTable)
+                        Search by file name
+                    @else
+                        Search by Name
+                    @endif
+                </label>
+                <input type="text" name="search" value="{{ request('search') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="{{ $compactEmployeeTable ? 'Search document file name...' : ($isEmployeeTable ? 'File name...' : 'Employee or file name...') }}">
             </div>
             @php
                 $user = Auth::user();
@@ -95,15 +124,38 @@
             <span class="bg-green-100 text-green-800 font-bold px-2 py-1 rounded">120+ days</span>
         </div>
     </div>
+    @if($compactEmployeeTable)
+    <div class="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-gray-800">
+        <dl class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-teal-800">Employee</dt>
+                <dd class="font-medium">{{ $employee->last_name }}, {{ $employee->first_name }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-teal-800">Employee #</dt>
+                <dd class="font-medium">{{ $employee->employee_num }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-teal-800">Facility</dt>
+                <dd class="font-medium">{{ $documentsFacility->name ?? '—' }}</dd>
+            </div>
+        </dl>
+    </div>
+    @endif
     <table class="min-w-full border border-gray-200 table-auto">
         <thead>
             <tr class="bg-gray-100">
                 <th class="px-3 py-2 border text-sm">Type</th>
+                @unless($compactEmployeeTable)
                 <th class="px-3 py-2 border text-sm">Facility</th>
                 <th class="px-3 py-2 border text-sm">Employee #</th>
                 <th class="px-3 py-2 border text-sm">Employee Name</th>
-                @if($isEmployeeTable)
+                @endunless
+                @if($isEmployeeTable && ! $compactEmployeeTable)
                 <th class="px-3 py-2 border text-sm">Uploaded By</th>
+                @endif
+                @if($isEmployeeTable)
+                <th class="px-3 py-2 border text-sm">Status</th>
                 @endif
                 <th class="px-3 py-2 border text-sm">Expires</th>
                 <th class="px-3 py-2 border text-sm">Actions</th>
@@ -189,6 +241,7 @@
             @if($upload && $upload->id && $upload->uploadType && ($upload->facility || $isEmployeeTable))
             <tr>
                 <td class="px-3 py-2 border text-xs">{{ $upload->uploadType->name ?? '-' }}</td>
+                @unless($compactEmployeeTable)
                 <td class="px-3 py-2 border text-xs">{{ $upload->facility->name ?? '-' }}</td>
                 <td class="px-3 py-2 border text-xs">{{ $upload->employee_num ?? '-' }}</td>
                 <td class="px-3 py-2 border text-xs">
@@ -196,8 +249,33 @@
                         {{ $upload->employee->last_name }}, {{ $upload->employee->first_name }}
                     @endif
                 </td>
-                @if($isEmployeeTable)
+                @endunless
+                @if($isEmployeeTable && ! $compactEmployeeTable)
                 <td class="px-3 py-2 border text-xs">{{ $upload->user->name ?? '-' }}</td>
+                @endif
+                @if($isEmployeeTable)
+                <td class="px-3 py-2 border text-xs">
+                    @if($upload->verification_status)
+                        @php
+                            $statusClass = match ($upload->verification_status) {
+                                \App\Models\Upload::VERIFICATION_APPROVED => 'bg-green-100 text-green-800',
+                                \App\Models\Upload::VERIFICATION_REJECTED => 'bg-red-100 text-red-800',
+                                default => 'bg-yellow-100 text-yellow-800',
+                            };
+                        @endphp
+                        <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {{ $statusClass }}">
+                            {{ $upload->verificationStatusLabel() }}
+                        </span>
+                        @if($upload->submissionReasonLabel())
+                            <div class="text-gray-500 mt-1">{{ $upload->submissionReasonLabel() }}</div>
+                        @endif
+                        @if($upload->verification_status === \App\Models\Upload::VERIFICATION_REJECTED && $upload->verification_notes)
+                            <div class="text-red-600 mt-1" title="{{ $upload->verification_notes }}">Note: {{ \Illuminate\Support\Str::limit($upload->verification_notes, 60) }}</div>
+                        @endif
+                    @else
+                        <span class="text-gray-500 italic">Not submitted</span>
+                    @endif
+                </td>
                 @endif
                 <td class="px-1 py-1 border text-xs text-center text-nowrap">
                     @if($upload->expires_at)
@@ -232,6 +310,7 @@
                     <a href="{{ route('admin.employees.documents.view', [$employee->id, $upload->id]) }}" title="View" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     </a>
+                    @if($upload->isOwnedBy($user))
                     <button type="button" title="Edit" class="text-green-600 hover:text-green-800 bg-transparent border-none p-0 m-0" @click="startEdit({
                         id: {{ $upload->id }},
                         upload_type_id: '{{ $upload->upload_type_id }}',
@@ -241,6 +320,7 @@
                     })">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     </button>
+                    @endif
                     @else
                     <a href="{{ route('admin.facility.uploads.download', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}" title="Download" class="text-blue-600 hover:text-blue-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
@@ -252,10 +332,20 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     </a>
                     @endif
-                    @if($upload->canSendExpiryNotification())
+                    @php
+                        $isSubmissionNotify = ($isSelfService ?? false) && $isEmployeeTable && isset($employee) && $upload->isOwnedBy($user) && $upload->canSubmitForVerification();
+                        $isExpiryNotify = ! $isSubmissionNotify && $upload->canSendExpiryNotification();
+                        $showNotifyButton = $isSubmissionNotify || $isExpiryNotify;
+                    @endphp
+                    @if($showNotifyButton)
                         @php
                             $notifyEmail = null;
-                            if ($upload->employee) {
+                            if ($isSubmissionNotify) {
+                                $dsdEmails = $upload->facility
+                                    ? \App\Support\UploadNotificationContext::facilityDsdEmails($upload->facility)
+                                    : [];
+                                $notifyEmail = $dsdEmails !== [] ? implode(', ', $dsdEmails) : null;
+                            } elseif ($upload->employee) {
                                 foreach ([$upload->employee->email, $upload->employee->user?->email] as $candidate) {
                                     $candidate = trim((string) $candidate);
                                     if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
@@ -264,21 +354,43 @@
                                     }
                                 }
                             }
+                            $notifyPreviewUrl = ($isEmployeeTable ?? false) && isset($employee)
+                                ? (($isSelfService ?? false)
+                                    ? route('employment.documents.notify.preview', ['document' => $upload->id])
+                                    : route('admin.employees.documents.notify.preview', [$employee->id, $upload->id]))
+                                : route('admin.facility.uploads.notify.preview', ['facility' => $upload->facility_id, 'upload' => $upload->id]);
+                            $notifySendUrl = ($isEmployeeTable ?? false) && isset($employee)
+                                ? (($isSelfService ?? false)
+                                    ? route('employment.documents.notify', ['document' => $upload->id])
+                                    : route('admin.employees.documents.notify', [$employee->id, $upload->id]))
+                                : route('admin.facility.uploads.notify', ['facility' => $upload->facility_id, 'upload' => $upload->id]);
                         @endphp
                         <button type="button"
-                            title="{{ $notifyEmail ? 'Preview and send notification to ' . $notifyEmail : 'Employee has no email on file' }}"
+                            title="{{ $isSubmissionNotify ? ($notifyEmail ? 'Submit for DSD review (' . $notifyEmail . ')' : 'No DSD contact email on file') : ($notifyEmail ? 'Preview and send notification to ' . $notifyEmail : 'Employee has no email on file') }}"
                             class="text-teal-600 hover:text-teal-800 bg-transparent border-none p-0 m-0 disabled:opacity-40 disabled:cursor-not-allowed"
                             @disabled(!$notifyEmail)
-                            data-upload-notify-preview="{{ route('admin.facility.uploads.notify.preview', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}"
-                            data-upload-notify-send="{{ route('admin.facility.uploads.notify', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}"
+                            data-upload-notify-mode="{{ $isSubmissionNotify ? 'submission' : 'expiry' }}"
+                            data-upload-notify-preview="{{ $notifyPreviewUrl }}"
+                            data-upload-notify-send="{{ $notifySendUrl }}"
                             onclick="openUploadNotifyModal(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
-                            <span class="sr-only">Send notification</span>
+                            <span class="sr-only">{{ $isSubmissionNotify ? 'Submit for review' : 'Send notification' }}</span>
                         </button>
                     @endif
-                    @if($isEmployeeTable && isset($employee))
+                    @if($isEmployeeTable && isset($employee) && $upload->canVerifyDocument($user))
+                        <form action="{{ route('admin.employees.documents.approve', [$employee->id, $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Approve this document?');">
+                            @csrf
+                            <button type="submit" title="Approve document" class="text-green-700 hover:text-green-900 bg-transparent border-none p-0 m-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </button>
+                        </form>
+                        <button type="button" title="Reject document" class="text-red-700 hover:text-red-900 bg-transparent border-none p-0 m-0" onclick="openUploadRejectModal('{{ route('admin.employees.documents.reject', [$employee->id, $upload->id]) }}', '{{ addslashes($upload->original_filename) }}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </button>
+                    @endif
+                    @if($isEmployeeTable && isset($employee) && $upload->isOwnedBy($user))
                     <form action="{{ route('admin.employees.documents.delete', [$employee->id, $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
                         @csrf
                         @method('DELETE')
@@ -286,7 +398,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </form>
-                    @else
+                    @elseif(! $isEmployeeTable)
                     <form action="{{ route('admin.facility.uploads.destroy', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this upload?');">
                         @csrf
                         @method('DELETE')
@@ -300,7 +412,7 @@
             @endif
             @empty
             <tr>
-                <td colspan="{{ $isEmployeeTable ? 7 : 6 }}" class="py-6 text-center text-gray-500">No uploads found.</td>
+                <td colspan="{{ $employeeTableColspan }}" class="py-6 text-center text-gray-500">No uploads found.</td>
             </tr>
             @endforelse
         </tbody>
@@ -316,18 +428,25 @@
             <div id="uploadNotifyModalError" class="hidden mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
             <form id="uploadNotifyModalForm" method="POST" class="hidden space-y-4">
                 @csrf
-                <div>
-                    <label for="uploadNotifyTo" class="block mb-1 text-xs font-semibold text-gray-700">To</label>
-                    <input type="email" id="uploadNotifyTo" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm text-gray-700 cursor-not-allowed">
+                <div id="uploadNotifyReasonWrap" class="hidden">
+                    <label for="uploadNotifyReason" class="block mb-1 text-xs font-semibold text-gray-700">Reason for upload <span class="text-red-600">*</span></label>
+                    <select name="submission_reason" id="uploadNotifyReason" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm">
+                        <option value="">Select a reason…</option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Your DSD will use this reason when verifying and approving the document.</p>
                 </div>
                 <div>
+                    <label for="uploadNotifyTo" class="block mb-1 text-xs font-semibold text-gray-700">To</label>
+                    <input type="text" id="uploadNotifyTo" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm text-gray-700 cursor-not-allowed">
+                </div>
+                <div id="uploadNotifySubjectWrap">
                     <label for="uploadNotifySubject" class="block mb-1 text-xs font-semibold text-gray-700">Subject</label>
-                    <input type="text" name="subject" id="uploadNotifySubject" required maxlength="255" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm">
+                    <input type="text" name="subject" id="uploadNotifySubject" maxlength="255" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm">
                 </div>
                 <div>
                     <label for="uploadNotifyMessage" class="block mb-1 text-xs font-semibold text-gray-700">Message</label>
-                    <textarea name="message" id="uploadNotifyMessage" required rows="8" maxlength="10000" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm"></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Document details and a link to the member portal are included automatically below this message in the email.</p>
+                    <textarea name="message" id="uploadNotifyMessage" rows="6" maxlength="10000" class="w-full px-3 py-2 border border-teal-300 rounded focus:border-teal-600 focus:ring-teal-500 text-sm"></textarea>
+                    <p id="uploadNotifyMessageHelp" class="mt-1 text-xs text-gray-500">Document details and a link to the member portal are included automatically below this message in the email.</p>
                 </div>
                 <div class="flex flex-wrap justify-end gap-2 pt-2">
                     <button type="button" onclick="closeUploadNotifyModal()" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
@@ -337,16 +456,42 @@
         </div>
     </div>
 
+    <div id="uploadRejectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="uploadRejectModalTitle">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
+            <button type="button" onclick="closeUploadRejectModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl leading-none" aria-label="Close">&times;</button>
+            <h3 id="uploadRejectModalTitle" class="text-xl font-bold text-gray-900 mb-1">Reject document</h3>
+            <p id="uploadRejectModalMeta" class="text-sm text-gray-500 mb-4"></p>
+            <form id="uploadRejectModalForm" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label for="uploadRejectNotes" class="block mb-1 text-xs font-semibold text-gray-700">Reason for rejection <span class="text-red-600">*</span></label>
+                    <textarea name="verification_notes" id="uploadRejectNotes" required rows="4" maxlength="1000" class="w-full px-3 py-2 border border-red-300 rounded focus:border-red-600 focus:ring-red-500 text-sm" placeholder="Explain what needs to be corrected…"></textarea>
+                </div>
+                <div class="flex flex-wrap justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeUploadRejectModal()" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-700">Reject document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
             function openUploadNotifyModal(button) {
                 var previewUrl = button.getAttribute('data-upload-notify-preview');
                 var sendUrl = button.getAttribute('data-upload-notify-send');
+                var notifyMode = button.getAttribute('data-upload-notify-mode') || 'expiry';
                 var modal = document.getElementById('uploadNotifyModal');
                 var form = document.getElementById('uploadNotifyModalForm');
                 var loading = document.getElementById('uploadNotifyModalLoading');
                 var errorBox = document.getElementById('uploadNotifyModalError');
                 var meta = document.getElementById('uploadNotifyModalMeta');
                 var sendBtn = document.getElementById('uploadNotifySendBtn');
+                var title = document.getElementById('uploadNotifyModalTitle');
+                var reasonWrap = document.getElementById('uploadNotifyReasonWrap');
+                var reasonSelect = document.getElementById('uploadNotifyReason');
+                var subjectInput = document.getElementById('uploadNotifySubject');
+                var messageInput = document.getElementById('uploadNotifyMessage');
+                var messageHelp = document.getElementById('uploadNotifyMessageHelp');
 
                 if (!previewUrl || !sendUrl || !modal) {
                     return;
@@ -359,6 +504,16 @@
                 errorBox.textContent = '';
                 meta.textContent = '';
                 sendBtn.disabled = true;
+                reasonWrap.classList.add('hidden');
+                reasonSelect.innerHTML = '<option value="">Select a reason…</option>';
+                reasonSelect.required = false;
+                subjectInput.required = notifyMode !== 'submission';
+                messageInput.required = notifyMode !== 'submission';
+                title.textContent = notifyMode === 'submission' ? 'Submit document for DSD review' : 'Send document notification';
+                sendBtn.textContent = notifyMode === 'submission' ? 'Submit for review' : 'Send notification';
+                messageHelp.textContent = notifyMode === 'submission'
+                    ? 'Document details and a link to review this document are included automatically in the email to your DSD.'
+                    : 'Document details and a link to the member portal are included automatically below this message in the email.';
 
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -371,17 +526,45 @@
                     credentials: 'same-origin'
                 })
                     .then(function (res) {
-                        return res.json().then(function (data) {
+                        return res.text().then(function (body) {
+                            var data = {};
+                            if (body) {
+                                try {
+                                    data = JSON.parse(body);
+                                } catch (parseError) {
+                                    if (!res.ok) {
+                                        throw new Error('Unable to load notification preview.');
+                                    }
+                                }
+                            }
                             if (!res.ok) {
-                                throw new Error(data.error || 'Unable to load notification preview.');
+                                throw new Error(data.error || data.message || 'Unable to load notification preview.');
                             }
                             return data;
                         });
                     })
                     .then(function (data) {
+                        var mode = data.mode || notifyMode;
                         document.getElementById('uploadNotifyTo').value = data.to || '';
                         document.getElementById('uploadNotifySubject').value = data.subject || '';
                         document.getElementById('uploadNotifyMessage').value = data.message || '';
+
+                        if (mode === 'submission') {
+                            reasonWrap.classList.remove('hidden');
+                            reasonSelect.required = true;
+                            subjectInput.required = false;
+                            messageInput.required = false;
+
+                            (data.submission_reasons || []).forEach(function (reason) {
+                                var option = document.createElement('option');
+                                option.value = reason.key;
+                                option.textContent = reason.label;
+                                if (data.current_submission_reason && data.current_submission_reason === reason.key) {
+                                    option.selected = true;
+                                }
+                                reasonSelect.appendChild(option);
+                            });
+                        }
 
                         var tierLabel = data.expiry_tier_label || data.expiry_tier || '';
                         var docParts = [data.document_type, data.file_name].filter(Boolean).join(' — ');
@@ -407,9 +590,36 @@
                 modal.classList.remove('flex');
             }
 
+            function openUploadRejectModal(actionUrl, fileName) {
+                var modal = document.getElementById('uploadRejectModal');
+                var form = document.getElementById('uploadRejectModalForm');
+                var meta = document.getElementById('uploadRejectModalMeta');
+                var notes = document.getElementById('uploadRejectNotes');
+
+                if (!modal || !form) {
+                    return;
+                }
+
+                form.action = actionUrl;
+                meta.textContent = fileName ? 'Document: ' + fileName : '';
+                notes.value = '';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeUploadRejectModal() {
+                var modal = document.getElementById('uploadRejectModal');
+                if (!modal) {
+                    return;
+                }
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     closeUploadNotifyModal();
+                    closeUploadRejectModal();
                 }
             });
 

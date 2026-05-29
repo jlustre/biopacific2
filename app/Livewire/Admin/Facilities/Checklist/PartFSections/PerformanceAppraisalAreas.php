@@ -7,8 +7,10 @@ use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeePerformanceAssessment;
 use App\Models\EmployeePerformanceItem;
 use App\Models\EmployeePerformanceSectionComment;
+use App\Models\Position;
 use App\Livewire\Concerns\GuardsAgainstSelfAssessment;
 use App\Support\PartFPerformanceScoring;
+use App\Support\PerformanceAppraisalTemplate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -46,15 +48,30 @@ class PerformanceAppraisalAreas extends Component
     /** @var array<int, string> */
     public array $sectionComments = [];
 
+    public ?int $positionId = null;
+
+    public ?string $positionTitle = null;
+
+    public ?string $appraisalTemplateKey = null;
+
+    public ?string $appraisalTemplateLabel = null;
+
+    public int $totalRateableItems = 0;
+
     public function mount(
         string $employeeNum,
         ?int $assessmentPeriodId = null,
         bool $assessmentLocked = false,
+        ?int $positionId = null,
+        ?string $positionTitle = null,
     ): void {
         $this->employeeNum = $employeeNum;
         $this->assessmentPeriodId = $assessmentPeriodId;
         $this->assessmentLocked = $assessmentLocked;
+        $this->positionId = $positionId;
+        $this->positionTitle = $positionTitle;
 
+        $this->resolvePositionContext();
         $this->buildSections();
         $this->loadLatestItemStates();
         $this->loadSummaryFromAssessment();
@@ -97,6 +114,10 @@ class PerformanceAppraisalAreas extends Component
             $items = $assessment->itemsArray();
 
             foreach ($this->latestRatings as $sourceItemId => $rating) {
+                if (! isset($this->scorableItemIds[(int) $sourceItemId])) {
+                    continue;
+                }
+
                 $normalizedRating = PartFPerformanceScoring::normalizeItemRating($rating);
                 if ($normalizedRating === null) {
                     continue;
@@ -110,6 +131,10 @@ class PerformanceAppraisalAreas extends Component
             $assessment->save();
 
             foreach ($this->latestRatings as $sourceItemId => $rating) {
+                if (! isset($this->scorableItemIds[(int) $sourceItemId])) {
+                    continue;
+                }
+
                 $normalizedRating = PartFPerformanceScoring::normalizeItemRating($rating);
                 if ($normalizedRating === null) {
                     continue;
@@ -125,6 +150,10 @@ class PerformanceAppraisalAreas extends Component
     protected function persistRating(int $sourceItemId, string $rating): bool
     {
         $rating = PartFPerformanceScoring::normalizeItemRating($rating) ?? '';
+        if (! isset($this->scorableItemIds[$sourceItemId])) {
+            return false;
+        }
+
         if (! $this->canPersistRatings() || $rating === '') {
             return false;
         }
@@ -308,8 +337,16 @@ class PerformanceAppraisalAreas extends Component
     protected function buildSections(): void
     {
         $this->sections = [];
-        $this->scorableItemIds = [];
-        $grouped = EmployeePerformanceItem::query()->orderBy('order')->get()->groupBy('section');
+        $this->scorableItemIds = PartFPerformanceScoring::scorableItemIds(
+            $this->positionId,
+            $this->positionTitle
+        );
+        $this->totalRateableItems = count($this->scorableItemIds);
+
+        $grouped = PartFPerformanceScoring::itemsQuery($this->positionId, $this->positionTitle)
+            ->orderBy('order')
+            ->get()
+            ->groupBy('section');
 
         foreach ($grouped as $sectionLabel => $items) {
             $docTypeId = DocType::query()->where('name', $sectionLabel)->value('id');
@@ -341,10 +378,6 @@ class PerformanceAppraisalAreas extends Component
                     'isMainParentItem' => $isMainParentItem,
                     'isStructuralParent' => $isStructuralParent,
                 ];
-
-                if ($this->rowIsRatingRow($row) && empty($row['hasChildItems'])) {
-                    $this->scorableItemIds[(int) $item->id] = true;
-                }
 
                 $rows[] = $row;
             }
@@ -394,6 +427,10 @@ class PerformanceAppraisalAreas extends Component
                 continue;
             }
 
+            if (! isset($this->scorableItemIds[$sourceId])) {
+                continue;
+            }
+
             $normalizedRating = PartFPerformanceScoring::normalizeItemRating((string) $latest->rating);
             if ($normalizedRating !== null) {
                 $this->latestRatings[$sourceId] = $normalizedRating;
@@ -412,6 +449,10 @@ class PerformanceAppraisalAreas extends Component
                     continue;
                 }
                 $id = (int) $m[1];
+                if (! isset($this->scorableItemIds[$id])) {
+                    continue;
+                }
+
                 $rating = EmployeePerformanceAssessment::itemRating($itemData);
                 if (! isset($this->latestRatings[$id]) && $rating !== null) {
                     $this->latestRatings[$id] = $rating;
@@ -444,5 +485,21 @@ class PerformanceAppraisalAreas extends Component
     public function rowIsRatingRow(array $row): bool
     {
         return empty($row['isMainParentItem']) && empty($row['isStructuralParent']);
+    }
+
+    protected function resolvePositionContext(): void
+    {
+        if (! filled($this->positionTitle) && $this->positionId) {
+            $this->positionTitle = Position::query()->whereKey($this->positionId)->value('title');
+        }
+
+        if (! filled($this->positionTitle)) {
+            return;
+        }
+
+        $this->positionTitle = trim($this->positionTitle);
+        $this->positionId ??= PerformanceAppraisalTemplate::positionIdForTitle($this->positionTitle);
+        $this->appraisalTemplateKey = PerformanceAppraisalTemplate::templateForPositionTitle($this->positionTitle);
+        $this->appraisalTemplateLabel = PerformanceAppraisalTemplate::displayLabelForPositionTitle($this->positionTitle);
     }
 }

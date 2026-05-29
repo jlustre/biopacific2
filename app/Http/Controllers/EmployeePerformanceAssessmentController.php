@@ -124,7 +124,20 @@ class EmployeePerformanceAssessmentController extends Controller {
             }
         }
 
-        $summary = PartFPerformanceScoring::summarize($ratings, PartFPerformanceScoring::scorableItemIds());
+        $employeeRecord = BPEmployee::query()
+            ->with('currentAssignment.position')
+            ->where('employee_num', $assessment->employee_num)
+            ->first();
+        $positionId = $employeeRecord?->currentAssignment?->position_id;
+        $positionTitle = $employeeRecord?->currentAssignment?->position?->title;
+
+        $summary = PartFPerformanceScoring::summarize(
+            $ratings,
+            PartFPerformanceScoring::scorableItemIds(
+                $positionId ? (int) $positionId : null,
+                $positionTitle
+            )
+        );
         $assessment->total_score = $summary['total_score'];
         $assessment->average_score = $summary['average_score'];
         $assessment->overall_rating = $summary['overall_rating'];
@@ -626,6 +639,22 @@ class EmployeePerformanceAssessmentController extends Controller {
         $assessment->assessed_by = Auth::id();
 
         if (str_starts_with((string) $validated['item_key'], 'F_')) {
+            $employeeRecord = BPEmployee::query()
+                ->with('currentAssignment.position')
+                ->where('employee_num', $validated['employee_num'])
+                ->first();
+            $positionTitle = $employeeRecord?->currentAssignment?->position?->title;
+            $scorableItemIds = PartFPerformanceScoring::scorableItemIds(null, $positionTitle);
+            $sourceItemId = $validated['source_item_id']
+                ?? (preg_match('/^F_(\d+)$/', (string) $validated['item_key'], $matches) ? (int) $matches[1] : null);
+
+            if (! $sourceItemId || ! isset($scorableItemIds[$sourceItemId])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This performance item does not apply to the employee\'s position.',
+                ], 422);
+            }
+
             $normalizedRating = PartFPerformanceScoring::normalizeItemRating($validated['rating']);
             if ($normalizedRating === null) {
                 return response()->json([
@@ -1340,9 +1369,11 @@ class EmployeePerformanceAssessmentController extends Controller {
         array $items,
     ): string {
         $employee = BPEmployee::query()
-            ->with('currentAssignment.facility')
+            ->with(['currentAssignment.facility', 'currentAssignment.position'])
             ->where('employee_num', $assessment->employee_num)
             ->first();
+        $positionId = $employee?->currentAssignment?->position_id;
+        $positionTitle = $employee?->currentAssignment?->position?->title;
         $period = EmployeeAssessmentPeriod::find($assessment->assessment_period_id);
 
         $ratedCount = collect($items)
@@ -1382,7 +1413,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'signatureBlock' => $this->performanceAssessmentPdfSignatureBlock($assessment, $developmentNotes),
             'items' => $items,
             'ratedCount' => $ratedCount,
-            'totalRateableOverride' => count(PartFPerformanceScoring::scorableItemIds()),
+            'totalRateableOverride' => count(PartFPerformanceScoring::scorableItemIds(
+                $positionId ? (int) $positionId : null,
+                $positionTitle
+            )),
             'assessmentStatusLabel' => ! empty($assessment->finalized) ? 'Completed' : 'In Progress',
         ])->setPaper('letter');
 

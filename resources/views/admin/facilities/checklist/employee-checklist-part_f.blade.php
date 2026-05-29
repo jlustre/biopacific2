@@ -71,11 +71,34 @@
             @include('admin.facilities.checklist.partials.part-f-rating-legend')
         </div>
 
+        @php
+            $partFPositionTitle = $employee->currentAssignment?->position?->title;
+            $partFAppraisalTemplateLabel = \App\Support\PerformanceAppraisalTemplate::displayLabelForPositionTitle($partFPositionTitle);
+            $partFPositionId = $employee->currentAssignment?->position_id;
+        @endphp
+
+        @if(! $partFPositionTitle)
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 shadow-sm">
+            <strong>No position assigned.</strong> Assign a job position to this employee to load the correct performance appraisal items.
+        </div>
+        @elseif(! $partFAppraisalTemplateLabel)
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 shadow-sm">
+            <strong>No appraisal template mapped.</strong> The position <strong>{{ $partFPositionTitle }}</strong> is not mapped to a performance appraisal template.
+        </div>
+        @else
+        <div class="mb-4 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 shadow-sm">
+            <strong>{{ $partFAppraisalTemplateLabel }}</strong>
+            <span class="text-slate-600">— items for <strong>{{ $partFPositionTitle }}</strong></span>
+        </div>
+        @endif
+
         @livewire('admin.facilities.checklist.part-f-sections.performance-appraisal-areas', [
             'employeeNum' => $employee->employee_num,
             'assessmentPeriodId' => $selectedAssessmentPeriodId,
             'assessmentLocked' => $partFAssessmentLocked,
-        ], key('part-f-performance-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
+            'positionId' => $partFPositionId,
+            'positionTitle' => $partFPositionTitle,
+        ], key('part-f-performance-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none').'-'.($partFPositionId ?? 'none')))
 
         <div id="partF-messages">
             @if(session('success'))

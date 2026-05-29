@@ -66,6 +66,26 @@
                             </div>
                         </td>
                     </tr>
+                    @if(!empty($registrationCode) && !empty($registrationUrl))
+                    <tr>
+                        <td style="padding:0 24px 24px 24px;">
+                            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:14px;">
+                                <p style="margin:0; font-size:14px; color:#065f46;">
+                                    <strong>Portal registration code:</strong> {{ $registrationCode }}
+                                </p>
+                                <p style="margin:10px 0 0 0; font-size:13px; color:#047857;">
+                                    Create your account first using the same name and email from your application.
+                                </p>
+                                <p style="margin:12px 0 0 0;">
+                                    <a href="{{ $registrationUrl }}"
+                                        style="display:inline-block; background:#059669; color:#ffffff; text-decoration:none; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13px;">
+                                        Create Portal Account
+                                    </a>
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endif
                     <tr>
                         <td style="padding:0 24px 24px 24px;">
                             <p style="margin:0; font-size:13px; color:#6b7280;">

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\EmployeeHelper;
 use App\Support\MemberPortalLayout;
+use App\Support\UploadNotificationContext;
 
 
 class UploadController extends Controller {
@@ -35,50 +36,14 @@ class UploadController extends Controller {
         abort(403, 'Unauthorized facility access.');
     }
 
-    protected function resolveEmployeeNotificationEmail(BPEmployee $employee): ?string
-    {
-        foreach ([$employee->email, $employee->user?->email] as $candidate) {
-            $email = trim((string) $candidate);
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                return $email;
-            }
-        }
-
-        return null;
-    }
-
     /**
-     * @return array{upload: Upload, email: string, expiryTier: string}
+     * @return array{upload: Upload, facility: Facility, email: string, expiryTier: string}
      */
     protected function resolveUploadNotificationContext(Facility $facility, Upload $upload): array
     {
         $this->authorizeFacilityAccess($facility);
 
-        $upload->load(['employee.user', 'facility', 'uploadType']);
-
-        if ((int) $upload->facility_id !== (int) $facility->id) {
-            abort(403, 'Upload does not belong to this facility.');
-        }
-
-        if (!$upload->employee) {
-            abort(422, 'No employee is linked to this upload.');
-        }
-
-        $email = $this->resolveEmployeeNotificationEmail($upload->employee);
-        if (!$email) {
-            abort(422, 'Employee has no valid email address on file.');
-        }
-
-        $expiryTier = $upload->expiryNotificationTier();
-        if ($expiryTier === null) {
-            abort(403, 'Notifications can only be sent for documents with an expiry date within the next 120 days.');
-        }
-
-        return [
-            'upload' => $upload,
-            'email' => $email,
-            'expiryTier' => $expiryTier,
-        ];
+        return UploadNotificationContext::resolve($upload, $facility);
     }
 
     public function previewUploadNotification(Facility $facility, Upload $upload)

@@ -17,8 +17,23 @@ class PartFPerformancePdfItemsBuilder
      */
     public static function build(EmployeePerformanceAssessment $assessment): array
     {
-        $scorableIds = PartFPerformanceScoring::scorableItemIds();
-        $rawItems = EmployeePerformanceItem::query()->orderBy('order')->get();
+        $employeeRecord = \App\Models\BPEmployee::query()
+            ->with('currentAssignment.position')
+            ->where('employee_num', $assessment->employee_num)
+            ->first();
+        $positionId = $employeeRecord?->currentAssignment?->position_id;
+        $positionTitle = $employeeRecord?->currentAssignment?->position?->title;
+
+        $scorableIds = PartFPerformanceScoring::scorableItemIds(
+            $positionId ? (int) $positionId : null,
+            $positionTitle
+        );
+        $rawItems = PartFPerformanceScoring::itemsQuery(
+            $positionId ? (int) $positionId : null,
+            $positionTitle
+        )
+            ->orderBy('order')
+            ->get();
 
         if ($rawItems->isEmpty()) {
             return [];

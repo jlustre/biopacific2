@@ -15,8 +15,25 @@
             <strong>No assessment period selected.</strong> Please create or select an assessment period above to enable
             performance appraisal actions.
         </div>
+    @elseif (! filled($positionTitle))
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 shadow-sm">
+            <strong>No position assigned.</strong> Performance appraisal items cannot be loaded until this employee has an assigned position.
+        </div>
+    @elseif (! filled($appraisalTemplateLabel))
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 shadow-sm">
+            <strong>No appraisal template mapped.</strong> Position <strong>{{ $positionTitle }}</strong> does not have a performance appraisal template.
+        </div>
+    @elseif ($totalRateableItems === 0)
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 shadow-sm">
+            <strong>No performance items found.</strong> No rateable appraisal items are configured for {{ $appraisalTemplateLabel }}.
+        </div>
+    @else
+        <div class="mb-3 text-xs text-slate-600">
+            {{ $totalRateableItems }} rateable item{{ $totalRateableItems === 1 ? '' : 's' }} for this position.
+        </div>
     @endif
 
+    @if ($sections !== [])
     <div id="partFTableContainer">
         <style>
             .pfa-row-even { background-color: #f1f5f9; }
@@ -161,6 +178,7 @@
             </section>
         @endforeach
     </div>
+    @endif
 </div>
 
 @script

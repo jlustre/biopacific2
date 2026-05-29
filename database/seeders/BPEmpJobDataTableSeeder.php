@@ -56,6 +56,16 @@ class BPEmpJobDataTableSeeder extends Seeder
                     ->first();
         $deptCount = count($departmentIds);
         for ($i = 1; $i <= 20; $i++) {
+            $employeeNum = 'EMP' . str_pad((string) $i, 3, '0', STR_PAD_LEFT);
+
+            if (DB::table('bp_emp_job_data')
+                ->where('employee_num', $employeeNum)
+                ->where('effdt', '2022-01-01')
+                ->where('effseq', 0)
+                ->exists()) {
+                continue;
+            }
+
             $isUnion = $i % 2 === 0;
             $deptId = $departmentIds[($i - 1) % $deptCount];
             $jobCode = $seedPositionCodes[$i % count($seedPositionCodes)];
@@ -70,7 +80,7 @@ class BPEmpJobDataTableSeeder extends Seeder
             $reportsTo = $supervisor ? $supervisor->id : null;
 
             $assignments[] = [
-                'employee_num' => 'EMP' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                'employee_num' => $employeeNum,
                 'effdt' => '2022-01-01',
                 'effseq' => 0,
                 'facility_id' => ($i % 2) + 1, // alternate between 1 and 2
@@ -87,6 +97,8 @@ class BPEmpJobDataTableSeeder extends Seeder
                 'union_seniority_dt' => $isUnion ? '2022-01-01' : null,
             ];
         }
-        DB::table('bp_emp_job_data')->insert($assignments);
+        if ($assignments !== []) {
+            DB::table('bp_emp_job_data')->insert($assignments);
+        }
     }
 }

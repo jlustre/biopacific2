@@ -87,6 +87,20 @@ class EmploymentController extends Controller
         return app(EmployeesController::class)->downloadDocument($this->resolveOwnEmployeeOrFail()->id, $document);
     }
 
+    public function previewDocumentNotification(Request $request, $document)
+    {
+        $employee = $this->resolveOwnEmployeeOrFail();
+
+        return app(EmployeesController::class)->previewDocumentNotification($request, $employee->id, $document);
+    }
+
+    public function sendDocumentNotification(Request $request, $document)
+    {
+        $employee = $this->resolveOwnEmployeeOrFail();
+
+        return app(EmployeesController::class)->sendDocumentNotification($request, $employee->id, $document);
+    }
+
     protected function resolveOwnEmployee(): ?BPEmployee
     {
         $user = Auth::user();

@@ -33,6 +33,21 @@ class JobApplication extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function registrationCodes()
+    {
+        return $this->hasMany(RegistrationCode::class);
+    }
+
+    public function activeRegistrationCode()
+    {
+        return $this->hasOne(RegistrationCode::class)
+            ->whereNull('used_at')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->latestOfMany();
+    }
+
     /**
      * Override the trait's getEncryptedFields method
      */

@@ -9,7 +9,7 @@ class JobApplicationPolicy
 {
     public function view(User $user, JobApplication $jobApplication): bool
     {
-        if ($user->hasRole('admin')) {
+        if ($user->hasRole(['admin', User::superAdminRoleName()])) {
             return true;
         }
 

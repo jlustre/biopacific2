@@ -149,6 +149,15 @@
                                         <i class="fas fa-eye mr-1"></i>View
                                     </a>
                                     @endif
+
+                                    @include('admin.partials.portal-registration-icon', [
+                                        'canGenerateRegistrationCodes' => $canGenerateRegistrationCodes ?? false,
+                                        'hasPortalUser' => ($registrationCodeService ?? app(\App\Support\RegistrationCodeService::class))->applicantHasPortalUser($application),
+                                        'generateUrl' => route('admin.job-applications.registration-code.generate', $application),
+                                        'pendingRegistrationCode' => ($activeRegistrationCodes ?? collect())->get($application->id),
+                                        'facilityFilterId' => request('facility'),
+                                    ])
+
                                     <form action="{{ route('admin.job-applications.destroy', $application) }}"
                                         method="POST" class="inline">
                                         @csrf
@@ -209,10 +218,19 @@
                 </div>
 
                 <div class="flex items-center justify-end space-x-2">
-                    <a href="{{ route('admin.facility.pre-employment.review', ['facility' => $application->jobOpening->facility->id ?? $application->facility_id, 'application' => $application->id]) }}"
+                    <a href="{{ route('admin.job-applications.show', $application) }}"
                         class="text-indigo-600 hover:text-indigo-900 text-sm">
                         <i class="fas fa-eye mr-1"></i>View
                     </a>
+
+                    @include('admin.partials.portal-registration-icon', [
+                        'canGenerateRegistrationCodes' => $canGenerateRegistrationCodes ?? false,
+                        'hasPortalUser' => ($registrationCodeService ?? app(\App\Support\RegistrationCodeService::class))->applicantHasPortalUser($application),
+                        'generateUrl' => route('admin.job-applications.registration-code.generate', $application),
+                        'pendingRegistrationCode' => ($activeRegistrationCodes ?? collect())->get($application->id),
+                        'facilityFilterId' => request('facility'),
+                    ])
+
                     <form action="{{ route('admin.job-applications.destroy', $application) }}" method="POST"
                         class="inline">
                         @csrf

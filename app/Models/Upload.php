@@ -77,6 +77,26 @@ class Upload extends Model
         'expires_at',
         'effective_start_date',
         'comments',
+        'submission_reason',
+        'verification_status',
+        'submitted_for_review_at',
+        'verified_by_user_id',
+        'verified_at',
+        'verification_notes',
+    ];
+
+    public const VERIFICATION_PENDING = 'pending';
+
+    public const VERIFICATION_APPROVED = 'approved';
+
+    public const VERIFICATION_REJECTED = 'rejected';
+
+    protected $casts = [
+        'uploaded_at' => 'datetime',
+        'expires_at' => 'date',
+        'effective_start_date' => 'date',
+        'submitted_for_review_at' => 'datetime',
+        'verified_at' => 'datetime',
     ];
     /**
      * Get the employee that owns this upload.
@@ -97,9 +117,57 @@ class Upload extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function isOwnedBy(?User $user): bool
+    {
+        if ($user === null || $this->user_id === null) {
+            return false;
+        }
+
+        return (int) $this->user_id === (int) $user->id;
+    }
+
     public function uploadType()
     {
         return $this->belongsTo(UploadType::class);
+    }
+
+    public function verifiedBy()
+    {
+        return $this->belongsTo(User::class, 'verified_by_user_id');
+    }
+
+    public function submissionReasonLabel(): ?string
+    {
+        return \App\Support\UploadSubmissionReason::label($this->submission_reason);
+    }
+
+    public function verificationStatusLabel(): ?string
+    {
+        return match ($this->verification_status) {
+            self::VERIFICATION_PENDING => 'Pending review',
+            self::VERIFICATION_APPROVED => 'Approved',
+            self::VERIFICATION_REJECTED => 'Rejected',
+            default => null,
+        };
+    }
+
+    public function canSubmitForVerification(): bool
+    {
+        return in_array($this->verification_status, [null, '', self::VERIFICATION_REJECTED], true);
+    }
+
+    public function isPendingVerification(): bool
+    {
+        return $this->verification_status === self::VERIFICATION_PENDING;
+    }
+
+    public function canVerifyDocument(?User $user): bool
+    {
+        if ($user === null || ! $this->isPendingVerification()) {
+            return false;
+        }
+
+        return $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']);
     }
 
     /**

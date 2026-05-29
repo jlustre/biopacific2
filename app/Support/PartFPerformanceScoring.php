@@ -2,7 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\EmployeeAssessmentItemEntry;
+use App\Models\EmployeePerformanceAssessment;
 use App\Models\EmployeePerformanceItem;
+use App\Models\Position;
+use Illuminate\Database\Eloquent\Builder;
 
 class PartFPerformanceScoring
 {
@@ -123,12 +127,31 @@ class PartFPerformanceScoring
     }
 
     /**
+     * @return Builder<EmployeePerformanceItem>
+     */
+    public static function itemsQuery(?int $positionId = null, ?string $positionTitle = null): Builder
+    {
+        $resolvedTitle = filled($positionTitle)
+            ? trim($positionTitle)
+            : ($positionId ? Position::query()->whereKey($positionId)->value('title') : null);
+
+        return EmployeePerformanceItem::query()
+            ->when(
+                filled($resolvedTitle),
+                fn (Builder $query) => $query->applicableToPositionTitle($resolvedTitle),
+                fn (Builder $query) => $query->whereRaw('0 = 1')
+            );
+    }
+
+    /**
      * @return array<int, true>
      */
-    public static function scorableItemIds(): array
+    public static function scorableItemIds(?int $positionId = null, ?string $positionTitle = null): array
     {
         $scorableItemIds = [];
-        $items = EmployeePerformanceItem::query()->orderBy('order')->get();
+        $items = static::itemsQuery($positionId, $positionTitle)
+            ->orderBy('order')
+            ->get();
 
         foreach ($items->values() as $itemIdx => $item) {
             $rawItemText = trim(strip_tags((string) ($item->item ?? '')));
@@ -150,6 +173,73 @@ class PartFPerformanceScoring
         }
 
         return $scorableItemIds;
+    }
+
+    /**
+     * @param  array<int, true>  $scorableItemIds
+     * @return array<int, string>
+     */
+    public static function ratedScorableIds(string $employeeNum, int $assessmentPeriodId, array $scorableItemIds): array
+    {
+        if ($scorableItemIds === []) {
+            return [];
+        }
+
+        $rated = [];
+
+        $entries = EmployeeAssessmentItemEntry::query()
+            ->where('employee_num', $employeeNum)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->where('assessment_type', 'performance')
+            ->whereNull('revoked_at')
+            ->whereIn('source_item_id', array_keys($scorableItemIds))
+            ->orderByDesc('assessment_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('source_item_id');
+
+        foreach ($entries as $sourceItemId => $group) {
+            $rating = self::normalizeItemRating((string) $group->first()?->rating);
+            if ($rating !== null) {
+                $rated[(int) $sourceItemId] = $rating;
+            }
+        }
+
+        $assessment = EmployeePerformanceAssessment::query()
+            ->where('employee_num', $employeeNum)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->first();
+
+        if ($assessment) {
+            foreach ($assessment->itemsArray() as $itemKey => $itemData) {
+                if (! preg_match('/^F_(\d+)$/', (string) $itemKey, $matches)) {
+                    continue;
+                }
+
+                $sourceItemId = (int) $matches[1];
+                if (isset($rated[$sourceItemId]) || ! isset($scorableItemIds[$sourceItemId])) {
+                    continue;
+                }
+
+                $rating = EmployeePerformanceAssessment::itemRating($itemData);
+                if ($rating !== null) {
+                    $rated[$sourceItemId] = $rating;
+                }
+            }
+        }
+
+        return $rated;
+    }
+
+    /**
+     * @param  array<int, true>  $scorableItemIds
+     * @return list<int>
+     */
+    public static function missingScorableItemIds(string $employeeNum, int $assessmentPeriodId, array $scorableItemIds): array
+    {
+        $rated = static::ratedScorableIds($employeeNum, $assessmentPeriodId, $scorableItemIds);
+
+        return array_values(array_diff(array_keys($scorableItemIds), array_keys($rated)));
     }
 
     /**

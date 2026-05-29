@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Database\Seeders\Support\SeedsUserEmployeeRecords;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class TestUsersSeeder extends Seeder
@@ -13,7 +14,6 @@ class TestUsersSeeder extends Seeder
      */
     public function run(): void
     {
-
         // HR Regional Director (rdhr)
         $rdhr = User::firstOrCreate([
             'email' => 'rdhr@example.com',
@@ -23,9 +23,12 @@ class TestUsersSeeder extends Seeder
             'facility_id' => 99,
         ]);
         $rdhr->syncRoles(['rdhr']);
+        SeedsUserEmployeeRecords::seed($rdhr, [
+            'facility_id' => 99,
+            'position_index' => 3,
+        ]);
 
         // Facility Admin assigned to 'almaden-healthcare-and-rehabilitation-center'
-        $facility = \App\Models\Facility::where('slug', 'almaden-healthcare-and-rehabilitation-center')->first();
         $facilityAdmin = User::firstOrCreate([
             'email' => 'facilityadmin@example.com',
         ], [
@@ -34,6 +37,10 @@ class TestUsersSeeder extends Seeder
             'facility_id' => 14,
         ]);
         $facilityAdmin->syncRoles(['facility-admin']);
+        SeedsUserEmployeeRecords::seed($facilityAdmin, [
+            'facility_id' => 14,
+            'position_index' => 3,
+        ]);
 
         // Facility DSD
         $facilityDsd = User::firstOrCreate([
@@ -44,6 +51,10 @@ class TestUsersSeeder extends Seeder
             'facility_id' => 17,
         ]);
         $facilityDsd->syncRoles(['facility-dsd']);
+        SeedsUserEmployeeRecords::seed($facilityDsd, [
+            'facility_id' => 17,
+            'position_index' => 4,
+        ]);
 
         // Facility Editor
         $facilityEditor = User::firstOrCreate([
@@ -54,6 +65,10 @@ class TestUsersSeeder extends Seeder
             'facility_id' => 1,
         ]);
         $facilityEditor->syncRoles(['facility-editor']);
+        SeedsUserEmployeeRecords::seed($facilityEditor, [
+            'facility_id' => 1,
+            'position_index' => 5,
+        ]);
 
         // Regular User
         $regularUser = User::firstOrCreate([
@@ -64,5 +79,9 @@ class TestUsersSeeder extends Seeder
             'facility_id' => 1,
         ]);
         $regularUser->syncRoles(['regular-user']);
+        SeedsUserEmployeeRecords::seed($regularUser, [
+            'facility_id' => 1,
+            'position_index' => 0,
+        ]);
     }
 }

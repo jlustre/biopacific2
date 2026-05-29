@@ -2,7 +2,7 @@
 
 This document captures business rules discussed and implemented for the Bio Pacific admin HR portal, employee records, and performance/competency assessment periods (Part F / Part G).
 
-**See also:** [Developer Guide](DEVELOPER_GUIDE.md) (section 9.1) · [Features](FEATURES.md) (HR Portal Business Rules section)
+**See also:** [HR Portal Workflows](HR_PORTAL_WORKFLOWS.md) (full workflow catalog) · [Developer Guide](DEVELOPER_GUIDE.md) (section 9.1) · [Features](FEATURES.md) (HR Portal Business Rules section)
 
 **Related implementation**
 

@@ -9,7 +9,7 @@ class BPEmpPhonesTableSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('bp_emp_phones')->insert([
+        $rows = [
             [
                 'employee_num' => 'EMP001',
                 'phone_type' => 'M',
@@ -30,6 +30,19 @@ class BPEmpPhonesTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($rows as $row) {
+            $exists = DB::table('bp_emp_phones')
+                ->where('employee_num', $row['employee_num'])
+                ->where('phone_type', $row['phone_type'])
+                ->where('effdt', $row['effdt'])
+                ->where('effseq', $row['effseq'])
+                ->exists();
+
+            if (!$exists) {
+                DB::table('bp_emp_phones')->insert($row);
+            }
+        }
     }
 }

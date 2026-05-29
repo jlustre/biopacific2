@@ -42,7 +42,7 @@
                 </div>
                 <p class="mt-3 text-xs text-teal-100">
                   @if($documentsNeededCount > 0)
-                    {{ $documentsNeededCount }} checklist {{ Str::plural('item', $documentsNeededCount) }} need attention.
+                    {{ $documentsNeededCount }} checklist {{ \Illuminate\Support\Str::plural('item', $documentsNeededCount) }} need attention.
                   @elseif($complianceScore !== null)
                     Employee file checklist is up to date.
                   @else

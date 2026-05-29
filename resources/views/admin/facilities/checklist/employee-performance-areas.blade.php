@@ -6,7 +6,18 @@
     </div>
     @php
     use App\Models\EmployeePerformanceItem;
-    $partFSections = EmployeePerformanceItem::orderBy('order')->get()->groupBy('section');
+    $partFPositionId = $employee->currentAssignment?->position_id ?? null;
+    $partFPositionTitle = $employee->currentAssignment?->position?->title ?? null;
+    $partFSections = EmployeePerformanceItem::query()
+        ->when(
+            $partFPositionTitle || $partFPositionId,
+            fn ($query) => $partFPositionTitle
+                ? $query->applicableToPositionTitle($partFPositionTitle)
+                : $query->applicableToPosition($partFPositionId)
+        )
+        ->orderBy('order')
+        ->get()
+        ->groupBy('section');
     $hasAssessmentPeriod = !empty($selectedAssessmentPeriodId);
     $partFSelectedAssessment = $selectedPerformanceAssessment ?? ($assessment ?? null);
     $partFAssessmentLocked = !empty(optional($partFSelectedAssessment)->finalized);

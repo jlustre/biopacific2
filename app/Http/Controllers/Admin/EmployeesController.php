@@ -20,6 +20,14 @@ use App\Models\Optionstype;
 use App\Support\PartFPerformanceScoring;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Support\EmployeeAssessmentPeriodCalculator;
+use App\Support\RegistrationCodeService;
+use App\Mail\EmployeeRegistrationInviteMail;
+use App\Mail\EmployeeDocumentSubmissionMail;
+use App\Mail\FacilityUploadNotificationMail;
+use App\Support\MemberPortalLayout;
+use App\Support\UploadNotificationContext;
+use App\Support\UploadSubmissionReason;
+use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Concerns\HandlesEmployeeEditRedirects;
 
 
@@ -154,6 +162,68 @@ class EmployeesController extends Controller
         }
     }
 
+    protected function authorizeUploadModification(Upload $upload): void
+    {
+        if (! $upload->isOwnedBy(Auth::user())) {
+            abort(403, 'You can only modify documents you uploaded.');
+        }
+    }
+
+    protected function authorizeEmployeeDocumentNotification(Request $request, BPEmployee $employee): void
+    {
+        $user = Auth::user();
+
+        if ($user && (int) $employee->user_id === (int) $user->id) {
+            return;
+        }
+
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
+
+        if (! $user || ! (
+            MemberPortalLayout::userIsSystemAdmin($user)
+            || $user->hasRole(['rdhr', 'facility-admin', 'facility-dsd', 'facility-editor'])
+        )) {
+            abort(403, 'You are not authorized to send document notifications for this employee.');
+        }
+    }
+
+    /**
+     * @return array{upload: Upload, facility: Facility, email: string, expiryTier: string}
+     */
+    protected function resolveEmployeeUploadNotificationContext(BPEmployee $employee, Upload $upload): array
+    {
+        if ($upload->employee_num !== $employee->employee_num) {
+            abort(403, 'This document does not belong to this employee.');
+        }
+
+        return UploadNotificationContext::resolve($upload);
+    }
+
+    protected function isEmployeeDocumentSubmissionRequest(Request $request, BPEmployee $employee): bool
+    {
+        if ($request->routeIs('employment.*')) {
+            return true;
+        }
+
+        $user = Auth::user();
+
+        return $user && (int) $employee->user_id === (int) $user->id;
+    }
+
+    protected function authorizeDocumentVerification(Request $request, BPEmployee $employee, Upload $upload): void
+    {
+        if ($upload->employee_num !== $employee->employee_num) {
+            abort(403, 'This document does not belong to this employee.');
+        }
+
+        $user = Auth::user();
+        if (! $user || ! $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd'])) {
+            abort(403, 'You are not authorized to verify employee documents.');
+        }
+
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
+    }
+
     /**
      * Resolve route {employee} by primary key or employee_num (e.g. EMP022).
      */
@@ -270,6 +340,7 @@ class EmployeesController extends Controller
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
             ->firstOrFail();
+        $this->authorizeUploadModification($upload);
         $upload->delete();
         return $this->redirectToEmployeeEdit($employee->id, 'documents', [
             'success' => 'Document deleted successfully.',
@@ -286,6 +357,7 @@ class EmployeesController extends Controller
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
             ->firstOrFail();
+        $this->authorizeUploadModification($upload);
 
         $uploadTypeId = $request->input('upload_type_id');
         $uploadType = \App\Models\UploadType::find($uploadTypeId);
@@ -340,9 +412,256 @@ class EmployeesController extends Controller
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
             ->firstOrFail();
+        $this->authorizeUploadModification($upload);
         // You may want to pass upload types or other data as needed
         $uploadTypes = \App\Models\UploadType::all();
         return view('admin.facilities.employee.edit_document', compact('employee', 'upload', 'uploadTypes'));
+    }
+
+    public function previewDocumentNotification(Request $request, $employee_num, $upload_id)
+    {
+        try {
+            $employee = $this->resolveEmployee($employee_num);
+            $this->authorizeEmployeeDocumentNotification($request, $employee);
+            $upload = Upload::query()
+                ->where('employee_num', $employee->employee_num)
+                ->whereKey($upload_id)
+                ->firstOrFail();
+
+            if ($this->isEmployeeDocumentSubmissionRequest($request, $employee)) {
+                if (! $upload->isOwnedBy(Auth::user())) {
+                    abort(403, 'You can only submit documents you uploaded.');
+                }
+
+                $context = UploadNotificationContext::resolveEmployeeSubmission($upload, $employee);
+
+                return response()->json(
+                    EmployeeDocumentSubmissionMail::previewPayload(
+                        $context['upload'],
+                        $employee,
+                        $context['facility'],
+                        Auth::user(),
+                        implode(', ', $context['emails']),
+                    )
+                );
+            }
+
+            $context = $this->resolveEmployeeUploadNotificationContext($employee, $upload);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
+
+        return response()->json(array_merge(
+            FacilityUploadNotificationMail::previewPayload(
+                $context['upload'],
+                $context['facility'],
+                Auth::user(),
+                $context['expiryTier'],
+                $context['email'],
+            ),
+            ['mode' => 'expiry'],
+        ));
+    }
+
+    public function sendDocumentNotification(Request $request, $employee_num, $upload_id)
+    {
+        $employee = null;
+
+        try {
+            $employee = $this->resolveEmployee($employee_num);
+            $this->authorizeEmployeeDocumentNotification($request, $employee);
+            $upload = Upload::query()
+                ->where('employee_num', $employee->employee_num)
+                ->whereKey($upload_id)
+                ->firstOrFail();
+
+            if ($this->isEmployeeDocumentSubmissionRequest($request, $employee)) {
+                return $this->sendEmployeeDocumentSubmission($request, $employee, $upload);
+            }
+
+            $context = $this->resolveEmployeeUploadNotificationContext($employee, $upload);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return $this->redirectToEmployeeEdit($employee ?? $employee_num, 'documents', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $upload = $context['upload'];
+        $facility = $context['facility'];
+        $email = $context['email'];
+        $expiryTier = $context['expiryTier'];
+
+        $validated = $request->validate([
+            'subject' => 'nullable|string|max:255',
+            'message' => 'nullable|string|max:10000',
+        ]);
+
+        $customSubject = trim((string) ($validated['subject'] ?? ''));
+        $customMessage = trim((string) ($validated['message'] ?? ''));
+
+        try {
+            Mail::to($email)->send(new FacilityUploadNotificationMail(
+                $upload,
+                $facility,
+                Auth::user(),
+                $expiryTier,
+                $customSubject !== '' ? $customSubject : null,
+                $customMessage !== '' ? $customMessage : null,
+            ));
+
+            return $this->redirectToEmployeeEdit($employee, 'documents', [
+                'success' => 'Notification sent to ' . $upload->employee->last_name . ', ' . $upload->employee->first_name . ' (' . $email . ').',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Employee document notification failed', [
+                'upload_id' => $upload->id,
+                'employee_id' => $employee->id,
+                'email' => $email,
+                'exception' => $e,
+            ]);
+
+            $message = config('app.debug')
+                ? 'Failed to send notification: ' . $e->getMessage()
+                : 'Failed to send notification. Please try again.';
+
+            return $this->redirectToEmployeeEdit($employee, 'documents', [
+                'error' => $message,
+            ]);
+        }
+    }
+
+    protected function sendEmployeeDocumentSubmission(Request $request, BPEmployee $employee, Upload $upload)
+    {
+        if (! $upload->isOwnedBy(Auth::user())) {
+            abort(403, 'You can only submit documents you uploaded.');
+        }
+
+        $context = UploadNotificationContext::resolveEmployeeSubmission($upload, $employee);
+
+        $validated = $request->validate([
+            'submission_reason' => 'required|string|in:' . implode(',', UploadSubmissionReason::keys()),
+            'subject' => 'nullable|string|max:255',
+            'message' => 'nullable|string|max:10000',
+        ]);
+
+        $submissionReason = $validated['submission_reason'];
+        $customSubject = trim((string) ($validated['subject'] ?? ''));
+        $customMessage = trim((string) ($validated['message'] ?? ''));
+
+        $upload->update([
+            'submission_reason' => $submissionReason,
+            'verification_status' => Upload::VERIFICATION_PENDING,
+            'submitted_for_review_at' => now(),
+            'verified_by_user_id' => null,
+            'verified_at' => null,
+            'verification_notes' => null,
+        ]);
+
+        $upload = $context['upload']->fresh(['uploadType', 'employee']);
+        $facility = $context['facility'];
+        $emails = $context['emails'];
+        $submittedBy = Auth::user();
+
+        try {
+            $mail = new EmployeeDocumentSubmissionMail(
+                $upload,
+                $employee,
+                $facility,
+                $submittedBy,
+                $submissionReason,
+                $customSubject !== '' ? $customSubject : null,
+                $customMessage !== '' ? $customMessage : null,
+            );
+
+            foreach ($emails as $email) {
+                Mail::to($email)->send($mail);
+            }
+
+            return $this->redirectToEmployeeEdit($employee, 'documents', [
+                'success' => 'Document submitted for DSD review. Reason: ' . UploadSubmissionReason::label($submissionReason) . '.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Employee document submission notification failed', [
+                'upload_id' => $upload->id,
+                'employee_id' => $employee->id,
+                'emails' => $emails,
+                'exception' => $e,
+            ]);
+
+            $message = config('app.debug')
+                ? 'Failed to send submission notification: ' . $e->getMessage()
+                : 'Failed to send submission notification. Please try again.';
+
+            return $this->redirectToEmployeeEdit($employee, 'documents', [
+                'error' => $message,
+            ]);
+        }
+    }
+
+    public function approveDocument(Request $request, $employee_num, $upload_id)
+    {
+        $employee = $this->resolveEmployee($employee_num);
+        $upload = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($upload_id)
+            ->firstOrFail();
+
+        $this->authorizeDocumentVerification($request, $employee, $upload);
+
+        if (! $upload->isPendingVerification()) {
+            return $this->redirectToEmployeeEdit($employee, 'documents', [
+                'error' => 'Only documents pending review can be approved.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'verification_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $upload->update([
+            'verification_status' => Upload::VERIFICATION_APPROVED,
+            'verified_by_user_id' => Auth::id(),
+            'verified_at' => now(),
+            'verification_notes' => $validated['verification_notes'] ?? null,
+        ]);
+
+        return $this->redirectToEmployeeEdit($employee, 'documents', [
+            'success' => 'Document approved.',
+        ]);
+    }
+
+    public function rejectDocument(Request $request, $employee_num, $upload_id)
+    {
+        $employee = $this->resolveEmployee($employee_num);
+        $upload = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereKey($upload_id)
+            ->firstOrFail();
+
+        $this->authorizeDocumentVerification($request, $employee, $upload);
+
+        if (! $upload->isPendingVerification()) {
+            return $this->redirectToEmployeeEdit($employee, 'documents', [
+                'error' => 'Only documents pending review can be rejected.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'verification_notes' => 'required|string|max:1000',
+        ], [
+            'verification_notes.required' => 'Please provide a reason for rejection.',
+        ]);
+
+        $upload->update([
+            'verification_status' => Upload::VERIFICATION_REJECTED,
+            'verified_by_user_id' => Auth::id(),
+            'verified_at' => now(),
+            'verification_notes' => $validated['verification_notes'],
+        ]);
+
+        return $this->redirectToEmployeeEdit($employee, 'documents', [
+            'success' => 'Document rejected. The employee may upload a corrected version and resubmit.',
+        ]);
     }
 
     /**
@@ -474,11 +793,29 @@ class EmployeesController extends Controller
 
         $perPage = $request->input('per_page', 10);
         $employees = $query->with([
+            'user',
             'currentAssignment',
             'currentAssignment.facility',
             'currentAssignment.department',
             'currentAssignment.position',
         ])->paginate($perPage)->appends($request->except('page'));
+
+        $registrationCodeService = app(RegistrationCodeService::class);
+        $canGenerateRegistrationCodes = $registrationCodeService->canGenerateCodes($request->user());
+
+        $activeRegistrationCodes = collect();
+        if ($canGenerateRegistrationCodes && $employees->isNotEmpty()) {
+            $activeRegistrationCodes = \App\Models\RegistrationCode::query()
+                ->whereIn('employee_num', $employees->pluck('employee_num')->filter()->values())
+                ->whereNull('used_at')
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->orderByDesc('created_at')
+                ->get()
+                ->unique('employee_num')
+                ->keyBy('employee_num');
+        }
 
         // dd($employees->toArray());
 
@@ -491,7 +828,10 @@ class EmployeesController extends Controller
             'perPage',
             'facilityFilterId',
             'scopedFacility',
-            'scopedFacilityId'
+            'scopedFacilityId',
+            'canGenerateRegistrationCodes',
+            'activeRegistrationCodes',
+            'registrationCodeService',
         ));
     }
     /**
@@ -783,6 +1123,13 @@ class EmployeesController extends Controller
     {
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
+        if (! \App\Support\EmployeeJobDataAuthorization::canManageJobData($request->user(), $employeeModel)) {
+            return $this->redirectToEmployeeEdit($employeeModel, 'job-data', [
+                'error' => \App\Support\EmployeeJobDataAuthorization::SELF_EDIT_DENIED_MESSAGE,
+            ]);
+        }
+
         $employeeNum = $employeeModel->employee_num;
 
         $request->merge([
@@ -874,6 +1221,40 @@ class EmployeesController extends Controller
         }
 
         return $this->redirectToEmployeeEdit($employee, 'job-data', ['success' => $msg]);
+    }
+
+    /**
+     * Generate and email a portal registration code for an employee without a linked user.
+     */
+    public function generateRegistrationCode(Request $request, $employee)
+    {
+        $employeeModel = $this->resolveEmployee($employee);
+        $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
+        $registrationCodeService = app(RegistrationCodeService::class);
+
+        if (! $registrationCodeService->canGenerateCodes($request->user())) {
+            abort(403, 'You are not authorized to generate registration codes.');
+        }
+
+        try {
+            $registrationCode = $registrationCodeService->generateForEmployee($employeeModel, $request->user());
+            Mail::to($registrationCode->email)->send(new EmployeeRegistrationInviteMail($registrationCode));
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return redirect()->back()->withErrors($exception->errors());
+        } catch (\Throwable $exception) {
+            Log::error('Failed to generate employee registration code', [
+                'employee_num' => $employeeModel->employee_num,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to generate the registration code. Please try again.');
+        }
+
+        return redirect()->back()->with(
+            'success',
+            'Registration code ' . $registrationCode->code . ' was emailed to ' . $registrationCode->email . '.'
+        );
     }
 
     /**
@@ -1251,6 +1632,29 @@ class EmployeesController extends Controller
             );
         }
 
+        if ($request->input('action') === 'submit') {
+            $positionTitle = $employee->loadMissing('currentAssignment.position')->currentAssignment?->position?->title;
+            $scorableItemIds = PartFPerformanceScoring::scorableItemIds(null, $positionTitle);
+
+            if ($scorableItemIds === []) {
+                return back()
+                    ->with('error', 'No performance appraisal items are configured for this employee\'s position.')
+                    ->withInput();
+            }
+
+            $missingItemIds = PartFPerformanceScoring::missingScorableItemIds(
+                (string) $employee->employee_num,
+                (int) $assessmentPeriodId,
+                $scorableItemIds
+            );
+
+            if ($missingItemIds !== []) {
+                return back()
+                    ->with('error', 'All performance appraisal items must be rated before submitting. '.count($missingItemIds).' item(s) still need a rating.')
+                    ->withInput();
+            }
+        }
+
         // Set review_dt and acknowledge_dt on EmployeePerformanceAssessment
         $assessment = \App\Models\EmployeePerformanceAssessment::firstOrCreate(
             [
@@ -1468,7 +1872,20 @@ class EmployeesController extends Controller
             }
         }
 
-        $summary = PartFPerformanceScoring::summarize($ratings, PartFPerformanceScoring::scorableItemIds());
+        $employeeRecord = BPEmployee::query()
+            ->with('currentAssignment.position')
+            ->where('employee_num', $assessment->employee_num)
+            ->first();
+        $positionId = $employeeRecord?->currentAssignment?->position_id;
+        $positionTitle = $employeeRecord?->currentAssignment?->position?->title;
+
+        $summary = PartFPerformanceScoring::summarize(
+            $ratings,
+            PartFPerformanceScoring::scorableItemIds(
+                $positionId ? (int) $positionId : null,
+                $positionTitle
+            )
+        );
         $assessment->total_score = $summary['total_score'];
         $assessment->average_score = $summary['average_score'];
         $assessment->overall_rating = $summary['overall_rating'];
@@ -1684,7 +2101,7 @@ class EmployeesController extends Controller
             ->keys()
             ->merge($performanceAssessmentSubmissions->keys())
             ->unique()
-            ->map(function ($assessmentPeriodId) use ($performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions, $selectedAssessmentPeriodId) {
+            ->map(function ($assessmentPeriodId) use ($employee, $performanceEntriesByPeriod, $assessmentPeriodLabels, $performanceAssessmentSubmissions, $selectedAssessmentPeriodId) {
                 $entries = $performanceEntriesByPeriod->get($assessmentPeriodId, collect());
                 $latestStates = $entries
                     ->filter(fn ($entry) => $entry->revoked_at === null)
@@ -1720,7 +2137,10 @@ class EmployeesController extends Controller
                 $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
 
                 $isFinalized = ! empty($submission?->finalized);
-                $totalRateableItems = count(PartFPerformanceScoring::scorableItemIds());
+                $totalRateableItems = count(PartFPerformanceScoring::scorableItemIds(
+                    $employee->currentAssignment?->position_id ? (int) $employee->currentAssignment->position_id : null,
+                    $employee->currentAssignment?->position?->title
+                ));
                 $assessmentDateRaw = optional($submission?->review_dt)->toDateString()
                     ?? optional($submission?->updated_at)->toDateString()
                     ?? optional(optional($latestAssessment)->assessment_date)->toDateString();
@@ -1947,6 +2367,11 @@ class EmployeesController extends Controller
             $employee->employee_num
         );
 
+        $canManageJobData = \App\Support\EmployeeJobDataAuthorization::canManageJobData(
+            auth()->user(),
+            $employee
+        );
+
         $editOptions = $request->attributes->get('employee_edit_options', []);
         $isSelfService = (bool) ($editOptions['isSelfService'] ?? false);
         $viewName = $isSelfService ? 'employment.my-employment' : 'admin.facilities.employee.edit_employee';
@@ -1999,6 +2424,7 @@ class EmployeesController extends Controller
             'draftResponses',
             'rawDraftRow',
             'isSelfService',
+            'canManageJobData',
             'employeeFormRoutes',
         ));
     }

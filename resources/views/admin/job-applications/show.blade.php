@@ -21,6 +21,20 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{ session('error') }}
+    </div>
+    @endif
+
+    @if($errors->any())
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        @foreach($errors->all() as $error)
+            <div>{{ $error }}</div>
+        @endforeach
+    </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-6">
@@ -209,23 +223,49 @@
             </div>
 
             <!-- User Dashboard Access -->
-            @if($jobApplication->user_id)
+            @if($hasPortalUser ?? $jobApplication->user_id)
             <div class="bg-white rounded-lg shadow-sm border p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">User Account</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Portal Account</h3>
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Registered User</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Registration Status</label>
                         <p class="text-sm text-gray-900">
                             <i class="fas fa-check-circle text-green-600 mr-1"></i>
-                            Account created
+                            Registered portal user
                         </p>
                     </div>
+                    @if($jobApplication->user_id)
                     <a href="{{ route('admin.users.dashboard', $jobApplication->user_id) }}"
                         class="inline-block w-full text-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out">
                         <i class="fas fa-tachometer-alt mr-2"></i>View User Dashboard
                     </a>
-                    <p class="text-xs text-gray-500 text-center">Read-only access to user's dashboard</p>
+                    @endif
                 </div>
+            </div>
+            @elseif($canGenerateRegistrationCodes ?? false)
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Portal Registration</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Send a <strong>T-</strong> registration code so this applicant can create a portal account before completing pre-employment steps.
+                </p>
+
+                @if($pendingRegistrationCode ?? null)
+                    <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                        Pending code: <strong>{{ $pendingRegistrationCode->code }}</strong>
+                        @if($pendingRegistrationCode->expires_at)
+                            <span class="block text-xs text-amber-700 mt-1">Expires {{ $pendingRegistrationCode->expires_at->format('M j, Y g:i A') }}</span>
+                        @endif
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('admin.job-applications.registration-code.generate', $jobApplication) }}">
+                    @csrf
+                    <button type="submit"
+                        class="w-full inline-flex items-center justify-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition duration-150 ease-in-out">
+                        <i class="fas fa-key mr-2"></i>
+                        {{ ($pendingRegistrationCode ?? null) ? 'Resend Registration Code' : 'Generate Registration Code' }}
+                    </button>
+                </form>
             </div>
             @endif
 

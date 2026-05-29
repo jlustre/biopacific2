@@ -91,6 +91,17 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
 // Employee Document Delete Route
 Route::delete('/admin/employees/{employee}/documents/{upload}', [\App\Http\Controllers\Admin\EmployeesController::class, 'deleteDocument'])->name('admin.employees.documents.delete');
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/employees/{employee}/documents/{upload}/notify/preview', [\App\Http\Controllers\Admin\EmployeesController::class, 'previewDocumentNotification'])
+        ->name('admin.employees.documents.notify.preview');
+    Route::post('/admin/employees/{employee}/documents/{upload}/notify', [\App\Http\Controllers\Admin\EmployeesController::class, 'sendDocumentNotification'])
+        ->name('admin.employees.documents.notify');
+    Route::post('/admin/employees/{employee}/documents/{upload}/approve', [\App\Http\Controllers\Admin\EmployeesController::class, 'approveDocument'])
+        ->name('admin.employees.documents.approve');
+    Route::post('/admin/employees/{employee}/documents/{upload}/reject', [\App\Http\Controllers\Admin\EmployeesController::class, 'rejectDocument'])
+        ->name('admin.employees.documents.reject');
+});
+
 
 // Admin Reports Management (CRUD)
 Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
@@ -340,6 +351,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
         ->name('employees.assessment-periods.modal-data');
     // Custom route for updating employee assignment (tabbed form)
     Route::put('employees/{employee}/update-assignment', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateAssignment'])->name('employees.update_assignment');
+    Route::post('employees/{employee}/registration-code', [\App\Http\Controllers\Admin\EmployeesController::class, 'generateRegistrationCode'])->name('employees.registration_code.generate');
     Route::put('employees/{employee}/update-tax', [\App\Http\Controllers\Admin\EmployeesController::class, 'updateTaxData'])->name('employees.tax.update');
 
     // AJAX: Save checklist verification (modal)
@@ -523,6 +535,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
        Route::get('/admin/job-openings', [\App\Http\Controllers\Admin\JobOpeningController::class, 'index'])->name('job-openings.index');
     });
     Route::patch('/job-applications/{jobApplication}/status', [AdminJobApplicationController::class, 'updateStatus'])->name('job-applications.update-status');
+    Route::post('/job-applications/{jobApplication}/registration-code', [AdminJobApplicationController::class, 'generateRegistrationCode'])->name('job-applications.registration-code.generate');
     Route::get('/job-applications/{jobApplication}/download-resume', [AdminJobApplicationController::class, 'downloadResume'])->name('job-applications.download-resume');
     Route::get('/job-applications/{jobApplication}/preview-resume', [AdminJobApplicationController::class, 'previewResume'])->name('job-applications.preview-resume');
     
@@ -770,6 +783,8 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/phones/{phone}/update', [\App\Http\Controllers\EmploymentController::class, 'updatePhone'])->name('phones.update');
         Route::post('/documents/upload', [\App\Http\Controllers\EmploymentController::class, 'uploadDocument'])->name('documents.upload');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\EmploymentController::class, 'downloadDocument'])->name('documents.download');
+        Route::get('/documents/{document}/notify/preview', [\App\Http\Controllers\EmploymentController::class, 'previewDocumentNotification'])->name('documents.notify.preview');
+        Route::post('/documents/{document}/notify', [\App\Http\Controllers\EmploymentController::class, 'sendDocumentNotification'])->name('documents.notify');
     });
 });
 

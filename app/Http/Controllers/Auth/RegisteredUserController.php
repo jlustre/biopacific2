@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\JobApplication;
 use App\Models\User;
+use App\Support\RegistrationCodeService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,17 +22,23 @@ class RegisteredUserController extends Controller
     {
         $prefillName = '';
         $prefillEmail = '';
+        $prefillRegistrationCode = '';
 
         if ($request->filled('c')) {
-            $jobApplication = JobApplication::where('applicant_code', $request->string('c')->trim())->first();
+            $code = strtoupper(trim((string) $request->string('c')));
 
-            if ($jobApplication) {
-                $prefillName = trim($jobApplication->first_name . ' ' . $jobApplication->last_name);
-                $prefillEmail = (string) $jobApplication->email;
+            if (preg_match('/^[ET]-/', $code)) {
+                $prefillRegistrationCode = $code;
+                $record = \App\Models\RegistrationCode::query()->where('code', $code)->first();
+
+                if ($record && $record->isUsable()) {
+                    $prefillName = $record->fullName();
+                    $prefillEmail = $record->email;
+                }
             }
         }
 
-        return view('auth.register', compact('prefillName', 'prefillEmail'));
+        return view('auth.register', compact('prefillName', 'prefillEmail', 'prefillRegistrationCode'));
     }
 
     /**
@@ -43,10 +49,20 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
+            'registration_code' => ['required', 'string', 'max:16'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'identity_verification' => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $registrationCodeService = app(RegistrationCodeService::class);
+        $codeRecord = $registrationCodeService->validateForRegistration(
+            (string) $request->input('registration_code'),
+            (string) $request->input('name'),
+            (string) $request->input('email'),
+            (string) $request->input('identity_verification', ''),
+        );
 
         $user = User::create([
             'name' => $request->name,
@@ -54,14 +70,8 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // If applicant_code is present, link job application to user
-        if ($request->filled('c')) {
-            $jobApplication = JobApplication::where('applicant_code', $request->string('c')->trim())->first();
-            if ($jobApplication) {
-                $jobApplication->user_id = $user->id;
-                $jobApplication->save();
-            }
-        }
+        $registrationCodeService->markAsUsed($codeRecord, $user);
+        $registrationCodeService->linkRegisteredUser($codeRecord, $user);
 
         event(new Registered($user));
 

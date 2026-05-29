@@ -66,6 +66,41 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
                 </div>
             </div>
         </div>
+    @elseif(!($canManageJobData ?? true))
+        @php
+            $current = $employee->currentAssignment;
+        @endphp
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            You cannot create or update your own job data. Contact HR or a system administrator if a change is needed.
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Facility</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->facility?->name ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Position</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->position?->title ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Department</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->department?->name ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Employment type</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ strtoupper((string) ($current?->full_part_time ?? '')) ?: '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Standard hours / week</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->std_hrs_week ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Effective date</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->effdt?->format('Y-m-d') ?? '—' }}</p>
+                </div>
+            </div>
+        </div>
     @else
     <div class="flex justify-end items-center mb-4 space-x-4">
         <button type="button" @click="clearAssignment()"
@@ -79,8 +114,19 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
     <form method="POST" action="{{ route('admin.employees.update_assignment', $employee->id) }}" @submit="confirmAssignmentSubmit($event)">
         @csrf
         @method('PUT')
-        @if(auth()->user() && auth()->user()->hasRole('facility-admin'))
-            <input type="hidden" name="facility_id" value="{{ auth()->user()->facility_id ?? ($employee->facility_id ?? '') }}">
+        @php
+            $authUser = auth()->user();
+            $canSelectEmployeeFacility = $authUser && (
+                $authUser->hasRole('super-admin')
+                || $authUser->hasRole('admin')
+                || $authUser->hasRole('rdhr')
+            );
+            $scopedFacilityId = (!$canSelectEmployeeFacility && $authUser)
+                ? ($authUser->facility_id ?? $employee->currentAssignment?->facility_id)
+                : null;
+        @endphp
+        @if($scopedFacilityId)
+            <input type="hidden" name="facility_id" value="{{ $scopedFacilityId }}">
         @endif
         <div class="bg-white shadow rounded-lg p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -94,16 +140,19 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
                         @endforeach
                     </select>
                 </div>
-                @if(auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('rdhr')))
+                @if($canSelectEmployeeFacility)
                 <div class="mb-2">
                     <label class="block text-sm font-medium mb-2">Facility</label>
-                    <select name="facility_id" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1"
+                    <select name="facility_id" class="form-select w-full border border-teal-300 rounded-lg px-2 py-1 {{ $errors->has('facility_id') ? 'border-red-500' : '' }}"
                         x-model="currentAssignment.facility_id">
                         <option value="">Select Facility</option>
                         @foreach(App\Models\Facility::all() as $facility)
                         <option value="{{ $facility->id }}">{{ $facility->name }}</option>
                         @endforeach
                     </select>
+                    @error('facility_id')
+                    <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
                 </div>
                 @endif
                 <div class="mb-2">

@@ -3,20 +3,26 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
-use App\Models\JobApplication;
+use App\Models\RegistrationCode;
+use App\Support\RegistrationCodeService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 #[Layout('components.layouts.auth')]
 class Register extends Component
 {
+    public string $registrationCode = '';
+
     public string $name = '';
 
     public string $email = '';
+
+    public string $identityVerification = '';
 
     public string $password = '';
 
@@ -24,20 +30,38 @@ class Register extends Component
 
     public ?string $applicantCode = null;
 
+    public bool $requiresIdentityVerification = true;
+
     /**
-     * Mount the component and prefill data if applicant code is provided.
+     * Mount the component and prefill data when a registration code is provided.
      */
     public function mount($code = null): void
     {
-        $this->applicantCode = $code ? trim($code) : null;
-        if ($this->applicantCode) {
-            $jobApplication = JobApplication::where('applicant_code', $this->applicantCode)->first();
-            
-            if ($jobApplication) {
-                $this->name = trim($jobApplication->first_name . ' ' . $jobApplication->last_name);
-                $this->email = $jobApplication->email;
+        $code = $code ? trim((string) $code) : null;
+
+        if ($code && preg_match('/^[ET]-/i', $code)) {
+            $this->registrationCode = strtoupper($code);
+            $record = RegistrationCode::query()->where('code', $this->registrationCode)->first();
+
+            if ($record && $record->isUsable()) {
+                $this->name = $record->fullName();
+                $this->email = $record->email;
+                $this->requiresIdentityVerification = $record->isEmployeeCode();
             }
+
+            return;
         }
+
+        $this->applicantCode = $code;
+    }
+
+    public function updatedRegistrationCode(string $value): void
+    {
+        $normalized = strtoupper(trim($value));
+        $this->registrationCode = $normalized;
+
+        $record = RegistrationCode::query()->where('code', $normalized)->first();
+        $this->requiresIdentityVerification = ! $record || $record->isEmployeeCode();
     }
 
     /**
@@ -45,29 +69,57 @@ class Register extends Component
      */
     public function register(): void
     {
-        $validated = $this->validate([
+        $rules = [
+            'registrationCode' => ['required', 'string', 'max:16'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'identityVerification' => ['nullable', 'string', 'max:50'],
+        ];
+
+        if ($this->requiresIdentityVerification) {
+            $rules['identityVerification'] = ['required', 'string', 'max:50'];
+        }
+
+        $validated = $this->validate($rules);
+
+        $registrationCodeService = app(RegistrationCodeService::class);
+
+        try {
+            $codeRecord = $registrationCodeService->validateForRegistration(
+                $validated['registrationCode'],
+                $validated['name'],
+                $validated['email'],
+                $validated['identityVerification'] ?? '',
+            );
+        } catch (ValidationException $exception) {
+            throw $exception;
+        }
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+        $registrationCodeService->markAsUsed($codeRecord, $user);
+        $registrationCodeService->linkRegisteredUser($codeRecord, $user);
 
-        event(new Registered(($user = User::create($validated))));
+        event(new Registered($user));
 
         Auth::login($user);
 
-        // If registered with applicant code, link the job application to this user
-        if ($this->applicantCode) {
-            $jobApplication = JobApplication::where('applicant_code', $this->applicantCode)->first();
-            if ($jobApplication) {
-                $jobApplication->user_id = $user->id;
-                $jobApplication->save();
-            }
-            $this->redirect(route('pre-employment.index', ['code' => $this->applicantCode], absolute: false), navigate: true);
-        } else {
-            $this->redirect(route('dashboard.index', absolute: false), navigate: true);
+        if ($codeRecord->type === RegistrationCode::TYPE_APPLICANT) {
+            $applicationCode = $codeRecord->jobApplication?->applicant_code ?? $this->applicantCode;
+            $this->redirect(
+                route('pre-employment.index', array_filter(['code' => $applicationCode]), absolute: false),
+                navigate: true
+            );
+
+            return;
         }
+
+        $this->redirect(route('dashboard.index', absolute: false), navigate: true);
     }
 
     public function render()

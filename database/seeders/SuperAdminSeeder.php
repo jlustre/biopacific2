@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\Support\SeedsUserEmployeeRecords;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -70,5 +71,11 @@ class SuperAdminSeeder extends Seeder
         // Assign the SuperAdmin role to the user (ensures all permissions)
         $superAdminUser->syncRoles(['super-admin']);
         $this->command->info('SuperAdmin role synced to user.');
+
+        SeedsUserEmployeeRecords::seed($superAdminUser, [
+            'facility_id' => 99,
+            'position_index' => 3,
+        ]);
+        $this->command->info('Super admin employee record ensured.');
     }
 }
