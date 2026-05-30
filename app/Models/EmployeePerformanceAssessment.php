@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AssessmentWorkflowStatus;
 use App\Support\PartFPerformanceScoring;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,6 +23,7 @@ class EmployeePerformanceAssessment extends Model
         'assessed_by',
         'comments',
         'finalized',
+        'status',
     ];
 
     protected $casts = [
@@ -99,5 +101,21 @@ class EmployeePerformanceAssessment extends Model
     public function period()
     {
         return $this->belongsTo(EmployeeAssessmentPeriod::class, 'assessment_period_id');
+    }
+
+    public function workflowStatus(): string
+    {
+        if (filled($this->status)) {
+            return AssessmentWorkflowStatus::normalize((string) $this->status);
+        }
+
+        return ! empty($this->finalized)
+            ? AssessmentWorkflowStatus::COMPLETED
+            : AssessmentWorkflowStatus::DRAFT;
+    }
+
+    public function syncFinalizedFromStatus(): void
+    {
+        $this->finalized = AssessmentWorkflowStatus::isCompleted($this->workflowStatus());
     }
 }

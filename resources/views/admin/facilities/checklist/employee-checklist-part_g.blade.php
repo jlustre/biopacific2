@@ -26,8 +26,18 @@
             ->intersect(collect(\App\Livewire\Admin\Facilities\Checklist\PartGSections\DirectorOfStaffDevelopmentCompetency::dsdSectionKeys()))
             ->isNotEmpty();
         $partGSubmissionStatus = $selectedCompetencyAssessment?->status;
-        $partGAssessmentLocked = $partGSubmissionStatus === 'completed';
-        $partGSubmissionStatusLabel = $partGSubmissionStatus ? ucwords(str_replace('_', ' ', (string) $partGSubmissionStatus)) : null;
+        $partGWorkflowStatus = $selectedCompetencyAssessment?->workflowStatus() ?? \App\Support\AssessmentWorkflowStatus::DRAFT;
+        $partGAssessmentLocked = \App\Support\AssessmentWorkflowStatus::isLocked($partGWorkflowStatus);
+        $partGEmployeeCanConfirm = \App\Support\AssessmentWorkflowStatus::employeeCanConfirm($partGWorkflowStatus);
+        $partGReviewerCanApprove = \App\Support\AssessmentWorkflowStatus::reviewerCanApprove($partGWorkflowStatus);
+        $partGSubmissionStatusLabel = \App\Support\AssessmentWorkflowStatus::label($partGWorkflowStatus);
+        $partGRatingsLocked = $partGAssessmentLocked
+            || $partGEmployeeCanConfirm
+            || ($partGReviewerCanApprove && !empty($evaluatorActionsDisabled))
+            || (!empty($evaluatorActionsDisabled) && ! $partGEmployeeCanConfirm);
+        $partGCompetencyEmployeeComments = $selectedCompetencyAssessment?->employee_comments ?? '';
+        $partGCompetencyEmployeeAckDate = $selectedCompetencyAssessment?->employee_signed_at?->format('Y-m-d')
+            ?? ($partGEmployeeCanConfirm ? now()->toDateString() : '');
         $partGDontIncludeSections = [
             'BLOOD ADMINISTRATION',
             'BLOOD GLUCOSE SYSTEM SKILLS',
@@ -69,7 +79,7 @@
         {{-- $partGSections, $partGPosition, $partGLicensedNurseGuidancePositions, $partGShowLicensedNurseGuidance, $partGSubmissionStatus, $partGAssessmentLocked, $partGSubmissionStatusLabel, $partGDontIncludeSections, $partGExcludedSectionLabels, $partGTracheostomyEquipmentChecks, $partGTracheostomyProcedureReviews --}}
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <h2 class="text-xl font-bold">COMPETENCIES CHECKLIST: {{ $partGPosition }}</h2>
-            @if($partGSubmissionStatusLabel)
+            @if($selectedCompetencyAssessment && $partGSubmissionStatusLabel)
             <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $partGAssessmentLocked ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}">{{ $partGAssessmentLocked ? 'Read Only' : $partGSubmissionStatusLabel }}</span>
             @endif
         </div>
@@ -115,73 +125,73 @@
             @livewire('admin.facilities.checklist.part-g-sections.licensed-nurse-competency-skills', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('licensed-nurse-competency-skills-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.licensed-nurse-emar-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('licensed-nurse-emar-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.licensed-nurse-point-of-care-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('licensed-nurse-point-of-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.matrixcare-physician-order-documentation-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('matrixcare-physician-order-documentation-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.blood-administration-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('blood-administration-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.blood-glucose-system-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('blood-glucose-system-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.tracheostomy-care-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('tracheostomy-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.nurse-treatment-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('nurse-treatment-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.hand-hygiene-competency-skills', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('hand-hygiene-competency-skills-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.ventilator-management-skills-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('ventilator-management-skills-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.personal-protective-equipment-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('personal-protective-equipment-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
 
             @livewire('admin.facilities.checklist.part-g-sections.medication-administration-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('medication-administration-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
 
@@ -195,7 +205,7 @@
             @livewire('admin.facilities.checklist.part-g-sections.cna-skills-checklist-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('cna-skills-checklist-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
 
@@ -203,7 +213,7 @@
             @livewire('admin.facilities.checklist.part-g-sections.perineal-care-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('perineal-care-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
 
@@ -211,7 +221,7 @@
             @livewire('admin.facilities.checklist.part-g-sections.use-of-hoyer-lift-training-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('use-of-hoyer-lift-training-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
 
@@ -222,10 +232,12 @@
             @livewire('admin.facilities.checklist.part-g-sections.director-of-staff-development-competency', [
                 'employeeNum' => $employee->employee_num,
                 'assessmentPeriodId' => $selectedAssessmentPeriodId,
-                'assessmentLocked' => $partGAssessmentLocked,
+                'assessmentLocked' => $partGRatingsLocked,
             ], key('director-of-staff-development-competency-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none')))
         @endif
         @endif
+
+        @include('admin.facilities.checklist.part-g-competency-workflow-form')
 
         @livewire('admin.facilities.checklist.competency-assessment-history-table', [
             'employeeNum' => $employee->employee_num,

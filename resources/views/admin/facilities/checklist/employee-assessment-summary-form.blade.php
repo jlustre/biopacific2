@@ -100,32 +100,59 @@
                     </div>
                     <div class="min-w-0">
                         <label for="partFReviewSignaturesEmployeeAckDt" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-700">Employee Acknowledge Date</label>
-                        <input id="partFReviewSignaturesEmployeeAckDt" type="date" name="employee_acknowledge_dt" class="w-full min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('employee_acknowledge_dt', $employeeAcknowledgeDt ?? '') }}" @readonly($partFAssessmentLocked || !(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id))>
+                        <input id="partFReviewSignaturesEmployeeAckDt" type="date" name="employee_acknowledge_dt" class="w-full min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('employee_acknowledge_dt', $employeeAcknowledgeDt ?? '') }}" @readonly($partFAssessmentLocked || !(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id && !empty($partFEmployeeCanConfirm)))>
                     </div>
                 </div>
 
                 <div class="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-700 md:col-span-2">
                     <div class="font-semibold uppercase tracking-wide text-slate-900">Current Status</div>
-                    <div class="mt-1 text-sm font-semibold text-slate-900">{{ $partFStatusLabel ?? 'Draft' }}</div>
-                    <div class="mt-1">Save as Draft keeps the assessment editable. Submit Assessment marks the period complete in the current Part F flow.</div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900">{{ $partFStatusLabel ?? 'In Progress' }}</div>
+                    <div class="mt-1">
+                        @if(!empty($partFEmployeeCanConfirm))
+                        Enter your employee comments, confirm the acknowledgement date, then click <strong>Save Acknowledgement</strong>.
+                        @elseif(!empty($partFReviewerCanApprove))
+                        The employee has acknowledged this assessment. Review and click <strong>Approve Assessment</strong> to complete it.
+                        @elseif(!empty($partFAssessmentLocked))
+                        This assessment is completed and read-only. The reviewer may reopen it, or the employee may send it back for review.
+                        @else
+                        Save as Draft keeps the assessment editable. Submit Assessment sends it to the employee for confirmation.
+                        @endif
+                    </div>
                 </div>
             </div>
 
             @if($partFAssessmentLocked)
             <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
-                This assessment has already been completed for the selected period. The notes and signature fields are shown for reference only.
+                This assessment has been completed for the selected period. The notes and signature fields are shown for reference only.
+            </div>
+            <div class="flex flex-wrap justify-end gap-2">
+                @if(!empty($evaluatorActionsDisabled))
+                <button type="submit" name="action" value="send_back" class="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100">Send Back to Reviewer</button>
+                @else
+                <button type="submit" name="action" value="reopen" class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Reopen for Editing</button>
+                @endif
+            </div>
+            @elseif(!empty($partFEmployeeCanConfirm) && !empty($evaluatorActionsDisabled))
+            <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">
+                You may enter employee comments and save your acknowledgement. Ratings and reviewer fields cannot be changed on your own record.
+            </div>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button type="submit" name="action" value="send_back" class="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100">Send Back to Reviewer</button>
+                <button type="submit" name="action" value="acknowledge" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save Acknowledgement</button>
+            </div>
+            @elseif(!empty($partFReviewerCanApprove) && empty($evaluatorActionsDisabled))
+            <div class="flex flex-wrap justify-end gap-2">
+                <button type="submit" name="action" value="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save Changes</button>
+                <button type="submit" name="action" value="approve" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Approve Assessment</button>
             </div>
             @elseif(!empty($evaluatorActionsDisabled))
             <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">
-                You may update your employee acknowledgment date below. A supervisor must complete and submit this performance evaluation.
-            </div>
-            <div class="flex flex-wrap justify-end gap-2">
-                <button type="submit" name="action" value="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save acknowledgment</button>
+                This assessment is not yet ready for your confirmation, or a supervisor must complete the evaluation first.
             </div>
             @else
             <div class="flex flex-wrap justify-end gap-2">
                 <button type="submit" name="action" value="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save as Draft</button>
-                <button type="submit" name="action" value="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Submit Assessment</button>
+                <button type="submit" name="action" value="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Submit for Employee Confirmation</button>
             </div>
             @endif
         </div>

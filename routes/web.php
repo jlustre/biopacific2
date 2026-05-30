@@ -179,6 +179,7 @@ Route::middleware(['auth'])->get('/admin/positions/lookup', [\App\Http\Controlle
 
 // PART F: Areas for Development (save)
 Route::post('admin/employees/{employee}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
+Route::post('admin/employees/{employee}/competency-workflow', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveCompetencyWorkflow'])->name('admin.employees.competency-workflow.save');
 
 // PART F: List reviewed employees for selected period and facility (AJAX)
 Route::middleware(['auth'])->prefix('admin')->group(function () {

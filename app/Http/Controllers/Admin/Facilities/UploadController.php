@@ -151,6 +151,7 @@ class UploadController extends Controller {
             $upload->file_path = $path;
             $upload->original_filename = $file->getClientOriginalName();
             $upload->file_size = $file->getSize();
+            $upload->user_id = Auth::id();
             $upload->uploaded_at = now();
         }
 

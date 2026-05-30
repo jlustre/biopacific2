@@ -4,12 +4,85 @@
     $tableScope = $tableScope ?? 'facility';
     $isEmployeeTable = $tableScope === 'employee';
     $compactEmployeeTable = ($isSelfService ?? false) && $isEmployeeTable && isset($employee);
-    $employeeTableColspan = $compactEmployeeTable ? 4 : ($isEmployeeTable ? 8 : 6);
+    $isFacilityTable = ! $isEmployeeTable;
+    $user = Auth::user();
+    $canChooseFacility = ! $isEmployeeTable && $user && ($user->hasRole('admin') || $user->hasRole('rdhr'));
+    $userFacility = ! $isEmployeeTable && $user && $user->facility ? $user->facility : null;
+    $showFacilityColumn = ! $compactEmployeeTable && ! ($userFacility && ! $canChooseFacility);
+    $facilityTableColspan = $showFacilityColumn ? 7 : 6;
+    $employeeTableColspan = $compactEmployeeTable ? 6 : ($showFacilityColumn ? 9 : 8);
+    $tableColspan = $isEmployeeTable ? $employeeTableColspan : $facilityTableColspan;
     $filterFormAction = $isEmployeeTable && isset($employee)
         ? (($isSelfService ?? false)
             ? route('employment.portal', ['tab' => 'documents'])
             : route('admin.employees.edit', $employee))
-        : null;
+        : (isset($facility) ? route('admin.facility.documents', ['facility' => $facility->slug ?? $facility->id]) : null);
+    $clearFilterUrl = $isEmployeeTable && isset($employee)
+        ? (($isSelfService ?? false)
+            ? route('employment.portal', array_filter([
+                'tab' => 'documents',
+                'facility' => request('facility'),
+            ]))
+            : route('admin.employees.edit', $employee) . '?tab=documents')
+        : (isset($facility) ? route('admin.facility.documents', ['facility' => $facility->slug ?? $facility->id]) : url()->current());
+
+    $filterFacilityId = null;
+    if ($isFacilityTable) {
+        if ($canChooseFacility && request('facility_id')) {
+            $filterFacilityId = (int) request('facility_id');
+        } elseif ($userFacility) {
+            $filterFacilityId = (int) $userFacility->id;
+        } elseif (isset($facility) && $facility) {
+            $filterFacilityId = (int) $facility->id;
+        }
+    }
+
+    $filterOptionsQuery = \App\Models\Upload::query();
+    if ($isEmployeeTable && isset($employee)) {
+        $filterOptionsQuery->where('employee_num', $employee->employee_num);
+    } elseif ($filterFacilityId) {
+        $filterOptionsQuery->where('facility_id', $filterFacilityId);
+    }
+
+    $uploaderFilterOptions = \App\Models\User::query()
+        ->whereIn('id', (clone $filterOptionsQuery)->whereNotNull('user_id')->distinct()->pluck('user_id'))
+        ->orderBy('name')
+        ->get(['id', 'name']);
+
+    $approverFilterOptions = \App\Models\User::query()
+        ->whereIn('id', (clone $filterOptionsQuery)
+            ->where('verification_status', \App\Models\Upload::VERIFICATION_APPROVED)
+            ->whereNotNull('verified_by_user_id')
+            ->distinct()
+            ->pluck('verified_by_user_id'))
+        ->orderBy('name')
+        ->get(['id', 'name']);
+
+    $employeeFilterOptions = collect($employees ?? []);
+    if ($isFacilityTable && $employeeFilterOptions->isEmpty() && $filterFacilityId) {
+        $employeeFilterOptions = \App\Models\BPEmployee::query()
+            ->whereHas('assignments', fn ($q) => $q->where('facility_id', $filterFacilityId))
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+    }
+
+    $displayFacilityName = null;
+    if ($isFacilityTable) {
+        if ($canChooseFacility) {
+            if (request('facility_id')) {
+                $displayFacilityName = \App\Models\Facility::find(request('facility_id'))?->name;
+            } elseif (isset($facility) && $facility) {
+                $displayFacilityName = $facility->name;
+            } else {
+                $displayFacilityName = 'All Facilities';
+            }
+        } elseif ($userFacility) {
+            $displayFacilityName = $userFacility->name;
+        } elseif (isset($facility) && $facility) {
+            $displayFacilityName = $facility->name;
+        }
+    }
 
     if ($compactEmployeeTable) {
         $documentsFacility = $employee->currentAssignment?->facility;
@@ -30,12 +103,21 @@
     }
 @endphp
 <div id="upload-table" class="p-6 bg-white rounded shadow" tabindex="-1">
-    <form id="upload-table-filter-form" method="GET" @if($filterFormAction) action="{{ $filterFormAction }}" @endif class="flex flex-wrap items-end gap-4 mb-4">
+    @if($isFacilityTable && $displayFacilityName)
+    <div class="mb-4 pb-3 border-b border-teal-200">
+        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Facility</p>
+        <h2 class="text-xl font-bold text-teal-900">{{ $displayFacilityName }}</h2>
+    </div>
+    @endif
+    <form id="upload-table-filter-form" method="GET" @if($filterFormAction) action="{{ $filterFormAction }}" @endif class="mb-4">
         @if($isEmployeeTable)
             <input type="hidden" name="tab" value="documents">
         @endif
         @if($compactEmployeeTable && request('facility'))
             <input type="hidden" name="facility" value="{{ request('facility') }}">
+        @endif
+        @if($isFacilityTable && $userFacility && ! $canChooseFacility)
+            <input type="hidden" name="facility_id" value="{{ $userFacility->id }}">
         @endif
         <div x-data="{
             selectedType: '{{ request('upload_type_id') }}',
@@ -52,40 +134,12 @@
         }"
         x-init="updateShowExpiry(); $watch('selectedType', () => updateShowExpiry())"
         class="flex flex-wrap items-end gap-4 w-full">
-            <div>
-                <label class="block mb-1 text-xs font-semibold">
-                    @if($compactEmployeeTable)
-                        Search by file name
-                    @else
-                        Search by Name
-                    @endif
-                </label>
-                <input type="text" name="search" value="{{ request('search') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="{{ $compactEmployeeTable ? 'Search document file name...' : ($isEmployeeTable ? 'File name...' : 'Employee or file name...') }}">
+            <div class="flex-1 min-w-[180px]">
+                <label class="block mb-1 text-xs font-semibold">Search by file name</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="Search document file name...">
             </div>
-            @php
-                $user = Auth::user();
-                $canChooseFacility = ! $isEmployeeTable && $user && ($user->hasRole('admin') || $user->hasRole('rdhr'));
-                $userFacility = ! $isEmployeeTable && $user && $user->facility ? $user->facility : null;
-            @endphp
-            @if($canChooseFacility)
-                <div>
-                    <label class="block mb-1 text-xs font-semibold">Filter by Facility</label>
-                    <select name="facility_id" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
-                        <option value="">All Facilities</option>
-                        @foreach(App\Models\Facility::orderBy('name')->get() as $fac)
-                        <option value="{{ $fac->id }}" @if(request('facility_id')==$fac->id) selected @endif>{{ $fac->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            @elseif($userFacility)
-                <div>
-                    <label class="block mb-1 text-xs font-semibold">Facility</label>
-                    <span class="text-teal-700 font-semibold">{{ $userFacility->name }}</span>
-                    <input type="hidden" name="facility_id" value="{{ $userFacility->id }}">
-                </div>
-            @endif
             <div>
-                <label class="block mb-1 text-xs font-semibold">Filter by Upload Type</label>
+                <label class="block mb-1 text-xs font-semibold">Upload Type</label>
                 <select name="upload_type_id" x-model="selectedType" @change="updateShowExpiry()" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
                     <option value="">All Types</option>
                     @foreach(App\Models\UploadType::orderBy('name')->get() as $utype)
@@ -95,21 +149,94 @@
                     @endforeach
                 </select>
             </div>
-            {{-- <template> --}}
-                <div>
-                    <label class="block mb-1 text-xs font-semibold">Expires In</label>
-                    <select name="expiry_range" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
-                        <option value="" @if(request('expiry_range')=='') selected @endif>All Tracked</option>
-                        <option value="expired" @if(request('expiry_range')=='expired') selected @endif class="bg-red-100 text-red-700 font-bold">Expired</option>
-                        <option value="30" @if(request('expiry_range')=='30') selected @endif class="bg-yellow-100 text-yellow-800 font-bold">0-30 days</option>
-                        <option value="60" @if(request('expiry_range')=='60') selected @endif class="bg-orange-100 text-orange-800 font-bold">31-60 days</option>
-                        <option value="90" @if(request('expiry_range')=='90') selected @endif class="bg-blue-100 text-blue-800 font-bold">61-90 days</option>
-                        <option value="120" @if(request('expiry_range')=='120') selected @endif class="bg-purple-100 text-purple-800 font-bold">91-120 days</option>
-                        <option value="121" @if(request('expiry_range')=='121') selected @endif class="bg-green-100 text-green-800 font-bold">120+ days</option>
-                    </select>
-                </div>
-            {{-- </template> --}}
-            <button type="submit" class="px-2 py-1 ml-1 font-semibold text-white bg-teal-600 rounded cursor-pointer hover:bg-teal-700">Filter</button>
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Expires In</label>
+                <select name="expiry_range" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
+                    <option value="" @if(request('expiry_range')=='') selected @endif>All Tracked</option>
+                    <option value="expired" @if(request('expiry_range')=='expired') selected @endif class="bg-red-100 text-red-700 font-bold">Expired</option>
+                    <option value="30" @if(request('expiry_range')=='30') selected @endif class="bg-yellow-100 text-yellow-800 font-bold">0-30 days</option>
+                    <option value="60" @if(request('expiry_range')=='60') selected @endif class="bg-orange-100 text-orange-800 font-bold">31-60 days</option>
+                    <option value="90" @if(request('expiry_range')=='90') selected @endif class="bg-blue-100 text-blue-800 font-bold">61-90 days</option>
+                    <option value="120" @if(request('expiry_range')=='120') selected @endif class="bg-purple-100 text-purple-800 font-bold">91-120 days</option>
+                    <option value="121" @if(request('expiry_range')=='121') selected @endif class="bg-green-100 text-green-800 font-bold">120+ days</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-end gap-4 w-full mt-3 pt-3 border-t border-gray-100">
+            @if($canChooseFacility)
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Filter by Facility</label>
+                <select name="facility_id" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select min-w-[180px]">
+                    <option value="">All Facilities</option>
+                    @foreach(App\Models\Facility::orderBy('name')->get() as $fac)
+                    <option value="{{ $fac->id }}" @if(request('facility_id')==$fac->id) selected @endif>{{ $fac->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+            @if($isFacilityTable)
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Employee</label>
+                <select name="employee_num" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select min-w-[180px]">
+                    <option value="">All employees</option>
+                    @foreach($employeeFilterOptions as $emp)
+                        <option value="{{ $emp->employee_num ?? $emp['employee_num'] }}" @if(request('employee_num') == ($emp->employee_num ?? $emp['employee_num'])) selected @endif>
+                            {{ $emp->last_name ?? $emp['last_name'] }}, {{ $emp->first_name ?? $emp['first_name'] }} ({{ $emp->employee_num ?? $emp['employee_num'] }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Uploaded By</label>
+                <select name="uploaded_by" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select min-w-[160px]">
+                    <option value="">All uploaders</option>
+                    @foreach($uploaderFilterOptions as $uploader)
+                        <option value="{{ $uploader->id }}" @if((string) request('uploaded_by') === (string) $uploader->id) selected @endif>{{ $uploader->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Upload Date From</label>
+                <input type="date" name="uploaded_from" value="{{ request('uploaded_from') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input">
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Upload Date To</label>
+                <input type="date" name="uploaded_to" value="{{ request('uploaded_to') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input">
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Approved By</label>
+                <select name="approved_by" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select min-w-[160px]">
+                    <option value="">All approvers</option>
+                    @foreach($approverFilterOptions as $approver)
+                        <option value="{{ $approver->id }}" @if((string) request('approved_by') === (string) $approver->id) selected @endif>{{ $approver->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Approved Date From</label>
+                <input type="date" name="approved_from" value="{{ request('approved_from') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input">
+            </div>
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Approved Date To</label>
+                <input type="date" name="approved_to" value="{{ request('approved_to') }}" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input">
+            </div>
+            @if($isEmployeeTable)
+            <div>
+                <label class="block mb-1 text-xs font-semibold">Status</label>
+                <select name="verification_status" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select min-w-[160px]">
+                    <option value="">All statuses</option>
+                    <option value="none" @if(request('verification_status') === 'none') selected @endif>Not submitted</option>
+                    <option value="{{ \App\Models\Upload::VERIFICATION_PENDING }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_PENDING) selected @endif>Pending review</option>
+                    <option value="{{ \App\Models\Upload::VERIFICATION_APPROVED }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_APPROVED) selected @endif>Approved</option>
+                    <option value="{{ \App\Models\Upload::VERIFICATION_REJECTED }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_REJECTED) selected @endif>Rejected</option>
+                </select>
+            </div>
+            @endif
+            <div class="flex items-end gap-2 pb-0.5">
+                <button type="submit" class="px-3 py-1 font-semibold text-white bg-teal-600 rounded cursor-pointer hover:bg-teal-700">Filter</button>
+                <a href="{{ $clearFilterUrl }}" class="px-3 py-1 font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Clear Filters</a>
+            </div>
         </div>
     </form>
     <!-- Expiry Color Legend -->
@@ -147,15 +274,22 @@
             <tr class="bg-gray-100">
                 <th class="px-3 py-2 border text-sm">Type</th>
                 @unless($compactEmployeeTable)
+                @if($showFacilityColumn)
                 <th class="px-3 py-2 border text-sm">Facility</th>
-                <th class="px-3 py-2 border text-sm">Employee #</th>
-                <th class="px-3 py-2 border text-sm">Employee Name</th>
-                @endunless
-                @if($isEmployeeTable && ! $compactEmployeeTable)
-                <th class="px-3 py-2 border text-sm">Uploaded By</th>
                 @endif
                 @if($isEmployeeTable)
+                <th class="px-3 py-2 border text-sm">Employee #</th>
+                <th class="px-3 py-2 border text-sm">Employee Name</th>
+                @else
+                <th class="px-3 py-2 border text-sm">Employee</th>
+                <th class="px-3 py-2 border text-sm">Uploaded By / Date</th>
+                <th class="px-3 py-2 border text-sm">Approved By / Date</th>
+                @endif
+                @endunless
+                @if($isEmployeeTable)
+                <th class="px-3 py-2 border text-sm">Uploaded By / Date</th>
                 <th class="px-3 py-2 border text-sm">Status</th>
+                <th class="px-3 py-2 border text-sm">Approved By / Date</th>
                 @endif
                 <th class="px-3 py-2 border text-sm">Expires</th>
                 <th class="px-3 py-2 border text-sm">Actions</th>
@@ -163,15 +297,14 @@
         </thead>
         <tbody>
             @php
-            $query = App\Models\Upload::with(['facility','user','uploadType','employee']);
-            $user = Auth::user();
-            $canChooseFacility = ! $isEmployeeTable && $user && ($user->hasRole('admin') || $user->hasRole('rdhr'));
-            $userFacility = ! $isEmployeeTable && $user && $user->facility ? $user->facility : null;
+            $query = App\Models\Upload::with(['facility','user','uploadType','employee','verifiedBy']);
 
             if ($isEmployeeTable && isset($employee)) {
                 $query->where('employee_num', $employee->employee_num);
             } elseif($canChooseFacility) {
                 if(request('facility_id')) $query->where('facility_id', request('facility_id'));
+            } elseif (isset($facility) && $facility) {
+                $query->where('facility_id', $facility->id);
             } elseif($userFacility) {
                 $query->where('facility_id', $userFacility->id);
             }
@@ -182,20 +315,52 @@
                 if ($isEmployeeTable) {
                     $query->whereRaw('LOWER(original_filename) LIKE ?', [$like]);
                 } else {
-                    $query->where(function ($q) use ($like) {
-                        $q->whereRaw('LOWER(original_filename) LIKE ?', [$like])
-                            ->orWhereRaw('LOWER(employee_num) LIKE ?', [$like])
-                            ->orWhereHas('employee', function ($employeeQuery) use ($like) {
-                                $employeeQuery->where(function ($nameQuery) use ($like) {
-                                    $nameQuery->whereRaw('LOWER(first_name) LIKE ?', [$like])
-                                        ->orWhereRaw('LOWER(last_name) LIKE ?', [$like])
-                                        ->orWhereRaw("LOWER(CONCAT(COALESCE(last_name, ''), ', ', COALESCE(first_name, ''))) LIKE ?", [$like])
-                                        ->orWhereRaw("LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) LIKE ?", [$like]);
-                                });
-                            });
-                    });
+                    $query->whereRaw('LOWER(original_filename) LIKE ?', [$like]);
                 }
             }
+
+            if ($isFacilityTable && request('employee_num')) {
+                $query->where('employee_num', request('employee_num'));
+            }
+
+            if (request('uploaded_by')) {
+                $query->where('user_id', request('uploaded_by'));
+            }
+
+            if (request('uploaded_from')) {
+                $query->whereDate('uploaded_at', '>=', request('uploaded_from'));
+            }
+
+            if (request('uploaded_to')) {
+                $query->whereDate('uploaded_at', '<=', request('uploaded_to'));
+            }
+
+            if (request('approved_by')) {
+                $query->where('verified_by_user_id', request('approved_by'))
+                    ->where('verification_status', \App\Models\Upload::VERIFICATION_APPROVED);
+            }
+
+            if (request('approved_from')) {
+                $query->where('verification_status', \App\Models\Upload::VERIFICATION_APPROVED)
+                    ->whereDate('verified_at', '>=', request('approved_from'));
+            }
+
+            if (request('approved_to')) {
+                $query->where('verification_status', \App\Models\Upload::VERIFICATION_APPROVED)
+                    ->whereDate('verified_at', '<=', request('approved_to'));
+            }
+
+            if ($isEmployeeTable && request('verification_status')) {
+                if (request('verification_status') === 'none') {
+                    $query->where(function ($statusQuery) {
+                        $statusQuery->whereNull('verification_status')
+                            ->orWhere('verification_status', '');
+                    });
+                } else {
+                    $query->where('verification_status', request('verification_status'));
+                }
+            }
+
             if(request('upload_type_id')) $query->where('upload_type_id', request('upload_type_id'));
             $now = now();
             $expiryRange = request('expiry_range');
@@ -242,18 +407,52 @@
             <tr>
                 <td class="px-3 py-2 border text-xs">{{ $upload->uploadType->name ?? '-' }}</td>
                 @unless($compactEmployeeTable)
+                @if($showFacilityColumn)
                 <td class="px-3 py-2 border text-xs">{{ $upload->facility->name ?? '-' }}</td>
+                @endif
+                @if($isEmployeeTable)
                 <td class="px-3 py-2 border text-xs">{{ $upload->employee_num ?? '-' }}</td>
                 <td class="px-3 py-2 border text-xs">
                     @if($upload->employee)
                         {{ $upload->employee->last_name }}, {{ $upload->employee->first_name }}
                     @endif
                 </td>
-                @endunless
-                @if($isEmployeeTable && ! $compactEmployeeTable)
-                <td class="px-3 py-2 border text-xs">{{ $upload->user->name ?? '-' }}</td>
+                @else
+                <td class="px-3 py-2 border text-xs">
+                    @if($upload->employee)
+                        <div>{{ $upload->employee->last_name }}, {{ $upload->employee->first_name }}</div>
+                        <div class="text-gray-500 mt-0.5">{{ $upload->employee_num }}</div>
+                    @else
+                        {{ $upload->employee_num ?? '—' }}
+                    @endif
+                </td>
+                <td class="px-3 py-2 border text-xs">
+                    <div>{{ $upload->user->name ?? '—' }}</div>
+                    @if($upload->uploaded_at)
+                        <div class="text-gray-500 mt-0.5 whitespace-nowrap">{{ $upload->uploaded_at->timezone(config('app.timezone'))->format('Y-m-d g:i A') }}</div>
+                    @endif
+                </td>
+                <td class="px-3 py-2 border text-xs">
+                    @if($upload->verification_status === \App\Models\Upload::VERIFICATION_APPROVED)
+                        <div>{{ $upload->verifiedBy->name ?? '—' }}</div>
+                        @if($upload->verified_at)
+                            <div class="text-gray-500 mt-0.5 whitespace-nowrap">{{ $upload->verified_at->timezone(config('app.timezone'))->format('Y-m-d g:i A') }}</div>
+                        @endif
+                    @else
+                        <span class="text-gray-400">—</span>
+                    @endif
+                </td>
                 @endif
+                @endunless
                 @if($isEmployeeTable)
+                <td class="px-3 py-2 border text-xs">
+                    <div>{{ $upload->user->name ?? '—' }}</div>
+                    @if($upload->uploaded_at)
+                        <div class="text-gray-500 mt-0.5 whitespace-nowrap">{{ $upload->uploaded_at->timezone(config('app.timezone'))->format('Y-m-d g:i A') }}</div>
+                    @else
+                        <div class="text-gray-400 mt-0.5 italic">—</div>
+                    @endif
+                </td>
                 <td class="px-3 py-2 border text-xs">
                     @if($upload->verification_status)
                         @php
@@ -274,6 +473,16 @@
                         @endif
                     @else
                         <span class="text-gray-500 italic">Not submitted</span>
+                    @endif
+                </td>
+                <td class="px-3 py-2 border text-xs">
+                    @if($upload->verification_status === \App\Models\Upload::VERIFICATION_APPROVED)
+                        <div>{{ $upload->verifiedBy->name ?? '—' }}</div>
+                        @if($upload->verified_at)
+                            <div class="text-gray-500 mt-0.5 whitespace-nowrap">{{ $upload->verified_at->timezone(config('app.timezone'))->format('Y-m-d g:i A') }}</div>
+                        @endif
+                    @else
+                        <span class="text-gray-400">—</span>
                     @endif
                 </td>
                 @endif
@@ -412,7 +621,7 @@
             @endif
             @empty
             <tr>
-                <td colspan="{{ $employeeTableColspan }}" class="py-6 text-center text-gray-500">No uploads found.</td>
+                <td colspan="{{ $tableColspan }}" class="py-6 text-center text-gray-500">No uploads found.</td>
             </tr>
             @endforelse
         </tbody>

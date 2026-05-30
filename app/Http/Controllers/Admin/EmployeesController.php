@@ -18,6 +18,7 @@ use App\Models\SelectOption;
 use App\Models\EmployeePerformanceAssessment;
 use App\Models\Optionstype;
 use App\Support\PartFPerformanceScoring;
+use App\Support\AssessmentWorkflowStatus;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Support\EmployeeAssessmentPeriodCalculator;
 use App\Support\RegistrationCodeService;
@@ -199,7 +200,7 @@ class EmployeesController extends Controller
         return UploadNotificationContext::resolve($upload);
     }
 
-    protected function isEmployeeDocumentSubmissionRequest(Request $request, BPEmployee $employee): bool
+    protected function isEmployeeSelfServiceRequest(Request $request, BPEmployee $employee): bool
     {
         if ($request->routeIs('employment.*')) {
             return true;
@@ -208,6 +209,11 @@ class EmployeesController extends Controller
         $user = Auth::user();
 
         return $user && (int) $employee->user_id === (int) $user->id;
+    }
+
+    protected function isEmployeeDocumentSubmissionRequest(Request $request, BPEmployee $employee): bool
+    {
+        return $this->isEmployeeSelfServiceRequest($request, $employee);
     }
 
     protected function authorizeDocumentVerification(Request $request, BPEmployee $employee, Upload $upload): void
@@ -392,6 +398,7 @@ class EmployeesController extends Controller
             $upload->file_path = $path;
             $upload->original_filename = $file->getClientOriginalName();
             $upload->file_size = $file->getSize();
+            $upload->user_id = Auth::id();
             $upload->uploaded_at = now();
         }
 
@@ -1039,6 +1046,22 @@ class EmployeesController extends Controller
         $validated['is_primary'] = $this->normalizeYnPrimary($validated['is_primary']);
         $validated['address_type'] = strtoupper($validated['address_type']);
 
+        if ($this->isEmployeeSelfServiceRequest($request, $employeeModel) && $isUpdate) {
+            $latestAddress = BPEmpAddress::query()
+                ->where('employee_num', $employeeModel->employee_num)
+                ->orderByDesc('effdt')
+                ->orderByDesc('effseq')
+                ->first();
+
+            if (! $latestAddress
+                || (string) $latestAddress->effdt !== (string) $validated['effdt']
+                || (int) $latestAddress->effseq !== (int) $validated['effseq']) {
+                return $this->redirectToEmployeeEdit($employee, 'address', [
+                    'error' => 'Historical address records cannot be edited. Update your current address above, use Add New Address if you moved, or contact your DSD, facility administrator, or RDHR.',
+                ]);
+            }
+        }
+
         // Enforce only one default address per employee
         if ($validated['is_primary'] === BPEmpAddress::PRIMARY_YES) {
             // If updating, allow this address to remain primary, but unset all others
@@ -1330,6 +1353,24 @@ class EmployeesController extends Controller
         $validated['locality'] = $validated['locality'] ?? null;
         $validated['county'] = $validated['county'] ?? null;
 
+        if ($this->isEmployeeSelfServiceRequest($request, $employeeModel) && $isUpdate) {
+            $latestTax = BPEmpTaxData::query()
+                ->where('employee_num', $employeeNum)
+                ->orderByDesc('effdt')
+                ->orderByDesc('effseq')
+                ->first();
+
+            $latestEffdt = $latestTax?->effdt?->format('Y-m-d') ?? ($latestTax->effdt ?? null);
+
+            if (! $latestTax
+                || (string) $latestEffdt !== (string) $validated['effdt']
+                || (int) $latestTax->effseq !== (int) $validated['effseq']) {
+                return $this->redirectToEmployeeEdit($employee, 'tax-data', [
+                    'error' => 'Historical tax data records cannot be edited. Update your current tax data above, use Add New Tax Data if you have a new effective record, or contact your DSD, facility administrator, or RDHR.',
+                ]);
+            }
+        }
+
         if ($isUpdate) {
             $tax = BPEmpTaxData::query()
                 ->where('employee_num', $employeeNum)
@@ -1530,49 +1571,81 @@ class EmployeesController extends Controller
      */
     public function saveAreasDevelopment(Request $request, $employee_num)
     {
+        $action = (string) $request->input('action', 'save');
+        $employeeActions = ['acknowledge', 'send_back'];
+        $isEmployeeAction = in_array($action, $employeeActions, true);
+
         $rules = [
-            'supervisor_name' => 'required|string|max:255',
             'employee_name' => 'required|string|max:255',
-            'review_dt' => ($request->input('action') === 'submit' ? 'required' : 'nullable') . '|date',
             'employee_acknowledge_dt' => 'nullable|date',
             'overall_rating' => 'nullable|string|in:Exceeds Expectations,Meets Expectations,Below Expectations,Excellent,Satisfactory,Unsatisfactory,Not Rated',
             'overall_unsatisfactory_reason' => 'nullable|string',
         ];
-        // Make areas_for_development required if submitting
-        if ($request->input('action') === 'submit') {
+
+        if (! $isEmployeeAction) {
+            $rules['supervisor_name'] = 'required|string|max:255';
+            $rules['review_dt'] = ($action === 'submit' ? 'required' : 'nullable').'|date';
+        }
+
+        if ($action === 'submit') {
             $rules['areas_for_development'] = 'required|string|min:2';
         }
+
         $validated = $request->validate($rules);
 
         if (PartFPerformanceScoring::isBelowExpectationsRating($validated['overall_rating'] ?? null)
-            && blank($validated['overall_unsatisfactory_reason'] ?? null)) {
+            && blank($validated['overall_unsatisfactory_reason'] ?? null)
+            && in_array($action, ['save', 'submit'], true)) {
             return back()
                 ->withErrors(['overall_unsatisfactory_reason' => 'Explain why the overall performance rating is below expectations.'])
                 ->withInput();
         }
 
         $assessmentPeriodId = $request->input('assessment_period_id');
-        if (!$assessmentPeriodId) {
+        if (! $assessmentPeriodId) {
             return back()->with('error', 'Assessment period is required.');
         }
 
-        $employee = \App\Models\BPEmployee::findOrFail($employee_num);
+        $employee = BPEmployee::findOrFail($employee_num);
         $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
 
-        if ($isSelfAssessment && $request->input('action') === 'submit') {
-            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
-        }
+        $assessment = EmployeePerformanceAssessment::firstOrCreate(
+            [
+                'employee_num' => $employee->employee_num,
+                'assessment_period_id' => $assessmentPeriodId,
+            ],
+            [
+                'items' => [],
+                'assessed_by' => auth()->id(),
+                'status' => AssessmentWorkflowStatus::DRAFT,
+            ]
+        );
 
-        $finalizedAssessment = \App\Models\EmployeePerformanceAssessment::where('employee_num', $employee->employee_num)
-            ->where('assessment_period_id', $assessmentPeriodId)
-            ->where('finalized', 1)
-            ->first();
-
-        if ($finalizedAssessment) {
-            return back()->with('error', 'This performance assessment is already completed for the selected period and can no longer be changed.');
-        }
+        $currentStatus = $assessment->workflowStatus();
 
         if ($isSelfAssessment) {
+            if ($action === 'send_back') {
+                if (! AssessmentWorkflowStatus::employeeCanSendBack($currentStatus)) {
+                    return back()->with('error', 'This assessment cannot be sent back to the reviewer at its current status.');
+                }
+
+                $assessment->status = $currentStatus === AssessmentWorkflowStatus::COMPLETED
+                    ? AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL
+                    : AssessmentWorkflowStatus::DRAFT;
+                $assessment->syncFinalizedFromStatus();
+                $assessment->save();
+
+                return back()->with('success', 'Assessment sent back to the reviewer for updates.');
+            }
+
+            if ($action !== 'acknowledge') {
+                return back()->with('error', 'Only employee acknowledgement actions are available on your own record.');
+            }
+
+            if (! AssessmentWorkflowStatus::employeeCanConfirm($currentStatus)) {
+                return back()->with('error', 'This performance assessment is not waiting for employee confirmation.');
+            }
+
             $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
             if ($empCommentsDocType) {
                 \App\Models\EmployeePerformanceSectionComment::syncForSection(
@@ -1583,25 +1656,48 @@ class EmployeesController extends Controller
                 );
             }
 
-            $assessment = \App\Models\EmployeePerformanceAssessment::firstOrCreate(
-                [
-                    'employee_num' => $employee->employee_num,
-                    'assessment_period_id' => $assessmentPeriodId,
-                ],
-                [
-                    'items' => [],
-                ]
-            );
+            $assessment->acknowledge_dt = $request->filled('employee_acknowledge_dt')
+                ? $request->input('employee_acknowledge_dt')
+                : now()->toDateString();
+            $assessment->status = AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
+            $assessment->syncFinalizedFromStatus();
+            $assessment->save();
 
-            if ($request->filled('employee_acknowledge_dt')) {
-                $assessment->acknowledge_dt = $request->input('employee_acknowledge_dt');
-                $assessment->save();
-            }
-
-            return back()->with('success', 'Employee acknowledgment saved.');
+            return back()->with('success', 'Employee acknowledgement saved. The assessment is now waiting for reviewer approval.');
         }
 
-        // Save Areas Requiring Further Development
+        if (in_array($action, ['submit', 'save', 'approve'], true)) {
+            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+        }
+
+        if ($action === 'reopen') {
+            if (! AssessmentWorkflowStatus::reviewerCanReopen($currentStatus)) {
+                return back()->with('error', 'Only completed assessments can be reopened for editing.');
+            }
+
+            $assessment->status = AssessmentWorkflowStatus::DRAFT;
+            $assessment->syncFinalizedFromStatus();
+            $assessment->save();
+
+            return back()->with('success', 'Assessment reopened for editing.');
+        }
+
+        if (AssessmentWorkflowStatus::isLocked($currentStatus) && ! in_array($action, ['reopen'], true)) {
+            return back()->with('error', 'This performance assessment is completed for the selected period. Reopen it to make changes.');
+        }
+
+        if ($action === 'approve') {
+            if (! AssessmentWorkflowStatus::reviewerCanApprove($currentStatus)) {
+                return back()->with('error', 'This assessment is not waiting for reviewer approval.');
+            }
+
+            $assessment->status = AssessmentWorkflowStatus::COMPLETED;
+            $assessment->syncFinalizedFromStatus();
+            $assessment->save();
+
+            return back()->with('success', 'Performance assessment approved and marked as completed.');
+        }
+
         $areasDevDocType = \App\Models\DocType::where('name', 'Areas Requiring Further Development')->first();
         if ($areasDevDocType) {
             \App\Models\EmployeePerformanceSectionComment::syncForSection(
@@ -1611,7 +1707,7 @@ class EmployeesController extends Controller
                 $request->input('areas_for_development'),
             );
         }
-        // Save Development Plans
+
         $devPlansDocType = \App\Models\DocType::where('name', 'Development Plans')->first();
         if ($devPlansDocType) {
             \App\Models\EmployeePerformanceSectionComment::syncForSection(
@@ -1621,7 +1717,7 @@ class EmployeesController extends Controller
                 $request->input('development_plans'),
             );
         }
-        // Save Employee Comments
+
         $empCommentsDocType = \App\Models\DocType::where('name', 'Employee Comments')->first();
         if ($empCommentsDocType) {
             \App\Models\EmployeePerformanceSectionComment::syncForSection(
@@ -1632,7 +1728,7 @@ class EmployeesController extends Controller
             );
         }
 
-        if ($request->input('action') === 'submit') {
+        if ($action === 'submit') {
             $positionTitle = $employee->loadMissing('currentAssignment.position')->currentAssignment?->position?->title;
             $scorableItemIds = PartFPerformanceScoring::scorableItemIds(null, $positionTitle);
 
@@ -1655,43 +1751,148 @@ class EmployeesController extends Controller
             }
         }
 
-        // Set review_dt and acknowledge_dt on EmployeePerformanceAssessment
-        $assessment = \App\Models\EmployeePerformanceAssessment::firstOrCreate(
-            [
-                'employee_num' => $employee->employee_num,
-                'assessment_period_id' => $assessmentPeriodId,
-            ],
-            [
-                'items' => [],
-                'assessed_by' => auth()->id(),
-            ]
-        );
-        if ($assessment) {
-            $assessment->review_dt = $request->input('review_dt');
-            if ($request->filled('employee_acknowledge_dt')) {
-                $assessment->acknowledge_dt = $request->input('employee_acknowledge_dt');
-            }
-            $this->syncPerformanceAssessmentSummary($assessment);
-            if (filled($validated['overall_rating'] ?? null)) {
-                $assessment->overall_rating = $validated['overall_rating'];
-            }
-            $assessment->comments = PartFPerformanceScoring::isBelowExpectationsRating($validated['overall_rating'] ?? null)
-                ? ($validated['overall_unsatisfactory_reason'] ?? null)
-                : null;
-            // If submitted, finalize and send email
-            if ($request->input('action') === 'submit') {
-                $assessment->finalized = 1;
-                // TODO: Implement email notification to employee
-                // \Mail::to($assessment->employee->user->email)->send(new AssessmentSubmittedMail($assessment));
-            }
-            $assessment->save();
+        $assessment->review_dt = $request->input('review_dt');
+        $this->syncPerformanceAssessmentSummary($assessment);
+
+        if (filled($validated['overall_rating'] ?? null)) {
+            $assessment->overall_rating = $validated['overall_rating'];
         }
 
-        if ($request->input('action') === 'submit') {
-            return back()->with('success', 'Assessment submitted and employee notified.');
+        $assessment->comments = PartFPerformanceScoring::isBelowExpectationsRating($validated['overall_rating'] ?? null)
+            ? ($validated['overall_unsatisfactory_reason'] ?? null)
+            : null;
+
+        if ($action === 'submit') {
+            $assessment->status = AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
+            $assessment->assessed_by = auth()->id();
+        } elseif ($assessment->workflowStatus() === AssessmentWorkflowStatus::DRAFT) {
+            $assessment->status = AssessmentWorkflowStatus::DRAFT;
         }
+
+        $assessment->syncFinalizedFromStatus();
+        $assessment->save();
+
+        if ($action === 'submit') {
+            return back()->with('success', 'Assessment submitted for employee confirmation.');
+        }
+
         return back()->with('success', 'Areas for Development saved successfully.');
     }
+
+    /**
+     * Handle competency assessment workflow actions (acknowledge, approve, send back, reopen).
+     */
+    public function saveCompetencyWorkflow(Request $request, $employee_num)
+    {
+        $action = (string) $request->input('action', '');
+        $assessmentPeriodId = $request->input('assessment_period_id');
+
+        if (! $assessmentPeriodId) {
+            return back()->with('error', 'Assessment period is required.');
+        }
+
+        $employee = BPEmployee::findOrFail($employee_num);
+        $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
+
+        $assessment = \App\Models\EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->where('assessment_period_id', $assessmentPeriodId)
+            ->first();
+
+        if ($action === 'submit') {
+            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+
+            $assessment = \App\Models\EmployeeCompetencyAssessment::query()->firstOrCreate(
+                [
+                    'employee_num' => $employee->employee_num,
+                    'assessment_period_id' => $assessmentPeriodId,
+                ],
+                [
+                    'status' => AssessmentWorkflowStatus::DRAFT,
+                    'submitted_by' => auth()->id(),
+                ]
+            );
+
+            if ($assessment->workflowStatus() !== AssessmentWorkflowStatus::DRAFT) {
+                return back()->with('error', 'This competency assessment cannot be submitted for employee confirmation at its current status.');
+            }
+
+            $assessment->status = AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
+            $assessment->submitted_at = now();
+            $assessment->submitted_by = auth()->id();
+            $assessment->save();
+
+            return back()->with('success', 'Competency assessment submitted for employee confirmation.');
+        }
+
+        if (! $assessment) {
+            return back()->with('error', 'No competency assessment found for the selected period.');
+        }
+
+        $currentStatus = $assessment->workflowStatus();
+
+        if ($isSelfAssessment) {
+            if ($action === 'send_back') {
+                if (! AssessmentWorkflowStatus::employeeCanSendBack($currentStatus)) {
+                    return back()->with('error', 'This assessment cannot be sent back to the reviewer at its current status.');
+                }
+
+                $assessment->status = $currentStatus === AssessmentWorkflowStatus::COMPLETED
+                    ? AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL
+                    : AssessmentWorkflowStatus::DRAFT;
+                $assessment->completed_at = null;
+                $assessment->save();
+
+                return back()->with('success', 'Competency assessment sent back to the reviewer for updates.');
+            }
+
+            if ($action !== 'acknowledge') {
+                return back()->with('error', 'Only employee acknowledgement actions are available on your own record.');
+            }
+
+            if (! AssessmentWorkflowStatus::employeeCanConfirm($currentStatus)) {
+                return back()->with('error', 'This competency assessment is not waiting for employee confirmation.');
+            }
+
+            $assessment->employee_comments = $request->input('employee_comments');
+            $assessment->employee_signed_at = $request->filled('employee_acknowledge_dt')
+                ? $request->input('employee_acknowledge_dt')
+                : now()->toDateString();
+            $assessment->status = AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
+            $assessment->save();
+
+            return back()->with('success', 'Employee acknowledgement saved. The competency assessment is now waiting for reviewer approval.');
+        }
+
+        if ($action === 'reopen') {
+            if (! AssessmentWorkflowStatus::reviewerCanReopen($currentStatus)) {
+                return back()->with('error', 'Only completed competency assessments can be reopened for editing.');
+            }
+
+            $assessment->status = AssessmentWorkflowStatus::DRAFT;
+            $assessment->completed_at = null;
+            $assessment->save();
+
+            return back()->with('success', 'Competency assessment reopened for editing.');
+        }
+
+        if ($action === 'approve') {
+            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+
+            if (! AssessmentWorkflowStatus::reviewerCanApprove($currentStatus)) {
+                return back()->with('error', 'This competency assessment is not waiting for reviewer approval.');
+            }
+
+            $assessment->status = AssessmentWorkflowStatus::COMPLETED;
+            $assessment->completed_at = now();
+            $assessment->save();
+
+            return back()->with('success', 'Competency assessment approved and marked as completed.');
+        }
+
+        return back()->with('error', 'Unsupported competency workflow action.');
+    }
+
     /**
      * Show the form for creating a new employee.
      */
@@ -2006,16 +2207,12 @@ class EmployeesController extends Controller
             ->keyBy('assessment_period_id');
         $performanceAssessmentStatuses = $performanceAssessmentSubmissions
             ->mapWithKeys(function ($submission, $assessmentPeriodId) {
-                $isCompleted = !empty($submission->finalized);
+                $meta = \App\Support\AssessmentWorkflowStatus::meta($submission->workflowStatus());
 
                 return [
-                    (int) $assessmentPeriodId => [
+                    (int) $assessmentPeriodId => array_merge($meta, [
                         'id' => $submission->id,
-                        'status' => $isCompleted ? 'completed' : 'in_progress',
-                        'status_label' => $isCompleted ? 'Completed' : 'In Progress',
-                        'is_completed' => $isCompleted,
-                        'can_edit' => !$isCompleted,
-                    ],
+                    ]),
                 ];
             })
             ->all();
@@ -2025,16 +2222,12 @@ class EmployeesController extends Controller
             ->keyBy('assessment_period_id');
         $competencyAssessmentStatuses = $competencyAssessmentSubmissions
             ->mapWithKeys(function ($submission, $assessmentPeriodId) {
-                $status = (string) ($submission->status ?? 'draft');
+                $meta = \App\Support\AssessmentWorkflowStatus::meta($submission->workflowStatus());
 
                 return [
-                    (int) $assessmentPeriodId => [
+                    (int) $assessmentPeriodId => array_merge($meta, [
                         'id' => $submission->id,
-                        'status' => $status,
-                        'status_label' => ucwords(str_replace('_', ' ', $status)),
-                        'is_completed' => $status === 'completed',
-                        'can_edit' => $status !== 'completed',
-                    ],
+                    ]),
                 ];
             })
             ->all();
@@ -2137,6 +2330,7 @@ class EmployeesController extends Controller
                 $submission = $performanceAssessmentSubmissions->get((int) $assessmentPeriodId);
 
                 $isFinalized = ! empty($submission?->finalized);
+                $workflowStatus = $submission?->workflowStatus() ?? AssessmentWorkflowStatus::DRAFT;
                 $totalRateableItems = count(PartFPerformanceScoring::scorableItemIds(
                     $employee->currentAssignment?->position_id ? (int) $employee->currentAssignment->position_id : null,
                     $employee->currentAssignment?->position?->title
@@ -2158,7 +2352,7 @@ class EmployeesController extends Controller
                         : number_format($average, 2),
                     'overall_rating' => $submission?->overall_rating ?? $overall,
                     'status' => $submission
-                        ? ($isFinalized ? 'Completed' : 'In Progress')
+                        ? AssessmentWorkflowStatus::label($workflowStatus)
                         : 'Draft',
                     'is_finalized' => $isFinalized,
                     'is_current' => (int) $assessmentPeriodId === (int) $selectedAssessmentPeriodId,
@@ -2259,6 +2453,10 @@ class EmployeesController extends Controller
                 }
                 $reviewDate = $assessment->review_dt;
                 $employeeAcknowledgeDt = $assessment->acknowledge_dt;
+                if (\App\Support\AssessmentWorkflowStatus::employeeCanConfirm($assessment->workflowStatus())
+                    && blank($employeeAcknowledgeDt)) {
+                    $employeeAcknowledgeDt = now()->toDateString();
+                }
                 // Lookup reviewer name if assessed_by is set
                 if ($assessment->assessed_by) {
                     $reviewerUser = \App\Models\User::find($assessment->assessed_by);

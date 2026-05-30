@@ -279,5 +279,8 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
     @endif
     @endif
     <!-- Job Data History Table -->
-    @include('admin.facilities.employee.employee-assignment-table')
+    @include('admin.facilities.employee.employee-assignment-table', [
+        'isSelfService' => $isSelfService ?? false,
+        'canManageJobData' => $canManageJobData ?? true,
+    ])
 </div>

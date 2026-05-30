@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
 
-use App\Support\PartGCompetencyScoring;
+use App\Support\AssessmentWorkflowStatus;
 
 use App\Models\EmployeeCompetencyAssessment;
 use Illuminate\Support\Facades\Auth;
@@ -217,7 +217,11 @@ trait PersistsPartGCompetencySectionResponses
     {
         $status = (string) ($row?->status ?? 'draft');
 
-        if (in_array($status, ['completed', 'for_employee_signature', 'for_reviewer_signature'], true)) {
+        if (in_array($status, [
+            AssessmentWorkflowStatus::COMPLETED,
+            AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+            AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
+        ], true)) {
             return $status;
         }
 

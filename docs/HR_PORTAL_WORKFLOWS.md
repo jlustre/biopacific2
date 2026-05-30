@@ -586,34 +586,63 @@ HR reviewers; employee completes orientation acknowledgements
 
 ### Purpose
 
-Conduct annual (or period-based) performance evaluations with scored areas, narratives, and PDF export.
+Conduct annual (or period-based) performance evaluations with scored areas, development narratives, employee acknowledgement, reviewer approval, and PDF export.
 
 ### Roles
 
-admin, rdhr, facility-admin, facility-dsd (reviewers); employee participates in narrative/sign-off where configured
+| Role | Responsibilities |
+|------|------------------|
+| **Reviewer** (admin, rdhr, facility-admin, facility-dsd) | Rate performance areas, enter development notes, submit for employee confirmation, approve after employee acknowledgement, reopen completed assessments |
+| **Employee** | When status is *For Employee confirmation*: enter employee comments, save acknowledgement (date auto-filled), or send back to reviewer |
+
+Reviewers **cannot** perform ratings or submission on their own employee record (see business rules §5).
+
+### Workflow status
+
+Part F uses the shared four-stage workflow documented in [HR Portal Business Rules §4](HR_PORTAL_BUSINESS_RULES.md#4-part-f--part-g-assessment-workflow):
+
+1. **In Progress** — reviewer work in progress  
+2. **For Employee confirmation** — waiting for employee  
+3. **For Reviewer approval** — waiting for reviewer sign-off  
+4. **Completed** — read-only (reopen / send-back available)
 
 ### Steps
 
 1. HR selects or creates an **assessment period** for the employee (Workflow 18).
-2. HR opens Part F on employee checklist.
-3. HR rates performance areas (Livewire performance appraisal sections).
-4. HR enters supervisor narrative, areas for development, employee comments.
-5. HR saves **draft** or **finalizes** assessment.
-6. HR downloads performance assessment PDF.
-7. HR may **revoke** finalized assessment if correction needed (with audit trail).
+2. HR opens **Part F** on the employee checklist.
+3. Reviewer rates all applicable performance areas (Livewire `PerformanceAppraisalAreas`; E / M / B per item).
+4. Reviewer completes **Performance Evaluation Summary**:
+   - Areas requiring further development (required before submit)
+   - Development plans
+   - Supervisor name and review date
+5. Reviewer clicks **Save as Draft** (keeps *In Progress*) or **Submit for Employee Confirmation**.
+6. Employee opens Part F (self-service or admin view on own record):
+   - Enters **Employee Comments**
+   - Acknowledgement date is **pre-filled to today**
+   - Clicks **Save Acknowledgement** → status becomes *For Reviewer approval*
+   - Optionally **Send Back to Reviewer** if changes are needed
+7. Reviewer reviews, may edit ratings/notes, then clicks **Approve Assessment** → **Completed**.
+8. HR downloads performance assessment PDF from history when items exist.
+9. HR may **revoke** individual item ratings (audit trail) while assessment is not locked.
+10. If corrections are needed after completion:
+    - Reviewer: **Reopen for Editing** → *In Progress*
+    - Employee: **Send Back to Reviewer** → *For Reviewer approval*
 
 ### Business rules
 
-- Reviewers cannot perform self-assessment on their own employee record.
+- Reviewers cannot perform self-assessment ratings or submit on their own record; employees may only acknowledge when status is *For Employee confirmation*.
+- All scorable items must be rated before **Submit for Employee Confirmation**.
 - Scoring uses `PartFPerformanceScoring` templates aligned to position.
-- Assessment must reference valid assessment period for that employee.
+- Assessment must reference a valid `assessment_period_id` for that employee.
+- `employee_performance_assessments.status` drives UI; `finalized = 1` when **Completed**.
 
 ### Key locations
 
-- Controller: `EmployeePerformanceAssessmentController`
+- Controller: `EmployeesController@saveAreasDevelopment`, `EmployeePerformanceAssessmentController` (item save/revoke/PDF)
 - Livewire: `PerformanceAppraisalAreas`
-- Support: `PartFPerformancePdfItemsBuilder`, `PerformanceAppraisalTemplate`
-- See [HR Portal Business Rules](HR_PORTAL_BUSINESS_RULES.md) for period date rules.
+- Support: `AssessmentWorkflowStatus`, `PartFPerformanceScoring`, `PartFPerformancePdfItemsBuilder`, `PerformanceAppraisalTemplate`, `PreventsSelfAssessment`
+- Views: `employee-checklist-part_f.blade.php`, `employee-assessment-summary-form.blade.php`
+- See [HR Portal Business Rules](HR_PORTAL_BUSINESS_RULES.md) for period dates and workflow transitions.
 
 ---
 
@@ -623,32 +652,45 @@ admin, rdhr, facility-admin, facility-dsd (reviewers); employee participates in 
 
 ### Purpose
 
-Evaluate clinical and operational competencies by position (nursing skills, medication administration, CNA skills, DSD competencies, etc.).
+Evaluate clinical and operational competencies by position (nursing skills, medication administration, CNA skills, DSD competencies, etc.) with the same acknowledgement and approval workflow as Part F.
 
 ### Roles
 
-Same as Part F; employee signs completed assessment; reviewer signs after review
+Same as Part F (Workflow 16): reviewer completes sections; employee confirms; reviewer approves. Self-assessment rules apply to item reviews and ratings.
+
+### Workflow status
+
+Same four statuses as Part F (`AssessmentWorkflowStatus` on `employee_competency_assessments.status`). See [Business Rules §4](HR_PORTAL_BUSINESS_RULES.md#4-part-f--part-g-assessment-workflow).
 
 ### Steps
 
-1. HR selects assessment period and opens Part G.
-2. HR completes position-specific competency sections (15+ specialized Livewire components).
-3. HR saves section drafts; addresses below-expectations ratings with item-level review notes.
-4. HR submits full competency assessment.
-5. Employee signs (`employee-sign` endpoint); reviewer signs (`reviewer-sign` endpoint).
-6. HR downloads full assessment PDF or individual section PDFs.
-7. Competency history table shows prior assessments.
+1. HR selects assessment period and opens **Part G**.
+2. Reviewer completes position-specific competency sections (15+ Livewire components under `PartGSections/`).
+3. Reviewer saves section drafts; addresses below-expectations ratings with item-level review notes in the review modal.
+4. Reviewer uses **Competency Assessment Acknowledgement** panel:
+   - **Submit for Employee Confirmation** when section work is ready
+5. Employee (when status is *For Employee confirmation*):
+   - Enters **Employee Comments**
+   - Acknowledgement date auto-filled
+   - **Save Acknowledgement** or **Send Back to Reviewer**
+6. Reviewer **Approve Assessment** when status is *For Reviewer approval* → **Completed**.
+7. HR downloads full assessment PDF or individual section PDFs (when generated).
+8. Competency history table shows prior assessments with workflow status labels.
+9. **Reopen** / **Send Back** paths match Part F (Workflow 16).
 
 ### Business rules
 
 - Sections shown depend on employee position (RN, LVN, CNA, DSD, etc.).
-- Draft responses persist per assessment period until submitted.
+- Draft responses persist per assessment period until submitted for employee confirmation.
+- Reviewers cannot rate or review items on their own record; alert shown on Review button or radio selection.
+- Legacy JSON routes (`competency-assessment/employee-sign`, `reviewer-sign`, `submit`) accept the same status values for API integrations.
 
 ### Key locations
 
-- Controller: `EmployeePerformanceAssessmentController` (competency methods)
+- Controller: `EmployeesController@saveCompetencyWorkflow`, `EmployeePerformanceAssessmentController` (competency methods)
 - Livewire: `app/Livewire/Admin/Facilities/Checklist/PartGSections/*`
-- Support: `PartGCompetencyScoring`, `CompetencyAssessmentHistoryBuilder`
+- Support: `AssessmentWorkflowStatus`, `PartGCompetencyScoring`, `CompetencyAssessmentHistoryBuilder`, `PreventsSelfAssessment`
+- Views: `employee-checklist-part_g.blade.php`, `part-g-competency-workflow-form.blade.php`
 
 ---
 
@@ -1039,6 +1081,11 @@ Employee Registration (code E-XXXXXX) → My Employment
     ↓
 Onboarding Checklists (C → D → E → F → G)
     ↓
+Part F / Part G (per assessment period):
+    Reviewer: In Progress → Submit → For Employee confirmation
+    Employee: Save Acknowledgement → For Reviewer approval
+    Reviewer: Approve → Completed  (Reopen / Send Back as needed)
+    ↓
 Document Upload → DSD Submit for Review → Approve/Reject
 ```
 
@@ -1090,4 +1137,4 @@ When adding a new HR workflow to the portal:
 3. Add cross-references in [HR_PORTAL_BUSINESS_RULES.md](HR_PORTAL_BUSINESS_RULES.md) if new business rules apply.
 4. Update the end-to-end diagram if the workflow affects hiring or onboarding.
 
-*Last updated: May 2026 — reflects document DSD verification, registration codes, and employee self-service rules.*
+*Last updated: May 2026 — reflects Part F/Part G acknowledgement workflow (employee confirmation → reviewer approval → completed), self-assessment guards, document DSD verification, registration codes, and employee self-service rules.*

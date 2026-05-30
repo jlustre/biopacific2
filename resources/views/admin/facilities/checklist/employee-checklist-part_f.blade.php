@@ -2,12 +2,19 @@
     @php
         $hasAssessmentPeriod = !empty($selectedAssessmentPeriodId);
         $partFSelectedAssessment = $selectedPerformanceAssessment ?? ($assessment ?? null);
-        $partFAssessmentLocked = !empty(optional($partFSelectedAssessment)->finalized);
-        $partFStatusLabel = $partFAssessmentLocked ? 'Completed' : ($partFSelectedAssessment ? 'In Progress' : null);
+        $partFWorkflowStatus = $partFSelectedAssessment?->workflowStatus() ?? \App\Support\AssessmentWorkflowStatus::DRAFT;
+        $partFAssessmentLocked = \App\Support\AssessmentWorkflowStatus::isLocked($partFWorkflowStatus);
+        $partFStatusLabel = \App\Support\AssessmentWorkflowStatus::label($partFWorkflowStatus);
+        $partFEmployeeCanConfirm = \App\Support\AssessmentWorkflowStatus::employeeCanConfirm($partFWorkflowStatus);
+        $partFReviewerCanApprove = \App\Support\AssessmentWorkflowStatus::reviewerCanApprove($partFWorkflowStatus);
         $partFCurrentReviewerId = auth()->id();
         $partFSelectedReviewerId = optional($partFSelectedAssessment)->assessed_by;
-        $partFShowStatusWarning = $partFAssessmentLocked
-            || ($partFSelectedAssessment && (string) $partFSelectedReviewerId !== (string) $partFCurrentReviewerId);
+        $partFShowStatusWarning = $partFSelectedAssessment && (
+            $partFAssessmentLocked
+            || $partFEmployeeCanConfirm
+            || $partFReviewerCanApprove
+            || ((string) $partFSelectedReviewerId !== (string) $partFCurrentReviewerId && !empty($evaluatorActionsDisabled))
+        );
     @endphp
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -53,6 +60,10 @@
             <strong>Warning:</strong>
             @if($partFAssessmentLocked)
             A performance assessment already exists for this employee in the selected period with status <strong>{{ $partFStatusLabel }}</strong>. This loaded assessment is read-only.
+            @elseif($partFEmployeeCanConfirm)
+            This performance assessment is waiting for <strong>employee confirmation</strong>. The employee may enter comments and save acknowledgement.
+            @elseif($partFReviewerCanApprove)
+            The employee has acknowledged this assessment. It is waiting for <strong>reviewer approval</strong>.
             @else
             A performance assessment already exists for this employee in the selected period with status <strong>{{ $partFStatusLabel }}</strong>. The reviewer can still update it until it is completed.
             @endif
@@ -95,7 +106,10 @@
         @livewire('admin.facilities.checklist.part-f-sections.performance-appraisal-areas', [
             'employeeNum' => $employee->employee_num,
             'assessmentPeriodId' => $selectedAssessmentPeriodId,
-            'assessmentLocked' => $partFAssessmentLocked,
+            'assessmentLocked' => $partFAssessmentLocked
+                || $partFEmployeeCanConfirm
+                || ($partFReviewerCanApprove && !empty($evaluatorActionsDisabled))
+                || (!empty($evaluatorActionsDisabled) && ! $partFEmployeeCanConfirm),
             'positionId' => $partFPositionId,
             'positionTitle' => $partFPositionTitle,
         ], key('part-f-performance-'.$employee->employee_num.'-'.($selectedAssessmentPeriodId ?? 'none').'-'.($partFPositionId ?? 'none')))

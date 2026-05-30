@@ -1,5 +1,9 @@
 @php
 $states = \App\Models\State::orderBy('name')->get(['abbreviation', 'name']);
+$taxLatestRecord = isset($employee->taxData) ? $employee->taxData->sortBy([['effdt', 'desc'], ['effseq', 'desc']])->first() : null;
+$taxLatestEffdt = $taxLatestRecord?->effdt?->format('Y-m-d') ?? '';
+$taxLatestEffseq = $taxLatestRecord?->effseq ?? '';
+$isTaxSelfService = $isSelfService ?? false;
 @endphp
 <div x-show="tab === 'tax-data'" x-cloak data-employee-tab-panel="tax-data" x-data="taxForm()" x-init="initTax()">
     @if(isset($isAddMode) && $isAddMode)
@@ -10,14 +14,26 @@ $states = \App\Models\State::orderBy('name')->get(['abbreviation', 'name']);
             <em>Save the employee record before adding tax data.</em>
         </div>
     @else
-    <div class="flex justify-end items-center mb-4 space-x-4">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+        @if($isTaxSelfService)
+        <div class="flex-1 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
+            <p class="font-semibold mb-1">How to update your tax data</p>
+            <ul class="list-disc pl-5 space-y-1 text-blue-950">
+                <li><strong>Correcting your current tax data?</strong> Update the fields below and click <strong>Save Tax Data</strong>.</li>
+                <li><strong>New effective tax withholding?</strong> Click <strong>Add New Tax Data</strong>, enter the new details, then save.</li>
+                <li><strong>Tax data history</strong> cannot be edited or deleted here. Only your DSD, facility administrator, or RDHR can change past tax records.</li>
+            </ul>
+        </div>
+        @endif
+        <div class="flex items-center gap-4 shrink-0 {{ $isTaxSelfService ? 'self-end lg:self-start' : 'ml-auto' }}">
         <button type="button" @click="clearTax()"
-            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer">
+            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer whitespace-nowrap">
             Add New Tax Data
         </button>
         <template x-if="isLatestRecord()">
-            <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest Record</span>
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold whitespace-nowrap">Latest Record</span>
         </template>
+        </div>
     </div>
     <form method="POST" action="{{ $employeeFormRoutes['tax'] ?? route('admin.employees.tax.update', $employee->id) }}" @submit="confirmTaxSubmit($event)">
         @csrf
@@ -187,5 +203,9 @@ $states = \App\Models\State::orderBy('name')->get(['abbreviation', 'name']);
     </form>
     @endif
 
-    @include('admin.facilities.employee.employee-tax-data-table')
+    @include('admin.facilities.employee.employee-tax-data-table', [
+        'isSelfService' => $isTaxSelfService,
+        'taxLatestEffdt' => $taxLatestEffdt,
+        'taxLatestEffseq' => $taxLatestEffseq,
+    ])
 </div>

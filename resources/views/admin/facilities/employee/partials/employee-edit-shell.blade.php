@@ -349,6 +349,7 @@ $employeeTabIds = ['personal', 'address', 'job-data', 'tax-data', 'documents', '
         }
 
         const taxLatest = @json($taxLatestForForm);
+        const isTaxSelfService = @json($isSelfService ?? false);
 
         function taxForm() {
             return {
@@ -408,6 +409,21 @@ $employeeTabIds = ['personal', 'address', 'job-data', 'tax-data', 'documents', '
                     return Boolean(this.latestEffdt) && this.currentTax.effdt === this.latestEffdt;
                 },
                 confirmTaxSubmit(event) {
+                    if (isTaxSelfService
+                        && this.currentTax.effseq
+                        && this.currentTax.effdt == this.latestEffdt
+                        && String(this.currentTax.effseq) == String(this.latestEffseq)) {
+                        const confirmed = window.confirm(
+                            'You are updating your existing tax data record.\n\n' +
+                            'If your withholding information changed for a new effective period, click Cancel and use Add New Tax Data instead.\n\n' +
+                            'Continue updating this record?'
+                        );
+                        if (!confirmed) {
+                            event.preventDefault();
+                        }
+                        return;
+                    }
+
                     const message = this.willUpdateExistingRecord()
                         ? 'This will update the current latest tax data record. Do you want to continue?'
                         : 'This will create a new tax data record. Do you want to continue?';

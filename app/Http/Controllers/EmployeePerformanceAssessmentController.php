@@ -24,6 +24,7 @@ use App\Support\EmployeeAssessmentPeriodCalculator;
 use App\Support\PartFPerformanceScoring;
 use App\Support\PartGCompetencyScoring;
 use App\Support\PreventsSelfAssessment;
+use App\Support\AssessmentWorkflowStatus;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Models\EmployeeAssessmentPeriod;
 use App\Models\User;
@@ -826,7 +827,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'assessment_period_id' => $validated['assessment_period_id'],
             ],
             [
-                'status' => 'for_employee_signature',
+                'status' => AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
                 'submitted_by' => Auth::id(),
                 'submitted_at' => $submittedAt,
                 'total_score' => $totalScore,
@@ -1172,8 +1173,17 @@ class EmployeePerformanceAssessmentController extends Controller {
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'employee_name' => 'required|string|max:255',
             'employee_title' => 'nullable|string|max:255',
-            'employee_date' => 'required|date',
+            'employee_date' => 'nullable|date',
+            'employee_comments' => 'nullable|string',
         ]);
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->firstOrFail();
+
+        if (! PreventsSelfAssessment::isSelfAssessment($request->user(), $employee)) {
+            return response()->json(['success' => false, 'message' => 'Only the employee may save acknowledgement for this assessment.'], 403);
+        }
 
         $assessment = EmployeeCompetencyAssessment::query()
             ->where('employee_num', $validated['employee_num'])
@@ -1184,22 +1194,27 @@ class EmployeePerformanceAssessmentController extends Controller {
             return response()->json(['success' => false, 'message' => 'Competency assessment submission not found.'], 404);
         }
 
-        if ($assessment->status !== 'for_employee_signature') {
-            return response()->json(['success' => false, 'message' => 'This assessment is not waiting for employee signature.'], 422);
+        if (! AssessmentWorkflowStatus::employeeCanConfirm($assessment->workflowStatus())) {
+            return response()->json(['success' => false, 'message' => 'This assessment is not waiting for employee confirmation.'], 422);
         }
+
+        $employeeDate = $validated['employee_date'] ?? now()->toDateString();
 
         $assessment->employee_name = $validated['employee_name'];
         $assessment->employee_title = $validated['employee_title'] ?? null;
-        $assessment->employee_signed_at = Carbon::parse($validated['employee_date'])->startOfDay();
-        $assessment->status = 'for_reviewer_signature';
+        $assessment->employee_signed_at = Carbon::parse($employeeDate)->startOfDay();
+        if (array_key_exists('employee_comments', $validated)) {
+            $assessment->employee_comments = $validated['employee_comments'];
+        }
+        $assessment->status = AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
         $this->syncCompetencyAssessmentSnapshot($assessment, [
-            'employee_date' => $validated['employee_date'],
+            'employee_date' => $employeeDate,
         ]);
         $assessment->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Employee signature recorded successfully.',
+            'message' => 'Employee acknowledgement saved successfully.',
             'data' => [
                 'status' => $assessment->status,
             ],
@@ -1229,15 +1244,15 @@ class EmployeePerformanceAssessmentController extends Controller {
             return response()->json(['success' => false, 'message' => 'Competency assessment submission not found.'], 404);
         }
 
-        if ($assessment->status !== 'for_reviewer_signature') {
-            return response()->json(['success' => false, 'message' => 'This assessment is not waiting for reviewer signature.'], 422);
+        if (! AssessmentWorkflowStatus::reviewerCanApprove($assessment->workflowStatus())) {
+            return response()->json(['success' => false, 'message' => 'This assessment is not waiting for reviewer approval.'], 422);
         }
 
         $assessment->reviewer_name = $validated['reviewer_name'];
         $assessment->reviewer_title = $validated['reviewer_title'] ?? null;
         $assessment->review_date = $validated['review_date'];
         $assessment->reviewer_signed_at = Carbon::parse($validated['review_date'])->startOfDay();
-        $assessment->status = 'completed';
+        $assessment->status = AssessmentWorkflowStatus::COMPLETED;
         $assessment->completed_at = now();
         $this->syncCompetencyAssessmentSnapshot($assessment);
         $assessment->save();

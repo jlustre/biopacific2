@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AssessmentWorkflowStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class EmployeeCompetencyAssessment extends Model
@@ -54,5 +55,10 @@ class EmployeeCompetencyAssessment extends Model
     public function submitter()
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function workflowStatus(): string
+    {
+        return AssessmentWorkflowStatus::normalize((string) ($this->status ?? AssessmentWorkflowStatus::DRAFT));
     }
 }

@@ -80,6 +80,13 @@ class PerformanceAppraisalAreas extends Component
 
     public function updatedLatestRatings(mixed $value, string $key): void
     {
+        if ($this->evaluatorActionsDisabled) {
+            $this->denyEvaluatorAction();
+            $this->reloadRatingState((int) $key);
+
+            return;
+        }
+
         $sourceItemId = (int) $key;
         $rating = is_string($value) ? strtoupper(trim($value)) : '';
 

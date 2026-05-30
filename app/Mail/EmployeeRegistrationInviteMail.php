@@ -12,21 +12,21 @@ class EmployeeRegistrationInviteMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public RegistrationCode $registrationCode)
+    public function __construct(protected RegistrationCode $registrationCodeRecord)
     {
     }
 
     public function build()
     {
-        $registrationUrl = app(RegistrationCodeService::class)->registrationUrl($this->registrationCode);
+        $registrationUrl = app(RegistrationCodeService::class)->registrationUrl($this->registrationCodeRecord);
 
         return $this->subject('Your Bio-Pacific HR portal registration code')
             ->view('emails.employee_registration_invite')
             ->with([
-                'employeeName' => $this->registrationCode->fullName(),
-                'registrationCode' => $this->registrationCode->code,
+                'employeeName' => $this->registrationCodeRecord->fullName(),
+                'registrationCode' => $this->registrationCodeRecord->code,
                 'registrationUrl' => $registrationUrl,
-                'expiresAt' => $this->registrationCode->expires_at,
+                'expiresAt' => $this->registrationCodeRecord->expires_at,
             ]);
     }
 }

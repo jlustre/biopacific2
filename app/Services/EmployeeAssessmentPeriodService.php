@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BPEmployee;
 use App\Models\EmployeeAssessmentPeriod;
 use App\Models\EmployeeCompetencyAssessment;
+use App\Support\AssessmentWorkflowStatus;
 use App\Models\EmployeePerformanceAssessment;
 use App\Support\EmployeeAssessmentPeriodCalculator;
 use Carbon\Carbon;
@@ -125,12 +126,12 @@ class EmployeeAssessmentPeriodService
 
             $performanceStatus = '';
             if ($performance) {
-                $performanceStatus = ! empty($performance->finalized) ? 'Completed' : 'In Progress';
+                $performanceStatus = AssessmentWorkflowStatus::label($performance->workflowStatus());
             }
 
             $competencyStatus = '';
             if ($competency && filled($competency->status)) {
-                $competencyStatus = ucwords(str_replace('_', ' ', (string) $competency->status));
+                $competencyStatus = AssessmentWorkflowStatus::label($competency->workflowStatus());
             }
 
             return [
@@ -167,10 +168,10 @@ class EmployeeAssessmentPeriodService
                     'date_to' => $recommended['date_to'],
                 ]),
                 'performance_status' => $recommendedPerformance
-                    ? (! empty($recommendedPerformance->finalized) ? 'Completed' : 'In Progress')
+                    ? AssessmentWorkflowStatus::label($recommendedPerformance->workflowStatus())
                     : '',
                 'competency_status' => $recommendedCompetency && filled($recommendedCompetency->status)
-                    ? ucwords(str_replace('_', ' ', (string) $recommendedCompetency->status))
+                    ? AssessmentWorkflowStatus::label($recommendedCompetency->workflowStatus())
                     : '',
             ];
         }

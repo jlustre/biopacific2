@@ -1,5 +1,15 @@
+@php
+    $isSelfService = $isSelfService ?? false;
+    $canManageJobData = $canManageJobData ?? true;
+    $canShowJobDataEditLink = $canManageJobData && ! $isSelfService;
+@endphp
 <div class="bg-white shadow rounded-lg p-4 mt-8">
-    <h2 class="text-lg font-bold mb-4">Job Data History</h2>
+    <h2 class="text-lg font-bold mb-2">Job Data History</h2>
+    @if($isSelfService)
+        <p class="text-sm text-gray-600 mb-4">
+            Past job data records are shown for reference only. Job assignment changes are managed by HR—contact your facility administrator if anything looks incorrect.
+        </p>
+    @endif
     <div class="overflow-x-auto overscroll-x-contain -mx-1 px-1 sm:mx-0 sm:px-0" style="-webkit-overflow-scrolling: touch;">
         <table class="min-w-max w-full divide-y divide-gray-200 mb-4 text-sm">
             <thead>
@@ -55,6 +65,7 @@
                         @endif
                     </td>
                     <td class="whitespace-nowrap px-3 py-2">
+                        @if($canShowJobDataEditLink)
                         <a href="#" class="text-blue-600 hover:underline cursor-pointer" @click.prevent="setAssignment({
                                 facility_id: '{{ $assign->facility_id }}',
                                 dept_id: '{{ $assign->dept_id }}',
@@ -69,6 +80,9 @@
                                 effdt: '{{ $assign->effdt ? \Illuminate\Support\Carbon::parse($assign->effdt)->format('Y-m-d') : '' }}',
                                 effseq: '{{ $assign->effseq }}'
                             })">View/Edit</a>
+                        @else
+                        <span class="text-gray-400 italic text-xs">HR only</span>
+                        @endif
                     </td>
                 </tr>
                 @endforeach

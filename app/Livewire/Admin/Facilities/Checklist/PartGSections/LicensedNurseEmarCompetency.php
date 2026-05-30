@@ -114,6 +114,13 @@ class LicensedNurseEmarCompetency extends Component
 
     public function updatedResponses(mixed $value, string $key): void
     {
+        if ($this->evaluatorActionsDisabled) {
+            $this->denyEvaluatorAction();
+            unset($this->responses[$key]);
+
+            return;
+        }
+
         if ($this->cannotRate()) {
             unset($this->responses[$key]);
 
@@ -136,6 +143,12 @@ class LicensedNurseEmarCompetency extends Component
 
     public function setRating(int $itemId, string $rating): void
     {
+        if ($this->evaluatorActionsDisabled) {
+            $this->denyEvaluatorAction();
+
+            return;
+        }
+
         if ($this->cannotRate()) {
             return;
         }
@@ -167,11 +180,6 @@ class LicensedNurseEmarCompetency extends Component
             || $this->sectionExcluded
             || $this->evaluatorActionsDisabled
             || ! $this->assessmentPeriodId;
-    }
-
-    protected function denyEvaluatorAction(): bool
-    {
-        return $this->evaluatorActionsDisabled;
     }
 
     protected function persistRating(int $itemId, string $rating): void
@@ -653,7 +661,11 @@ class LicensedNurseEmarCompetency extends Component
     {
         $status = (string) ($row?->status ?? 'draft');
 
-        if (in_array($status, ['completed', 'for_employee_signature', 'for_reviewer_signature'], true)) {
+        if (in_array($status, [
+            \App\Support\AssessmentWorkflowStatus::COMPLETED,
+            \App\Support\AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+            \App\Support\AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
+        ], true)) {
             return $status;
         }
 

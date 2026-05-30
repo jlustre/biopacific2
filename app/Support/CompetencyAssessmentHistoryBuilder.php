@@ -421,12 +421,13 @@ class CompetencyAssessmentHistoryBuilder
     protected static function resolveSectionStatus(?string $assessmentStatus, bool $isSubmitted): string
     {
         if ($isSubmitted) {
-            return match ((string) ($assessmentStatus ?? 'draft')) {
-                'completed' => 'Completed',
-                'for_employee_signature' => 'For Employee Signature',
-                'for_reviewer_signature' => 'For Reviewer Signature',
-                'section_submit', 'draft' => 'Submitted',
-                default => ucwords(str_replace('_', ' ', (string) $assessmentStatus)),
+            return match (AssessmentWorkflowStatus::normalize((string) ($assessmentStatus ?? AssessmentWorkflowStatus::DRAFT))) {
+                AssessmentWorkflowStatus::COMPLETED => 'Completed',
+                AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION => 'For Employee confirmation',
+                AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL => 'For Reviewer approval',
+                AssessmentWorkflowStatus::DRAFT => 'Submitted',
+                'section_submit' => 'Submitted',
+                default => AssessmentWorkflowStatus::label((string) $assessmentStatus),
             };
         }
 

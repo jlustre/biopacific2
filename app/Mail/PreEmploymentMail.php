@@ -14,18 +14,18 @@ class PreEmploymentMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public JobApplication $jobApplication,
-        public ?RegistrationCode $registrationCode = null,
+        protected JobApplication $jobApplicationRecord,
+        protected ?RegistrationCode $registrationCodeRecord = null,
     ) {
     }
 
     public function build()
     {
-        $applicantName = trim($this->jobApplication->first_name . ' ' . $this->jobApplication->last_name);
-        $applicantCode = $this->jobApplication->applicant_code ?? '';
+        $applicantName = trim($this->jobApplicationRecord->first_name . ' ' . $this->jobApplicationRecord->last_name);
+        $applicantCode = $this->jobApplicationRecord->applicant_code ?? '';
         $preEmploymentUrl = url('/pre-employment') . ($applicantCode ? '?c=' . urlencode($applicantCode) : '');
-        $registrationUrl = $this->registrationCode
-            ? app(RegistrationCodeService::class)->registrationUrl($this->registrationCode)
+        $registrationUrl = $this->registrationCodeRecord
+            ? app(RegistrationCodeService::class)->registrationUrl($this->registrationCodeRecord)
             : null;
 
         return $this->subject('Your pre-employment link is ready')
@@ -34,7 +34,7 @@ class PreEmploymentMail extends Mailable
                 'applicantName' => $applicantName ?: 'Applicant',
                 'applicantCode' => $applicantCode,
                 'preEmploymentUrl' => $preEmploymentUrl,
-                'registrationCode' => $this->registrationCode?->code,
+                'registrationCode' => $this->registrationCodeRecord?->code,
                 'registrationUrl' => $registrationUrl,
             ]);
     }

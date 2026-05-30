@@ -10,6 +10,7 @@
     ->orderByDesc('effdt')
     ->orderByDesc('effseq')
     ->first();
+    $isAddressSelfService = $isSelfService ?? false;
     @endphp
     <div x-data="addressForm()" x-init="initAddress()">
         @if(isset($isAddMode) && $isAddMode)
@@ -20,17 +21,30 @@
                 <em>Save the employee record before adding addresses.</em>
             </div>
         @else
-            <div class="flex justify-end items-center mb-4 space-x-4">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+                @if($isAddressSelfService)
+                <div class="flex-1 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
+                    <p class="font-semibold mb-1">How to update your address</p>
+                    <ul class="list-disc pl-5 space-y-1 text-blue-950">
+                        <li><strong>Correcting your current address?</strong> Update the fields below and click <strong>Save Address</strong>.</li>
+                        <li><strong>Moving to a different address?</strong> Click <strong>Add New Address</strong>, enter the new details, then save.</li>
+                        <li><strong>Address history</strong> cannot be edited or deleted here. Only your DSD, facility administrator, or RDHR can change past address records.</li>
+                    </ul>
+                </div>
+                @endif
+                <div class="flex items-center gap-4 shrink-0 {{ $isAddressSelfService ? 'self-end lg:self-start' : 'ml-auto' }}">
                 <button type="button" @click="clearAddress()"
-                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap">
                     Add New Address
                 </button>
                 <template x-if="isLatestRecord()">
-                    <span class="ml-2 px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">Latest
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold whitespace-nowrap">Latest
                         Record</span>
                 </template>
+                </div>
             </div>
-            <form method="POST" action="{{ $employeeFormRoutes['address'] ?? route('admin.employees.address.update', $employee->id) }}">
+            <form method="POST" action="{{ $employeeFormRoutes['address'] ?? route('admin.employees.address.update', $employee->id) }}"
+                @if($isAddressSelfService) @submit.prevent="confirmSaveAddress($event)" @endif>
                 @csrf
                 @method('PUT')
                 <div class="bg-white shadow rounded-lg p-4 mb-6">
@@ -118,11 +132,16 @@
             </form>
         @endif
         <!-- Address History Table -->
-        @include('admin.facilities.employee.employee-address-table')
+        @include('admin.facilities.employee.employee-address-table', [
+            'isSelfService' => $isAddressSelfService,
+            'latestAddrEffdt' => $latestAddrEffdt,
+            'latestAddrEffseq' => $latestAddrEffseq,
+        ])
         <script>
             function addressForm() {
                 // Get all addresses and count how many are primary
                 const allAddresses = @json($employee->addresses ? $employee->addresses->toArray() : []);
+                const isSelfServiceAddress = @json($isAddressSelfService);
                 return {
                     tab: 'address',
                     showAddAddress: false,
@@ -163,6 +182,27 @@
                     },
                     initAddress() {
                         // Optionally set initial address if needed
+                    },
+                    confirmSaveAddress(event) {
+                        if (!isSelfServiceAddress) {
+                            event.target.submit();
+                            return;
+                        }
+
+                        if (this.showAddAddress || !this.currentAddress.effseq) {
+                            event.target.submit();
+                            return;
+                        }
+
+                        const confirmed = window.confirm(
+                            'You are updating your existing address record.\n\n' +
+                            'If you have moved to a different address, click Cancel and use Add New Address instead.\n\n' +
+                            'Continue updating this address?'
+                        );
+
+                        if (confirmed) {
+                            event.target.submit();
+                        }
                     }
                 }
                 }

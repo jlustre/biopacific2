@@ -58,6 +58,16 @@ trait ManagesPartGItemReviews
         $this->reviewModalComments = '';
     }
 
+    public function updatedReviewModalRating(): void
+    {
+        if ($this->denyEvaluatorAction()) {
+            $itemId = $this->reviewModalItemId;
+            $this->reviewModalRating = $itemId
+                ? $this->extractRatingValue($this->partGResponses()[$itemId] ?? null)
+                : '';
+        }
+    }
+
     public function saveItemReview(): void
     {
         if ($this->assessmentLocked || ($this->sectionExcluded ?? false) || $this->denyEvaluatorAction()) {

@@ -138,7 +138,7 @@
 
         </div>
     <!-- List of existing uploads -->
-    @include('admin.facilities.partials.upload-table')
+    @include('admin.facilities.partials.upload-table', ['facility' => $facility, 'employees' => $employees])
 
         <script>
         // Duplicate check before upload submit

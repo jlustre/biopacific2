@@ -307,6 +307,19 @@
 
             updatePartFSummaryScores();
         });
+
+        if (window.bpEvaluatorActionsDisabled) {
+            partFRoot.addEventListener('click', function(e) {
+                var ratingCell = e.target.closest('td');
+                if (!ratingCell || !ratingCell.querySelector('input[type="radio"][name^="partf-response-"]')) {
+                    return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+                bpDenySelfAssessmentAction();
+            }, true);
+        }
     }
 
     window.bindPartFRatingSummaryListeners = bindPartFRatingSummaryListeners;
@@ -740,6 +753,9 @@
             }
             if (!window.selectedAssessmentPeriodId) {
                 alert('Please select or create an assessment period before making changes.');
+                return;
+            }
+            if (target.classList.contains('verify-link') && bpDenySelfAssessmentAction()) {
                 return;
             }
             var itemKey = target.getAttribute('data-item-key');

@@ -3,6 +3,7 @@
 namespace App\Livewire\Concerns;
 
 use App\Support\PreventsSelfAssessment;
+use Illuminate\Support\Js;
 
 trait GuardsAgainstSelfAssessment
 {
@@ -27,6 +28,8 @@ trait GuardsAgainstSelfAssessment
         }
 
         $message ??= PreventsSelfAssessment::DEFAULT_MESSAGE;
+
+        $this->js('alert('.Js::from($message).')');
 
         if (method_exists($this, 'setDraftSaveFeedback')) {
             $this->setDraftSaveFeedback('error', $message);

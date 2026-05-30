@@ -1,6 +1,15 @@
 @php
-    $partFAreasReadOnly = !empty($partFAssessmentLocked) || !empty($evaluatorActionsDisabled);
-    $partFEmployeeCanComment = auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id;
+    use App\Support\AssessmentWorkflowStatus;
+
+    $partFWorkflowStatus = $partFSelectedAssessment?->workflowStatus() ?? AssessmentWorkflowStatus::DRAFT;
+    $partFEmployeeCanConfirm = AssessmentWorkflowStatus::employeeCanConfirm($partFWorkflowStatus);
+    $partFAreasReadOnly = !empty($partFAssessmentLocked)
+        || (!empty($evaluatorActionsDisabled) && ! $partFEmployeeCanConfirm)
+        || (AssessmentWorkflowStatus::reviewerCanApprove($partFWorkflowStatus) && !empty($evaluatorActionsDisabled));
+    $partFEmployeeCanComment = auth()->check()
+        && isset($employee->user_id)
+        && auth()->id() == $employee->user_id
+        && $partFEmployeeCanConfirm;
 @endphp
 
 <div class="space-y-3">

@@ -1,5 +1,15 @@
+@php
+    $isSelfService = $isSelfService ?? false;
+    $latestAddrEffdt = $latestAddrEffdt ?? null;
+    $latestAddrEffseq = $latestAddrEffseq ?? null;
+@endphp
 <div class="bg-white shadow rounded-lg p-4 mt-8">
-    <h2 class="text-lg font-bold mb-4">Address History</h2>
+    <h2 class="text-lg font-bold mb-2">Address History</h2>
+    @if($isSelfService)
+        <p class="text-sm text-gray-600 mb-4">
+            Past address records are shown for reference only. If a historical address needs to be corrected or removed, contact your DSD, facility administrator, or RDHR.
+        </p>
+    @endif
     <table class="min-w-full divide-y divide-gray-200">
         <thead>
             <tr>
@@ -19,6 +29,13 @@
         <tbody>
             @if($employee->addresses)
             @foreach($employee->addresses->sortBy([['effdt', 'desc'], ['effseq', 'desc']]) as $addr)
+            @php
+                $isLatestAddress = $latestAddrEffdt !== null
+                    && $latestAddrEffseq !== null
+                    && (string) $addr->effdt === (string) $latestAddrEffdt
+                    && (string) $addr->effseq === (string) $latestAddrEffseq;
+                $canEmployeeEditAddress = ! $isSelfService || $isLatestAddress;
+            @endphp
             <tr class="border-b">
                 <td class="px-3 py-2 text-xs">{{ $addr->effdt }}</td>
                 <td class="px-3 py-2 text-sm">{{ $addr->effseq }}</td>
@@ -37,24 +54,28 @@
                 <td class="px-3 py-2 text-sm">{{ $addr->country }}</td>
                 <td class="px-3 py-2 text-sm">@if(strtoupper((string) $addr->is_primary) === 'Y') Yes @else No @endif</td>
                 <td class="px-3 py-2 text-sm">
+                    @if($canEmployeeEditAddress)
                     <a href="#" class="text-blue-600 hover:underline" @click.prevent="setAddress({
-                                address1: '{{ $addr->address1 }}',
-                                address2: '{{ $addr->address2 }}',
-                                city: '{{ $addr->city }}',
-                                state: '{{ $addr->state }}',
-                                zip: '{{ $addr->zip }}',
-                                country: '{{ $addr->country }}',
+                                address1: @js($addr->address1),
+                                address2: @js($addr->address2),
+                                city: @js($addr->city),
+                                state: @js($addr->state),
+                                zip: @js($addr->zip),
+                                country: @js($addr->country),
                                 is_primary: '{{ strtoupper((string) $addr->is_primary) === 'Y' ? 'Y' : 'N' }}',
                                 address_type: '{{ strtoupper((string) $addr->address_type) }}',
                                 effdt: '{{ $addr->effdt }}',
                                 effseq: '{{ $addr->effseq }}'
                             })">View/Edit</a>
+                    @elseif($isSelfService)
+                    <span class="text-gray-400 italic text-xs">HR only</span>
+                    @endif
                 </td>
             </tr>
             @endforeach
             @else
             <tr>
-                <td colspan="10" class="text-center text-gray-500 py-4">No address records found.</td>
+                <td colspan="11" class="text-center text-gray-500 py-4">No address records found.</td>
             </tr>
             @endif
         </tbody>
