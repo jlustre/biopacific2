@@ -68,10 +68,18 @@ class DashboardController extends Controller
     protected function memberDashboard($user)
     {
         $context = $this->memberPortalContext($user);
-        $dashboardData = app(MemberDashboardService::class)->build($user);
+        $dashboardService = app(MemberDashboardService::class);
+        $dashboardData = $dashboardService->build($user);
+        $newsEventsCount = $context['newsEventsCount'] ?? $this->countMemberNewsEvents($context['facility'] ?? null);
+        $dashboardModules = $dashboardService->buildDashboardModules(
+            $user,
+            $dashboardData['stats'] ?? [],
+            (int) $newsEventsCount,
+            $dashboardData['positionTitle'] ?? null
+        );
 
-        return view('dashboard.member.index', array_merge($context, $dashboardData, [
-            'newsEventsCount' => $context['newsEventsCount'] ?? $this->countMemberNewsEvents($context['facility'] ?? null),
+        return view('dashboard.member.index', array_merge($context, $dashboardData, $dashboardModules, [
+            'newsEventsCount' => $newsEventsCount,
             'todayLabel' => now()->format('l, F j, Y'),
             'portalActive' => 'dashboard',
             'portalTitle' => 'Bio Pacific HR Portal | Employee Dashboard',

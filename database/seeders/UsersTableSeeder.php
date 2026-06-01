@@ -13,7 +13,7 @@ class UsersTableSeeder extends Seeder
     {
         for ($i = 1; $i <= 20; $i++) {
             $user = User::firstOrCreate(
-                ['email' => 'user' . $i . '@example.com'],
+                ['email' => 'user' . $i . '@biopacific.com'],
                 [
                     'name' => 'User ' . $i,
                     'password' => Hash::make('password'),

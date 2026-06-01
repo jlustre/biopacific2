@@ -6,6 +6,7 @@ use App\Mail\PreEmploymentMail;
 use App\Models\EmployeeChecklist;
 use App\Models\Facility;
 use App\Models\JobApplication;
+use App\Models\Position;
 use App\Models\RegistrationCode;
 use App\Models\User;
 use App\Support\RegistrationCodeService;
@@ -20,13 +21,104 @@ class AdminJobApplicationController extends Controller
 {
     use AuthorizesRequests;
 
+    protected function isDon(User $user): bool
+    {
+        return $user->hasRole('don');
+    }
+
+    protected function resolvedFacilityId(User $user): ?int
+    {
+        if ($user->facility_id) {
+            return (int) $user->facility_id;
+        }
+
+        $employee = $user->resolvedBpEmployee(['currentAssignment']);
+
+        return $employee?->currentAssignment?->facility_id
+            ? (int) $employee->currentAssignment->facility_id
+            : null;
+    }
+
+    protected function donDepartmentId(User $user): ?int
+    {
+        if (! $this->isDon($user)) {
+            return null;
+        }
+
+        $employee = $user->resolvedBpEmployee(['currentAssignment']);
+
+        return $employee?->currentAssignment?->dept_id
+            ? (int) $employee->currentAssignment->dept_id
+            : null;
+    }
+
+    protected function donDepartmentName(User $user): ?string
+    {
+        $departmentId = $this->donDepartmentId($user);
+
+        if (! $departmentId) {
+            return null;
+        }
+
+        return \App\Models\Department::query()->whereKey($departmentId)->value('name');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function donPositionTitles(User $user): array
+    {
+        $departmentId = $this->donDepartmentId($user);
+
+        if (! $departmentId) {
+            return [];
+        }
+
+        return Position::query()
+            ->where('department_id', $departmentId)
+            ->pluck('title')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    protected function applyDonDepartmentScope($query, User $user): void
+    {
+        $departmentName = $this->donDepartmentName($user);
+        $positionTitles = $this->donPositionTitles($user);
+
+        if (! $departmentName && empty($positionTitles)) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $normalizedDepartmentName = $departmentName ? mb_strtolower(trim($departmentName)) : null;
+
+        $query->whereHas('jobOpening', function ($jobOpeningQuery) use ($normalizedDepartmentName, $positionTitles) {
+            $jobOpeningQuery->where(function ($scopedQuery) use ($normalizedDepartmentName, $positionTitles) {
+                if ($normalizedDepartmentName) {
+                    $scopedQuery->whereRaw("LOWER(TRIM(COALESCE(department, ''))) = ?", [$normalizedDepartmentName]);
+                }
+
+                if (! empty($positionTitles)) {
+                    if ($normalizedDepartmentName) {
+                        $scopedQuery->orWhereIn('title', $positionTitles);
+                    } else {
+                        $scopedQuery->whereIn('title', $positionTitles);
+                    }
+                }
+            });
+        });
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
         $statuses = ['pending', 'reviewed', 'interview', 'pre-employment', 'hired', 'rejected'];
         $isGlobalAdmin = $user->hasRole(['admin', User::superAdminRoleName(), 'rdhr']);
-        $scopedFacilityId = (! $isGlobalAdmin && $user->facility_id)
-            ? (int) $user->facility_id
+        $scopedFacilityId = ! $isGlobalAdmin
+            ? $this->resolvedFacilityId($user)
             : null;
         $canFilterFacilities = $isGlobalAdmin;
 
@@ -40,6 +132,10 @@ class AdminJobApplicationController extends Controller
             $query->whereHas('jobOpening', function ($builder) use ($request) {
                 $builder->where('facility_id', $request->facility);
             });
+        }
+
+        if ($this->isDon($user)) {
+            $this->applyDonDepartmentScope($query, $user);
         }
 
         if ($request->filled('status')) {

@@ -16,11 +16,13 @@ class ChecklistItem extends Model
         'position_ids',
         'order',
         'isExpiring',
+        'is_license_or_certification',
     ];
 
     protected $casts = [
         'position_ids' => 'array',
         'isExpiring' => 'boolean',
+        'is_license_or_certification' => 'boolean',
     ];
 
     public function scopeApplicableToPosition($query, ?int $positionId)

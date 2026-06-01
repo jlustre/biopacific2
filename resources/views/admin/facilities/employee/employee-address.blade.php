@@ -11,6 +11,7 @@
     ->orderByDesc('effseq')
     ->first();
     $isAddressSelfService = $isSelfService ?? false;
+    $canEditCoreTabs = $canEditCoreTabs ?? false;
     @endphp
     <div x-data="addressForm()" x-init="initAddress()">
         @if(isset($isAddMode) && $isAddMode)
@@ -21,6 +22,11 @@
                 <em>Save the employee record before adding addresses.</em>
             </div>
         @else
+            @if(!$canEditCoreTabs)
+                <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    You have read-only access to Address information.
+                </div>
+            @endif
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
                 @if($isAddressSelfService)
                 <div class="flex-1 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
@@ -33,10 +39,12 @@
                 </div>
                 @endif
                 <div class="flex items-center gap-4 shrink-0 {{ $isAddressSelfService ? 'self-end lg:self-start' : 'ml-auto' }}">
+                @if($canEditCoreTabs)
                 <button type="button" @click="clearAddress()"
                     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap">
                     Add New Address
                 </button>
+                @endif
                 <template x-if="isLatestRecord()">
                     <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold whitespace-nowrap">Latest
                         Record</span>
@@ -47,6 +55,7 @@
                 @if($isAddressSelfService) @submit.prevent="confirmSaveAddress($event)" @endif>
                 @csrf
                 @method('PUT')
+                <fieldset {{ !$canEditCoreTabs ? 'disabled' : '' }}>
                 <div class="bg-white shadow rounded-lg p-4 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div class="mb-2">
@@ -125,10 +134,13 @@
                     </div>
                     <div class="flex justify-between mt-6 md:col-span-2 lg:col-span-4">
                         <a href="{{ url()->previous() }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</a>
+                        @if($canEditCoreTabs)
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save
                             Address</button>
+                        @endif
                     </div>
                 </div>
+                </fieldset>
             </form>
         @endif
         <!-- Address History Table -->
@@ -136,6 +148,7 @@
             'isSelfService' => $isAddressSelfService,
             'latestAddrEffdt' => $latestAddrEffdt,
             'latestAddrEffseq' => $latestAddrEffseq,
+            'canEditCoreTabs' => $canEditCoreTabs,
         ])
         <script>
             function addressForm() {

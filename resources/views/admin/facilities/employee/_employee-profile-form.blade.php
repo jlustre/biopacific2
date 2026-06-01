@@ -12,6 +12,13 @@
         return (string) $value;
     };
 @endphp
+@php $canEditCoreTabs = $canEditCoreTabs ?? false; @endphp
+@if(!$canEditCoreTabs)
+<div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    You have read-only access to Personal information.
+</div>
+@endif
+<fieldset {{ !$canEditCoreTabs ? 'disabled' : '' }}>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {{-- Employee Id --}}
     <div class="mb-1">
@@ -272,9 +279,12 @@
     </div>
 
 </div>
+</fieldset>
 <div class="flex justify-between mt-2 md:col-span-2 lg:col-span-4">
     <a href="{{ url()->previous() }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</a>
+    @if($canEditCoreTabs)
     <button type="submit"
         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">Save
         Profile</button>
+    @endif
 </div>

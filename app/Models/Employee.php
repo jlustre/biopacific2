@@ -21,8 +21,8 @@ class Employee extends Model
      */
     public function currentAddress()
     {
-        return $this->hasOne(EmployeeAddress::class)
-            ->latestOfMany(['effective_date', 'effective_sequence']);
+        return $this->hasOne(EmployeeAddress::class, 'employee_num', 'employee_num')
+            ->latestOfMany(['effdt', 'effseq']);
     }
 
     /**
@@ -30,8 +30,8 @@ class Employee extends Model
      */
     public function currentPhone()
     {
-        return $this->hasOne(EmployeePhone::class)
-            ->latestOfMany(['effective_date', 'effective_sequence']);
+        return $this->hasOne(EmployeePhone::class, 'employee_num', 'employee_num')
+            ->latestOfMany(['effdt', 'effseq']);
     }
 
     public function positions()

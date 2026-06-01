@@ -31,7 +31,13 @@ $isAdminLogin = request()->routeIs('admin.login');
         </div>
 
         <!-- Remember Me -->
-        <flux:checkbox wire:model="remember" :label="__('Remember me')" />
+        <div class="block">
+            <label for="remember_me" class="inline-flex items-center cursor-pointer">
+                <input id="remember_me" type="checkbox" wire:model.live="remember"
+                    class="rounded border-zinc-300 text-teal-600 shadow-sm focus:ring-teal-500" name="remember">
+                <span class="ms-2 text-sm text-zinc-700">{{ __('Remember me') }}</span>
+            </label>
+        </div>
 
         <div class="flex items-center justify-end">
             <flux:button variant="primary" type="submit"

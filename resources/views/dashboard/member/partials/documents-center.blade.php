@@ -13,9 +13,10 @@
     $uploadCount = count($uploads);
     $completeCount = count($complianceComplete);
     $employmentPortalUrl = \Illuminate\Support\Facades\Route::has('employment.portal') ? route('employment.portal') : '#';
+    $requiredUploadTypes = collect($documentsCenter['required_upload_types'] ?? [])->values();
 @endphp
 
-<section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="{ tab: 'mine', facilityFilter: '' }">
+<section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="memberDocumentsCenter({ uploadUrl: @js(route('employment.documents.upload')), uploadTypes: @js($requiredUploadTypes), csrf: @js(csrf_token()) })">
     <div class="border-b border-slate-200 bg-teal-50 p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -34,13 +35,7 @@
             @endif
         </div>
 
-        <div class="mt-5 flex flex-wrap gap-2 border-b border-slate-200 pb-0">
-            <button type="button"
-                @click="tab = 'mine'"
-                :class="tab === 'mine' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-700'"
-                class="border-b-2 px-4 py-2.5 text-sm font-bold transition">
-                My documents
-            </button>
+        <div class="mt-2 flex flex-wrap gap-2 border-b border-slate-200 pb-0">
             @if($showFacilityTab)
                 <button type="button"
                     @click="tab = 'facility'"
@@ -119,9 +114,10 @@
                         <table class="w-full min-w-[560px] text-left text-sm">
                             <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                                 <tr>
-                                    <th class="px-4 py-3">Item</th>
-                                    <th class="px-4 py-3">Section</th>
-                                    <th class="px-4 py-3">Status</th>
+                                    <th class="px-3 py-2">Item</th>
+                                    <th class="px-3 py-2">Required</th>
+                                    <th class="w-44 min-w-[11rem] whitespace-nowrap px-3 py-2">Status</th>
+                                    <th class="w-20 whitespace-nowrap px-3 py-2 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -129,15 +125,28 @@
                                     @php
                                         $badgeClass = match ($doc['status'] ?? '') {
                                             'not_on_file' => 'bg-rose-50 text-rose-700',
+                                            'missing' => 'bg-rose-50 text-rose-700',
+                                            'expired' => 'bg-amber-50 text-amber-700',
                                             'expiry_missing' => 'bg-amber-50 text-amber-700',
                                             default => 'bg-slate-100 text-slate-700',
                                         };
                                     @endphp
                                     <tr>
-                                        <td class="px-4 py-3 font-semibold text-slate-950">{{ $doc['title'] ?? '—' }}</td>
-                                        <td class="px-4 py-3 text-slate-500">{{ $doc['section'] ?? '—' }}</td>
-                                        <td class="px-4 py-3">
-                                            <span class="rounded-full px-3 py-1 text-xs font-bold {{ $badgeClass }}">{{ $doc['status_label'] ?? 'Needs attention' }}</span>
+                                        <td class="px-3 py-2 font-semibold text-slate-950">{{ $doc['title'] ?? '—' }}</td>
+                                        <td class="px-3 py-2 text-slate-500">{{ !empty($doc['required']) ? 'Yes' : 'No' }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2">
+                                            <span class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ $badgeClass }}">{{ $doc['status_label'] ?? 'Needs attention' }}</span>
+                                        </td>
+                                        <td class="px-3 py-2 text-right">
+                                            @if($employmentPortalUrl !== '#')
+                                                <button type="button" @click="openUploadModal(@js($doc['upload_type_id'] ?? null))" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="Upload document" aria-label="Upload document">
+                                                    <i class="fa-solid fa-upload"></i>
+                                                </button>
+                                            @else
+                                                <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="Upload unavailable" aria-label="Upload unavailable">
+                                                    <i class="fa-solid fa-upload"></i>
+                                                </span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -184,15 +193,27 @@
                                         <td class="px-4 py-3 text-slate-500">{{ $upload['uploaded_at'] ?? '—' }}</td>
                                         <td class="px-4 py-3 text-slate-500">{{ $upload['expires_at'] ?? '—' }}</td>
                                         <td class="px-4 py-3 text-right">
-                                            @if(!empty($upload['view_url']))
-                                                <a href="{{ $upload['view_url'] }}" target="_blank" rel="noopener" class="font-bold text-brand-600 hover:text-brand-700">View</a>
-                                                @if(!empty($upload['download_url']))
-                                                    <span class="text-slate-300">|</span>
-                                                    <a href="{{ $upload['download_url'] }}" class="font-bold text-brand-600 hover:text-brand-700">Download</a>
+                                            <div class="inline-flex items-center gap-2">
+                                                @if(!empty($upload['view_url']))
+                                                    <a href="{{ $upload['view_url'] }}" target="_blank" rel="noopener" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="View document" aria-label="View document">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </a>
+                                                @else
+                                                    <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="View unavailable" aria-label="View unavailable">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </span>
                                                 @endif
-                                            @else
-                                                <span class="text-slate-400">—</span>
-                                            @endif
+
+                                                @if(!empty($upload['edit_url']))
+                                                    <a href="{{ $upload['edit_url'] }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="Edit document" aria-label="Edit document">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                    </a>
+                                                @else
+                                                    <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="Edit unavailable" aria-label="Edit unavailable">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -203,6 +224,57 @@
             </div>
         @endunless
     </div>
+
+    <template x-teleport="body">
+        <div x-show="showUploadModal" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-black/50" @click="closeUploadModal()"></div>
+            <div class="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900">Upload Document</h3>
+                    <button type="button" class="text-xl leading-none text-slate-500 hover:text-slate-700" @click="closeUploadModal()" aria-label="Close">&times;</button>
+                </div>
+                <form method="POST" :action="uploadUrl" enctype="multipart/form-data" class="space-y-4">
+                    <input type="hidden" name="_token" :value="csrf">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">Upload Type <span class="text-rose-600">*</span></label>
+                            <select name="upload_type_id" x-model="form.upload_type_id" required class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                                <option value="">Select type</option>
+                                <template x-for="type in uploadTypes" :key="type.id">
+                                    <option :value="String(type.id)" x-text="type.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">File <span class="text-rose-600">*</span></label>
+                            <input type="file" name="document" required class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div x-show="requiresExpiry" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">Effective Start Date</label>
+                            <input type="date" name="effective_start_date" x-model="form.effective_start_date" class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">Expires At <span class="text-rose-600">*</span></label>
+                            <input type="date" name="expires_at" x-model="form.expires_at" :required="requiresExpiry" :min="form.effective_start_date || null" class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold">Comments</label>
+                        <textarea name="comments" rows="2" x-model="form.comments" class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="closeUploadModal()" class="rounded bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300">Cancel</button>
+                        <button type="submit" class="rounded bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
 
     {{-- Facility compliance --}}
     @if($showFacilityTab)
@@ -301,3 +373,36 @@
         </div>
     @endif
 </section>
+
+<script>
+    function memberDocumentsCenter(config) {
+        return {
+            tab: 'mine',
+            facilityFilter: '',
+            showUploadModal: false,
+            uploadUrl: config.uploadUrl,
+            uploadTypes: config.uploadTypes || [],
+            csrf: config.csrf,
+            form: {
+                upload_type_id: '',
+                effective_start_date: '',
+                expires_at: '',
+                comments: '',
+            },
+            get requiresExpiry() {
+                const selected = this.uploadTypes.find((type) => String(type.id) === String(this.form.upload_type_id));
+                return !!(selected && selected.requires_expiry);
+            },
+            openUploadModal(uploadTypeId = null) {
+                this.form.upload_type_id = uploadTypeId ? String(uploadTypeId) : '';
+                this.form.effective_start_date = '';
+                this.form.expires_at = '';
+                this.form.comments = '';
+                this.showUploadModal = true;
+            },
+            closeUploadModal() {
+                this.showUploadModal = false;
+            },
+        };
+    }
+</script>

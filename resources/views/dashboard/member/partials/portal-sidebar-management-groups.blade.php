@@ -7,7 +7,7 @@
     $webSectionOpen = request()->routeIs($webRoutePatterns);
     $commSectionOpen = request()->routeIs($commRoutePatterns);
     $hrActive = $active === 'facility-hr-portal'
-        || request()->routeIs(['user.hr-portal', 'hr-portal.*', 'admin.facility.dashboard', 'admin.facility.*', 'admin.employees.*', 'admin.facility.employees*', 'admin.facility.hiring', 'admin.facility.job_openings*', 'admin.facility.reports*', 'admin.facility.documents*', 'admin.facility.uploads*', 'admin.facility.pre-employment*', 'admin.reports.*', 'admin.scheduled-reports.*', 'admin.scheduled-report-runs.*', 'admin.hr-portal.*']);
+         || request()->routeIs(['user.hr-portal', 'hr-portal.*', 'admin.facility.dashboard', 'admin.facility.*', 'admin.employees.*', 'admin.facility.employees*', 'admin.facility.hiring', 'admin.facility.job_openings*', 'admin.facility.reports*', 'admin.facility.documents*', 'admin.facility.uploads*', 'admin.facility.pre-employment*', 'admin.reports.*', 'admin.scheduled-reports.*', 'admin.scheduled-report-runs.*', 'admin.hr-portal.*']);
     $extraClass = fn (bool $isActive) => $isActive
         ? 'member-portal-nav-active bg-brand-600 font-semibold shadow-lg shadow-brand-900/20 text-white'
         : 'text-teal-100';
@@ -29,6 +29,12 @@
         <span>👥</span>
         <span>HR Portal</span>
     </a>
+
+   <a href="{{ route('admin.upload-types.index') }}"
+      class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs('admin.upload-types.*')) }}">
+      <span>📄</span>
+      <span>Documents Management</span>
+   </a>
 
     <button type="button" @click="webOpen = !webOpen"
             class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 {{ $webSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">

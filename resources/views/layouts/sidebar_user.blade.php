@@ -36,10 +36,17 @@
                 <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
             </a>
             @endif
-            @if(auth()->user() && auth()->user()->hasRole(['rdhr']))
+            @if(auth()->user() && auth()->user()->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL) && !auth()->user()->hasRole(['facility-admin','facility-dsd']))
             <a href="{{ route('user.hr-portal') }}"
                 class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
                 <i class="fas fa-users-cog mr-2"></i> HR Portal
+            </a>
+            @endif
+
+            @if(auth()->user() && auth()->user()->can(\App\Support\Rbac\Permissions::VIEW_POSITIONS))
+            <a href="{{ route('admin.positions.index') }}"
+                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') ? 'bg-gray-100 font-bold' : '' }}">
+                <i class="fas fa-briefcase mr-2"></i> Positions
             </a>
             @endif
 

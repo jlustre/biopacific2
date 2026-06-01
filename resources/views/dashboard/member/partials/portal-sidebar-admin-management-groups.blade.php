@@ -9,6 +9,7 @@
     $rolesOpen = request()->routeIs(['admin.roles.*', 'admin.permissions.*', 'admin.role-assignments.*']);
     $tablesOpen = request()->routeIs([
         'admin.positions.*',
+        'admin.upload-types.*',
         'admin.checklist-items.*',
         'admin.departments.*',
         'admin.events.*',
@@ -63,6 +64,7 @@
     </button>
     <div x-show="tablesOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">
         <a href="{{ route('admin.positions.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.positions.*') }}">Positions</a>
+        <a href="{{ route('admin.upload-types.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.upload-types.*') }}">Documents Management</a>
         <a href="{{ route('admin.checklist-items.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.checklist-items.*') }}">Checklist Items</a>
         <a href="{{ route('admin.departments.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.departments.*') }}">Departments</a>
         @if(\Illuminate\Support\Facades\Route::has('admin.events.index'))

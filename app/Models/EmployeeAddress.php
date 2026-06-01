@@ -9,23 +9,30 @@ class EmployeeAddress extends Model
 {
     use HasFactory;
 
+    protected $table = 'bp_emp_addresses';
+    protected $primaryKey = 'address_id';
+    public $timestamps = true;
+
     protected $fillable = [
-        'employee_id',
-        'current_address',
+        'employee_num',
+        'address1',
+        'address2',
         'city',
         'state',
-        'zip_code',
-        'county',
-        'effective_date',
-        'effective_sequence',
+        'zip',
+        'country',
+        'address_type',
+        'effdt',
+        'effseq',
+        'is_primary',
     ];
 
     protected $casts = [
-        'effective_date' => 'date',
+        'effdt' => 'date',
     ];
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_num', 'employee_num');
     }
 }

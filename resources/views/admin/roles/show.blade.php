@@ -105,13 +105,24 @@
             });
             @endphp
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-4">
                 @foreach($groupedPermissions as $category => $permissions)
-                <div class="border border-gray-200 rounded-lg p-4">
-                    <h4 class="text-md font-medium text-gray-900 mb-3">
-                        {{ $category }} ({{ $permissions->count() }})
-                    </h4>
-                    <div class="space-y-2">
+                <details class="border border-gray-200 rounded-lg" {{ $loop->first ? 'open' : '' }}>
+                    <summary class="cursor-pointer px-4 py-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-md font-medium text-gray-900">
+                                {{ $category }} Permissions
+                            </h4>
+                            <div class="flex items-center space-x-3 text-sm text-gray-500">
+                                <span>{{ $permissions->count() }} permissions</span>
+                                <span class="inline-flex items-center text-gray-400">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </summary>
+
+                    <div class="p-4 border-t border-gray-200 space-y-2">
                         @foreach($permissions as $permission)
                         <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <span class="text-sm font-medium text-gray-900">
@@ -121,7 +132,7 @@
                         </div>
                         @endforeach
                     </div>
-                </div>
+                </details>
                 @endforeach
             </div>
         </div>

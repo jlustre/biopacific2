@@ -93,11 +93,39 @@ class EmployeesController extends Controller
     {
         $user = $request->user();
 
-        if ($user && $user->hasRole(['facility-admin', 'facility-dsd']) && $user->facility_id) {
+        if (! $user) {
+            return null;
+        }
+
+        if (! $user->hasRole(['facility-admin', 'facility-dsd', 'don'])) {
+            return null;
+        }
+
+        if ($user->facility_id) {
             return (int) $user->facility_id;
         }
 
+        $employee = $user->resolvedBpEmployee(['currentAssignment']);
+        if ($employee?->currentAssignment?->facility_id) {
+            return (int) $employee->currentAssignment->facility_id;
+        }
+
         return null;
+    }
+
+    protected function scopedDepartmentId(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if (! $user || ! $user->hasRole('don')) {
+            return null;
+        }
+
+        $employee = $user->resolvedBpEmployee(['currentAssignment']);
+
+        return $employee?->currentAssignment?->dept_id
+            ? (int) $employee->currentAssignment->dept_id
+            : null;
     }
 
     protected function facilitiesForUser(Request $request)
@@ -151,16 +179,32 @@ class EmployeesController extends Controller
     protected function authorizeEmployeeFacilityAccess(Request $request, BPEmployee $employee): void
     {
         $scopedFacilityId = $this->scopedFacilityId($request);
+        $scopedDepartmentId = $this->scopedDepartmentId($request);
 
-        if (! $scopedFacilityId) {
+        if (! $scopedFacilityId && ! $scopedDepartmentId) {
             return;
         }
 
         $employeeFacilityId = $employee->currentAssignment?->facility_id;
+        $employeeDepartmentId = $employee->currentAssignment?->dept_id;
 
-        if ($employeeFacilityId && (int) $employeeFacilityId !== $scopedFacilityId) {
+        if ($scopedFacilityId && $employeeFacilityId && (int) $employeeFacilityId !== $scopedFacilityId) {
             abort(403, 'You do not have access to employees at this facility.');
         }
+
+        if ($scopedDepartmentId && $employeeDepartmentId && (int) $employeeDepartmentId !== $scopedDepartmentId) {
+            abort(403, 'You do not have access to employees in this department.');
+        }
+
+        if ($scopedDepartmentId && ! $employeeDepartmentId) {
+            abort(403, 'You do not have access to employees without a department assignment.');
+        }
+    }
+
+    protected function canEditCoreEmployeeTabs($user): bool
+    {
+        return (bool) ($user && method_exists($user, 'can')
+            && $user->can(\App\Support\Rbac\Permissions::EDIT_EMPLOYEE_CORE_TABS));
     }
 
     protected function authorizeUploadModification(Upload $upload): void
@@ -223,7 +267,7 @@ class EmployeesController extends Controller
         }
 
         $user = Auth::user();
-        if (! $user || ! $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd'])) {
+        if (! $user || ! $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don'])) {
             abort(403, 'You are not authorized to verify employee documents.');
         }
 
@@ -262,6 +306,7 @@ class EmployeesController extends Controller
             'upload_type_id' => 'required|exists:upload_types,id',
             'document' => 'required|file|max:10240', // 10MB max
             'description' => 'nullable|string|max:255',
+            'comments' => 'nullable|string|max:255',
         ];
         if ($requiresExpiry) {
             $rules['expires_at'] = 'required|date|after_or_equal:effective_start_date';
@@ -276,6 +321,7 @@ class EmployeesController extends Controller
 
 
         $employee = BPEmployee::with('currentAssignment')->findOrFail($employee_num); // $employee_num is actually the PK id
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
         $facilityId = $employee->currentAssignment?->facility_id;
         if (!$facilityId) {
             return $this->redirectToEmployeeEdit($employee->id, 'documents', [
@@ -295,7 +341,7 @@ class EmployeesController extends Controller
             'file_path' => $path,
             'file_size' => $file->getSize(),
             'uploaded_at' => now(),
-            'comments' => $validated['description'] ?? null,
+            'comments' => $validated['comments'] ?? ($validated['description'] ?? null),
             'effective_start_date' => $validated['effective_start_date'] ?? null,
             'expires_at' => $validated['expires_at'] ?? null,
         ]);
@@ -308,9 +354,10 @@ class EmployeesController extends Controller
         /**
      * Show the employee profile page (tabbed view).
      */
-    public function showProfile($employee_num)
+    public function showProfile(Request $request, $employee_num)
     {
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = BPEmployee::with('currentAssignment')->findOrFail($employee_num);
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
         $isAddMode = false;
         // Get the Optionstype id for 'marital status'
         $maritalType = Optionstype::where('name', 'marital status')->first();
@@ -400,6 +447,12 @@ class EmployeesController extends Controller
             $upload->file_size = $file->getSize();
             $upload->user_id = Auth::id();
             $upload->uploaded_at = now();
+            $upload->submission_reason = \App\Support\UploadSubmissionReason::CORRECTION;
+            $upload->verification_status = Upload::VERIFICATION_PENDING;
+            $upload->submitted_for_review_at = now();
+            $upload->verified_by_user_id = null;
+            $upload->verified_at = null;
+            $upload->verification_notes = null;
         }
 
         $upload->save();
@@ -717,6 +770,10 @@ class EmployeesController extends Controller
      */
     public function updateEmail(Request $request, $userId)
     {
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return redirect()->back()->with('error', 'You have read-only access to this employee profile.');
+        }
+
         $user = \App\Models\User::findOrFail($userId);
         $validated = $request->validate([
             'email' => [
@@ -738,13 +795,38 @@ class EmployeesController extends Controller
     
     public function index(Request $request, $facility = null)
     {
+        $user = $request->user();
         $scopedFacilityId = $this->scopedFacilityId($request);
+        $scopedDepartmentId = $this->scopedDepartmentId($request);
+        $isDonDepartmentScoped = (bool) ($user && $user->hasRole('don') && $scopedDepartmentId);
         $facilityFilterId = $this->resolveFacilityFilterId($request, $facility);
         $facilities = $this->facilitiesForUser($request);
         $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
-        $departments = \App\Models\Department::all();
-        $positions = \App\Models\Position::all();
-        $supervisorPositions = \App\Models\Position::query()->supervisorRoles()->get();
+
+        if ($isDonDepartmentScoped && ! $request->filled('department')) {
+            $request->merge(['department' => $scopedDepartmentId]);
+        }
+
+        $selectedDepartmentId = $isDonDepartmentScoped
+            ? $scopedDepartmentId
+            : ($request->filled('department') ? (int) $request->department : null);
+
+        $departments = $scopedDepartmentId
+            ? \App\Models\Department::where('id', $scopedDepartmentId)->get()
+            : \App\Models\Department::all();
+
+        $positionsQuery = \App\Models\Position::query();
+        if ($scopedDepartmentId) {
+            $positionsQuery->where('department_id', $scopedDepartmentId);
+        }
+        $positions = $positionsQuery->orderBy('title')->get();
+
+        $supervisorPositionsQuery = \App\Models\Position::query()->supervisorRoles();
+        if ($scopedDepartmentId) {
+            $supervisorPositionsQuery->where('department_id', $scopedDepartmentId);
+        }
+        $supervisorPositions = $supervisorPositionsQuery->orderBy('title')->get();
+
         $query = BPEmployee::query();
         // Filter by Reports To (supervisor position)
         if ($request->filled('reports_to')) {
@@ -757,6 +839,12 @@ class EmployeesController extends Controller
         if ($facilityFilterId) {
             $query->whereHas('currentAssignment', function ($q) use ($facilityFilterId) {
                 $q->where('facility_id', $facilityFilterId);
+            });
+        }
+
+        if ($scopedDepartmentId) {
+            $query->whereHas('currentAssignment', function ($q) use ($scopedDepartmentId) {
+                $q->where('dept_id', $scopedDepartmentId);
             });
         }
 
@@ -836,6 +924,8 @@ class EmployeesController extends Controller
             'facilityFilterId',
             'scopedFacility',
             'scopedFacilityId',
+            'isDonDepartmentScoped',
+            'selectedDepartmentId',
             'canGenerateRegistrationCodes',
             'activeRegistrationCodes',
             'registrationCodeService',
@@ -844,7 +934,7 @@ class EmployeesController extends Controller
     /**
      * Display the specified employee details for modal.
      */
-    public function show($employee_num)
+    public function show(Request $request, $employee_num)
     {
         $employee = \App\Models\BPEmployee::with([
             'currentAssignment',
@@ -852,6 +942,7 @@ class EmployeesController extends Controller
             'currentAssignment.department',
             'currentAssignment.position',
         ])->findOrFail($employee_num); // $employee_num is PK id
+        $this->authorizeEmployeeFacilityAccess($request, $employee);
         return view('admin.facilities.employee-details', compact('employee'));
     }
 
@@ -862,6 +953,12 @@ class EmployeesController extends Controller
     {
         $employee = \App\Models\BPEmployee::with(['user', 'currentAssignment'])->findOrFail($employee_num); // $employee_num is PK id
         $this->authorizeEmployeeFacilityAccess($request, $employee);
+
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return $this->redirectToEmployeeEdit($employee->id, 'personal', [
+                'error' => 'You have read-only access to Personal information.',
+            ]);
+        }
 
         try {
             $validated = $request->validate([
@@ -942,6 +1039,12 @@ class EmployeesController extends Controller
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
 
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return $this->redirectToEmployeeEdit($employeeModel->id, 'personal', [
+                'error' => 'You have read-only access to Personal information.',
+            ]);
+        }
+
         $validated = $request->validate([
             'phone_type' => 'required|string|max:50',
             'phone_number' => 'required|string|max:50',
@@ -991,6 +1094,12 @@ class EmployeesController extends Controller
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
 
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return $this->redirectToEmployeeEdit($employeeModel->id, 'personal', [
+                'error' => 'You have read-only access to Personal information.',
+            ]);
+        }
+
         $validated = $request->validate([
             'phone_type' => 'required|string|max:50',
             'phone_number' => 'required|string|max:50',
@@ -1023,6 +1132,12 @@ class EmployeesController extends Controller
     {
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return $this->redirectToEmployeeEdit($employeeModel->id, 'address', [
+                'error' => 'You have read-only access to Address information.',
+            ]);
+        }
 
         // If effseq is present, it's an update; otherwise, it's an add
         $isUpdate = $request->filled('effseq') && $request->input('effseq') !== '';
@@ -1146,6 +1261,12 @@ class EmployeesController extends Controller
     {
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return $this->redirectToEmployeeEdit($employeeModel->id, 'job-data', [
+                'error' => 'You have read-only access to Job Data.',
+            ]);
+        }
 
         if (! \App\Support\EmployeeJobDataAuthorization::canManageJobData($request->user(), $employeeModel)) {
             return $this->redirectToEmployeeEdit($employeeModel, 'job-data', [
@@ -1287,6 +1408,13 @@ class EmployeesController extends Controller
     {
         $employeeModel = $this->resolveEmployee($employee);
         $this->authorizeEmployeeFacilityAccess($request, $employeeModel);
+
+        if (! $this->canEditCoreEmployeeTabs($request->user())) {
+            return $this->redirectToEmployeeEdit($employeeModel->id, 'tax-data', [
+                'error' => 'You have read-only access to Tax Data.',
+            ]);
+        }
+
         $employeeNum = $employeeModel->employee_num;
 
         $request->merge([
@@ -1947,6 +2075,18 @@ class EmployeesController extends Controller
             ->values();
 
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $requiredDocumentChecklist = [
+            'position_id' => null,
+            'position_title' => null,
+            'department_id' => null,
+            'items' => collect(),
+            'summary' => [
+                'total' => 0,
+                'complete' => 0,
+                'expired' => 0,
+                'missing' => 0,
+            ],
+        ];
         return view('admin.facilities.employee.edit_employee', compact(
             'employee',
             'departments',
@@ -1980,7 +2120,8 @@ class EmployeesController extends Controller
             'citizenOptions',
             'actionOptions',
             'unionCodeOptions',
-            'uploadTypes'
+            'uploadTypes',
+            'requiredDocumentChecklist'
         ));
     }
 
@@ -2148,6 +2289,7 @@ class EmployeesController extends Controller
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
         $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $requiredDocumentChecklist = app(\App\Services\DocumentComplianceService::class)->forEmployee($employee);
         $assessmentPeriods = $this->loadEmployeeAssessmentPeriods($employee);
         $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodIdForEmployee($employee, $assessmentPeriods);
         $suggestedAssessmentPeriod = app(EmployeeAssessmentPeriodService::class)->suggestedPeriodForEmployee(
@@ -2569,6 +2711,7 @@ class EmployeesController extends Controller
             auth()->user(),
             $employee
         );
+        $canEditCoreTabs = $this->canEditCoreEmployeeTabs(auth()->user());
 
         $editOptions = $request->attributes->get('employee_edit_options', []);
         $isSelfService = (bool) ($editOptions['isSelfService'] ?? false);
@@ -2623,7 +2766,9 @@ class EmployeesController extends Controller
             'rawDraftRow',
             'isSelfService',
             'canManageJobData',
+            'canEditCoreTabs',
             'employeeFormRoutes',
+            'requiredDocumentChecklist',
         ));
     }
 }

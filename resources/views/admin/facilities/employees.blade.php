@@ -92,12 +92,18 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                 @endif
                 <div class="w-full sm:w-auto px-0 sm:px-0">
                     <label for="department" class="block text-sm font-medium">Department</label>
+                    @if(!empty($isDonDepartmentScoped) && !empty($selectedDepartmentId))
+                    <input type="hidden" name="department" value="{{ $selectedDepartmentId }}">
+                    @endif
                     <select name="department" id="department"
                         class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
+                        {{ !empty($isDonDepartmentScoped) ? 'disabled' : '' }}
                         onchange="this.form.submit()">
+                        @if(empty($isDonDepartmentScoped))
                         <option value="">All Departments</option>
+                        @endif
                         @foreach($departments as $department)
-                        <option value="{{ $department->id }}" @if(request('department')==$department->id) selected
+                        <option value="{{ $department->id }}" @if(($selectedDepartmentId ?? request('department'))==$department->id) selected
                             @endif>{{ $department->name }}</option>
                         @endforeach
                     </select>

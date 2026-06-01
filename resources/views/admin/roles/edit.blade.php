@@ -3,7 +3,7 @@
 @section('header')
 <div class="flex justify-between items-center">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">Edit Role: {{ ucwords(str_replace('-', ' ', $role->name)) }}</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Edit Role: {{ \App\Models\User::roleDisplayLabel($role->name) }}</h1>
         <p class="text-gray-600">Modify role permissions and settings</p>
     </div>
     <div class="flex space-x-2">
@@ -69,47 +69,59 @@
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Permissions</h3>
             <p class="text-sm text-gray-600 mb-4">Select the permissions this role should have</p>
+            <div class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                Employee Personal/Address/Job Data/Tax Data editing requires
+                <span class="font-mono">{{ \App\Support\Rbac\Permissions::EDIT_EMPLOYEE_CORE_TABS }}</span>.
+                If this permission is removed, the role becomes read-only on those tabs.
+            </div>
 
             <div class="space-y-6">
                 @foreach($permissions as $category => $categoryPermissions)
-                <div class="border border-gray-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <h4 class="text-md font-medium text-gray-900">
-                            {{ ucfirst($category) }} Permissions
-                        </h4>
-                        <div class="text-sm text-gray-500">
-                            {{ $categoryPermissions->count() }} permissions
+                <details class="border border-gray-200 rounded-lg" data-permission-category>
+                    <summary class="cursor-pointer px-4 py-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-md font-medium text-gray-900">
+                                {{ ucfirst($category) }} Permissions
+                            </h4>
+                            <div class="flex items-center space-x-3 text-sm text-gray-500">
+                                <span>{{ $categoryPermissions->count() }} permissions</span>
+                                <span class="inline-flex items-center text-gray-400">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </summary>
+
+                    <div class="p-4 border-t border-gray-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            @foreach($categoryPermissions as $permission)
+                            <label class="flex items-start space-x-3 p-2 rounded hover:bg-gray-50">
+                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
+                                    class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" {{
+                                    in_array($permission->id, old('permissions',
+                                $role->permissions->pluck('id')->toArray())) ? 'checked' : '' }}>
+                                <div class="flex-1 min-w-0">
+                                    <span class="text-sm font-medium text-gray-900">
+                                        {{ ucwords(str_replace(['_', '-'], ' ', $permission->name)) }}
+                                    </span>
+                                    <p class="text-xs text-gray-500">{{ $permission->name }}</p>
+                                </div>
+                            </label>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-3 flex space-x-2">
+                            <button type="button" class="text-xs text-blue-600 hover:text-blue-800"
+                                onclick="selectAllInCategory(this)">
+                                Select All
+                            </button>
+                            <button type="button" class="text-xs text-gray-600 hover:text-gray-800"
+                                onclick="deselectAllInCategory(this)">
+                                Deselect All
+                            </button>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        @foreach($categoryPermissions as $permission)
-                        <label class="flex items-start space-x-3 p-2 rounded hover:bg-gray-50">
-                            <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
-                                class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" {{
-                                in_array($permission->id, old('permissions',
-                            $role->permissions->pluck('id')->toArray())) ? 'checked' : '' }}>
-                            <div class="flex-1 min-w-0">
-                                <span class="text-sm font-medium text-gray-900">
-                                    {{ ucwords(str_replace(['_', '-'], ' ', $permission->name)) }}
-                                </span>
-                                <p class="text-xs text-gray-500">{{ $permission->name }}</p>
-                            </div>
-                        </label>
-                        @endforeach
-                    </div>
-
-                    <div class="mt-3 flex space-x-2">
-                        <button type="button" class="text-xs text-blue-600 hover:text-blue-800"
-                            onclick="selectAllInCategory('{{ $category }}')">
-                            Select All
-                        </button>
-                        <button type="button" class="text-xs text-gray-600 hover:text-gray-800"
-                            onclick="deselectAllInCategory('{{ $category }}')">
-                            Deselect All
-                        </button>
-                    </div>
-                </div>
+                </details>
                 @endforeach
             </div>
 
@@ -139,14 +151,14 @@
 </div>
 
 <script>
-    function selectAllInCategory(category) {
-    const categoryDiv = event.target.closest('.border');
+    function selectAllInCategory(button) {
+    const categoryDiv = button.closest('[data-permission-category]');
     const checkboxes = categoryDiv.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => checkbox.checked = true);
 }
 
-function deselectAllInCategory(category) {
-    const categoryDiv = event.target.closest('.border');
+function deselectAllInCategory(button) {
+    const categoryDiv = button.closest('[data-permission-category]');
     const checkboxes = categoryDiv.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => checkbox.checked = false);
 }

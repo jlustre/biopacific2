@@ -19,6 +19,452 @@ use Illuminate\Support\Collection;
 
 class MemberDashboardService
 {
+        public function buildDashboardModules(
+            User $user,
+            array $stats,
+            int $newsEventsCount = 0,
+            ?string $positionTitle = null
+        ): array {
+            $persona = $this->resolveDashboardPersona($user, $positionTitle);
+            $personaLabel = $this->dashboardPersonaLabel($persona);
+            $showFacilityOversight = in_array($persona, ['facility-admin', 'facility-dsd', 'don'], true);
+
+            $overviewCards = $this->buildOverviewCards($persona, $stats, $newsEventsCount);
+            $personalActions = $this->buildPersonalActions($persona);
+            $facilityActions = $this->buildFacilityActions($persona);
+            $helpfulLinks = $this->buildHelpfulLinks($persona);
+
+            return [
+                'dashboardPersona' => $persona,
+                'dashboardPersonaLabel' => $personaLabel,
+                'dashboardIntro' => 'Dashboard focus: ' . $personaLabel,
+                'showFacilityOversight' => $showFacilityOversight,
+                'overviewCards' => $overviewCards,
+                'personalActions' => $personalActions,
+                'facilityActions' => $facilityActions,
+                'helpfulLinks' => $helpfulLinks,
+            ];
+        }
+
+        protected function resolveDashboardPersona(User $user, ?string $positionTitle): string
+        {
+            if ($this->userHasRole($user, 'facility-admin')) {
+                return 'facility-admin';
+            }
+
+            if ($this->userHasRole($user, 'facility-dsd')) {
+                return 'facility-dsd';
+            }
+
+            $normalizedTitle = strtolower(trim((string) $positionTitle));
+
+            if ($normalizedTitle !== '') {
+                if (preg_match('/director of nursing|\bdon\b/', $normalizedTitle) === 1) {
+                    return 'don';
+                }
+
+                if (preg_match('/\bcna\b|certified nursing assistant|nursing assistant/', $normalizedTitle) === 1) {
+                    return 'cna';
+                }
+
+                if (preg_match('/registered nurse|\brn\b|licensed vocational nurse|\blvn\b|licensed practical nurse|\blpn\b|\bnurse\b/', $normalizedTitle) === 1) {
+                    return 'licensed-nurse';
+                }
+            }
+
+            return 'employee-default';
+        }
+
+        protected function dashboardPersonaLabel(string $persona): string
+        {
+            return match ($persona) {
+                'facility-admin' => 'Facility Admin',
+                'facility-dsd' => 'Facility DSD',
+                'don' => 'Director of Nursing',
+                'licensed-nurse' => 'Licensed Nurse',
+                'cna' => 'Certified Nursing Assistant',
+                default => 'Employee',
+            };
+        }
+
+        protected function buildOverviewCards(string $persona, array $stats, int $newsEventsCount): array
+        {
+            $facilityPriorityCount = (int) ($stats['pending_actions'] ?? 0);
+            $docsCount = (int) ($stats['documents_needed'] ?? 0);
+            $trainingCount = (int) ($stats['trainings_needs_action'] ?? 0);
+            $certCount = (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0));
+
+            if (in_array($persona, ['facility-admin', 'facility-dsd', 'don'], true)) {
+                $priorityLabel = match ($persona) {
+                    'facility-admin' => 'Admin priority items',
+                    'facility-dsd' => 'DSD priority items',
+                    'don' => 'Nursing leadership items',
+                    default => 'Facility priority items',
+                };
+
+                $priorityHint = match ($persona) {
+                    'facility-admin' => 'Open facility admin workflow views',
+                    'facility-dsd' => 'Open DSD staffing and onboarding queue',
+                    'don' => 'Open nursing compliance and workforce queue',
+                    default => 'Open facility workflow views',
+                };
+
+                return [
+                    [
+                        'label' => $priorityLabel,
+                        'value' => $facilityPriorityCount,
+                        'hint' => $priorityHint,
+                        'route' => route('user.hr-portal'),
+                        'tone' => 'brand',
+                        'icon' => 'fa-clipboard-list',
+                    ],
+                    [
+                        'label' => 'Trainings needing action',
+                        'value' => $trainingCount,
+                        'hint' => 'Review overdue and pending signatures',
+                        'route' => route('member.trainings'),
+                        'tone' => 'amber',
+                        'icon' => 'fa-graduation-cap',
+                    ],
+                    [
+                        'label' => 'Credentials at risk',
+                        'value' => $certCount,
+                        'hint' => 'Expiring or expired certifications',
+                        'route' => route('member.certifications'),
+                        'tone' => 'rose',
+                        'icon' => 'fa-award',
+                    ],
+                    [
+                        'label' => 'Facility updates',
+                        'value' => $newsEventsCount,
+                        'hint' => 'Announcements and policy news',
+                        'route' => route('member.news-events.index'),
+                        'tone' => 'teal',
+                        'icon' => 'fa-newspaper',
+                    ],
+                ];
+            }
+
+            return [
+                [
+                    'label' => 'Documents needing action',
+                    'value' => $docsCount,
+                    'hint' => 'Review document center items',
+                    'route' => route('member.documents'),
+                    'tone' => 'brand',
+                    'icon' => 'fa-folder-open',
+                ],
+                [
+                    'label' => 'Trainings needing action',
+                    'value' => $trainingCount,
+                    'hint' => (($stats['trainings_pending_signature'] ?? 0) > 0)
+                        ? (($stats['trainings_pending_signature'] ?? 0) . ' pending signatures')
+                        : 'Review required trainings',
+                    'route' => route('member.trainings'),
+                    'tone' => 'amber',
+                    'icon' => 'fa-graduation-cap',
+                ],
+                [
+                    'label' => 'Certifications expiring/expired',
+                    'value' => $certCount,
+                    'hint' => 'Prioritize renewals',
+                    'route' => route('member.certifications'),
+                    'tone' => 'rose',
+                    'icon' => 'fa-award',
+                ],
+                [
+                    'label' => 'Facility news & events',
+                    'value' => $newsEventsCount,
+                    'hint' => 'Announcements and updates',
+                    'route' => route('member.news-events.index'),
+                    'tone' => 'teal',
+                    'icon' => 'fa-newspaper',
+                ],
+            ];
+        }
+
+        protected function buildPersonalActions(string $persona): array
+        {
+            if ($persona === 'facility-admin') {
+                return [
+                    [
+                        'title' => 'Facility HR Portal',
+                        'subtitle' => 'Manage staffing, onboarding, and facility tasks',
+                        'route' => route('user.hr-portal'),
+                        'icon' => 'fa-building-user',
+                    ],
+                    [
+                        'title' => 'Facility Documents',
+                        'subtitle' => 'Review missing and expiring records',
+                        'route' => route('member.documents'),
+                        'icon' => 'fa-folder-tree',
+                    ],
+                    [
+                        'title' => 'Facility Trainings',
+                        'subtitle' => 'Track completion across your facility',
+                        'route' => route('member.trainings'),
+                        'icon' => 'fa-list-check',
+                    ],
+                    [
+                        'title' => 'Facility Certifications',
+                        'subtitle' => 'Monitor credential risks and expirations',
+                        'route' => route('member.certifications'),
+                        'icon' => 'fa-shield-heart',
+                    ],
+                ];
+            }
+
+            if ($persona === 'facility-dsd') {
+                return [
+                    [
+                        'title' => 'DSD Work Queue',
+                        'subtitle' => 'Prioritize staff readiness and follow-ups',
+                        'route' => route('user.hr-portal'),
+                        'icon' => 'fa-clipboard-list',
+                    ],
+                    [
+                        'title' => 'Training Sign-offs',
+                        'subtitle' => 'Close pending signatures and overdue items',
+                        'route' => route('member.trainings'),
+                        'icon' => 'fa-user-check',
+                    ],
+                    [
+                        'title' => 'Credential Follow-up',
+                        'subtitle' => 'Address expiring and expired licenses',
+                        'route' => route('member.certifications'),
+                        'icon' => 'fa-certificate',
+                    ],
+                    [
+                        'title' => 'Facility File Review',
+                        'subtitle' => 'Keep records complete and audit ready',
+                        'route' => route('member.documents'),
+                        'icon' => 'fa-folder-open',
+                    ],
+                ];
+            }
+
+            if ($persona === 'don') {
+                return [
+                    [
+                        'title' => 'Nursing Compliance Queue',
+                        'subtitle' => 'Oversee nursing team readiness',
+                        'route' => route('user.hr-portal'),
+                        'icon' => 'fa-hospital-user',
+                    ],
+                    [
+                        'title' => 'Clinical Trainings',
+                        'subtitle' => 'Review pending and overdue trainings',
+                        'route' => route('member.trainings'),
+                        'icon' => 'fa-person-chalkboard',
+                    ],
+                    [
+                        'title' => 'Nursing Credentials',
+                        'subtitle' => 'Track RN/LVN/LPN expirations',
+                        'route' => route('member.certifications'),
+                        'icon' => 'fa-user-shield',
+                    ],
+                    [
+                        'title' => 'Clinical Documents',
+                        'subtitle' => 'Review facility file gaps',
+                        'route' => route('member.documents'),
+                        'icon' => 'fa-folder-tree',
+                    ],
+                ];
+            }
+
+            if ($persona === 'licensed-nurse') {
+                return [
+                    [
+                        'title' => 'My Certifications',
+                        'subtitle' => 'Track license expirations and renewals',
+                        'route' => route('member.certifications'),
+                        'icon' => 'fa-certificate',
+                    ],
+                    [
+                        'title' => 'My Trainings',
+                        'subtitle' => 'Complete required clinical trainings',
+                        'route' => route('member.trainings'),
+                        'icon' => 'fa-person-chalkboard',
+                    ],
+                    [
+                        'title' => 'My Documents',
+                        'subtitle' => 'Upload and review required files',
+                        'route' => route('member.documents'),
+                        'icon' => 'fa-file-lines',
+                    ],
+                    [
+                        'title' => 'Facility News',
+                        'subtitle' => 'Read current updates and notices',
+                        'route' => route('member.news-events.index'),
+                        'icon' => 'fa-newspaper',
+                    ],
+                ];
+            }
+
+            if ($persona === 'cna') {
+                return [
+                    [
+                        'title' => 'My Trainings',
+                        'subtitle' => 'Stay current on mandatory training items',
+                        'route' => route('member.trainings'),
+                        'icon' => 'fa-person-chalkboard',
+                    ],
+                    [
+                        'title' => 'My Documents',
+                        'subtitle' => 'Review onboarding and compliance files',
+                        'route' => route('member.documents'),
+                        'icon' => 'fa-file-lines',
+                    ],
+                    [
+                        'title' => 'My Certifications',
+                        'subtitle' => 'Monitor expiring credentials',
+                        'route' => route('member.certifications'),
+                        'icon' => 'fa-certificate',
+                    ],
+                    [
+                        'title' => 'My Profile',
+                        'subtitle' => 'Update contact and account details',
+                        'route' => route('settings.profile'),
+                        'icon' => 'fa-user-gear',
+                    ],
+                ];
+            }
+
+            return [
+                [
+                    'title' => 'Documents',
+                    'subtitle' => 'Upload and review checklist files',
+                    'route' => route('member.documents'),
+                    'icon' => 'fa-file-lines',
+                ],
+                [
+                    'title' => 'Trainings',
+                    'subtitle' => 'Track required training progress',
+                    'route' => route('member.trainings'),
+                    'icon' => 'fa-person-chalkboard',
+                ],
+                [
+                    'title' => 'Certifications',
+                    'subtitle' => 'Monitor expirations and renewals',
+                    'route' => route('member.certifications'),
+                    'icon' => 'fa-certificate',
+                ],
+                [
+                    'title' => 'My Profile',
+                    'subtitle' => 'Update personal and account details',
+                    'route' => route('settings.profile'),
+                    'icon' => 'fa-user-gear',
+                ],
+            ];
+        }
+
+        protected function buildFacilityActions(string $persona): array
+        {
+            if (!in_array($persona, ['facility-admin', 'facility-dsd', 'don'], true)) {
+                return [];
+            }
+
+            if ($persona === 'don') {
+                return [
+                    [
+                        'title' => 'Clinical Workforce Portal',
+                        'subtitle' => 'Review care-team checklist completion',
+                        'route' => route('user.hr-portal'),
+                        'icon' => 'fa-hospital-user',
+                    ],
+                    [
+                        'title' => 'Nursing Credentials',
+                        'subtitle' => 'Track RN/LVN/LPN compliance',
+                        'route' => route('member.certifications'),
+                        'icon' => 'fa-user-shield',
+                    ],
+                    [
+                        'title' => 'Clinical Trainings',
+                        'subtitle' => 'Focus on pending signatures and overdue items',
+                        'route' => route('member.trainings'),
+                        'icon' => 'fa-list-check',
+                    ],
+                    [
+                        'title' => 'Employee Documents',
+                        'subtitle' => 'Review missing and returned files',
+                        'route' => route('member.documents'),
+                        'icon' => 'fa-folder-tree',
+                    ],
+                ];
+            }
+
+            return [
+                [
+                    'title' => 'Facility HR Portal',
+                    'subtitle' => 'Oversee employee workflows in your site',
+                    'route' => route('user.hr-portal'),
+                    'icon' => 'fa-building-user',
+                ],
+                [
+                    'title' => 'Facility Documents',
+                    'subtitle' => 'Review missing/expiring files',
+                    'route' => route('member.documents'),
+                    'icon' => 'fa-folder-tree',
+                ],
+                [
+                    'title' => 'Facility Trainings',
+                    'subtitle' => 'Focus on overdue and pending sign-offs',
+                    'route' => route('member.trainings'),
+                    'icon' => 'fa-list-check',
+                ],
+                [
+                    'title' => 'Facility Certifications',
+                    'subtitle' => 'Track license compliance at your facility',
+                    'route' => route('member.certifications'),
+                    'icon' => 'fa-shield-heart',
+                ],
+            ];
+        }
+
+        protected function buildHelpfulLinks(string $persona): array
+        {
+            if (in_array($persona, ['facility-admin', 'facility-dsd', 'don'], true)) {
+                return [
+                    [
+                        'label' => 'Open Facility HR Portal',
+                        'route' => route('user.hr-portal'),
+                    ],
+                    [
+                        'label' => 'View Facility News & Events',
+                        'route' => route('member.news-events.index'),
+                    ],
+                    [
+                        'label' => 'Manage Profile',
+                        'route' => route('settings.profile'),
+                    ],
+                ];
+            }
+
+            return [
+                [
+                    'label' => 'Open Document Center',
+                    'route' => route('member.documents'),
+                ],
+                [
+                    'label' => 'View Facility News & Events',
+                    'route' => route('member.news-events.index'),
+                ],
+                [
+                    'label' => 'Manage Profile',
+                    'route' => route('settings.profile'),
+                ],
+            ];
+        }
+
+    protected function userHasRole(User $user, string $role): bool
+    {
+        if (!method_exists($user, 'hasRole')) {
+            return false;
+        }
+
+        return (bool) $user->hasRole($role);
+    }
+
     public function build(User $user): array
     {
         $bpEmployee = $user->resolvedBpEmployee([
@@ -204,14 +650,30 @@ class MemberDashboardService
             ? (optional(BPEmpChecklist::query()->where('employee_num', $bpEmployee->employee_num)->first())->items ?? [])
             : [];
 
-        $complianceEvaluation = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
+        $documentCompliance = $bpEmployee
+            ? app(DocumentComplianceService::class)->forEmployee($bpEmployee)
+            : [
+                'position_id' => null,
+                'position_title' => null,
+                'department_id' => null,
+                'items' => collect(),
+                'summary' => [
+                    'total' => 0,
+                    'complete' => 0,
+                    'expired' => 0,
+                    'missing' => 0,
+                ],
+            ];
+
+        $documentsCenter = $this->buildDocumentsCenter($user, $bpEmployee, $empChecklistItems, $documentCompliance);
+        $documentsNeeded = count($documentsCenter['compliance_missing'] ?? []);
 
         return [
-            'documentsCenter' => $this->buildDocumentsCenter($user, $bpEmployee, $empChecklistItems, $complianceEvaluation),
+            'documentsCenter' => $documentsCenter,
             'facilityComplianceReport' => $this->buildFacilityComplianceReport($user),
             'stats' => [
-                'employee_file_verified' => $complianceEvaluation['verified_percent'],
-                'documents_needed' => count($complianceEvaluation['missing']),
+                'employee_file_verified' => $documentsCenter['verified_percent'] ?? null,
+                'documents_needed' => $documentsNeeded,
             ],
         ];
     }
@@ -831,7 +1293,9 @@ class MemberDashboardService
             : [];
 
         $uploads = $this->mapEmployeeUploads($bpEmployee, $facility, $user);
-        $expiringUploads = array_values(array_filter($uploads, fn ($row) => !empty($row['expires_at'])));
+        $expiringUploads = array_values(array_filter($uploads, function ($row) {
+            return !empty($row['expires_at']) && !empty($row['is_license_or_certification']);
+        }));
 
         $summary = [
             'total' => count($items),
@@ -864,32 +1328,52 @@ class MemberDashboardService
      */
     protected function evaluateCertificationItems(BPEmployee $employee, array $empChecklistItems): array
     {
-        $positionId = $employee->currentAssignment?->position_id
-            ?? $employee->currentAssignment?->position?->id;
-
-        $applicableItems = ChecklistItem::query()
-            ->with('docType')
-            ->applicableToPosition($positionId)
-            ->where('isExpiring', true)
-            ->orderBy('order')
-            ->get();
+        $compliance = app(DocumentComplianceService::class)->forEmployee($employee);
+        $applicableItems = collect($compliance['items'] ?? [])
+            ->filter(fn ($item) => !empty($item['is_license_or_certification']))
+            ->values();
 
         $today = Carbon::today();
         $rows = [];
 
         foreach ($applicableItems as $item) {
-            $key = 'item_' . $item->id;
-            $stored = $empChecklistItems[$key] ?? $empChecklistItems[$item->name] ?? null;
-            $statusMeta = $this->resolveCertificationStatus($item, $stored, $today);
+            $status = (string) ($item['status'] ?? 'missing');
+            $latestExpiry = $this->parseDate($item['latest_expires_at'] ?? null);
+            $daysUntil = isset($item['days_to_expiry']) ? (int) $item['days_to_expiry'] : null;
+
+            if ($status === 'complete') {
+                if (($item['requires_expiry'] ?? false) && $daysUntil !== null) {
+                    if ($daysUntil < 0) {
+                        $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                    } elseif ($daysUntil === 0) {
+                        $statusMeta = $this->certificationStatusRow('expires_today', 'Expires today', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                    } elseif ($daysUntil <= 30) {
+                        $statusMeta = $this->certificationStatusRow('expiring_urgent', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                    } elseif ($daysUntil <= 60) {
+                        $statusMeta = $this->certificationStatusRow('expiring_soon', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                    } else {
+                        $statusMeta = $this->certificationStatusRow('valid', 'Valid', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                    }
+                } else {
+                    $statusMeta = $this->certificationStatusRow('valid', 'On file', null, null);
+                }
+            } elseif ($status === 'expired') {
+                $expiredDays = $latestExpiry ? (int) $today->diffInDays($latestExpiry, false) : null;
+                $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $expiredDays, $latestExpiry?->format('M j, Y'));
+            } else {
+                $statusMeta = $this->certificationStatusRow('not_on_file', 'Not on file', null, null);
+            }
 
             $rows[] = array_merge([
-                'id' => 'cert-' . $item->id,
-                'checklist_item_id' => $item->id,
-                'title' => $item->name,
-                'section' => $item->section,
-                'doc_type' => $item->docType?->name,
-                'on_file' => is_array($stored) && !empty($stored['on_file']),
-                'verified' => is_array($stored) && !empty($stored['verified_dt']),
+                'id' => 'cert-upload-type-' . (int) ($item['upload_type_id'] ?? 0),
+                'upload_type_id' => (int) ($item['upload_type_id'] ?? 0),
+                'title' => (string) ($item['name'] ?? '—'),
+                'section' => 'Required upload type',
+                'required' => true,
+                'doc_type' => 'Upload Type',
+                'on_file' => ($item['status'] ?? '') !== 'missing',
+                'verified' => ($item['status'] ?? '') === 'complete',
+                'is_license_or_certification' => true,
             ], $statusMeta);
         }
 
@@ -919,6 +1403,21 @@ class MemberDashboardService
         });
 
         return $rows;
+    }
+
+    protected function isLicenseOrCertificationItem(ChecklistItem $item): bool
+    {
+        if ($item->is_license_or_certification !== null) {
+            return (bool) $item->is_license_or_certification;
+        }
+
+        $haystack = strtolower(trim(($item->name ?? '') . ' ' . ($item->docType?->name ?? '')));
+
+        if ($haystack === '') {
+            return false;
+        }
+
+        return preg_match('/license|licensure|certification|credential|cpr|bls|acls|rn\b|lpn\b|lvn\b/', $haystack) === 1;
     }
 
     /**
@@ -1281,16 +1780,81 @@ class MemberDashboardService
 
     /**
      * @param  array<string, mixed>  $empChecklistItems
-     * @param  array{missing: list<array<string, mixed>>, complete: list<array<string, mixed>>, verified_percent: ?int}  $complianceEvaluation
+     * @param  array<string, mixed>|null  $documentCompliance
      * @return array<string, mixed>
      */
     public function buildDocumentsCenter(
         User $user,
         ?BPEmployee $bpEmployee,
         array $empChecklistItems,
-        ?array $complianceEvaluation = null
+        ?array $documentCompliance = null
     ): array {
-        $complianceEvaluation ??= $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
+        $documentCompliance ??= [
+            'items' => collect(),
+            'summary' => [
+                'total' => 0,
+                'complete' => 0,
+                'expired' => 0,
+                'missing' => 0,
+            ],
+        ];
+
+        $complianceItems = collect($documentCompliance['items'] ?? []);
+        $requiredUploadTypes = $complianceItems
+            ->map(function ($item) {
+                return [
+                    'id' => (int) ($item['upload_type_id'] ?? 0),
+                    'name' => $item['name'] ?? 'Document',
+                    'requires_expiry' => (bool) ($item['requires_expiry'] ?? false),
+                ];
+            })
+            ->filter(fn ($item) => $item['id'] > 0)
+            ->unique('id')
+            ->values()
+            ->all();
+
+        $complianceMissing = $complianceItems
+            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'expired'], true))
+            ->map(function ($item) {
+                $status = (string) ($item['status'] ?? 'missing');
+
+                return [
+                    'id' => 'upload-type-' . ($item['upload_type_id'] ?? uniqid()),
+                    'upload_type_id' => $item['upload_type_id'] ?? null,
+                    'title' => $item['name'] ?? 'Required document',
+                    'section' => 'Required upload type',
+                    'required' => true,
+                    'status' => $status,
+                    'status_label' => $status === 'expired' ? 'Expired' : 'Not on file',
+                    'priority' => $status === 'expired' ? 'medium' : 'high',
+                    'due_at' => null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $complianceComplete = $complianceItems
+            ->filter(fn ($item) => ($item['status'] ?? '') === 'complete')
+            ->map(function ($item) {
+                return [
+                    'id' => 'upload-type-ok-' . ($item['upload_type_id'] ?? uniqid()),
+                    'title' => $item['name'] ?? 'Required document',
+                    'section' => 'Required upload type',
+                    'required' => true,
+                    'status' => 'complete',
+                    'status_label' => 'On file',
+                ];
+            })
+            ->values()
+            ->all();
+
+        $summary = $documentCompliance['summary'] ?? [];
+        $totalRequired = (int) ($summary['total'] ?? count($complianceItems));
+        $completeRequired = (int) ($summary['complete'] ?? count($complianceComplete));
+        $verifiedPercent = $totalRequired > 0
+            ? (int) round(($completeRequired / $totalRequired) * 100)
+            : null;
+
         $facility = $bpEmployee?->currentAssignment?->facility ?? $user->facility;
 
         if (!$facility && $user->facility_id) {
@@ -1299,10 +1863,11 @@ class MemberDashboardService
 
         return [
             'uploads' => $this->mapEmployeeUploads($bpEmployee, $facility, $user),
-            'compliance_missing' => $complianceEvaluation['missing'],
-            'compliance_complete' => $complianceEvaluation['complete'],
+            'compliance_missing' => $complianceMissing,
+            'compliance_complete' => $complianceComplete,
+            'required_upload_types' => $requiredUploadTypes,
             'signatures' => $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems),
-            'verified_percent' => $complianceEvaluation['verified_percent'],
+            'verified_percent' => $verifiedPercent,
             'has_employee_record' => (bool) $bpEmployee,
         ];
     }
@@ -1424,12 +1989,15 @@ class MemberDashboardService
 
                 $row = [
                     'id' => $upload->id,
+                    'upload_type_id' => $upload->upload_type_id,
                     'name' => $upload->original_filename ?: basename((string) $upload->file_path),
                     'type' => $upload->uploadType?->name ?? 'Document',
+                    'is_license_or_certification' => (bool) ($upload->uploadType?->is_license_or_certification ?? false),
                     'uploaded_at' => $uploadedAt?->format('M j, Y'),
                     'expires_at' => $expiresAt?->format('M j, Y'),
                     'view_url' => null,
                     'download_url' => null,
+                    'edit_url' => null,
                 ];
 
                 if ($canUseAdminUploadRoutes && $facilityKey) {
@@ -1441,6 +2009,11 @@ class MemberDashboardService
                         'facility' => $facilityKey,
                         'upload' => $upload->id,
                     ]);
+                    $row['edit_url'] = route('admin.employees.edit', $upload->employee_num) . '?tab=documents';
+                } else {
+                    $row['view_url'] = route('employment.documents.view', ['document' => $upload->id]);
+                    $row['download_url'] = route('employment.documents.download', ['document' => $upload->id]);
+                    $row['edit_url'] = route('employment.portal', ['tab' => 'documents']) . '#upload-table';
                 }
 
                 return $row;

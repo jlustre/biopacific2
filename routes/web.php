@@ -1,5 +1,6 @@
 <?php
 use Livewire\Mechanisms\HandleRequests\HandleRequests;
+use App\Support\Rbac\Permissions;
 use App\Livewire\Settings\Appearance;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
@@ -86,7 +87,7 @@ Route::get('/admin/employees/{employee}/documents/{upload}', function ($employee
 Route::get('/admin/employees/{employee}/documents/{upload}/view', [\App\Http\Controllers\Admin\EmployeesController::class, 'viewDocument'])->name('admin.employees.documents.view');
 
 // Facility session selection route
-Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor'])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
+Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
 
 // Employee Document Delete Route
 Route::delete('/admin/employees/{employee}/documents/{upload}', [\App\Http\Controllers\Admin\EmployeesController::class, 'deleteDocument'])->name('admin.employees.documents.delete');
@@ -134,7 +135,7 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
 // Route::post('/admin/reports/request', [\App\Http\Controllers\Admin\ReportController::class, 'requestReport'])->name('admin.reports.request');
 
 // HR Portal Reports page for allowed users
-Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd'])->group(function () {
+Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->group(function () {
     Route::get('/admin/hr-portal/reports', [\App\Http\Controllers\Admin\HrPortalReportsController::class, 'index'])->name('admin.hr-portal.reports');
 });
 
@@ -154,7 +155,7 @@ Route::get('/admin/facility/{facility}/employees/all', function ($facility) {
     return \App\Helpers\EmployeeHelper::getAllEmployeesByFacility($facility);
 });
 Route::get('/admin/upload-types/all', function () {
-    return \App\Models\UploadType::orderBy('name')->get(['id','name','requires_expiry']);
+    return \App\Models\UploadType::orderBy('name')->get(['id','name','requires_expiry','is_license_or_certification']);
 });
 
 // Job Description Template AJAX/CRUD routes
@@ -174,7 +175,7 @@ Route::get('/admin/positions/all', function() {
         ->get();
 });
 
-Route::middleware(['auth'])->get('/admin/positions/lookup', [\App\Http\Controllers\Admin\PositionController::class, 'lookup'])
+Route::middleware(['auth', 'permission:' . Permissions::VIEW_POSITIONS])->get('/admin/positions/lookup', [\App\Http\Controllers\Admin\PositionController::class, 'lookup'])
     ->name('admin.positions.lookup');
 
 // PART F: Areas for Development (save)
@@ -218,7 +219,7 @@ Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\C
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 // Scheduled Reports Management (CRUD)
-Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
+Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|don'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
     Route::post('/templates', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'storeTemplate'])->name('templates.store');
     Route::delete('/templates/{scheduledReportTemplate}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'destroyTemplate'])->name('templates.destroy');
         Route::get('/{scheduledReport}/history', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'history'])->name('history');
@@ -233,30 +234,33 @@ Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd'])->pref
 });
 
 Route::middleware(['auth'])->group(function () {
-    // Admin: access to all dashboards and HR portal
-        Route::middleware('role:admin|super-admin|rdhr|facility-admin|facility-dsd')->group(function () {
+    // Admin: access to all dashboards
+        Route::middleware('role:admin|super-admin|rdhr|facility-admin|facility-dsd|don')->group(function () {
             Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-            Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
-            Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
         });
-        // Add explicit route for rdhr, facility-admin, facility-dsd
-        Route::middleware('role:rdhr|facility-admin|facility-dsd')->group(function () {
+        // Add explicit route for rdhr, facility-admin, facility-dsd, don
+        Route::middleware('role:rdhr|facility-admin|facility-dsd|don')->group(function () {
             Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard.index');
         });
-    // RDHR, facility-admin, facility-dsd: HR portal and user dashboard
-    Route::middleware('role:admin|super-admin|rdhr|facility-admin|facility-dsd')->group(function () {
-        Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+    // RDHR, facility-admin, facility-dsd, don: user dashboard
+    Route::middleware('role:admin|super-admin|rdhr|facility-admin|facility-dsd|don')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
-        Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
     });
     // User: user dashboard only
     Route::middleware('role:user')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
     });
 });
+
+// HR Portal access via RBA permission
+Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->group(function () {
+    Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
+    Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
+});
+
 // Facility-specific admin dashboard
-Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor'])->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor|don'])->group(function () {
     Route::get('/admin/facility/{facility}/dashboard', [\App\Http\Controllers\Admin\FacilityDashboardController::class, 'show'])->name('admin.facility.dashboard');
 
     // Facility Quick Actions
@@ -332,7 +336,7 @@ Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'ind
 
 
 // Admin Routes (auth + admin role)
-Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-admin|facility-dsd|rdhr'])->name('admin.')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-admin|facility-dsd|rdhr|don'])->name('admin.')->group(function () {
     // HR Portal Route removed from admin group; now only in RDHR-specific group above
     // Blog management (admin only, under web contents)
     Route::resource('blogs', BlogController::class)->names('blogs');
@@ -464,7 +468,34 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::resource('events', \App\Http\Controllers\Admin\EventController::class)->names('events');
 
     // Positions Management CRUD
-    Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class)->names('positions');
+    Route::middleware(['role:admin|super-admin|rdhr|facility-admin|facility-dsd|don'])->group(function () {
+        Route::get('positions/create', [\App\Http\Controllers\Admin\PositionController::class, 'create'])
+            ->name('positions.create');
+
+        Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class)
+            ->only(['index', 'show'])
+            ->names('positions');
+    });
+
+    Route::middleware(['role:admin|super-admin|rdhr|facility-admin|facility-dsd|don'])->group(function () {
+        Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class)
+            ->except(['index', 'show'])
+            ->names('positions');
+        Route::post('positions/{position}/copy-requirements', [\App\Http\Controllers\Admin\PositionController::class, 'copyRequirements'])
+            ->name('positions.copy-requirements');
+    });
+
+    // Documents Management (Upload Types)
+    Route::middleware(['role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-ssd|ssd|don'])->group(function () {
+        Route::resource('upload-types', \App\Http\Controllers\Admin\UploadTypeController::class)
+            ->except(['show', 'destroy'])
+            ->names('upload-types');
+    });
+
+    Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::delete('upload-types/{upload_type}', [\App\Http\Controllers\Admin\UploadTypeController::class, 'destroy'])
+            ->name('upload-types.destroy');
+    });
 
     // Checklist Items Management CRUD
     Route::post('checklist-items/bulk-positions', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'bulkUpdatePositions'])
@@ -783,6 +814,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/phones', [\App\Http\Controllers\EmploymentController::class, 'addPhone'])->name('phones.add');
         Route::put('/phones/{phone}/update', [\App\Http\Controllers\EmploymentController::class, 'updatePhone'])->name('phones.update');
         Route::post('/documents/upload', [\App\Http\Controllers\EmploymentController::class, 'uploadDocument'])->name('documents.upload');
+        Route::put('/documents/{document}', [\App\Http\Controllers\EmploymentController::class, 'updateDocument'])->name('documents.update');
+        Route::delete('/documents/{document}', [\App\Http\Controllers\EmploymentController::class, 'deleteDocument'])->name('documents.delete');
+        Route::get('/documents/{document}/view', [\App\Http\Controllers\EmploymentController::class, 'viewDocument'])->name('documents.view');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\EmploymentController::class, 'downloadDocument'])->name('documents.download');
         Route::get('/documents/{document}/notify/preview', [\App\Http\Controllers\EmploymentController::class, 'previewDocumentNotification'])->name('documents.notify.preview');
         Route::post('/documents/{document}/notify', [\App\Http\Controllers\EmploymentController::class, 'sendDocumentNotification'])->name('documents.notify');
@@ -856,7 +890,7 @@ Route::get('/admin/facilities/all', function () {
 });
 
 // Employee Documents Upload/Download
-Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|facility-editor'])
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor|don'])
     ->prefix('admin/employees')
     ->name('admin.employees.')
     ->group(function () {

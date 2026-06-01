@@ -216,6 +216,9 @@ class User extends Authenticatable
             'super-admin' => 'Super Administrator',
             'rdhr' => 'HR Regional Director',
             'facility-dsd' => 'Facility DSD',
+            'don' => 'Director of Nursing',
+            'ssd' => 'Social Services Director',
+            'activities-director' => 'Activities Director',
         ];
     }
 
@@ -267,6 +270,9 @@ class User extends Authenticatable
             'rdhr',
             'facility-admin',
             'facility-dsd',
+            'don',
+            'ssd',
+            'activities-director',
             'facility-editor',
             'regular-user',
         ];

@@ -13,6 +13,14 @@ class UploadType extends Model
         'name',
         'description',
         'requires_expiry',
+        'is_license_or_certification',
+        'department_ids',
+    ];
+
+    protected $casts = [
+        'requires_expiry' => 'boolean',
+        'is_license_or_certification' => 'boolean',
+        'department_ids' => 'array',
     ];
 
     public $timestamps = false;
@@ -20,5 +28,17 @@ class UploadType extends Model
     public function uploads()
     {
         return $this->hasMany(Upload::class);
+    }
+
+    public function positionRequirements()
+    {
+        return $this->hasMany(PositionUploadTypeRequirement::class);
+    }
+
+    public function positions()
+    {
+        return $this->belongsToMany(Position::class, 'position_upload_type_requirements')
+            ->withPivot(['is_required'])
+            ->withTimestamps();
     }
 }

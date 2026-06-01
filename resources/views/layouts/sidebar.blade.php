@@ -61,7 +61,7 @@ use Illuminate\Support\Facades\Log;
                 </a>
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-100 font-bold' : '' }}">
+                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.facilities.*') || request()->routeIs('admin.positions.*') || request()->routeIs('admin.upload-types.*') ? 'bg-gray-100 font-bold' : '' }}">
                         <i class="fas fa-building mr-2"></i> Facilities Mgmnt
                         <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -79,6 +79,14 @@ use Illuminate\Support\Facades\Log;
                         <a href="{{ route('admin.facilities.index') }}"
                             class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                             <i class="fas fa-list mr-2"></i> Manage All
+                        </a>
+                        <a href="{{ route('admin.positions.index') }}"
+                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.positions.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
+                            <i class="fas fa-briefcase mr-2 text-blue-600"></i> Positions
+                        </a>
+                        <a href="{{ route('admin.upload-types.index') }}"
+                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.upload-types.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
+                            <i class="fas fa-file-alt mr-2 text-blue-600"></i> Documents Management
                         </a>
                         <hr class="my-1">
                         <div style="max-height: 400px; overflow-y: auto;">
@@ -177,7 +185,7 @@ use Illuminate\Support\Facades\Log;
                 <!-- Manage Tables Menu -->
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
-                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') || request()->routeIs('admin.checklist-items.*') || request()->routeIs('admin.departments.*') || request()->routeIs('admin.events.*') || request()->routeIs('admin.email-recipients.*') || request()->routeIs('admin.email-templates.*') || request()->routeIs('admin.import-mapping-presets.*') ? 'bg-gray-100 font-bold' : '' }}">
+                        class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.positions.*') || request()->routeIs('admin.upload-types.*') || request()->routeIs('admin.checklist-items.*') || request()->routeIs('admin.departments.*') || request()->routeIs('admin.events.*') || request()->routeIs('admin.email-recipients.*') || request()->routeIs('admin.email-templates.*') || request()->routeIs('admin.import-mapping-presets.*') ? 'bg-gray-100 font-bold' : '' }}">
                         <i class="fas fa-table mr-2"></i> Manage Tables
                         <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -195,6 +203,10 @@ use Illuminate\Support\Facades\Log;
                         <a href="{{ route('admin.positions.index') }}"
                             class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.positions.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
                             <i class="fas fa-briefcase mr-2 text-blue-600"></i> Positions
+                        </a>
+                        <a href="{{ route('admin.upload-types.index') }}"
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.upload-types.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
+                            <i class="fas fa-file-alt mr-2 text-blue-600"></i> Documents Management
                         </a>
                         <a href="{{ route('admin.checklist-items.index') }}"
                             class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.checklist-items.*') ? 'bg-cyan-50 text-cyan-700 font-medium' : '' }}">
@@ -366,13 +378,13 @@ use Illuminate\Support\Facades\Log;
         </div>
         @endif
 
-        <!-- Show HR Portal if user is admin, rdhr, facility-admin, or facility-dsd -->
+        <!-- Show HR Portal when user has HR portal access permission -->
         @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
         <a href="{{ route('hr-portal.index') }}"
             class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
             <i class="fas fa-users-cog mr-2"></i> HR Portal
         </a>
-        @elseif($user && $user->hasRole(['rdhr','facility-admin','facility-dsd']))
+        @elseif($user && $user->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL))
         <a href="{{ route('user.hr-portal') }}"
             class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
             <i class="fas fa-users-cog mr-2"></i> HR Portal

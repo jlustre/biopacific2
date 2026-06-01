@@ -7,6 +7,9 @@
     $summary = $certificationsCenter['summary'] ?? ($stats ?? []);
     $hasEmployeeRecord = $certificationsCenter['has_employee_record'] ?? false;
     $employmentPortalUrl = \Illuminate\Support\Facades\Route::has('employment.portal') ? route('employment.portal') : '#';
+    $documentsUploadUrl = \Illuminate\Support\Facades\Route::has('member.documents')
+        ? route('member.documents')
+        : $employmentPortalUrl;
 @endphp
 
 <section id="certifications" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="{ tab: 'mine', facilityFilter: '' }">
@@ -89,14 +92,15 @@
                 </div>
             @else
                 <div class="mb-8 overflow-x-auto rounded-2xl border border-slate-200">
-                    <table class="w-full min-w-[720px] text-left text-sm">
+                    <table class="w-full min-w-[800px] text-left text-sm">
                         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                             <tr>
                                 <th class="px-4 py-3">Credential</th>
-                                <th class="px-4 py-3">Section</th>
+                                <th class="px-4 py-3">Required</th>
                                 <th class="px-4 py-3">Expiry</th>
                                 <th class="px-4 py-3">Days</th>
                                 <th class="px-4 py-3">Status</th>
+                                <th class="w-20 whitespace-nowrap px-3 py-2 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -120,13 +124,21 @@
                                             <p class="mt-0.5 text-xs text-slate-500">{{ $cert['doc_type'] }}</p>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-slate-500">{{ $cert['section'] ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-slate-500">{{ !empty($cert['required']) ? 'Yes' : 'No' }}</td>
                                     <td class="px-4 py-3 text-slate-600">{{ $cert['exp_dt_formatted'] ?? '—' }}</td>
                                     <td class="px-4 py-3 font-semibold text-slate-700">{{ $daysLabel }}</td>
                                     <td class="px-4 py-3">
                                         <span class="rounded-full px-3 py-1 text-xs font-bold {{ $cert['badge_class'] ?? 'bg-slate-100 text-slate-700' }}">
                                             {{ $cert['status_label'] ?? '—' }}
                                         </span>
+                                    </td>
+                                    <td class="px-3 py-3 text-right">
+                                        <a href="{{ $documentsUploadUrl }}"
+                                           class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700"
+                                           title="Upload document"
+                                           aria-label="Upload document">
+                                            <i class="fa-solid fa-upload"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach

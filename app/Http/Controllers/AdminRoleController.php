@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class AdminRoleController extends Controller
 {
+    private const PROTECTED_ROLES = ['super-admin', 'admin'];
+
     public function __construct()
     {
         $this->middleware(['auth', 'role:admin|super-admin']);
@@ -19,8 +22,19 @@ class AdminRoleController extends Controller
      */
     public function index()
     {
-        $roles = Role::with('permissions')->get();
-        return view('admin.roles.index', compact('roles'));
+        $priority = User::roleDisplayPriority();
+
+        $roles = Role::with('permissions', 'users')
+            ->get()
+            ->sortBy(function (Role $role) use ($priority) {
+                $index = array_search($role->name, $priority, true);
+                return $index === false ? 999 : $index;
+            })
+            ->values();
+
+        $protectedRoles = self::PROTECTED_ROLES;
+
+        return view('admin.roles.index', compact('roles', 'protectedRoles'));
     }
 
     /**
@@ -116,7 +130,7 @@ class AdminRoleController extends Controller
     public function destroy(Role $role)
     {
         // Prevent deletion of critical roles
-        $protectedRoles = ['super-admin', 'admin'];
+        $protectedRoles = self::PROTECTED_ROLES;
         
         if (in_array($role->name, $protectedRoles)) {
             return redirect()->route('admin.roles.index')

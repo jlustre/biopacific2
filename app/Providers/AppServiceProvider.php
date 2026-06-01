@@ -37,5 +37,11 @@ class AppServiceProvider extends ServiceProvider
                 $view->with(MemberPortalLayout::variablesForView());
             }
         });
+
+        View::composer('layouts.member-portal', function ($view) {
+            if (auth()->check()) {
+                $view->with(MemberPortalLayout::variablesForView());
+            }
+        });
     }
 }

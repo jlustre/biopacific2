@@ -2,12 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Rbac\Permissions as RbacPermissions;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class AdminPermissionController extends Controller
 {
+    private const PROTECTED_PERMISSIONS = [
+        RbacPermissions::ACCESS_ADMIN_PANEL,
+        RbacPermissions::ACCESS_HR_PORTAL,
+        RbacPermissions::MANAGE_USERS,
+        RbacPermissions::MANAGE_ROLES,
+        RbacPermissions::MANAGE_PERMISSIONS,
+    ];
+
     public function __construct()
     {
         $this->middleware(['auth', 'role:admin|super-admin']);
@@ -22,8 +31,10 @@ class AdminPermissionController extends Controller
             $parts = explode(' ', $permission->name);
             return ucfirst($parts[count($parts) - 1]); // Group by last word and capitalize
         });
+
+        $protectedPermissions = self::PROTECTED_PERMISSIONS;
         
-        return view('admin.permissions.index', compact('permissions'));
+        return view('admin.permissions.index', compact('permissions', 'protectedPermissions'));
     }
 
     /**
@@ -41,7 +52,8 @@ class AdminPermissionController extends Controller
             'security' => 'Security & Monitoring',
             'settings' => 'System Settings',
             'reports' => 'Reports & Analytics',
-            'panel' => 'Admin Panel Access'
+            'panel' => 'Admin Panel Access',
+            'portal' => 'Portal Access',
         ];
         
         return view('admin.permissions.create', compact('categories'));
@@ -94,7 +106,8 @@ class AdminPermissionController extends Controller
             'security' => 'Security & Monitoring',
             'settings' => 'System Settings',
             'reports' => 'Reports & Analytics',
-            'panel' => 'Admin Panel Access'
+            'panel' => 'Admin Panel Access',
+            'portal' => 'Portal Access',
         ];
         
         return view('admin.permissions.edit', compact('permission', 'categories'));
@@ -121,12 +134,7 @@ class AdminPermissionController extends Controller
     public function destroy(Permission $permission)
     {
         // Prevent deletion of critical permissions
-        $protectedPermissions = [
-            'access admin panel',
-            'manage users',
-            'manage roles',
-            'manage permissions'
-        ];
+        $protectedPermissions = self::PROTECTED_PERMISSIONS;
         
         if (in_array($permission->name, $protectedPermissions)) {
             return redirect()->route('admin.permissions.index')

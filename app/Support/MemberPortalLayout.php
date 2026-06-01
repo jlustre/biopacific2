@@ -22,7 +22,7 @@ class MemberPortalLayout
 
     public static function facilityManagerRoles(): array
     {
-        return config('member-portal.facility_manager_roles', ['rdhr', 'facility-admin', 'facility-dsd']);
+        return config('member-portal.facility_roles', config('member-portal.facility_manager_roles', ['facility-admin', 'facility-dsd', 'facility-ssd', 'don']));
     }
 
     public static function userIsFacilityManager($user = null): bool
@@ -31,6 +31,52 @@ class MemberPortalLayout
 
         return $user && method_exists($user, 'hasRole')
             && $user->hasRole(self::facilityManagerRoles());
+    }
+
+    public static function corporateRoles(): array
+    {
+        return config('member-portal.corporate_roles', ['rdhr']);
+    }
+
+    public static function userIsCorporateManager($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return $user && method_exists($user, 'hasRole')
+            && $user->hasRole(self::corporateRoles());
+    }
+
+    public static function sidebarModeForCurrentRequest(?Request $request = null): string
+    {
+        $request = $request ?? request();
+        $user = $request->user();
+
+        if (!$user) {
+            return 'employee';
+        }
+
+        if (self::userIsSystemAdmin($user) && $request->routeIs(self::adminRoutePatterns())) {
+            return 'admin';
+        }
+
+        $routes = array_values(array_unique(array_merge(
+            self::facilityManagerRoutePatterns(),
+            ['dashboard.index', 'user.dashboard', 'member.*', 'settings.*', 'admin.positions.*']
+        )));
+
+        if (self::userIsCorporateManager($user) && self::requestMatchesAnyRoutePattern($request, $routes)) {
+            return 'corporate';
+        }
+
+        if (self::userIsFacilityManager($user) && self::requestMatchesAnyRoutePattern($request, $routes)) {
+            return 'facility';
+        }
+
+        if (self::userIsSystemAdmin($user) && self::requestMatchesAnyRoutePattern($request, ['dashboard.index', 'user.dashboard', 'member.*', 'settings.*'])) {
+            return 'admin';
+        }
+
+        return 'employee';
     }
 
     public static function facilityManagerRoutePatterns(): array
@@ -52,38 +98,12 @@ class MemberPortalLayout
     public static function shouldUseForCurrentRequest(?Request $request = null): bool
     {
         $request = $request ?? request();
-        $user = $request->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        if (self::userIsSystemAdmin($user) && $request->routeIs(self::adminRoutePatterns())) {
-            return true;
-        }
-
-        if (!self::userIsFacilityManager($user)) {
-            return false;
-        }
-
-        return $request->routeIs(self::facilityManagerRoutePatterns());
+        return self::sidebarModeForCurrentRequest($request) !== 'employee';
     }
 
     public static function navModeForCurrentRequest(?Request $request = null): string
     {
-        $request = $request ?? request();
-        $user = $request->user();
-
-        if (self::userIsSystemAdmin($user) && $request->routeIs(self::adminRoutePatterns())) {
-            return 'admin';
-        }
-
-        if (self::userIsFacilityManager($user)
-            && $request->routeIs(self::facilityManagerRoutePatterns())) {
-            return 'facility';
-        }
-
-        return 'employee';
+        return self::sidebarModeForCurrentRequest($request);
     }
 
     public static function variablesForView(): array
@@ -126,15 +146,43 @@ class MemberPortalLayout
             ];
         }
 
+        if ($navMode === 'corporate') {
+            return [
+                'portalNav' => 'corporate',
+                'portalActive' => self::activeIdForRoute($routeName),
+                'portalTitle' => $title . ' | Bio Pacific',
+                'portalEyebrow' => 'Corporate Management',
+                'portalPageTitle' => $title,
+                'portalSubtitle' => 'Corporate Management',
+                'showPortalSearch' => false,
+                'showPortalNotifications' => true,
+                'showPortalFooter' => false,
+            ];
+        }
+
+        if ($navMode === 'facility') {
+            return [
+                'portalNav' => 'facility',
+                'portalActive' => self::activeIdForRoute($routeName),
+                'portalTitle' => $title . ' | Bio Pacific',
+                'portalEyebrow' => 'Facility Management',
+                'portalPageTitle' => $title,
+                'portalSubtitle' => 'Facility Management',
+                'showPortalSearch' => false,
+                'showPortalNotifications' => true,
+                'showPortalFooter' => false,
+            ];
+        }
+
         return [
-            'portalNav' => $navMode === 'facility' ? 'facility' : 'employee',
+            'portalNav' => 'employee',
             'portalActive' => self::activeIdForRoute($routeName),
             'portalTitle' => $title . ' | Bio Pacific',
-            'portalEyebrow' => $navMode === 'facility' ? 'Facility Management' : 'Employee Portal',
+            'portalEyebrow' => 'Employee Portal',
             'portalPageTitle' => $title,
-            'portalSubtitle' => $navMode === 'facility' ? 'Facility Management' : 'HR Employee Portal',
+            'portalSubtitle' => 'HR Employee Portal',
             'showPortalSearch' => false,
-            'showPortalNotifications' => $navMode === 'employee',
+            'showPortalNotifications' => true,
             'showPortalFooter' => false,
         ];
     }
@@ -175,6 +223,10 @@ class MemberPortalLayout
 
     protected static function titleForRoute(string $routeName): string
     {
+        if (request()->routeIs('admin.positions.*')) {
+            return 'Positions Management';
+        }
+
         $titles = config('member-portal.facility_management_titles', []);
 
         foreach ($titles as $pattern => $label) {
@@ -183,12 +235,23 @@ class MemberPortalLayout
             }
         }
 
+        if (request()->routeIs('admin.positions.*')) {
+            return 'Positions Management';
+        }
+
         return 'Facility Management';
     }
 
     protected static function activeIdForRoute(string $routeName): string
     {
-        $map = config('member-portal.facility_management_active_map', []);
+        $sidebarMode = self::sidebarModeForCurrentRequest();
+
+        $map = match ($sidebarMode) {
+            'admin' => config('member-portal.admin_active_map', []),
+            'corporate' => config('member-portal.corporate_active_map', []),
+            'facility' => config('member-portal.facility_active_map', []),
+            default => [],
+        };
 
         foreach ($map as $pattern => $id) {
             if (request()->routeIs($pattern)) {
@@ -196,10 +259,51 @@ class MemberPortalLayout
             }
         }
 
-        if (request()->routeIs(['user.hr-portal', 'admin.facility.dashboard'])) {
-            return 'facility-hr-portal';
+        if ($sidebarMode === 'employee') {
+            if (request()->routeIs('dashboard.index')) {
+                return 'dashboard';
+            }
+
+            if (request()->routeIs('member.schedule')) {
+                return 'schedule';
+            }
+
+            if (request()->routeIs('settings.profile')) {
+                return 'profile';
+            }
+
+            if (request()->routeIs('member.documents')) {
+                return 'documents';
+            }
+
+            if (request()->routeIs('member.certifications')) {
+                return 'certifications';
+            }
+
+            if (request()->routeIs('member.trainings')) {
+                return 'trainings';
+            }
+
+            if (request()->routeIs(['user.hr-portal', 'admin.facility.dashboard'])) {
+                return 'facility-hr-portal';
+            }
+        }
+
+        if (request()->routeIs('admin.positions.*')) {
+            return 'positions';
         }
 
         return 'dashboard';
+    }
+
+    protected static function requestMatchesAnyRoutePattern(Request $request, array $patterns): bool
+    {
+        foreach ($patterns as $pattern) {
+            if ($request->routeIs($pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

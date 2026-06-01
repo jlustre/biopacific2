@@ -82,6 +82,21 @@ class EmploymentController extends Controller
         return app(EmployeesController::class)->uploadDocument($request, $this->resolveOwnEmployeeOrFail()->id);
     }
 
+    public function updateDocument(Request $request, $document)
+    {
+        return app(EmployeesController::class)->updateDocument($request, $this->resolveOwnEmployeeOrFail()->id, $document);
+    }
+
+    public function deleteDocument($document)
+    {
+        return app(EmployeesController::class)->deleteDocument($this->resolveOwnEmployeeOrFail()->id, $document);
+    }
+
+    public function viewDocument($document)
+    {
+        return app(EmployeesController::class)->viewDocument($this->resolveOwnEmployeeOrFail()->id, $document);
+    }
+
     public function downloadDocument($document)
     {
         return app(EmployeesController::class)->downloadDocument($this->resolveOwnEmployeeOrFail()->id, $document);

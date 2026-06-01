@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\Rbac\Permissions as RbacPermissions;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
@@ -18,73 +19,7 @@ class RolePermissionSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create comprehensive permissions
-        $permissions = [
-            // Facility Management
-            'view facilities',
-            'create facilities',
-            'edit facilities',
-            'delete facilities',
-            'manage facility settings',
-            'view facility analytics',
-            
-            // User Management
-            'view users',
-            'create users',
-            'edit users',
-            'delete users',
-            'manage users',
-            'view user profiles',
-            
-            // Role & Permission Management
-            'view roles',
-            'create roles',
-            'edit roles',
-            'delete roles',
-            'manage roles',
-            'view permissions',
-            'create permissions',
-            'edit permissions',
-            'delete permissions',
-            'manage permissions',
-            'assign roles',
-            'revoke roles',
-            
-            // Content Management
-            'view content',
-            'create content',
-            'edit content',
-            'delete content',
-            'publish content',
-            'manage testimonials',
-            'manage news',
-            'manage faqs',
-            'manage galleries',
-            'manage services',
-            
-            // Communications
-            'view communications',
-            'manage tour requests',
-            'manage inquiries',
-            'manage job applications',
-            'manage email recipients',
-            
-            // Security & Monitoring
-            'view security dashboard',
-            'view audit logs',
-            'manage security settings',
-            'view system monitoring',
-            
-            // System Administration
-            'access admin panel',
-            'view system settings',
-            'manage system settings',
-            'view reports',
-            'export data',
-
-            // Facility data import
-            'use import mapping presets',
-            'create import mapping presets',
-        ];
+        $permissions = RbacPermissions::all();
 
         // Create permissions if they don't exist
         foreach ($permissions as $permission) {
@@ -101,6 +36,9 @@ class RolePermissionSeeder extends Seeder
         // New HR roles (short names)
         $rdhr = Role::firstOrCreate(['name' => 'rdhr'], ['name' => 'rdhr']);
         $facilityDsd = Role::firstOrCreate(['name' => 'facility-dsd'], ['name' => 'facility-dsd']);
+        $don = Role::firstOrCreate(['name' => 'don'], ['name' => 'don']);
+        $ssd = Role::firstOrCreate(['name' => 'ssd'], ['name' => 'ssd']);
+        $activitiesDirector = Role::firstOrCreate(['name' => 'activities-director'], ['name' => 'activities-director']);
 
         // Assign permissions to roles
 
@@ -112,50 +50,135 @@ class RolePermissionSeeder extends Seeder
 
         // Facility Admin - Comprehensive facility management
         $facilityAdmin->syncPermissions([
-            'access admin panel',
-            'view facilities', 'create facilities', 'edit facilities', 'manage facility settings', 'view facility analytics',
-            'view users', 'create users', 'edit users', 'view user profiles',
-            'view content', 'create content', 'edit content', 'publish content',
-            'manage testimonials', 'manage news', 'manage faqs', 'manage galleries', 'manage services',
-            'view communications', 'manage tour requests', 'manage inquiries', 'manage job applications',
-            'view reports', 'export data',
-            'use import mapping presets',
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::ACCESS_HR_PORTAL,
+            RbacPermissions::VIEW_POSITIONS,
+            RbacPermissions::EDIT_POSITIONS,
+            RbacPermissions::EDIT_EMPLOYEE_CORE_TABS,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::CREATE_FACILITIES,
+            RbacPermissions::EDIT_FACILITIES,
+            RbacPermissions::MANAGE_FACILITY_SETTINGS,
+            RbacPermissions::VIEW_FACILITY_ANALYTICS,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::CREATE_USERS,
+            RbacPermissions::EDIT_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::CREATE_CONTENT,
+            RbacPermissions::EDIT_CONTENT,
+            RbacPermissions::PUBLISH_CONTENT,
+            RbacPermissions::MANAGE_TESTIMONIALS,
+            RbacPermissions::MANAGE_NEWS,
+            RbacPermissions::MANAGE_FAQS,
+            RbacPermissions::MANAGE_GALLERIES,
+            RbacPermissions::MANAGE_SERVICES,
+            RbacPermissions::VIEW_COMMUNICATIONS,
+            RbacPermissions::MANAGE_TOUR_REQUESTS,
+            RbacPermissions::MANAGE_INQUIRIES,
+            RbacPermissions::MANAGE_JOB_APPLICATIONS,
+            RbacPermissions::VIEW_REPORTS,
+            RbacPermissions::EXPORT_DATA,
+            RbacPermissions::USE_IMPORT_MAPPING_PRESETS,
         ]);
 
         // HR Regional Director (rdhr) - All facilities HR portal access
         $rdhr->syncPermissions([
-            'access admin panel',
-            'view facilities', 'view users', 'view user profiles',
-            'view content', 'view communications', 'view reports',
-            'use import mapping presets',
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::ACCESS_HR_PORTAL,
+            RbacPermissions::VIEW_POSITIONS,
+            RbacPermissions::EDIT_POSITIONS,
+            RbacPermissions::EDIT_EMPLOYEE_CORE_TABS,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::VIEW_COMMUNICATIONS,
+            RbacPermissions::VIEW_REPORTS,
+            RbacPermissions::USE_IMPORT_MAPPING_PRESETS,
         ]);
 
         // Facility DSD - Assigned facility HR portal access
         $facilityDsd->syncPermissions([
-            'access admin panel',
-            'view facilities', 'view users', 'view user profiles',
-            'view content', 'view communications', 'view reports',
-            'use import mapping presets',
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::ACCESS_HR_PORTAL,
+            RbacPermissions::VIEW_POSITIONS,
+            RbacPermissions::EDIT_POSITIONS,
+            RbacPermissions::EDIT_EMPLOYEE_CORE_TABS,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::VIEW_COMMUNICATIONS,
+            RbacPermissions::VIEW_REPORTS,
+            RbacPermissions::USE_IMPORT_MAPPING_PRESETS,
+        ]);
+
+        // Director of Nursing - facility clinical leadership access
+        $don->syncPermissions([
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::ACCESS_HR_PORTAL,
+            RbacPermissions::VIEW_POSITIONS,
+            RbacPermissions::EDIT_POSITIONS,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::VIEW_COMMUNICATIONS,
+            RbacPermissions::VIEW_REPORTS,
+            RbacPermissions::USE_IMPORT_MAPPING_PRESETS,
+        ]);
+
+        // Social Services Director - facility oversight access (limited)
+        $ssd->syncPermissions([
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::VIEW_COMMUNICATIONS,
+            RbacPermissions::VIEW_REPORTS,
+        ]);
+
+        // Activities Director - facility content and communication access
+        $activitiesDirector->syncPermissions([
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::VIEW_COMMUNICATIONS,
         ]);
 
         // Facility Editor - Content and basic management
         $facilityEditor->syncPermissions([
-            'access admin panel',
-            'view facilities', 'edit facilities',
-            'view users', 'view user profiles',
-            'view content', 'create content', 'edit content',
-            'manage testimonials', 'manage news', 'manage faqs', 'manage galleries', 'manage services',
-            'view communications', 'manage tour requests', 'manage inquiries',
-            'use import mapping presets',
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::EDIT_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::CREATE_CONTENT,
+            RbacPermissions::EDIT_CONTENT,
+            RbacPermissions::MANAGE_TESTIMONIALS,
+            RbacPermissions::MANAGE_NEWS,
+            RbacPermissions::MANAGE_FAQS,
+            RbacPermissions::MANAGE_GALLERIES,
+            RbacPermissions::MANAGE_SERVICES,
+            RbacPermissions::VIEW_COMMUNICATIONS,
+            RbacPermissions::MANAGE_TOUR_REQUESTS,
+            RbacPermissions::MANAGE_INQUIRIES,
+            RbacPermissions::USE_IMPORT_MAPPING_PRESETS,
         ]);
 
         // Regular User - View only access
         $regularUser->syncPermissions([
-            'access admin panel',
-            'view facilities',
-            'view users', 'view user profiles',
-            'view content',
-            'view communications'
+            RbacPermissions::ACCESS_ADMIN_PANEL,
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::VIEW_USERS,
+            RbacPermissions::VIEW_USER_PROFILES,
+            RbacPermissions::VIEW_CONTENT,
+            RbacPermissions::VIEW_COMMUNICATIONS,
         ]);
     }
 }

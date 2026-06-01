@@ -9,7 +9,20 @@
             ['id' => 'facility-tour-requests', 'route' => 'admin.tour-requests.index', 'icon' => '💬', 'label' => 'Comms'],
             ['id' => 'settings', 'route' => 'admin.settings.index', 'icon' => '🔧', 'label' => 'Settings'],
         ],
-        'facility' => config('member-portal.mobile_nav', []),
+      'corporate' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
+        ['id' => 'hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
+        ['id' => 'positions', 'route' => 'admin.positions.index', 'icon' => '💼', 'label' => 'Positions'],
+        ['id' => 'reports', 'route' => 'admin.reports.index', 'icon' => '📊', 'label' => 'Reports'],
+        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
+      ],
+      'facility' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
+        ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
+        ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Docs'],
+        ['id' => 'hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
+        ['id' => 'positions', 'route' => 'admin.positions.index', 'icon' => '💼', 'label' => 'Positions'],
+      ],
         default => config('member-portal.mobile_nav', []),
     };
 @endphp

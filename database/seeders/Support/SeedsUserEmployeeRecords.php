@@ -23,10 +23,13 @@ class SeedsUserEmployeeRecords
      *     employee_num?: string,
      *     facility_id?: int|null,
      *     position_id?: int|null,
+    *     position_title?: string,
      *     position_index?: int,
      *     dept_id?: int|null,
      *     original_hire_dt?: string,
      *     gender?: string,
+    *     dob?: string,
+    *     middle_name?: string|null,
      *     is_union?: bool,
      *     first_name?: string,
      *     last_name?: string,
@@ -54,9 +57,10 @@ class SeedsUserEmployeeRecords
             'employee_num' => $employeeNum,
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'middle_name' => null,
+            'middle_name' => $options['middle_name'] ?? null,
             'email' => $user->email,
             'gender' => $options['gender'] ?? 'N',
+            'dob' => $options['dob'] ?? '1990-01-01',
             'original_hire_dt' => $options['original_hire_dt'] ?? self::DEFAULT_EFFDT,
         ];
 
@@ -248,12 +252,19 @@ class SeedsUserEmployeeRecords
 
     private static function resolvePosition(array $options): ?Position
     {
-        if (!empty($options['position_id']) && Schema::hasTable('positions')) {
-            return Position::query()->find($options['position_id']);
-        }
-
         if (!Schema::hasTable('positions')) {
             return null;
+        }
+
+        if (!empty($options['position_title'])) {
+            $position = Position::query()->where('title', $options['position_title'])->first();
+            if ($position) {
+                return $position;
+            }
+        }
+
+        if (!empty($options['position_id']) && Schema::hasTable('positions')) {
+            return Position::query()->find($options['position_id']);
         }
 
         $titles = [

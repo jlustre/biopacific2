@@ -5,7 +5,9 @@ return [
 
     'system_admin_roles' => ['admin', 'super-admin'],
 
-    'facility_manager_roles' => ['rdhr', 'facility-admin', 'facility-dsd'],
+    'corporate_roles' => ['rdhr', 'regional-director'],
+
+    'facility_manager_roles' => ['facility-admin', 'facility-dsd', 'facility-ssd', 'don'],
 
     'facility_manager_global_route_patterns' => [
         'admin.dashboard.index',
@@ -33,6 +35,7 @@ return [
         'admin.checklist-items.*',
         'admin.import-mapping-presets.*',
         'admin.import-logs.*',
+        'admin.upload-types.*',
         'admin.baa-registry.*',
         'admin.hipaa-checklist.*',
         'admin.security.*',
@@ -65,6 +68,24 @@ return [
         ['id' => 'employee-portal', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Employee Portal'],
     ],
 
+    'corporate_sidebar_nav' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'My Profile'],
+        ['id' => 'positions', 'route' => 'admin.positions.index', 'route_is' => 'admin.positions.*', 'icon' => '💼', 'label' => 'Positions'],
+        ['id' => 'reports', 'route' => 'admin.reports.index', 'route_is' => ['admin.reports.*', 'admin.scheduled-reports.*'], 'icon' => '📊', 'label' => 'Reports'],
+        ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Documents'],
+    ],
+
+    'facility_sidebar_nav' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+        ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
+        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'My Profile'],
+        ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Documents'],
+        ['id' => 'positions', 'route' => 'admin.positions.index', 'route_is' => 'admin.positions.*', 'icon' => '💼', 'label' => 'Positions'],
+        ['id' => 'trainings', 'route' => 'member.trainings', 'icon' => '🎓', 'label' => 'Trainings'],
+            ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🏅', 'label' => 'Licenses & Certifications'],
+    ],
+
     'admin_titles' => [
         'admin.dashboard.*' => 'Admin Dashboard',
         'admin.users.*' => 'Users',
@@ -82,6 +103,15 @@ return [
         'admin.events.*' => 'Events',
         'admin.reports.*' => 'Reports',
         'admin.scheduled-reports.*' => 'Scheduled Reports',
+        'admin.upload-types.*' => 'Documents Management',
+    ],
+
+    'corporate_titles' => [
+        'admin.positions.*' => 'Positions',
+        'admin.reports.*' => 'Reports',
+        'admin.scheduled-reports.*' => 'Reports',
+        'user.hr-portal' => 'HR Portal',
+        'hr-portal.*' => 'HR Portal',
     ],
 
     'admin_active_map' => [
@@ -95,18 +125,42 @@ return [
         'admin.roles.*' => 'roles',
         'admin.permissions.*' => 'roles',
         'admin.role-assignments.*' => 'roles',
-        'admin.positions.*' => 'roles',
+        'admin.positions.*' => 'positions',
         'admin.departments.*' => 'roles',
         'admin.arbitration-templates.*' => 'settings',
         'admin.checklist-items.*' => 'settings',
         'admin.import-mapping-presets.*' => 'settings',
         'admin.import-logs.*' => 'settings',
+        'admin.upload-types.*' => 'settings',
         'admin.baa-registry.*' => 'admin-baa',
         'admin.hipaa-checklist.*' => 'admin-hipaa',
         'admin.security.*' => 'admin-security',
         'admin.events.*' => 'admin-events',
         'admin.reports.*' => 'admin-reports',
         'admin.scheduled-reports.*' => 'admin-scheduled-reports',
+    ],
+
+    'corporate_active_map' => [
+        'dashboard.index' => 'dashboard',
+        'settings.profile' => 'profile',
+        'user.hr-portal' => 'hr-portal',
+        'hr-portal.*' => 'hr-portal',
+        'admin.positions.*' => 'positions',
+        'admin.reports.*' => 'reports',
+        'admin.scheduled-reports.*' => 'reports',
+        'member.documents' => 'documents',
+    ],
+
+    'facility_active_map' => [
+        'dashboard.index' => 'dashboard',
+        'member.schedule' => 'schedule',
+        'settings.profile' => 'profile',
+        'member.documents' => 'documents',
+        'user.hr-portal' => 'hr-portal',
+        'hr-portal.*' => 'hr-portal',
+        'admin.positions.*' => 'positions',
+        'member.trainings' => 'trainings',
+        'member.certifications' => 'certifications',
     ],
 
     'sidebar_nav' => [
@@ -128,7 +182,7 @@ return [
             'id' => 'certifications',
             'route' => 'member.certifications',
             'icon' => '🏅',
-            'label' => 'Certifications',
+            'label' => 'Licenses & Certifications',
         ],
         [
             'id' => 'trainings',
@@ -144,7 +198,7 @@ return [
         ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
         ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News'],
         ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Docs'],
-        ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🏅', 'label' => 'Certs'],
+            ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🏅', 'label' => 'Licenses'],
         ['id' => 'trainings', 'route' => 'member.trainings', 'icon' => '🎓', 'label' => 'Training'],
         ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
     ],
@@ -178,6 +232,7 @@ return [
         'admin.email-recipients.*',
         'admin.email-templates.*',
         'admin.communications.employee-email-mappings',
+        'admin.upload-types.*',
     ],
 
     'facility_management_web_route_patterns' => [
@@ -233,6 +288,7 @@ return [
         'admin.email-recipients.*' => 'Email Recipients',
         'admin.email-templates.*' => 'Email Templates',
         'admin.communications.employee-email-mappings' => 'Employee Email Mappings',
+        'admin.upload-types.*' => 'Documents Management',
     ],
 
     'facility_management_active_map' => [
@@ -260,5 +316,6 @@ return [
         'admin.email-recipients.*' => 'facility-email-recipients',
         'admin.email-templates.*' => 'facility-email-templates',
         'admin.communications.employee-email-mappings' => 'facility-email-mappings',
+        'admin.upload-types.*' => 'facility-documents-management',
     ],
 ];

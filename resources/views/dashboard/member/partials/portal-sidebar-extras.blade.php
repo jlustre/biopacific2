@@ -1,6 +1,7 @@
 @php
     $active = $active ?? 'dashboard';
     $authUser = auth()->user();
+    $canAccessHrPortal = $authUser?->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL) ?? false;
 @endphp
 
 @if($authUser)
@@ -32,14 +33,21 @@
         </div>
     @endif
 
-    @if($authUser->hasRole(['rdhr']) && !in_array($portalNav ?? 'employee', ['admin', 'facility'], true))
+    @if($canAccessHrPortal && !in_array($portalNav ?? 'employee', ['admin', 'facility'], true))
         <div class="my-3 border-t border-white/10 pt-3">
-            <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-teal-200/80">HR</p>
+            <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Admin</p>
             <a href="{{ route('user.hr-portal') }}"
                class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass($active === 'facility-hr-portal' || request()->routeIs('user.hr-portal')) }}">
                 <span>👥</span>
                 <span>HR Portal</span>
             </a>
+            @if($authUser->can(\App\Support\Rbac\Permissions::VIEW_POSITIONS) || $authUser->hasRole(['rdhr', 'facility-admin', 'facility-dsd', 'don']))
+            <a href="{{ route('admin.positions.index') }}"
+               class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs('admin.positions.*')) }}">
+                <span>💼</span>
+                <span>Positions</span>
+            </a>
+            @endif
         </div>
     @endif
 @endif

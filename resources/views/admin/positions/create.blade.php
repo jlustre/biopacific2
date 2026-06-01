@@ -66,6 +66,41 @@
                 @enderror
             </div>
 
+            <div>
+                <label class="block text-sm font-semibold text-gray-900 mb-2">Required Documents</label>
+                <p class="text-xs text-gray-500 mb-3">Select the upload types required for this position. Completion in employee Documents tab is auto-calculated from uploaded unexpired files.</p>
+                <div class="max-h-64 overflow-y-auto rounded-lg border border-gray-200 p-3 space-y-2 bg-gray-50">
+                    @forelse($uploadTypes as $uploadType)
+                        <label class="flex items-start gap-3 p-2 rounded hover:bg-white">
+                            <input
+                                type="checkbox"
+                                name="required_upload_type_ids[]"
+                                value="{{ $uploadType->id }}"
+                                class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                {{ in_array($uploadType->id, old('required_upload_type_ids', [])) ? 'checked' : '' }}
+                            >
+                            <span class="text-sm text-gray-800">
+                                <span class="font-medium">{{ $uploadType->name }}</span>
+                                @if($uploadType->requires_expiry)
+                                    <span class="ml-1 inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800">Expiry required</span>
+                                @endif
+                                @if($uploadType->description)
+                                    <span class="block text-xs text-gray-500 mt-0.5">{{ $uploadType->description }}</span>
+                                @endif
+                            </span>
+                        </label>
+                    @empty
+                        <p class="text-sm text-gray-500">No upload types available. Create upload types first.</p>
+                    @endforelse
+                </div>
+                @error('required_upload_type_ids')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+                @error('required_upload_type_ids.*')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Form Actions -->
             <div class="flex gap-4 pt-6">
                 <button type="submit"

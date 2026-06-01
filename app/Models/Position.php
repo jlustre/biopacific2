@@ -65,4 +65,16 @@ class Position extends Model
     {
         return $this->hasMany(JobDescriptionTemplate::class);
     }
+
+    public function uploadTypeRequirements()
+    {
+        return $this->hasMany(PositionUploadTypeRequirement::class);
+    }
+
+    public function requiredUploadTypes()
+    {
+        return $this->belongsToMany(UploadType::class, 'position_upload_type_requirements')
+            ->withPivot(['is_required'])
+            ->withTimestamps();
+    }
 }

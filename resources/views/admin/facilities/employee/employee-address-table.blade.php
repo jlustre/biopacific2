@@ -2,6 +2,7 @@
     $isSelfService = $isSelfService ?? false;
     $latestAddrEffdt = $latestAddrEffdt ?? null;
     $latestAddrEffseq = $latestAddrEffseq ?? null;
+    $canEditCoreTabs = $canEditCoreTabs ?? true;
 @endphp
 <div class="bg-white shadow rounded-lg p-4 mt-8">
     <h2 class="text-lg font-bold mb-2">Address History</h2>
@@ -34,7 +35,7 @@
                     && $latestAddrEffseq !== null
                     && (string) $addr->effdt === (string) $latestAddrEffdt
                     && (string) $addr->effseq === (string) $latestAddrEffseq;
-                $canEmployeeEditAddress = ! $isSelfService || $isLatestAddress;
+                $canEmployeeEditAddress = $canEditCoreTabs && (! $isSelfService || $isLatestAddress);
             @endphp
             <tr class="border-b">
                 <td class="px-3 py-2 text-xs">{{ $addr->effdt }}</td>
@@ -67,7 +68,7 @@
                                 effdt: '{{ $addr->effdt }}',
                                 effseq: '{{ $addr->effseq }}'
                             })">View/Edit</a>
-                    @elseif($isSelfService)
+                    @else
                     <span class="text-gray-400 italic text-xs">HR only</span>
                     @endif
                 </td>

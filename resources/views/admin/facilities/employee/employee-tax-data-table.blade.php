@@ -2,6 +2,7 @@
     $isSelfService = $isSelfService ?? false;
     $taxLatestEffdt = $taxLatestEffdt ?? null;
     $taxLatestEffseq = $taxLatestEffseq ?? null;
+    $canEditCoreTabs = $canEditCoreTabs ?? true;
     $fedStatusLabels = ['1' => 'Single', '2' => 'Married'];
     $residentLabels = ['Y' => 'Resident', 'N' => 'Non-Resident'];
 @endphp
@@ -34,7 +35,7 @@
                         && $taxLatestEffseq !== null
                         && (string) $taxEffdt === (string) $taxLatestEffdt
                         && (string) $tax->effseq === (string) $taxLatestEffseq;
-                    $canEmployeeEditTax = ! $isSelfService || $isLatestTax;
+                    $canEmployeeEditTax = $canEditCoreTabs && (! $isSelfService || $isLatestTax);
                 @endphp
                 <tr class="border-b">
                     <td class="px-3 py-2">{{ $taxEffdt }}</td>
@@ -63,7 +64,7 @@
                             addl_withholding_amount2: @json($tax->addl_withholding_amount2 ?? ''),
                             resident_state: @json($tax->resident_state ?? 'CA')
                         })">View/Edit</a>
-                        @elseif($isSelfService)
+                        @else
                         <span class="text-gray-400 italic text-xs">HR only</span>
                         @endif
                     </td>

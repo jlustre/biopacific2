@@ -26,6 +26,13 @@
             : route('admin.employees.edit', $employee) . '?tab=documents')
         : (isset($facility) ? route('admin.facility.documents', ['facility' => $facility->slug ?? $facility->id]) : url()->current());
 
+    $documentsViewTemplate = isset($employee)
+        ? ($employeeFormRoutes['documents_view'] ?? route('admin.employees.documents.view', [$employee->id, '__ID__']))
+        : null;
+    $documentsDeleteTemplate = isset($employee)
+        ? ($employeeFormRoutes['documents_delete'] ?? route('admin.employees.documents.delete', [$employee->id, '__ID__']))
+        : null;
+
     $filterFacilityId = null;
     if ($isFacilityTable) {
         if ($canChooseFacility && request('facility_id')) {
@@ -516,7 +523,7 @@
                     <a href="{{ ($isSelfService ?? false) ? route('employment.documents.download', ['document' => $upload->id]) : route('admin.employees.documents.download', [$employee->id, $upload->id]) }}" title="Download" class="text-blue-600 hover:text-blue-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
                     </a>
-                    <a href="{{ route('admin.employees.documents.view', [$employee->id, $upload->id]) }}" title="View" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800">
+                    <a href="{{ str_replace('__ID__', (string) $upload->id, $documentsViewTemplate ?? '#') }}" title="View" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     </a>
                     @if($upload->isOwnedBy($user))
@@ -600,7 +607,7 @@
                         </button>
                     @endif
                     @if($isEmployeeTable && isset($employee) && $upload->isOwnedBy($user))
-                    <form action="{{ route('admin.employees.documents.delete', [$employee->id, $upload->id]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
+                    <form action="{{ str_replace('__ID__', (string) $upload->id, $documentsDeleteTemplate ?? '#') }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
                         @csrf
                         @method('DELETE')
                         <button type="submit" title="Delete" class="text-red-600 hover:text-red-800 bg-transparent border-none p-0 m-0">

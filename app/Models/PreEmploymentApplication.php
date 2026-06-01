@@ -132,23 +132,27 @@ class PreEmploymentApplication extends Model
 
         // Create initial address record with effective dating
         EmployeeAddress::create([
-            'employee_id' => $employee->id,
-            'current_address' => $this->current_address,
+            'employee_num' => $employee->employee_num,
+            'address1' => $this->current_address,
+            'address2' => null,
             'city' => $this->city,
             'state' => $this->state,
-            'zip_code' => $this->zip_code,
-            'county' => $this->county,
-            'effective_date' => $hireDate,
-            'effective_sequence' => 1,
+            'zip' => $this->zip_code,
+            'country' => 'usa',
+            'address_type' => 'H',
+            'effdt' => $hireDate,
+            'effseq' => 1,
+            'is_primary' => 'Y',
         ]);
 
         // Create initial phone record with effective dating
         EmployeePhone::create([
-            'employee_id' => $employee->id,
+            'employee_num' => $employee->employee_num,
             'phone_number' => $this->phone_number,
-            'phone_type' => 'primary',
-            'effective_date' => $hireDate,
-            'effective_sequence' => 1,
+            'phone_type' => 'H',
+            'effdt' => $hireDate,
+            'effseq' => 1,
+            'is_primary' => 'Y',
         ]);
 
         return $employee;

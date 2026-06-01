@@ -70,7 +70,7 @@
                             </div>
                             <div class="ml-3">
                                 <div class="text-sm font-medium text-gray-900">
-                                    {{ ucwords(str_replace('-', ' ', $role->name)) }}
+                                    {{ \App\Models\User::roleDisplayLabel($role->name) }}
                                 </div>
                                 <div class="text-sm text-gray-500">{{ $role->name }}</div>
                             </div>
@@ -112,7 +112,7 @@
                                 class="text-yellow-600 hover:text-yellow-900" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            @if($role->name !== 'admin')
+                            @if(!in_array($role->name, $protectedRoles ?? ['super-admin', 'admin']))
                             <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="inline-block"
                                 onsubmit="return confirm('Are you sure you want to delete this role?')">
                                 @csrf

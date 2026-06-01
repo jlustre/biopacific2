@@ -1,9 +1,4 @@
 <div class="overflow-x-auto" data-part-e-orientation-checklist>
-    @if($evaluatorActionsDisabled)
-        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
-            {{ \App\Support\PreventsSelfAssessment::DEFAULT_MESSAGE }}
-        </div>
-    @endif
     <div class="mb-4 flex flex-wrap items-center gap-2">
         <h2 class="text-xl font-bold">ORIENTATION CHECKLIST: {{ $positionTitle }}</h2>
         @if(! $jobCodeId)

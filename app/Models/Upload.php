@@ -167,7 +167,7 @@ class Upload extends Model
             return false;
         }
 
-        return $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']);
+        return $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']);
     }
 
     /**

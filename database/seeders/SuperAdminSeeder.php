@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\Rbac\Permissions as RbacPermissions;
 use Database\Seeders\Support\SeedsUserEmployeeRecords;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -22,16 +23,15 @@ class SuperAdminSeeder extends Seeder
 
         // Create all permissions if they don't exist
         $allPermissions = [
-            'view facilities',
-            'create facilities',
-            'edit facilities',
-            'delete facilities',
-            'manage users',
-            'manage roles',
-            'manage permissions',
-            'use import mapping presets',
-            'create import mapping presets',
-            // Add more permissions here as needed
+            RbacPermissions::VIEW_FACILITIES,
+            RbacPermissions::CREATE_FACILITIES,
+            RbacPermissions::EDIT_FACILITIES,
+            RbacPermissions::DELETE_FACILITIES,
+            RbacPermissions::MANAGE_USERS,
+            RbacPermissions::MANAGE_ROLES,
+            RbacPermissions::MANAGE_PERMISSIONS,
+            RbacPermissions::USE_IMPORT_MAPPING_PRESETS,
+            RbacPermissions::CREATE_IMPORT_MAPPING_PRESETS,
         ];
 
         foreach ($allPermissions as $permission) {

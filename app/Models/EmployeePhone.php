@@ -9,20 +9,25 @@ class EmployeePhone extends Model
 {
     use HasFactory;
 
+    protected $table = 'bp_emp_phones';
+    protected $primaryKey = 'phone_id';
+    public $timestamps = true;
+
     protected $fillable = [
-        'employee_id',
+        'employee_num',
         'phone_number',
         'phone_type',
-        'effective_date',
-        'effective_sequence',
+        'effdt',
+        'effseq',
+        'is_primary',
     ];
 
     protected $casts = [
-        'effective_date' => 'date',
+        'effdt' => 'date',
     ];
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_num', 'employee_num');
     }
 }

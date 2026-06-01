@@ -15,6 +15,13 @@
 
 @section('content')
 <div class="space-y-6">
+    <div class="bg-blue-50 border border-blue-200 text-blue-900 px-4 py-3 rounded-lg text-sm">
+        <span class="font-semibold">Employee Core Tabs Access Rule:</span>
+        only roles with
+        <span class="font-mono">{{ \App\Support\Rbac\Permissions::EDIT_EMPLOYEE_CORE_TABS }}</span>
+        can update Personal, Address, Job Data, and Tax Data tabs on employee profiles. DON should remain read-only.
+    </div>
+
     @if(session('success'))
     <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
         <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
@@ -82,17 +89,20 @@
     <!-- Permissions by Category -->
     <div class="space-y-6">
         @foreach($permissions as $category => $categoryPermissions)
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <details class="bg-white rounded-lg shadow overflow-hidden" {{ $loop->first ? 'open' : '' }}>
+            <summary class="cursor-pointer px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-medium text-gray-900">
                         {{ $category }} Permissions ({{ $categoryPermissions->count() }})
                     </h3>
-                    <div class="text-sm text-gray-500">
-                        {{ $categoryPermissions->sum(fn($p) => $p->roles->count()) }} total role assignments
+                    <div class="flex items-center space-x-3 text-sm text-gray-500">
+                        <span>{{ $categoryPermissions->sum(fn($p) => $p->roles->count()) }} total role assignments</span>
+                        <span class="inline-flex items-center text-gray-400">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </span>
                     </div>
                 </div>
-            </div>
+            </summary>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -169,8 +179,7 @@
                                         class="text-yellow-600 hover:text-yellow-900" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    @if(!in_array($permission->name, ['access admin panel', 'manage users', 'manage
-                                    roles', 'manage permissions']))
+                                    @if(!in_array($permission->name, $protectedPermissions))
                                     <form action="{{ route('admin.permissions.destroy', $permission) }}" method="POST"
                                         class="inline-block"
                                         onsubmit="return confirm('Are you sure you want to delete this permission?')">
@@ -192,7 +201,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </details>
         @endforeach
     </div>
 

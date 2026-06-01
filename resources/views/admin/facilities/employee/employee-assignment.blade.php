@@ -21,6 +21,7 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
     ->pluck('union_code')
     ->unique()
     ->values();
+$canEditCoreTabs = $canEditCoreTabs ?? false;
 @endphp
 <div x-show="tab === 'job-data'" x-cloak data-employee-tab-panel="job-data" x-data="assignmentForm()" x-init="initAssignment()">
     @if(isset($isAddMode) && $isAddMode)
@@ -37,6 +38,41 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
         @endphp
         <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             Job assignment details are managed by HR. Contact your facility administrator if anything looks incorrect.
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Facility</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->facility?->name ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Position</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->position?->title ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Department</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->department?->name ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Employment type</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ strtoupper((string) ($current?->full_part_time ?? '')) ?: '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Standard hours / week</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->std_hrs_week ?? '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-500">Effective date</p>
+                    <p class="mt-1 font-medium text-slate-900">{{ $current?->effdt?->format('Y-m-d') ?? '—' }}</p>
+                </div>
+            </div>
+        </div>
+    @elseif(!$canEditCoreTabs)
+        @php
+            $current = $employee->currentAssignment;
+        @endphp
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            You have read-only access to Job Data.
         </div>
         <div class="bg-white shadow rounded-lg p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -281,6 +317,6 @@ $unionCodeOptions = \App\Models\BPBargainingUnit::query()
     <!-- Job Data History Table -->
     @include('admin.facilities.employee.employee-assignment-table', [
         'isSelfService' => $isSelfService ?? false,
-        'canManageJobData' => $canManageJobData ?? true,
+        'canManageJobData' => ($canManageJobData ?? true) && $canEditCoreTabs,
     ])
 </div>

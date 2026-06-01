@@ -4,12 +4,14 @@
     $portalNav = $portalNav ?? 'employee';
     $navItems = match ($portalNav) {
         'admin' => config('member-portal.admin_sidebar_nav', []),
-        'facility' => config('member-portal.sidebar_nav', []),
+    'corporate' => config('member-portal.corporate_sidebar_nav', []),
+    'facility' => config('member-portal.facility_sidebar_nav', []),
         default => config('member-portal.sidebar_nav', []),
     };
     $portalSubtitle = $portalSubtitle ?? match ($portalNav) {
         'admin' => 'Admin Portal',
-        'facility' => 'Facility Management',
+    'corporate' => 'Corporate Management',
+    'facility' => 'Facility Management',
         default => 'HR Employee Portal',
     };
 @endphp
@@ -61,14 +63,16 @@
         @include('dashboard.member.partials.portal-sidebar-admin-management-groups', ['active' => $active])
       @endif
 
-      @if(in_array($portalNav, ['admin', 'facility'], true))
+      @if(in_array(($portalNav ?? ''), ['corporate', 'facility'], true))
         @include('dashboard.member.partials.portal-sidebar-management-groups', [
             'active' => $active,
-            'sectionLabel' => $portalNav === 'admin' ? 'HR & Operations' : 'Facility management',
+        'sectionLabel' => ($portalNav ?? '') === 'corporate' ? 'Corporate management' : 'Facility management',
         ])
       @endif
 
-      @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active, 'portalNav' => $portalNav])
+      @if(($portalNav ?? '') === 'employee')
+        @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active, 'portalNav' => $portalNav])
+      @endif
     </nav>
 
     <div class="border-t border-white/10 p-4">

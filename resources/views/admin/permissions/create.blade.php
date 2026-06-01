@@ -100,6 +100,10 @@
                         <div>• create roles</div>
                         <div>• assign roles</div>
                         @break
+                        @case('portal')
+                        <div>• access hr portal</div>
+                        <div>• access employee portal</div>
+                        @break
                         @default
                         <div>• view {{ $value }}</div>
                         <div>• manage {{ $value }}</div>

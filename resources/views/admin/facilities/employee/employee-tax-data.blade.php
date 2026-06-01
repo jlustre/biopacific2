@@ -4,6 +4,7 @@ $taxLatestRecord = isset($employee->taxData) ? $employee->taxData->sortBy([['eff
 $taxLatestEffdt = $taxLatestRecord?->effdt?->format('Y-m-d') ?? '';
 $taxLatestEffseq = $taxLatestRecord?->effseq ?? '';
 $isTaxSelfService = $isSelfService ?? false;
+$canEditCoreTabs = $canEditCoreTabs ?? false;
 @endphp
 <div x-show="tab === 'tax-data'" x-cloak data-employee-tab-panel="tax-data" x-data="taxForm()" x-init="initTax()">
     @if(isset($isAddMode) && $isAddMode)
@@ -14,6 +15,11 @@ $isTaxSelfService = $isSelfService ?? false;
             <em>Save the employee record before adding tax data.</em>
         </div>
     @else
+    @if(!$canEditCoreTabs)
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            You have read-only access to Tax Data.
+        </div>
+    @endif
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
         @if($isTaxSelfService)
         <div class="flex-1 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
@@ -26,10 +32,12 @@ $isTaxSelfService = $isSelfService ?? false;
         </div>
         @endif
         <div class="flex items-center gap-4 shrink-0 {{ $isTaxSelfService ? 'self-end lg:self-start' : 'ml-auto' }}">
+        @if($canEditCoreTabs)
         <button type="button" @click="clearTax()"
             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer whitespace-nowrap">
             Add New Tax Data
         </button>
+        @endif
         <template x-if="isLatestRecord()">
             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold whitespace-nowrap">Latest Record</span>
         </template>
@@ -38,6 +46,7 @@ $isTaxSelfService = $isSelfService ?? false;
     <form method="POST" action="{{ $employeeFormRoutes['tax'] ?? route('admin.employees.tax.update', $employee->id) }}" @submit="confirmTaxSubmit($event)">
         @csrf
         @method('PUT')
+        <fieldset {{ !$canEditCoreTabs ? 'disabled' : '' }}>
 
         <div class="bg-white shadow rounded-lg p-4 mb-6 space-y-5">
             {{-- Effective dating --}}
@@ -195,11 +204,14 @@ $isTaxSelfService = $isSelfService ?? false;
 
             <div class="flex justify-between pt-2">
                 <a href="{{ url()->previous() }}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 cursor-pointer">Cancel</a>
+                @if($canEditCoreTabs)
                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">
                     Save Tax Data
                 </button>
+                @endif
             </div>
         </div>
+        </fieldset>
     </form>
     @endif
 
@@ -207,5 +219,6 @@ $isTaxSelfService = $isSelfService ?? false;
         'isSelfService' => $isTaxSelfService,
         'taxLatestEffdt' => $taxLatestEffdt,
         'taxLatestEffseq' => $taxLatestEffseq,
+        'canEditCoreTabs' => $canEditCoreTabs,
     ])
 </div>

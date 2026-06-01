@@ -10,6 +10,9 @@ use App\Models\PreEmploymentApplication;
 use App\Models\HiringActivityLog;
 use App\Models\EmployeeDocument;
 use App\Models\Document;
+use App\Models\Department;
+use App\Models\JobApplication;
+use App\Models\Position;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -46,7 +49,7 @@ class QuickActionsController extends Controller
         if (MemberPortalLayout::userIsSystemAdmin($user) || $user->hasRole('rdhr')) {
             return true;
         }
-        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
+        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor', 'don'])) {
             if (isset($user->facility_id) && $user->facility_id == $facility->id) {
                 // ...existing code...
                 return true;
@@ -71,6 +74,151 @@ class QuickActionsController extends Controller
         abort(403, 'Unauthorized facility access.');
     }
 
+    protected function isDonUser(): bool
+    {
+        $user = Auth::user();
+
+        return (bool) ($user && method_exists($user, 'hasRole') && $user->hasRole('don'));
+    }
+
+    protected function donDepartmentId(): ?int
+    {
+        if (! $this->isDonUser()) {
+            return null;
+        }
+
+        $user = Auth::user();
+        $employee = $user?->resolvedBpEmployee(['currentAssignment']);
+
+        return $employee?->currentAssignment?->dept_id
+            ? (int) $employee->currentAssignment->dept_id
+            : null;
+    }
+
+    protected function donDepartmentName(): ?string
+    {
+        $departmentId = $this->donDepartmentId();
+
+        if (! $departmentId) {
+            return null;
+        }
+
+        return Department::query()->whereKey($departmentId)->value('name');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function donDepartmentPositionTitles(): array
+    {
+        $departmentId = $this->donDepartmentId();
+
+        if (! $departmentId) {
+            return [];
+        }
+
+        return Position::query()
+            ->where('department_id', $departmentId)
+            ->pluck('title')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    protected function applyDonJobApplicationScope($query): void
+    {
+        $departmentName = $this->donDepartmentName();
+        $positionTitles = $this->donDepartmentPositionTitles();
+
+        if (! $departmentName && empty($positionTitles)) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $normalizedDepartmentName = $departmentName ? mb_strtolower(trim($departmentName)) : null;
+
+        $query->whereHas('jobOpening', function ($jobOpeningQuery) use ($normalizedDepartmentName, $positionTitles) {
+            $jobOpeningQuery->where(function ($scopedQuery) use ($normalizedDepartmentName, $positionTitles) {
+                if ($normalizedDepartmentName) {
+                    $scopedQuery->whereRaw("LOWER(TRIM(COALESCE(department, ''))) = ?", [$normalizedDepartmentName]);
+                }
+
+                if (! empty($positionTitles)) {
+                    if ($normalizedDepartmentName) {
+                        $scopedQuery->orWhereIn('title', $positionTitles);
+                    } else {
+                        $scopedQuery->whereIn('title', $positionTitles);
+                    }
+                }
+            });
+        });
+    }
+
+    protected function authorizeDonApplicationScope(Facility $facility, $application): void
+    {
+        if (! $this->isDonUser()) {
+            return;
+        }
+
+        $departmentId = $this->donDepartmentId();
+        $positionTitles = array_map('mb_strtolower', $this->donDepartmentPositionTitles());
+
+        if (! $departmentId) {
+            abort(403, 'Your account is missing a department assignment.');
+        }
+
+        if ($application instanceof JobApplication) {
+            $jobOpening = $application->jobOpening;
+
+            if (! $jobOpening || (int) $jobOpening->facility_id !== (int) $facility->id) {
+                abort(403, 'You do not have access to this application.');
+            }
+
+            $departmentMatch = false;
+            $departmentName = $this->donDepartmentName();
+
+            if ($departmentName && filled($jobOpening->department)) {
+                $departmentMatch = mb_strtolower(trim((string) $jobOpening->department))
+                    === mb_strtolower(trim((string) $departmentName));
+            }
+
+            if (! $departmentMatch && ! empty($positionTitles)) {
+                $departmentMatch = in_array(mb_strtolower((string) $jobOpening->title), $positionTitles, true);
+            }
+
+            if (! $departmentMatch) {
+                abort(403, 'You do not have access to this department application.');
+            }
+
+            return;
+        }
+
+        if ($application instanceof PreEmploymentApplication) {
+            if ($application->position?->department_id && (int) $application->position->department_id !== $departmentId) {
+                abort(403, 'You do not have access to this department application.');
+            }
+
+            if (! $application->position_id && filled($application->position_applied_for) && ! empty($positionTitles)) {
+                if (! in_array(mb_strtolower((string) $application->position_applied_for), $positionTitles, true)) {
+                    abort(403, 'You do not have access to this department application.');
+                }
+            }
+
+            $facilityApplicationQuery = JobApplication::query()
+                ->where('user_id', $application->user_id)
+                ->whereHas('jobOpening', function ($query) use ($facility) {
+                    $query->where('facility_id', $facility->id);
+                });
+
+            $this->applyDonJobApplicationScope($facilityApplicationQuery);
+
+            if (! $facilityApplicationQuery->exists()) {
+                abort(403, 'You do not have access to this application.');
+            }
+        }
+    }
+
     public function hiring(Facility $facility)
     {
         $this->authorizeFacilityAccess($facility);
@@ -79,15 +227,53 @@ class QuickActionsController extends Controller
         $jobOpenings = $facility->jobOpenings()->get();
 
         // Get all job applications for this facility's job openings
-        $applications = \App\Models\JobApplication::whereIn('job_opening_id', $jobOpenings->pluck('id'))
+        $applicationsQuery = JobApplication::query()
+            ->whereIn('job_opening_id', $jobOpenings->pluck('id'))
             ->with(['jobOpening', 'user'])
-            ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('created_at');
 
-        // Get all pre-employment applications related to this facility
-        $preEmploymentApplications = \App\Models\PreEmploymentApplication::with(['user'])
-            ->orderByDesc('created_at')
-            ->get();
+        if ($this->isDonUser()) {
+            $this->applyDonJobApplicationScope($applicationsQuery);
+        }
+
+        $applications = $applicationsQuery->get();
+
+        $facilityApplicantUserIds = $applications
+            ->pluck('user_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $preEmploymentApplicationsQuery = PreEmploymentApplication::query()
+            ->with(['user', 'position'])
+            ->orderByDesc('created_at');
+
+        if ($facilityApplicantUserIds->isEmpty()) {
+            $preEmploymentApplicationsQuery->whereRaw('1 = 0');
+        } else {
+            $preEmploymentApplicationsQuery->whereIn('user_id', $facilityApplicantUserIds->all());
+        }
+
+        if ($this->isDonUser()) {
+            $donDepartmentId = $this->donDepartmentId();
+            $positionTitles = $this->donDepartmentPositionTitles();
+
+            if (! $donDepartmentId) {
+                $preEmploymentApplicationsQuery->whereRaw('1 = 0');
+            } else {
+                $preEmploymentApplicationsQuery->where(function ($query) use ($donDepartmentId, $positionTitles) {
+                    $query->whereHas('position', function ($positionQuery) use ($donDepartmentId) {
+                        $positionQuery->where('department_id', $donDepartmentId);
+                    });
+
+                    if (! empty($positionTitles)) {
+                        $query->orWhereIn('position_applied_for', $positionTitles);
+                    }
+                });
+            }
+        }
+
+        $preEmploymentApplications = $preEmploymentApplicationsQuery->get();
 
         // Count statistics
         $stats = [
@@ -150,7 +336,11 @@ class QuickActionsController extends Controller
         }
         // ...existing code...
         try {
-            \Illuminate\Support\Facades\Gate::authorize('view', $application);
+            if ($this->isDonUser()) {
+                $this->authorizeDonApplicationScope($facility, $application);
+            } else {
+                \Illuminate\Support\Facades\Gate::authorize('view', $application);
+            }
             // ...existing code...
         } catch (\Exception $e) {
             Log::error('REVIEW AUTHORIZE POLICY ERROR', ['error' => $e->getMessage(), 'application_id' => $application->id, 'user_id' => Auth::id()]);
@@ -169,7 +359,8 @@ class QuickActionsController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $application = PreEmploymentApplication::findOrFail($application);
+        $application = PreEmploymentApplication::with('position')->findOrFail($application);
+        $this->authorizeDonApplicationScope($facility, $application);
         $status = $validated['status'];
         $formType = $validated['form_type'] ?? null;
         $notes = $validated['notes'] ?? null;
@@ -219,6 +410,7 @@ class QuickActionsController extends Controller
         $this->authorizeFacilityAccess($facility);
 
         $application = PreEmploymentApplication::with(['user', 'position'])->findOrFail($application);
+        $this->authorizeDonApplicationScope($facility, $application);
         $applicantId = $application->user_id;
 
         $namePart = Str::slug(trim(($application->last_name ?? 'applicant') . '-' . ($application->first_name ?? '')));
