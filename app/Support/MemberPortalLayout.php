@@ -61,7 +61,7 @@ class MemberPortalLayout
 
         $routes = array_values(array_unique(array_merge(
             self::facilityManagerRoutePatterns(),
-            ['dashboard.index', 'user.dashboard', 'member.*', 'settings.*', 'admin.positions.*']
+            ['dashboard.index', 'user.dashboard', 'member.*', 'settings.*', 'admin.positions.*', 'admin.training-management.*']
         )));
 
         if (self::userIsCorporateManager($user) && self::requestMatchesAnyRoutePattern($request, $routes)) {
@@ -108,7 +108,7 @@ class MemberPortalLayout
 
     public static function variablesForView(): array
     {
-        $user = auth()->user();
+        $user = auth()->user()?->fresh();
         if (!$user) {
             return [];
         }
@@ -121,6 +121,23 @@ class MemberPortalLayout
     public static function pageMeta(): array
     {
         $routeName = request()->route()?->getName() ?? '';
+
+        if (self::isPersonalPortalRoute()) {
+            $pageTitle = self::personalPortalPageTitle() ?? 'Personal';
+
+            return [
+                'portalNav' => self::navModeForCurrentRequest(),
+                'portalActive' => self::activeIdForRoute($routeName),
+                'portalTitle' => $pageTitle . ' | Bio Pacific',
+                'portalEyebrow' => 'Personal Portal',
+                'portalPageTitle' => $pageTitle,
+                'portalSubtitle' => 'Personal Portal',
+                'showPortalSearch' => false,
+                'showPortalNotifications' => true,
+                'showPortalFooter' => false,
+            ];
+        }
+
         $title = self::titleForRoute($routeName);
 
         if ($routeName === 'admin.facility.dashboard') {
@@ -165,9 +182,9 @@ class MemberPortalLayout
                 'portalNav' => 'facility',
                 'portalActive' => self::activeIdForRoute($routeName),
                 'portalTitle' => $title . ' | Bio Pacific',
-                'portalEyebrow' => 'Facility Management',
+                'portalEyebrow' => 'Facility Portal',
                 'portalPageTitle' => $title,
-                'portalSubtitle' => 'Facility Management',
+                'portalSubtitle' => 'Facility Portal',
                 'showPortalSearch' => false,
                 'showPortalNotifications' => true,
                 'showPortalFooter' => false,
@@ -221,6 +238,62 @@ class MemberPortalLayout
         return 'admin-dashboard';
     }
 
+    public static function isPersonalPortalRoute(?Request $request = null): bool
+    {
+        $request = $request ?? request();
+
+        foreach (config('member-portal.personal_portal_route_patterns', []) as $pattern) {
+            if ($request->routeIs($pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function personalPortalPageTitle(?Request $request = null): ?string
+    {
+        $request = $request ?? request();
+
+        foreach (config('member-portal.personal_portal_nav', []) as $item) {
+            $title = self::personalPortalNavItemTitle($item, $request);
+
+            if ($title !== null) {
+                return $title;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    protected static function personalPortalNavItemTitle(array $item, Request $request): ?string
+    {
+        $patterns = $item['route_is'] ?? $item['route'] ?? null;
+
+        if ($patterns === null) {
+            return null;
+        }
+
+        foreach ((array) $patterns as $pattern) {
+            if ($request->routeIs($pattern)) {
+                return $item['label'] ?? null;
+            }
+        }
+
+        foreach ($item['children'] ?? [] as $child) {
+            $title = self::personalPortalNavItemTitle($child, $request);
+
+            if ($title !== null) {
+                return $title;
+            }
+        }
+
+        return null;
+    }
+
     protected static function titleForRoute(string $routeName): string
     {
         if (request()->routeIs('admin.positions.*')) {
@@ -239,7 +312,7 @@ class MemberPortalLayout
             return 'Positions Management';
         }
 
-        return 'Facility Management';
+        return 'Facility Portal';
     }
 
     protected static function activeIdForRoute(string $routeName): string
@@ -248,8 +321,15 @@ class MemberPortalLayout
 
         $map = match ($sidebarMode) {
             'admin' => config('member-portal.admin_active_map', []),
-            'corporate' => config('member-portal.corporate_active_map', []),
-            'facility' => config('member-portal.facility_active_map', []),
+            'corporate' => array_merge(
+                config('member-portal.corporate_active_map', []),
+                config('member-portal.facility_management_active_map', []),
+            ),
+            'facility' => array_merge(
+                config('member-portal.facility_active_map', []),
+                config('member-portal.facility_management_active_map', []),
+            ),
+            'employee' => config('member-portal.employee_active_map', []),
             default => [],
         };
 
@@ -262,10 +342,6 @@ class MemberPortalLayout
         if ($sidebarMode === 'employee') {
             if (request()->routeIs('dashboard.index')) {
                 return 'dashboard';
-            }
-
-            if (request()->routeIs('member.schedule')) {
-                return 'schedule';
             }
 
             if (request()->routeIs('settings.profile')) {

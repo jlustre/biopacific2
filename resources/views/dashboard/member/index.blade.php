@@ -47,7 +47,12 @@
 
         <section id="profile" class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card xl:col-span-4">
             <div class="flex items-center gap-4">
-                <div class="flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-100 text-2xl font-black text-brand-800">{{ $initials }}</div>
+                @include('dashboard.member.partials.user-avatar', [
+                    'avatarUrl' => $avatarUrl ?? null,
+                    'initials' => $initials,
+                    'size' => 'lg',
+                    'shape' => 'rounded-3xl',
+                ])
                 <div>
                     <h2 class="text-xl font-black text-slate-950">{{ $displayName }}</h2>
                     <p class="text-sm text-slate-500">{{ $positionTitle }}</p>

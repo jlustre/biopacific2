@@ -39,7 +39,7 @@
             @if(auth()->user() && auth()->user()->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL) && !auth()->user()->hasRole(['facility-admin','facility-dsd']))
             <a href="{{ route('user.hr-portal') }}"
                 class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
-                <i class="fas fa-users-cog mr-2"></i> HR Portal
+                <i class="fas fa-users-cog mr-2"></i> HR Management
             </a>
             @endif
 
@@ -53,7 +53,7 @@
             @if(auth()->user() && auth()->user()->hasRole(['facility-admin','facility-dsd']))
             <a href="{{ route('user.hr-portal') }}"
                 class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">
-                <i class="fas fa-users-cog mr-2"></i> HR Portal
+                <i class="fas fa-users-cog mr-2"></i> HR Management
             </a>
 
             <!-- Web Contents Menu -->

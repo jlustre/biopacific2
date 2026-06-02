@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto py-10">
-    <h1 class="text-3xl font-bold mb-6 text-indigo-800">HR Portal Dashboard</h1>
+    <h1 class="text-3xl font-bold mb-6 text-indigo-800">HR Management Dashboard</h1>
 
     {{-- Facility Filter Dropdown for permitted roles --}}
     @php
@@ -32,10 +32,10 @@
     @endif
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- HR Portal -->
+        <!-- HR Management -->
         <a href="{{ route('user.hr-portal') }}" class="block bg-indigo-100 hover:bg-indigo-200 rounded-xl shadow p-6 text-center transition">
             <i class="fas fa-users-cog text-3xl text-indigo-600 mb-2"></i>
-            <div class="font-semibold text-lg mt-2">HR Portal</div>
+            <div class="font-semibold text-lg mt-2">HR Management</div>
             <div class="text-gray-600 text-sm">Access HR reports and tools</div>
         </a>
         <!-- Web Contents -->

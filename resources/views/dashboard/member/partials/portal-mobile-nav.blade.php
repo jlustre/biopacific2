@@ -18,10 +18,9 @@
       ],
       'facility' => [
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
-        ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
         ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Docs'],
-        ['id' => 'hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
-        ['id' => 'positions', 'route' => 'admin.positions.index', 'icon' => '💼', 'label' => 'Positions'],
+        ['id' => 'facility-hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
+        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
       ],
         default => config('member-portal.mobile_nav', []),
     };

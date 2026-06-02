@@ -2,16 +2,21 @@
     $active = $active ?? 'dashboard';
     $profileComplete = $profileComplete ?? 88;
     $portalNav = $portalNav ?? 'employee';
+    $usesStructuredNav = in_array($portalNav, ['employee', 'facility', 'corporate'], true);
     $navItems = match ($portalNav) {
         'admin' => config('member-portal.admin_sidebar_nav', []),
-    'corporate' => config('member-portal.corporate_sidebar_nav', []),
-    'facility' => config('member-portal.facility_sidebar_nav', []),
-        default => config('member-portal.sidebar_nav', []),
+        default => [],
+    };
+    $dashboardNav = match ($portalNav) {
+        'facility' => config('member-portal.facility_dashboard_nav', []),
+        'corporate' => config('member-portal.corporate_dashboard_nav', []),
+        'employee' => config('member-portal.employee_dashboard_nav', []),
+        default => [],
     };
     $portalSubtitle = $portalSubtitle ?? match ($portalNav) {
         'admin' => 'Admin Portal',
     'corporate' => 'Corporate Management',
-    'facility' => 'Facility Management',
+    'facility' => 'Facility Portal',
         default => 'HR Employee Portal',
     };
 @endphp
@@ -34,44 +39,54 @@
     </div>
 
     <nav class="flex-1 space-y-1 overflow-y-auto px-4 pt-4 pb-6 text-sm">
-      @foreach($navItems as $item)
-        @php
-            $href = isset($item['route']) ? route($item['route']) : ($item['href'] ?? '#');
-            if (!empty($item['fragment'])) {
-                $href .= '#' . ltrim($item['fragment'], '#');
-            }
-            $routePatterns = $item['route_is'] ?? null;
-            $isActive = $active === $item['id']
-                || ($routePatterns && request()->routeIs($routePatterns));
-            $linkClass = $isActive
-                ? 'member-portal-nav-active bg-brand-600 font-semibold shadow-lg shadow-brand-900/20 text-white'
-                : 'text-teal-100';
-        @endphp
-        <a href="{{ $href }}"
-           class="member-portal-nav-link flex items-center {{ !empty($item['badge']) ? 'justify-between' : 'gap-3' }} rounded-xl px-4 py-3 {{ $linkClass }}">
-          <span class="flex items-center gap-3">
-            <span>{{ $item['icon'] }}</span>
-            <span>{{ $item['label'] }}</span>
-          </span>
-          @if(!empty($item['badge']))
-          <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $item['badge_class'] ?? 'bg-amber-400 text-slate-900' }}">{{ $item['badge'] }}</span>
-          @endif
-        </a>
-      @endforeach
-
-      @if(($portalNav ?? '') === 'admin' && auth()->user() && \App\Support\MemberPortalLayout::userIsSystemAdmin(auth()->user()))
-        @include('dashboard.member.partials.portal-sidebar-admin-management-groups', ['active' => $active])
-      @endif
-
-      @if(in_array(($portalNav ?? ''), ['corporate', 'facility'], true))
-        @include('dashboard.member.partials.portal-sidebar-management-groups', [
+      @if($usesStructuredNav)
+        <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Dashboard</p>
+        @include('dashboard.member.partials.portal-sidebar-dashboard-nav', [
             'active' => $active,
-        'sectionLabel' => ($portalNav ?? '') === 'corporate' ? 'Corporate management' : 'Facility management',
+            'items' => $dashboardNav,
         ])
-      @endif
 
-      @if(($portalNav ?? '') === 'employee')
-        @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active, 'portalNav' => $portalNav])
+        @include('dashboard.member.partials.portal-sidebar-personal-portal', ['active' => $active])
+
+        @if(in_array($portalNav, ['corporate', 'facility'], true))
+          @include('dashboard.member.partials.portal-sidebar-management-groups', [
+              'active' => $active,
+              'portalNav' => $portalNav,
+          ])
+        @endif
+
+        @if($portalNav === 'employee')
+          @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active, 'portalNav' => $portalNav])
+        @endif
+      @else
+        @foreach($navItems as $item)
+          @php
+              $href = isset($item['route']) ? route($item['route']) : ($item['href'] ?? '#');
+              if (!empty($item['fragment'])) {
+                  $href .= '#' . ltrim($item['fragment'], '#');
+              }
+              $routePatterns = $item['route_is'] ?? null;
+              $isActive = $active === $item['id']
+                  || ($routePatterns && request()->routeIs($routePatterns));
+              $linkClass = $isActive
+                  ? 'member-portal-nav-active bg-brand-600 font-semibold shadow-lg shadow-brand-900/20 text-white'
+                  : 'text-teal-100';
+          @endphp
+          <a href="{{ $href }}"
+             class="member-portal-nav-link flex items-center {{ !empty($item['badge']) ? 'justify-between' : 'gap-3' }} rounded-xl px-4 py-3 {{ $linkClass }}">
+            <span class="flex items-center gap-3">
+              <span>{{ $item['icon'] }}</span>
+              <span>{{ $item['label'] }}</span>
+            </span>
+            @if(!empty($item['badge']))
+            <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $item['badge_class'] ?? 'bg-amber-400 text-slate-900' }}">{{ $item['badge'] }}</span>
+            @endif
+          </a>
+        @endforeach
+
+        @if(($portalNav ?? '') === 'admin' && auth()->user() && \App\Support\MemberPortalLayout::userIsSystemAdmin(auth()->user()))
+          @include('dashboard.member.partials.portal-sidebar-admin-management-groups', ['active' => $active])
+        @endif
       @endif
     </nav>
 

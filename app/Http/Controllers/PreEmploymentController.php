@@ -203,7 +203,7 @@ class PreEmploymentController extends Controller
 
         return view('pre-employment.portal', array_merge($this->memberPortalContext($user), [
             'portalActive' => 'pre-employment',
-            'portalTitle' => 'Pre-Employment Portal | Bio Pacific HR Portal',
+            'portalTitle' => 'Pre-Employment Portal | Bio Pacific HR Management',
             'portalEyebrow' => 'Onboarding',
             'portalPageTitle' => 'Pre-Employment Portal',
             'showPortalSearch' => false,

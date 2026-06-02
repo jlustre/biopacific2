@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ProvidesMemberPortalContext;
 use App\Services\MemberDashboardService;
+use App\Services\PersonalProfilePanelsService;
 use Illuminate\Http\Request;
 use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
@@ -82,25 +83,10 @@ class DashboardController extends Controller
             'newsEventsCount' => $newsEventsCount,
             'todayLabel' => now()->format('l, F j, Y'),
             'portalActive' => 'dashboard',
-            'portalTitle' => 'Bio Pacific HR Portal | Employee Dashboard',
+            'portalTitle' => 'Bio Pacific HR Management | Employee Dashboard',
             'portalEyebrow' => 'Employee Dashboard',
             'portalPageTitle' => 'Welcome back, ' . ($context['firstNameOnly'] ?? 'there'),
             'showPortalSearch' => true,
-            'showPortalNotifications' => true,
-        ]));
-    }
-
-    public function memberSchedule()
-    {
-        $user = Auth::user();
-        $scheduleData = app(MemberDashboardService::class)->buildSchedulePage($user);
-
-        return view('dashboard.member.schedule', array_merge($this->memberPortalContext($user), $scheduleData, [
-            'portalActive' => 'schedule',
-            'portalTitle' => 'Schedule | Bio Pacific HR Portal',
-            'portalEyebrow' => 'Work Schedule',
-            'portalPageTitle' => 'My Schedule',
-            'showPortalSearch' => false,
             'showPortalNotifications' => true,
         ]));
     }
@@ -114,7 +100,7 @@ class DashboardController extends Controller
 
         return view('dashboard.member.documents', array_merge($this->memberPortalContext($user), $documentsData, [
             'portalActive' => 'documents',
-            'portalTitle' => 'Documents | Bio Pacific HR Portal',
+            'portalTitle' => 'Documents | Bio Pacific HR Management',
             'portalEyebrow' => 'Document Center',
             'portalPageTitle' => 'Documents',
             'showPortalSearch' => false,
@@ -132,7 +118,7 @@ class DashboardController extends Controller
 
         return view('dashboard.member.certifications', array_merge($this->memberPortalContext($user), $certificationsData, [
             'portalActive' => 'certifications',
-            'portalTitle' => 'Certifications | Bio Pacific HR Portal',
+            'portalTitle' => 'Certifications | Bio Pacific HR Management',
             'portalEyebrow' => 'Licenses & Certifications',
             'portalPageTitle' => 'Certifications',
             'showPortalSearch' => false,
@@ -150,7 +136,7 @@ class DashboardController extends Controller
 
         return view('dashboard.member.trainings', array_merge($this->memberPortalContext($user), $trainingsData, [
             'portalActive' => 'trainings',
-            'portalTitle' => 'Trainings | Bio Pacific HR Portal',
+            'portalTitle' => 'Trainings | Bio Pacific HR Management',
             'portalEyebrow' => 'Learning & Compliance',
             'portalPageTitle' => 'Trainings',
             'showPortalSearch' => false,
@@ -173,7 +159,7 @@ class DashboardController extends Controller
         return view('dashboard.member.news-events', array_merge($this->memberPortalContext($user), [
             'newsItems' => $newsItems,
             'portalActive' => 'news',
-            'portalTitle' => 'News & Events | Bio Pacific HR Portal',
+            'portalTitle' => 'News & Events | Bio Pacific HR Management',
             'portalEyebrow' => 'News & Events',
             'portalPageTitle' => $facility?->name ?? 'Company updates',
             'showPortalSearch' => false,
@@ -183,16 +169,82 @@ class DashboardController extends Controller
 
     public function memberProfile(Request $request)
     {
-        $context = $this->memberPortalContext($request->user());
+        $user = $request->user()->fresh();
+        $context = $this->memberPortalContext($user);
+        $employee = $context['employee'] ?? null;
+
+        if ($employee) {
+            $employee->loadMissing(['phone', 'address']);
+        }
+
+        $panels = app(PersonalProfilePanelsService::class);
 
         return view('dashboard.member.profile', array_merge($context, [
             'portalActive' => 'profile',
-            'portalTitle' => 'Bio Pacific HR Portal | Employee Profile',
-            'portalEyebrow' => 'Employee Record',
-            'portalPageTitle' => 'Personal Profile',
+            'portalTitle' => 'Bio Pacific HR Management | My Profile',
+            'portalEyebrow' => 'Personal Portal',
+            'portalPageTitle' => 'My Profile',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
+            'profileComplete' => $this->calculatePersonalProfileComplete($user, $employee),
+            'personalPhone' => $employee?->phone?->phone_number,
+            'personalAddress' => $this->formatPersonalAddress($employee?->address),
+            'dateOfBirth' => $employee?->dob?->format('M j, Y'),
+            'legalName' => $employee
+                ? trim(implode(' ', array_filter([$employee->first_name, $employee->middle_name, $employee->last_name])))
+                : null,
+            'emailVerified' => $user->hasVerifiedEmail(),
+            'memberSince' => $user->created_at?->timezone(config('app.timezone'))->format('M j, Y'),
+            'lastUpdated' => $user->updated_at?->timezone(config('app.timezone'))->diffForHumans(),
+            'upcomingExpirations' => $panels->upcomingExpirations($user, $employee),
+            'profileRecognitions' => $panels->recognitions($user, $employee),
+            'emergencyContacts' => $user->emergencyContacts()->get(),
         ]));
+    }
+
+    protected function calculatePersonalProfileComplete($user, $employee): int
+    {
+        $score = 0;
+
+        if (filled($user->name)) {
+            $score += 20;
+        }
+        if (filled($user->email)) {
+            $score += 20;
+        }
+        if ($user->hasVerifiedEmail()) {
+            $score += 20;
+        }
+        if ($employee?->phone?->phone_number) {
+            $score += 20;
+        }
+        if ($this->formatPersonalAddress($employee?->address)) {
+            $score += 20;
+        }
+
+        return min(100, $score);
+    }
+
+    protected function formatPersonalAddress($address): ?string
+    {
+        if (!$address) {
+            return null;
+        }
+
+        $line1 = trim((string) ($address->address1 ?? ''));
+        $line2 = trim((string) ($address->address2 ?? ''));
+        $city = trim((string) ($address->city ?? ''));
+        $state = trim((string) ($address->state ?? ''));
+        $zip = trim((string) ($address->zip ?? ''));
+
+        $cityLine = trim(implode(', ', array_filter([
+            $city,
+            trim($state . ($zip !== '' ? ' ' . $zip : '')),
+        ])));
+
+        $parts = array_filter([$line1, $line2, $cityLine]);
+
+        return $parts === [] ? null : implode(' · ', $parts);
     }
 
     public function memberPassword(Request $request)
@@ -201,7 +253,7 @@ class DashboardController extends Controller
 
         return view('dashboard.member.password', array_merge($context, [
             'portalActive' => 'profile',
-            'portalTitle' => 'Bio Pacific HR Portal | Change Password',
+            'portalTitle' => 'Bio Pacific HR Management | Change Password',
             'portalEyebrow' => 'Account Security',
             'portalPageTitle' => 'Change Password',
             'showPortalSearch' => false,

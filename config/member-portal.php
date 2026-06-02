@@ -68,23 +68,73 @@ return [
         ['id' => 'employee-portal', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Employee Portal'],
     ],
 
-    'corporate_sidebar_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
-        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'My Profile'],
-        ['id' => 'positions', 'route' => 'admin.positions.index', 'route_is' => 'admin.positions.*', 'icon' => '💼', 'label' => 'Positions'],
-        ['id' => 'reports', 'route' => 'admin.reports.index', 'route_is' => ['admin.reports.*', 'admin.scheduled-reports.*'], 'icon' => '📊', 'label' => 'Reports'],
-        ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Documents'],
+    'personal_portal_route_patterns' => [
+        'settings.profile',
+        'member.trainings',
+        'member.trainings.*',
+        'member.documents',
+        'member.documents.*',
+        'member.certifications',
+        'member.certifications.*',
     ],
 
-    'facility_sidebar_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
-        ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
-        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'My Profile'],
-        ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Documents'],
-        ['id' => 'positions', 'route' => 'admin.positions.index', 'route_is' => 'admin.positions.*', 'icon' => '💼', 'label' => 'Positions'],
-        ['id' => 'trainings', 'route' => 'member.trainings', 'icon' => '🎓', 'label' => 'Trainings'],
-            ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🏅', 'label' => 'Licenses & Certifications'],
+    'personal_portal_documents_route_patterns' => [
+        'member.documents',
+        'member.documents.*',
     ],
+
+    'personal_portal_nav' => [
+        [
+            'id' => 'profile',
+            'route' => 'settings.profile',
+            'route_is' => 'settings.profile',
+            'label' => 'My Profile',
+        ],
+        [
+            'id' => 'trainings',
+            'route' => 'member.trainings',
+            'route_is' => ['member.trainings', 'member.trainings.*'],
+            'label' => 'My Trainings',
+        ],
+        [
+            'id' => 'documents',
+            'route' => 'member.documents',
+            'route_is' => ['member.documents', 'member.documents.*'],
+            'label' => 'My Documents',
+            'badge' => 3,
+            'badge_class' => 'bg-amber-400 text-slate-900',
+            'children' => [
+                [
+                    'id' => 'certifications',
+                    'route' => 'member.certifications',
+                    'route_is' => ['member.certifications', 'member.certifications.*'],
+                    'label' => 'Licenses and Certifications',
+                ],
+            ],
+        ],
+    ],
+
+    'corporate_dashboard_nav' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+    ],
+
+    'facility_dashboard_nav' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+    ],
+
+    'employee_dashboard_nav' => [
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+        ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News & Events'],
+        ['id' => 'pre-employment', 'route' => 'pre-employment.portal', 'route_is' => 'pre-employment.*', 'icon' => '📋', 'label' => 'Pre-Employment'],
+        ['id' => 'employment', 'route' => 'employment.portal', 'route_is' => 'employment.*', 'icon' => '💼', 'label' => 'Employment'],
+        ['id' => 'messages', 'route' => 'dashboard.index', 'fragment' => 'messages', 'icon' => '💬', 'label' => 'Messages'],
+    ],
+
+    /** @deprecated Use corporate_dashboard_nav + personal_portal_nav + management groups */
+    'corporate_sidebar_nav' => [],
+
+    /** @deprecated Use facility_dashboard_nav + personal_portal_nav + management groups */
+    'facility_sidebar_nav' => [],
 
     'admin_titles' => [
         'admin.dashboard.*' => 'Admin Dashboard',
@@ -110,8 +160,8 @@ return [
         'admin.positions.*' => 'Positions',
         'admin.reports.*' => 'Reports',
         'admin.scheduled-reports.*' => 'Reports',
-        'user.hr-portal' => 'HR Portal',
-        'hr-portal.*' => 'HR Portal',
+        'user.hr-portal' => 'HR Management',
+        'hr-portal.*' => 'HR Management',
     ],
 
     'admin_active_map' => [
@@ -143,59 +193,49 @@ return [
     'corporate_active_map' => [
         'dashboard.index' => 'dashboard',
         'settings.profile' => 'profile',
-        'user.hr-portal' => 'hr-portal',
-        'hr-portal.*' => 'hr-portal',
-        'admin.positions.*' => 'positions',
+        'member.trainings' => 'trainings',
+        'member.trainings.*' => 'trainings',
+        'member.documents' => 'documents',
+        'member.documents.*' => 'documents',
+        'member.certifications' => 'certifications',
+        'member.certifications.*' => 'certifications',
+        'admin.positions.*' => 'facility-positions-management',
         'admin.reports.*' => 'reports',
         'admin.scheduled-reports.*' => 'reports',
+        'user.hr-portal' => 'facility-hr-portal',
+        'hr-portal.*' => 'facility-hr-portal',
+    ],
+
+    'employee_active_map' => [
+        'dashboard.index' => 'dashboard',
+        'member.news-events.index' => 'news',
+        'member.news-events.*' => 'news',
+        'pre-employment.*' => 'pre-employment',
+        'employment.*' => 'employment',
+        'settings.profile' => 'profile',
+        'member.trainings' => 'trainings',
+        'member.trainings.*' => 'trainings',
         'member.documents' => 'documents',
+        'member.documents.*' => 'documents',
+        'member.certifications' => 'certifications',
+        'member.certifications.*' => 'certifications',
     ],
 
     'facility_active_map' => [
         'dashboard.index' => 'dashboard',
-        'member.schedule' => 'schedule',
         'settings.profile' => 'profile',
         'member.documents' => 'documents',
         'user.hr-portal' => 'hr-portal',
         'hr-portal.*' => 'hr-portal',
-        'admin.positions.*' => 'positions',
         'member.trainings' => 'trainings',
         'member.certifications' => 'certifications',
     ],
 
-    'sidebar_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
-        ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
-        ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'My Profile'],
-        ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News & Events'],
-        ['id' => 'pre-employment', 'route' => 'pre-employment.portal', 'route_is' => 'pre-employment.*', 'icon' => '📋', 'label' => 'Pre-Employment'],
-        ['id' => 'employment', 'route' => 'employment.portal', 'route_is' => 'employment.*', 'icon' => '💼', 'label' => 'Employment'],
-        [
-            'id' => 'documents',
-            'route' => 'member.documents',
-            'icon' => '📄',
-            'label' => 'Documents',
-            'badge' => 3,
-            'badge_class' => 'bg-amber-400 text-slate-900',
-        ],
-        [
-            'id' => 'certifications',
-            'route' => 'member.certifications',
-            'icon' => '🏅',
-            'label' => 'Licenses & Certifications',
-        ],
-        [
-            'id' => 'trainings',
-            'route' => 'member.trainings',
-            'icon' => '🎓',
-            'label' => 'Trainings',
-        ],
-        ['id' => 'messages', 'route' => 'dashboard.index', 'fragment' => 'messages', 'icon' => '💬', 'label' => 'Messages'],
-    ],
+    /** @deprecated Use employee_dashboard_nav + personal_portal_nav */
+    'sidebar_nav' => [],
 
     'mobile_nav' => [
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
-        ['id' => 'schedule', 'route' => 'member.schedule', 'icon' => '📅', 'label' => 'Schedule'],
         ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News'],
         ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Docs'],
             ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🏅', 'label' => 'Licenses'],
@@ -233,6 +273,8 @@ return [
         'admin.email-templates.*',
         'admin.communications.employee-email-mappings',
         'admin.upload-types.*',
+        'admin.positions.*',
+        'admin.training-management.*',
     ],
 
     'facility_management_web_route_patterns' => [
@@ -261,9 +303,9 @@ return [
     ],
 
     'facility_management_titles' => [
-        'admin.dashboard.index' => 'HR Portal',
-        'hr-portal.*' => 'HR Portal',
-        'user.hr-portal' => 'HR Portal',
+        'admin.dashboard.index' => 'HR Management',
+        'hr-portal.*' => 'HR Management',
+        'user.hr-portal' => 'HR Management',
         'admin.facility.dashboard' => 'Facility Dashboard',
         'admin.facility.job_openings*' => 'Job Listings',
         'admin.facility.hiring' => 'Hiring',
@@ -289,6 +331,8 @@ return [
         'admin.email-templates.*' => 'Email Templates',
         'admin.communications.employee-email-mappings' => 'Employee Email Mappings',
         'admin.upload-types.*' => 'Documents Management',
+        'admin.positions.*' => 'Positions Management',
+        'admin.training-management.*' => 'Training Management',
     ],
 
     'facility_management_active_map' => [
@@ -317,5 +361,7 @@ return [
         'admin.email-templates.*' => 'facility-email-templates',
         'admin.communications.employee-email-mappings' => 'facility-email-mappings',
         'admin.upload-types.*' => 'facility-documents-management',
+        'admin.positions.*' => 'facility-positions-management',
+        'admin.training-management.*' => 'facility-training-management',
     ],
 ];

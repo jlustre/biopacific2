@@ -37,6 +37,7 @@ trait ProvidesMemberPortalContext
                 ? \Carbon\Carbon::parse($employee->original_hire_dt)->format('M j, Y')
                 : '—',
             'initials' => $user->initials ?? strtoupper(substr($firstNameOnly, 0, 1)),
+            'avatarUrl' => $user->profileAvatarUrl(),
             'profileComplete' => 88,
             'newsEventsCount' => $this->countMemberNewsEvents($facility),
             'userRoles' => $user->rolesForDisplay(),

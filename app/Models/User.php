@@ -5,8 +5,10 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -21,6 +23,14 @@ class User extends Authenticatable
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $user) {
+            $user->purgeProfileAvatarFromStorage();
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -31,6 +41,7 @@ class User extends Authenticatable
         'email',
         'password',
         'facility_id',
+        'avatar_path',
     ];
 
     /**
@@ -66,6 +77,134 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    public function hasAvatar(): bool
+    {
+        if (! filled($this->avatar_path)) {
+            return false;
+        }
+
+        return Storage::disk('public')->exists(str_replace('\\', '/', $this->avatar_path));
+    }
+
+    /**
+     * Public URL for the profile photo (uses the current request host).
+     */
+    public function profileAvatarUrl(): ?string
+    {
+        if (! filled($this->avatar_path)) {
+            return null;
+        }
+
+        $path = str_replace('\\', '/', ltrim($this->avatar_path, '/'));
+        $version = $this->updated_at?->timestamp ?? time();
+
+        return asset('storage/' . $path) . '?v=' . $version;
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->profileAvatarUrl();
+    }
+
+    public function storeAvatar(UploadedFile $file): void
+    {
+        $this->deleteStoredAvatar();
+
+        $path = str_replace('\\', '/', $file->store($this->profileAvatarDirectory(), 'public'));
+
+        $this->forceFill(['avatar_path' => $path])->save();
+
+        $this->pruneStaleProfileAvatars($path);
+    }
+
+    public function removeProfileAvatar(): void
+    {
+        $this->purgeProfileAvatarFromStorage();
+        $this->forceFill(['avatar_path' => null])->save();
+    }
+
+    /**
+     * Delete the current avatar file from disk (does not clear avatar_path).
+     */
+    public function deleteStoredAvatar(): void
+    {
+        $path = $this->normalizedAvatarPath();
+
+        if ($path === null) {
+            return;
+        }
+
+        $disk = Storage::disk('public');
+
+        if ($disk->exists($path)) {
+            $disk->delete($path);
+        }
+    }
+
+    /**
+     * Remove avatar files and the user's profile-avatars directory.
+     */
+    public function purgeProfileAvatarFromStorage(): void
+    {
+        $this->deleteStoredAvatar();
+        $this->deleteProfileAvatarDirectory();
+    }
+
+    protected function profileAvatarDirectory(): string
+    {
+        return 'profile-avatars/' . $this->id;
+    }
+
+    protected function normalizedAvatarPath(): ?string
+    {
+        if (! filled($this->avatar_path)) {
+            return null;
+        }
+
+        return str_replace('\\', '/', ltrim($this->avatar_path, '/'));
+    }
+
+    protected function deleteProfileAvatarDirectory(): void
+    {
+        $directory = $this->profileAvatarDirectory();
+        $disk = Storage::disk('public');
+
+        if ($disk->exists($directory)) {
+            $disk->deleteDirectory($directory);
+        }
+    }
+
+    /**
+     * Delete any files in the user's avatar folder except the kept path.
+     */
+    protected function pruneStaleProfileAvatars(?string $keepPath = null): void
+    {
+        $directory = $this->profileAvatarDirectory();
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($directory)) {
+            return;
+        }
+
+        $keep = $keepPath !== null
+            ? str_replace('\\', '/', ltrim($keepPath, '/'))
+            : $this->normalizedAvatarPath();
+
+        foreach ($disk->files($directory) as $file) {
+            $normalized = str_replace('\\', '/', $file);
+
+            if ($keep === null || $normalized !== $keep) {
+                if ($disk->exists($normalized)) {
+                    $disk->delete($normalized);
+                }
+            }
+        }
+
+        if ($disk->exists($directory) && $disk->allFiles($directory) === []) {
+            $disk->deleteDirectory($directory);
+        }
     }
 
     /**
@@ -134,6 +273,21 @@ class User extends Authenticatable
     public function employeeChecklists()
     {
         return $this->hasMany(EmployeeChecklist::class);
+    }
+
+    public function profileExpiringItems()
+    {
+        return $this->hasMany(MemberProfileExpiringItem::class);
+    }
+
+    public function profileRecognitions()
+    {
+        return $this->hasMany(MemberProfileRecognition::class);
+    }
+
+    public function emergencyContacts()
+    {
+        return $this->hasMany(MemberEmergencyContact::class)->orderByDesc('is_primary')->orderBy('sort_order');
     }
 
     /**

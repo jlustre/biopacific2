@@ -122,7 +122,9 @@ class MemberDashboardService
                         'label' => 'Trainings needing action',
                         'value' => $trainingCount,
                         'hint' => 'Review overdue and pending signatures',
-                        'route' => route('member.trainings'),
+                        'route' => \Illuminate\Support\Facades\Route::has('admin.training-management.index')
+                            ? route('admin.training-management.index')
+                            : route('member.trainings'),
                         'tone' => 'amber',
                         'icon' => 'fa-graduation-cap',
                     ],
@@ -188,7 +190,7 @@ class MemberDashboardService
             if ($persona === 'facility-admin') {
                 return [
                     [
-                        'title' => 'Facility HR Portal',
+                        'title' => 'Facility HR Management',
                         'subtitle' => 'Manage staffing, onboarding, and facility tasks',
                         'route' => route('user.hr-portal'),
                         'icon' => 'fa-building-user',
@@ -395,7 +397,7 @@ class MemberDashboardService
 
             return [
                 [
-                    'title' => 'Facility HR Portal',
+                    'title' => 'Facility HR Management',
                     'subtitle' => 'Oversee employee workflows in your site',
                     'route' => route('user.hr-portal'),
                     'icon' => 'fa-building-user',
@@ -426,7 +428,7 @@ class MemberDashboardService
             if (in_array($persona, ['facility-admin', 'facility-dsd', 'don'], true)) {
                 return [
                     [
-                        'label' => 'Open Facility HR Portal',
+                        'label' => 'Open Facility HR Management',
                         'route' => route('user.hr-portal'),
                     ],
                     [
@@ -565,78 +567,6 @@ class MemberDashboardService
      *
      * @return array{documentsCenter: array, facilityComplianceReport: array|null, stats: array<string, mixed>}
      */
-    /**
-     * Schedule page payload (HR calendar events; work shifts not yet integrated).
-     *
-     * @return array{
-     *     calendarEvents: list<array<string, mixed>>,
-     *     weekDays: list<array<string, mixed>>,
-     *     upcomingEvents: list<array<string, mixed>>,
-     *     todayLabel: string,
-     *     weekRangeLabel: string,
-     *     hasShiftData: bool,
-     *     positionTitle: string,
-     *     facilityName: string|null
-     * }
-     */
-    public function buildSchedulePage(User $user): array
-    {
-        $bpEmployee = $user->resolvedBpEmployee([
-            'currentAssignment.position',
-            'currentAssignment.facility',
-        ]);
-
-        $jobApplication = $user->jobApplications()->latest()->first();
-        $hasPreEmployment = $this->hasActivePreEmployment($jobApplication);
-        $preEmploymentChecklists = $hasPreEmployment
-            ? $user->employeeChecklists()->orderBy('item_label')->get()
-            : collect();
-
-        $empChecklistItems = $bpEmployee
-            ? (optional(BPEmpChecklist::query()->where('employee_num', $bpEmployee->employee_num)->first())->items ?? [])
-            : [];
-
-        $documentsNeeded = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems)['missing'];
-        $reminders = $this->buildReminders($bpEmployee, $empChecklistItems, $preEmploymentChecklists, $documentsNeeded);
-        $calendarEvents = $this->buildCalendarEvents($bpEmployee, $reminders, $preEmploymentChecklists);
-
-        $today = Carbon::today();
-        $weekStart = $today->copy()->startOfWeek(Carbon::SUNDAY);
-        $weekDays = [];
-
-        for ($i = 0; $i < 7; $i++) {
-            $day = $weekStart->copy()->addDays($i);
-            $dateStr = $day->toDateString();
-            $weekDays[] = [
-                'date' => $dateStr,
-                'label' => $day->format('D'),
-                'day_num' => $day->format('j'),
-                'is_today' => $day->isSameDay($today),
-                'events' => collect($calendarEvents)
-                    ->filter(fn ($event) => ($event['date'] ?? '') === $dateStr)
-                    ->values()
-                    ->all(),
-            ];
-        }
-
-        $upcomingEvents = collect($calendarEvents)
-            ->filter(fn ($event) => !empty($event['date']) && $event['date'] >= $today->toDateString())
-            ->sortBy('date')
-            ->values()
-            ->all();
-
-        return [
-            'calendarEvents' => $calendarEvents,
-            'weekDays' => $weekDays,
-            'upcomingEvents' => $upcomingEvents,
-            'todayLabel' => $today->format('l, F j, Y'),
-            'weekRangeLabel' => $weekStart->format('M j') . ' – ' . $weekStart->copy()->endOfWeek()->format('M j, Y'),
-            'hasShiftData' => false,
-            'positionTitle' => $bpEmployee?->currentAssignment?->position?->title ?? '—',
-            'facilityName' => $bpEmployee?->currentAssignment?->facility?->name ?? $user->facility?->name,
-        ];
-    }
-
     public function buildDocumentsPage(User $user): array
     {
         $bpEmployee = $user->resolvedBpEmployee([
@@ -1102,54 +1032,15 @@ class MemberDashboardService
         foreach ($employees as $employee) {
             $items = $checklistsByNum->get($employee->employee_num)?->items ?? [];
             $empItems = is_array($items) ? $items : [];
+            $row = $this->summarizeEmployeeTraining($employee, $empItems);
+            $rows[] = $row;
 
-            $orientationItems = $this->collectOrientationTrainings($empItems, '#');
-            $incompleteOrientation = collect($orientationItems)
-                ->where('status', '!=', 'completed')
-                ->count();
-
-            $unsignedCompetency = EmployeeCompetencyAssessment::query()
-                ->where('employee_num', $employee->employee_num)
-                ->whereNull('employee_signed_at')
-                ->whereIn('status', ['submitted', 'completed'])
-                ->count();
-
-            $requiredItems = $this->evaluateTrainingChecklistItems($employee, $empItems, '#');
-            $incompleteTraining = collect($requiredItems)
-                ->whereIn('status', ['not_started', 'in_progress', 'overdue', 'pending_signature'])
-                ->count();
-
-            $issueCount = $incompleteOrientation + $unsignedCompetency + $incompleteTraining;
-            if ($issueCount > 0) {
+            if ($row['issue_count'] > 0) {
                 $employeesWithIssues++;
             }
-
-            $totalIncompleteOrientation += $incompleteOrientation;
-            $totalUnsignedCompetency += $unsignedCompetency;
-            $totalIncompleteTraining += $incompleteTraining;
-
-            $topIssues = [];
-            if ($incompleteOrientation > 0) {
-                $topIssues[] = 'Orientation incomplete';
-            }
-            if ($unsignedCompetency > 0) {
-                $topIssues[] = $unsignedCompetency . ' competency signature(s) pending';
-            }
-            if ($incompleteTraining > 0) {
-                $topIssues[] = $incompleteTraining . ' training item(s) incomplete';
-            }
-
-            $rows[] = [
-                'employee_num' => $employee->employee_num,
-                'name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
-                'position' => $employee->currentAssignment?->position?->title ?? '—',
-                'incomplete_orientation' => $incompleteOrientation,
-                'unsigned_competency' => $unsignedCompetency,
-                'incomplete_training' => $incompleteTraining,
-                'issue_count' => $issueCount,
-                'top_issues' => $topIssues,
-                'manage_url' => route('admin.employees.edit', $employee->employee_num) . '?tab=checklist',
-            ];
+            $totalIncompleteOrientation += $row['incomplete_orientation'];
+            $totalUnsignedCompetency += $row['unsigned_competency'];
+            $totalIncompleteTraining += $row['incomplete_training'];
         }
 
         usort($rows, fn ($a, $b) => $b['issue_count'] <=> $a['issue_count']);
@@ -1169,6 +1060,62 @@ class MemberDashboardService
             ],
             'employees' => $rows,
             'employees_list_url' => route('admin.facility.employees', ['facility' => $facilityKey]) . '?facility=' . $facility->id,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $empChecklistItems
+     * @return array<string, mixed>
+     */
+    public function summarizeEmployeeTraining(BPEmployee $employee, array $empChecklistItems): array
+    {
+        $orientationItems = $this->collectOrientationTrainings($empChecklistItems, '#');
+        $incompleteOrientation = collect($orientationItems)
+            ->where('status', '!=', 'completed')
+            ->count();
+
+        $unsignedCompetency = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereNull('employee_signed_at')
+            ->whereIn('status', ['submitted', 'completed'])
+            ->count();
+
+        $requiredItems = $this->evaluateTrainingChecklistItems($employee, $empChecklistItems, '#');
+        $incompleteTraining = collect($requiredItems)
+            ->whereIn('status', ['not_started', 'in_progress', 'overdue', 'pending_signature'])
+            ->count();
+
+        $overdueCount = collect($requiredItems)->where('status', 'overdue')->count()
+            + collect($orientationItems)->where('status', 'overdue')->count();
+
+        $issueCount = $incompleteOrientation + $unsignedCompetency + $incompleteTraining;
+
+        $topIssues = [];
+        if ($incompleteOrientation > 0) {
+            $topIssues[] = 'Orientation incomplete';
+        }
+        if ($unsignedCompetency > 0) {
+            $topIssues[] = $unsignedCompetency . ' competency signature(s) pending';
+        }
+        if ($incompleteTraining > 0) {
+            $topIssues[] = $incompleteTraining . ' training item(s) incomplete';
+        }
+
+        $status = $issueCount === 0 ? 'compliant' : ($overdueCount > 0 ? 'overdue' : 'attention');
+
+        return [
+            'employee_num' => $employee->employee_num,
+            'name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
+            'position' => $employee->currentAssignment?->position?->title ?? '—',
+            'department' => $employee->currentAssignment?->position?->department?->name ?? '—',
+            'incomplete_orientation' => $incompleteOrientation,
+            'unsigned_competency' => $unsignedCompetency,
+            'incomplete_training' => $incompleteTraining,
+            'overdue_count' => $overdueCount,
+            'issue_count' => $issueCount,
+            'status' => $status,
+            'top_issues' => $topIssues,
+            'manage_url' => route('admin.employees.edit', $employee->employee_num) . '?tab=checklist',
         ];
     }
 

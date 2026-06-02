@@ -10,6 +10,10 @@ class MemberPortalContextResolver
 
     public function forUser($user): array
     {
+        if ($user && method_exists($user, 'fresh')) {
+            $user = $user->fresh();
+        }
+
         return $this->memberPortalContext($user);
     }
 }

@@ -39,15 +39,8 @@
             <a href="{{ route('user.hr-portal') }}"
                class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass($active === 'facility-hr-portal' || request()->routeIs('user.hr-portal')) }}">
                 <span>👥</span>
-                <span>HR Portal</span>
+                <span>HR Management</span>
             </a>
-            @if($authUser->can(\App\Support\Rbac\Permissions::VIEW_POSITIONS) || $authUser->hasRole(['rdhr', 'facility-admin', 'facility-dsd', 'don']))
-            <a href="{{ route('admin.positions.index') }}"
-               class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs('admin.positions.*')) }}">
-                <span>💼</span>
-                <span>Positions</span>
-            </a>
-            @endif
         </div>
     @endif
 @endif

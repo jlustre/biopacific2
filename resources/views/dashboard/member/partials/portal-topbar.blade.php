@@ -6,6 +6,7 @@
     $facilityName = $facilityName ?? '—';
     $firstName = $firstName ?? 'Employee';
     $initials = $initials ?? 'E';
+    $avatarUrl = $avatarUrl ?? null;
 @endphp
 
 <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -80,7 +81,12 @@
       <div class="relative">
         <button type="button" @click="profileOpen = !profileOpen; notifyOpen = false"
           class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 pr-3 shadow-sm hover:bg-slate-50">
-          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ $initials }}</div>
+          @include('dashboard.member.partials.user-avatar', [
+              'avatarUrl' => $avatarUrl,
+              'initials' => $initials,
+              'size' => 'sm',
+              'shape' => 'rounded-full',
+          ])
           <span class="hidden text-sm font-semibold sm:inline">{{ $firstName }}</span>
         </button>
         <div x-show="profileOpen" x-cloak x-transition @click.outside="profileOpen = false"

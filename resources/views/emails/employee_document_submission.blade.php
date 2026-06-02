@@ -43,5 +43,5 @@ Review Document
 Please verify the document and mark it as approved or rejected in the employee record.
 
 Thank you,<br>
-{{ config('app.name') }} HR Portal
+{{ config('app.name') }} HR Management
 @endcomponent

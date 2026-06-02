@@ -23,7 +23,7 @@ class EmploymentController extends Controller
         if (! $employee) {
             return view('employment.no-record', array_merge($this->memberPortalContext($user), [
                 'portalActive' => 'employment',
-                'portalTitle' => 'My Employment | Bio Pacific HR Portal',
+                'portalTitle' => 'My Employment | Bio Pacific HR Management',
                 'portalEyebrow' => 'Employment',
                 'portalPageTitle' => 'My Employment',
                 'showPortalSearch' => false,
@@ -43,7 +43,7 @@ class EmploymentController extends Controller
 
         return $view->with(array_merge($this->memberPortalContext($user), [
             'portalActive' => 'employment',
-            'portalTitle' => 'My Employment | Bio Pacific HR Portal',
+            'portalTitle' => 'My Employment | Bio Pacific HR Management',
             'portalEyebrow' => 'Employment',
             'portalPageTitle' => 'My Employment',
             'showPortalSearch' => false,

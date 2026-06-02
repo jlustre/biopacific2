@@ -1,6 +1,6 @@
 @php
     $portalActive = $portalActive ?? 'dashboard';
-    $portalTitle = $portalTitle ?? 'Bio Pacific HR Portal';
+    $portalTitle = $portalTitle ?? 'Bio Pacific HR Management';
     $portalEyebrow = $portalEyebrow ?? null;
     $portalPageTitle = $portalPageTitle ?? null;
     $showPortalSearch = $showPortalSearch ?? false;
@@ -14,6 +14,10 @@
     $positionTitle = $positionTitle ?? 'Team Member';
     $facilityName = $facilityName ?? '—';
     $initials = $initials ?? strtoupper(substr($firstNameOnly, 0, 1));
+    $portalUser = $user ?? auth()->user();
+    if (empty($avatarUrl) && $portalUser) {
+        $avatarUrl = $portalUser->profileAvatarUrl();
+    }
     $primaryRoleLabel = $primaryRoleLabel ?? ($user?->primaryRoleLabel() ?? 'User');
     $userRoles = $userRoles ?? ($user?->rolesForDisplay() ?? []);
 @endphp
@@ -35,10 +39,10 @@
       x-data="{ sidebarOpen: false, profileOpen: false, notifyOpen: false }">
   <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
 
-  @if(session('status') && session('status') === 'profile-updated')
+  @if(session('status') && in_array(session('status'), ['profile-updated', 'avatar-updated'], true))
   <div class="fixed right-4 top-4 z-50 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg"
        x-data x-init="setTimeout(() => $el.remove(), 4000)">
-    Profile saved successfully.
+    {{ session('status') === 'avatar-updated' ? 'Profile photo updated.' : 'Profile saved successfully.' }}
   </div>
   @endif
 
@@ -53,6 +57,7 @@
         'positionTitle' => $positionTitle,
         'facilityName' => $facilityName,
         'initials' => $initials,
+        'avatarUrl' => $avatarUrl,
         'profileComplete' => $profileComplete,
         'portalNav' => $portalNav ?? 'employee',
     ])
@@ -66,6 +71,7 @@
         'facilityName' => $facilityName,
         'firstName' => $firstNameOnly,
         'initials' => $initials,
+        'avatarUrl' => $avatarUrl,
       ])
 
       <div class="flex-1">

@@ -5,9 +5,9 @@
 @if($useMemberPortalSidebar)
 @php
     $portalActive = $portalActive ?? 'dashboard';
-    $portalTitle = $portalTitle ?? 'Bio Pacific HR Portal';
-    $portalEyebrow = $portalEyebrow ?? 'Facility Management';
-    $portalPageTitle = $portalPageTitle ?? 'Facility Management';
+    $portalTitle = $portalTitle ?? 'Bio Pacific HR Management';
+    $portalEyebrow = $portalEyebrow ?? 'Facility Portal';
+    $portalPageTitle = $portalPageTitle ?? 'Facility Portal';
     $showPortalSearch = $showPortalSearch ?? false;
     $showPortalNotifications = $showPortalNotifications ?? false;
     $showPortalFooter = $showPortalFooter ?? false;

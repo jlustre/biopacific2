@@ -58,6 +58,8 @@ class DatabaseSeeder extends Seeder
             ReportSeeder::class,
             OptionTypesSeeder::class,
             SelectOptionsSeeder::class,
+            MemberProfilePanelsSeeder::class,
+            MemberEmergencyContactsSeeder::class,
         ]);
 
     }

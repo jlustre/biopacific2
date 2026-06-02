@@ -219,6 +219,10 @@ Route::post('/my-pre-employment/reference-checks/{referenceCheck}', [\App\Http\C
 
 // Dashboard and HR Portal routes, grouped by role to avoid duplication
 // Scheduled Reports Management (CRUD)
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|don'])->prefix('admin/training-management')->name('admin.training-management.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\TrainingManagementController::class, 'index'])->name('index');
+});
+
 Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|don'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
     Route::post('/templates', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'storeTemplate'])->name('templates.store');
     Route::delete('/templates/{scheduledReportTemplate}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'destroyTemplate'])->name('templates.destroy');
@@ -638,10 +642,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/documents', [DashboardController::class, 'memberDocuments'])->name('member.documents');
     Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
     Route::get('/dashboard/trainings', [DashboardController::class, 'memberTrainings'])->name('member.trainings');
-    Route::get('/dashboard/schedule', [DashboardController::class, 'memberSchedule'])->name('member.schedule');
     Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
     Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');
     Route::patch('settings/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('settings.profile.update');
+    Route::post('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'update'])->name('settings.profile.avatar.update');
+    Route::delete('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'destroy'])->name('settings.profile.avatar.destroy');
+    Route::post('settings/profile/emergency-contacts', [\App\Http\Controllers\MemberEmergencyContactController::class, 'store'])->name('settings.profile.emergency-contacts.store');
+    Route::put('settings/profile/emergency-contacts/{emergencyContact}', [\App\Http\Controllers\MemberEmergencyContactController::class, 'update'])->name('settings.profile.emergency-contacts.update');
+    Route::delete('settings/profile/emergency-contacts/{emergencyContact}', [\App\Http\Controllers\MemberEmergencyContactController::class, 'destroy'])->name('settings.profile.emergency-contacts.destroy');
+    Route::post('settings/profile/emergency-contacts/{emergencyContact}/primary', [\App\Http\Controllers\MemberEmergencyContactController::class, 'setPrimary'])->name('settings.profile.emergency-contacts.primary');
     Route::get('settings/password', [DashboardController::class, 'memberPassword'])->name('settings.password');
     Route::put('settings/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('settings.password.update');
     Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
