@@ -19,8 +19,8 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
     <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
         <div class="w-full sm:w-auto px-4 sm:px-0">
             @if($selectedFacility)
-                <a href="{{ route('admin.facility.dashboard', ['facility' => $selectedFacility->slug ?? $selectedFacility->id]) }}" class="rounded-md block w-full bg-teal-500 sm:w-auto px-4 py-3 sm:py-2 text-center">
-                    &larr; Back to Facility HR Dashboard
+                <a href="{{ route('member.facility.dashboard', ['facility' => $selectedFacility->slug ?? $selectedFacility->id]) }}" class="rounded-md block w-full bg-teal-500 sm:w-auto px-4 py-3 sm:py-2 text-center">
+                    &larr; Back to Facility Dashboard
                 </a>
             @endif
         </div>

@@ -20,7 +20,7 @@
                 </p>
             </div>
 
-            <a href="{{ route('user.dashboard') }}"
+            <a href="{{ route('dashboard.index') }}"
                 class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Return to Dashboard

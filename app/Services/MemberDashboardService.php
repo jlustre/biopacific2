@@ -56,6 +56,10 @@ class MemberDashboardService
                 return 'facility-dsd';
             }
 
+            if ($this->userHasRole($user, 'don')) {
+                return 'don';
+            }
+
             $normalizedTitle = strtolower(trim((string) $positionTitle));
 
             if ($normalizedTitle !== '') {
@@ -458,13 +462,23 @@ class MemberDashboardService
             ];
         }
 
-    protected function userHasRole(User $user, string $role): bool
+    public function userHasRole(User $user, string|array $role): bool
     {
         if (!method_exists($user, 'hasRole')) {
             return false;
         }
 
         return (bool) $user->hasRole($role);
+    }
+
+    public function evaluateCertificationItemsForEmployee(BPEmployee $employee, array $empChecklistItems): array
+    {
+        return $this->evaluateCertificationItems($employee, $empChecklistItems);
+    }
+
+    public function evaluateComplianceForEmployee(?BPEmployee $employee, array $empChecklistItems): array
+    {
+        return $this->evaluateEmployeeChecklistCompliance($employee, $empChecklistItems);
     }
 
     public function build(User $user): array
@@ -1102,6 +1116,14 @@ class MemberDashboardService
         }
 
         $status = $issueCount === 0 ? 'compliant' : ($overdueCount > 0 ? 'overdue' : 'attention');
+        $trainingChecklistTab = $this->resolvePrimaryTrainingChecklistTab($employee, $empChecklistItems, $incompleteTraining);
+
+        $trainingSummary = [
+            'incomplete_orientation' => $incompleteOrientation,
+            'unsigned_competency' => $unsignedCompetency,
+            'incomplete_training' => $incompleteTraining,
+            'training_checklist_tab' => $trainingChecklistTab,
+        ];
 
         return [
             'employee_num' => $employee->employee_num,
@@ -1111,12 +1133,122 @@ class MemberDashboardService
             'incomplete_orientation' => $incompleteOrientation,
             'unsigned_competency' => $unsignedCompetency,
             'incomplete_training' => $incompleteTraining,
+            'training_checklist_tab' => $trainingChecklistTab,
             'overdue_count' => $overdueCount,
             'issue_count' => $issueCount,
             'status' => $status,
             'top_issues' => $topIssues,
-            'manage_url' => route('admin.employees.edit', $employee->employee_num) . '?tab=checklist',
+            'manage_url' => $this->resolveEmployeeTeamReviewUrl($employee, $trainingSummary),
         ];
+    }
+
+    /**
+     * Admin employee edit URL with optional main tab and checklist sub-tab (e.g. partE).
+     */
+    public function buildAdminEmployeeEditUrl(
+        int|string $employeeId,
+        ?string $tab = null,
+        ?string $checklistTab = null
+    ): string {
+        $url = route('admin.employees.edit', $employeeId);
+        $query = [];
+
+        if ($tab !== null && $tab !== '') {
+            $query['tab'] = $tab;
+        }
+
+        if ($checklistTab !== null && $checklistTab !== '') {
+            $query['checklist_tab'] = $checklistTab;
+        }
+
+        return $query === [] ? $url : $url . '?' . http_build_query($query);
+    }
+
+    /**
+     * Deep-link to the employee edit screen tab that matches the team's top issue.
+     *
+     * @param  array<string, mixed>  $trainingSummary  Keys from summarizeEmployeeTraining()
+     */
+    public function resolveEmployeeTeamReviewUrl(
+        BPEmployee $employee,
+        array $trainingSummary,
+        int $missingDocs = 0,
+        int $certRisk = 0,
+        ?string $primaryIssueLabel = null
+    ): string {
+        $employeeId = (int) $employee->id;
+
+        if ($this->issueLabelIndicatesOrientation($primaryIssueLabel)
+            || ($trainingSummary['incomplete_orientation'] ?? 0) > 0
+            || in_array('Orientation incomplete', $trainingSummary['top_issues'] ?? [], true)) {
+            return $this->buildAdminEmployeeEditUrl($employeeId, 'checklist', 'partE');
+        }
+
+        if ($this->issueLabelIndicatesCompetency($primaryIssueLabel)
+            || ($trainingSummary['unsigned_competency'] ?? 0) > 0) {
+            return $this->buildAdminEmployeeEditUrl($employeeId, 'checklist', 'partG');
+        }
+
+        if ($this->issueLabelIndicatesTraining($primaryIssueLabel)
+            || ($trainingSummary['incomplete_training'] ?? 0) > 0) {
+            $part = (string) ($trainingSummary['training_checklist_tab'] ?? 'partB');
+
+            return $this->buildAdminEmployeeEditUrl($employeeId, 'checklist', $part);
+        }
+
+        if ($this->issueLabelIndicatesDocuments($primaryIssueLabel) || $missingDocs > 0 || $certRisk > 0) {
+            return $this->buildAdminEmployeeEditUrl($employeeId, 'documents');
+        }
+
+        return $this->buildAdminEmployeeEditUrl($employeeId, 'checklist');
+    }
+
+    protected function issueLabelIndicatesOrientation(?string $label): bool
+    {
+        return is_string($label) && str_contains($label, 'Orientation incomplete');
+    }
+
+    protected function issueLabelIndicatesCompetency(?string $label): bool
+    {
+        return is_string($label) && str_contains($label, 'competency signature');
+    }
+
+    protected function issueLabelIndicatesTraining(?string $label): bool
+    {
+        return is_string($label) && str_contains($label, 'training item');
+    }
+
+    protected function issueLabelIndicatesDocuments(?string $label): bool
+    {
+        if (!is_string($label)) {
+            return false;
+        }
+
+        return str_contains($label, 'document gap') || str_contains($label, 'credential item');
+    }
+
+    /**
+     * @param  array<string, mixed>  $empChecklistItems
+     */
+    protected function resolvePrimaryTrainingChecklistTab(
+        BPEmployee $employee,
+        array $empChecklistItems,
+        int $incompleteTraining
+    ): string {
+        if ($incompleteTraining <= 0) {
+            return 'partB';
+        }
+
+        $requiredItems = $this->evaluateTrainingChecklistItems($employee, $empChecklistItems, '#');
+        $firstIncomplete = collect($requiredItems)->first(
+            fn ($item) => in_array($item['status'] ?? '', ['not_started', 'in_progress', 'overdue', 'pending_signature'], true)
+        );
+
+        return match ((string) ($firstIncomplete['section'] ?? 'PART B')) {
+            'PART C' => 'partC',
+            'PART D' => 'partD',
+            default => 'partB',
+        };
     }
 
     protected function resolveOrientationTrainingStatus(string $workflow, Carbon $today): array
@@ -1566,7 +1698,7 @@ class MemberDashboardService
                 'missing_count' => $missing,
                 'issue_count' => $issueCount,
                 'top_issues' => $topIssues,
-                'manage_url' => route('admin.employees.edit', $employee->employee_num) . '?tab=checklist',
+                'manage_url' => route('admin.employees.edit', $employee->id) . '?tab=checklist',
             ];
         }
 
@@ -1884,7 +2016,7 @@ class MemberDashboardService
                 'missing_count' => $missingCount,
                 'top_missing' => array_slice(array_column($missing, 'title'), 0, 3),
                 'verified_percent' => $evaluation['verified_percent'],
-                'manage_url' => route('admin.employees.edit', $employee->employee_num) . '?tab=checklist',
+                'manage_url' => route('admin.employees.edit', $employee->id) . '?tab=checklist',
             ];
         }
 
@@ -1930,7 +2062,7 @@ class MemberDashboardService
             ->with('uploadType')
             ->orderByDesc('uploaded_at')
             ->get()
-            ->map(function (Upload $upload) use ($canUseAdminUploadRoutes, $facilityKey) {
+            ->map(function (Upload $upload) use ($canUseAdminUploadRoutes, $facilityKey, $employee) {
                 $uploadedAt = $this->parseDate($upload->uploaded_at);
                 $expiresAt = $this->parseDate($upload->expires_at);
 
@@ -1956,7 +2088,7 @@ class MemberDashboardService
                         'facility' => $facilityKey,
                         'upload' => $upload->id,
                     ]);
-                    $row['edit_url'] = route('admin.employees.edit', $upload->employee_num) . '?tab=documents';
+                    $row['edit_url'] = $this->buildAdminEmployeeEditUrl($employee->id, 'documents');
                 } else {
                     $row['view_url'] = route('employment.documents.view', ['document' => $upload->id]);
                     $row['download_url'] = route('employment.documents.download', ['document' => $upload->id]);

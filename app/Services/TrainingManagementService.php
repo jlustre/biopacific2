@@ -305,7 +305,7 @@ class TrainingManagementService
                     'period' => $this->formatAssessmentPeriod($assessment),
                     'status' => $assessment->status,
                     'updated_at' => optional($assessment->updated_at)->diffForHumans(),
-                    'manage_url' => route('admin.employees.edit', $assessment->employee_num) . '?tab=competency',
+                    'manage_url' => route('admin.employees.edit', $employee?->id ?? $assessment->employee_num) . '?tab=competency',
                 ];
             })
             ->all();

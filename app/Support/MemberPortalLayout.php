@@ -140,7 +140,7 @@ class MemberPortalLayout
 
         $title = self::titleForRoute($routeName);
 
-        if ($routeName === 'admin.facility.dashboard') {
+        if (in_array($routeName, ['admin.facility.dashboard', 'member.facility.dashboard', 'user.hr-portal'], true)) {
             $facility = request()->route('facility');
             if ($facility instanceof \App\Models\Facility) {
                 $title = $facility->name;
@@ -360,7 +360,11 @@ class MemberPortalLayout
                 return 'trainings';
             }
 
-            if (request()->routeIs(['user.hr-portal', 'admin.facility.dashboard'])) {
+            if (request()->routeIs('user.hr-portal')) {
+                return 'hr-portal';
+            }
+
+            if (request()->routeIs('admin.facility.dashboard')) {
                 return 'facility-hr-portal';
             }
         }

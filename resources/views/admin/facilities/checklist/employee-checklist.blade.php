@@ -313,24 +313,35 @@
 
             return $itemId ? 'item_' . $itemId : $itemName;
         };
-        $resolveChecklistEntry = function ($item) use ($empChecklistItems) {
+        $normalizeChecklistEntry = function ($entry): object {
+            $data = is_array($entry) ? $entry : (array) $entry;
+
+            return (object) array_merge([
+                'on_file' => false,
+                'verified_dt' => null,
+                'exp_dt' => null,
+                'verified_by' => null,
+                'comments' => null,
+                'exp_dt_not_required' => 0,
+            ], $data);
+        };
+        $resolveChecklistEntry = function ($item) use ($empChecklistItems, $normalizeChecklistEntry) {
             $itemId = is_array($item) ? ($item['id'] ?? null) : ($item->id ?? null);
             $itemName = is_array($item) ? ($item['name'] ?? null) : ($item->name ?? null);
+            $raw = null;
 
             if ($itemId && isset($empChecklistItems['item_' . $itemId])) {
-                return (object) $empChecklistItems['item_' . $itemId];
+                $raw = $empChecklistItems['item_' . $itemId];
+            } elseif ($itemName && isset($empChecklistItems[$itemName])) {
+                $raw = $empChecklistItems[$itemName];
+            } else {
+                $legacyName = is_string($itemName) ? rtrim($itemName, '*') : $itemName;
+                if ($legacyName && $legacyName !== $itemName && isset($empChecklistItems[$legacyName])) {
+                    $raw = $empChecklistItems[$legacyName];
+                }
             }
 
-            if ($itemName && isset($empChecklistItems[$itemName])) {
-                return (object) $empChecklistItems[$itemName];
-            }
-
-            $legacyName = is_string($itemName) ? rtrim($itemName, '*') : $itemName;
-            if ($legacyName && $legacyName !== $itemName && isset($empChecklistItems[$legacyName])) {
-                return (object) $empChecklistItems[$legacyName];
-            }
-
-            return null;
+            return $raw !== null ? $normalizeChecklistEntry($raw) : null;
         };
         $checklistItemsByNameLookup = $checklistItems->keyBy('name');
         @endphp

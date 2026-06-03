@@ -2,24 +2,20 @@
 
 namespace Database\Seeders;
 
+use App\Models\Facility;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\Facility;
-use App\Models\ColorScheme;
 
 class BioPacificCorporateSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Delete existing corporate facility if it exists
-        \App\Models\Facility::where('id', 99)->delete();
+        $slug = config('member-portal.corporate_facility_slug', 'bio-pacific-corporate');
+        $globalId = (int) config('import-mapping.global_facility_id', 99);
 
-    // Create Bio-Pacific Corporate facility with ID 99
-    $facility = \App\Models\Facility::create([
-            'id' => 99,
+        Facility::query()->where('id', $globalId)->where('slug', '!=', $slug)->delete();
+
+        $attributes = [
             'name' => 'Bio-Pacific Corporation',
             'tagline' => 'Excellence in Healthcare Management',
             'headline' => 'Leading Healthcare Excellence Across California',
@@ -50,30 +46,51 @@ class BioPacificCorporateSeeder extends Seeder
             'dsd' => 'Chief Operating Officer',
             'staffer' => 'HR Director',
             'is_active' => false,
-            'slug' => 'bio-pacific-corporate',
+            'slug' => $slug,
             'about_text' => 'Bio-Pacific Corporation is dedicated to providing top-tier management services to our network of healthcare facilities across California. Our corporate team ensures operational excellence, regulatory compliance, and the highest standards of patient care.',
-        ]);
-
-        // Activate all sections except book, testimonials, room
-        $sections = [
-            'about', 'services', 'news', 'events', 'faqs', 'gallery', 'contact', 'careers', 'values', 'staff', 'location', 'email', 'webcontent', 'social', 'admin', 'settings', 'privacy', 'security', 'hipaa', 'npp', 'map', 'hours', 'headline', 'subheadline', 'hero', 'facility_image', 'color_scheme', 'legal', 'administrator', 'don', 'dsd', 'staffer', 'region', 'facility_number', 'domain', 'subdomain', 'address', 'city', 'state', 'zip', 'phone', 'about_image_url', 'hero_image_url'
+            'settings' => [
+                'is_corporate_public_site' => true,
+                'public_header_cta' => [
+                    'label' => 'Login',
+                    'route' => 'login',
+                ],
+            ],
         ];
-        $excluded = ['book', 'testimonials', 'room'];
-        foreach ($sections as $section) {
-            if (!in_array($section, $excluded)) {
-                // Example: set a settings array or a DB table for section activation
-                // Here, we use a settings array on the facility model
-                $settings = $facility->settings ?? [];
-                $settings[$section . '_active'] = true;
-                $facility->settings = $settings;
-                $facility->save();
-            }
+
+        $facility = Facility::query()->where('slug', $slug)->first();
+
+        if (!$facility && !Facility::query()->where('id', $globalId)->exists()) {
+            $attributes['id'] = $globalId;
         }
 
-        $this->command->info('Bio-Pacific Corporate facility created with ID 99');
+        $facility = Facility::updateOrCreate(['slug' => $slug], $attributes);
 
-        // Update all existing users without a facility_id to use Bio-Pacific Corporate
-        DB::table('users')->whereNull('facility_id')->update(['facility_id' => 99]);
-        $this->command->info('Updated existing users to use Bio-Pacific Corporate facility');
+        $sections = [
+            'about', 'services', 'news', 'events', 'faqs', 'gallery', 'contact', 'careers', 'values', 'staff',
+            'location', 'email', 'webcontent', 'social', 'admin', 'settings', 'privacy', 'security', 'hipaa', 'npp',
+            'map', 'hours', 'headline', 'subheadline', 'hero', 'facility_image', 'color_scheme', 'legal',
+            'administrator', 'don', 'dsd', 'staffer', 'region', 'facility_number', 'domain', 'subdomain',
+            'address', 'city', 'state', 'zip', 'phone', 'about_image_url', 'hero_image_url',
+        ];
+        $excluded = ['book', 'testimonials', 'room'];
+
+        $settings = $facility->settings ?? [];
+        foreach ($sections as $section) {
+            if (!in_array($section, $excluded, true)) {
+                $settings[$section . '_active'] = true;
+            }
+        }
+        $settings['is_corporate_public_site'] = true;
+        $settings['public_header_cta'] = [
+            'label' => 'Login',
+            'route' => 'login',
+        ];
+
+        $facility->settings = $settings;
+        $facility->save();
+
+        DB::table('users')->whereNull('facility_id')->update(['facility_id' => $facility->id]);
+
+        $this->command?->info("Bio-Pacific Corporate facility seeded (slug: {$slug}, id: {$facility->id})");
     }
 }

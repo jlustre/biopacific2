@@ -22,11 +22,10 @@ class HrPortalController extends Controller
             $roles = $user->getRoleNames();
             return view('admin.hr-portal.index', compact('facilities', 'roles'));
         } elseif ($user->hasRole('facility-admin') || $user->hasRole('facility-dsd') || $user->hasRole('don')) {
-            // Redirect directly to their assigned facility dashboard
             if ($user->facility_id) {
                 $facility = \App\Models\Facility::find($user->facility_id);
                 if ($facility) {
-                    return redirect()->route('admin.facility.dashboard', ['facility' => $facility->slug ?? $facility->id]);
+                    return redirect()->route('user.hr-portal', ['facility' => $facility->slug ?? $facility->id]);
                 }
             }
             // If no facility assigned, show error with instructions

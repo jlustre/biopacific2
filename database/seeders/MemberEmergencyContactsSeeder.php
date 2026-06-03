@@ -3,15 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\MemberEmergencyContact;
-use App\Models\User;
+use Database\Seeders\Support\ResolvesPortalSeedData;
 use Illuminate\Database\Seeder;
 
 class MemberEmergencyContactsSeeder extends Seeder
 {
+    use ResolvesPortalSeedData;
+
     public function run(): void
     {
-        $contactsByEmail = [
-            'facilityadmin@biopacific.com' => [
+        $contactsByRole = [
+            'facility_admin' => [
                 [
                     'first_name' => 'Jane',
                     'last_name' => 'Doe',
@@ -35,7 +37,7 @@ class MemberEmergencyContactsSeeder extends Seeder
                     'sort_order' => 1,
                 ],
             ],
-            'facilitydsd@biopacific.com' => [
+            'facility_dsd' => [
                 [
                     'first_name' => 'Robert',
                     'last_name' => 'Randell',
@@ -48,8 +50,8 @@ class MemberEmergencyContactsSeeder extends Seeder
             ],
         ];
 
-        foreach ($contactsByEmail as $email => $contacts) {
-            $user = User::query()->where('email', $email)->first();
+        foreach ($contactsByRole as $roleKey => $contacts) {
+            $user = $this->demoUser($roleKey);
             if (!$user) {
                 continue;
             }

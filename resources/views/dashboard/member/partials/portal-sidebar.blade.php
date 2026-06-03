@@ -48,10 +48,14 @@
 
         @include('dashboard.member.partials.portal-sidebar-personal-portal', ['active' => $active])
 
-        @if(in_array($portalNav, ['corporate', 'facility'], true))
+        @if(in_array($portalNav, ['corporate', 'facility'], true)
+            || (auth()->user() && \App\Support\MemberPortalLayout::userIsSystemAdmin(auth()->user()) && request()->routeIs(array_merge(
+                config('member-portal.facility_manager_global_route_patterns', []),
+                config('member-portal.facility_management_route_patterns', [])
+            ))))
           @include('dashboard.member.partials.portal-sidebar-management-groups', [
               'active' => $active,
-              'portalNav' => $portalNav,
+              'portalNav' => $portalNav === 'admin' ? 'facility' : $portalNav,
           ])
         @endif
 

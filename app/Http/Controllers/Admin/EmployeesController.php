@@ -35,6 +35,15 @@ use App\Http\Controllers\Concerns\HandlesEmployeeEditRedirects;
 class EmployeesController extends Controller
 {
     use HandlesEmployeeEditRedirects;
+
+    /**
+     * @param  list<string>  $with
+     */
+    protected function employeeFromRouteKey(string|int $routeKey, array $with = []): BPEmployee
+    {
+        return BPEmployee::findForAdminRoute($routeKey, $with);
+    }
+
     protected function loadEmployeeAssessmentPeriods(BPEmployee $employee)
     {
         return app(EmployeeAssessmentPeriodService::class)->periodsForEmployee($employee);
@@ -320,7 +329,7 @@ class EmployeesController extends Controller
         ]);
 
 
-        $employee = BPEmployee::with('currentAssignment')->findOrFail($employee_num); // $employee_num is actually the PK id
+        $employee = $this->employeeFromRouteKey($employee_num, ['currentAssignment']);
         $this->authorizeEmployeeFacilityAccess($request, $employee);
         $facilityId = $employee->currentAssignment?->facility_id;
         if (!$facilityId) {
@@ -356,7 +365,7 @@ class EmployeesController extends Controller
      */
     public function showProfile(Request $request, $employee_num)
     {
-        $employee = BPEmployee::with('currentAssignment')->findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num, ['currentAssignment']);
         $this->authorizeEmployeeFacilityAccess($request, $employee);
         $isAddMode = false;
         // Get the Optionstype id for 'marital status'
@@ -388,7 +397,7 @@ class EmployeesController extends Controller
      */
     public function deleteDocument($employee_num, $upload_id)
     {
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $upload = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
@@ -405,7 +414,7 @@ class EmployeesController extends Controller
      */
     public function updateDocument(Request $request, $employee_num, $upload_id)
     {
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $upload = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
@@ -467,7 +476,7 @@ class EmployeesController extends Controller
      */
     public function editDocument($employee_num, $upload_id)
     {
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $upload = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
@@ -729,7 +738,7 @@ class EmployeesController extends Controller
      */
     public function viewDocument($employee_num, $upload_id)
     {
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $upload = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
@@ -751,7 +760,7 @@ class EmployeesController extends Controller
      */
     public function downloadDocument($employee_num, $document_id)
     {
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $document = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($document_id)
@@ -936,12 +945,12 @@ class EmployeesController extends Controller
      */
     public function show(Request $request, $employee_num)
     {
-        $employee = \App\Models\BPEmployee::with([
+        $employee = $this->employeeFromRouteKey($employee_num, [
             'currentAssignment',
             'currentAssignment.facility',
             'currentAssignment.department',
             'currentAssignment.position',
-        ])->findOrFail($employee_num); // $employee_num is PK id
+        ]);
         $this->authorizeEmployeeFacilityAccess($request, $employee);
         return view('admin.facilities.employee-details', compact('employee'));
     }
@@ -951,7 +960,7 @@ class EmployeesController extends Controller
      */
     public function updatePersonal(Request $request, $employee_num)
     {
-        $employee = \App\Models\BPEmployee::with(['user', 'currentAssignment'])->findOrFail($employee_num); // $employee_num is PK id
+        $employee = $this->employeeFromRouteKey($employee_num, ['user', 'currentAssignment']);
         $this->authorizeEmployeeFacilityAccess($request, $employee);
 
         if (! $this->canEditCoreEmployeeTabs($request->user())) {
@@ -1734,7 +1743,7 @@ class EmployeesController extends Controller
             return back()->with('error', 'Assessment period is required.');
         }
 
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
 
         $assessment = EmployeePerformanceAssessment::firstOrCreate(
@@ -1919,7 +1928,7 @@ class EmployeesController extends Controller
             return back()->with('error', 'Assessment period is required.');
         }
 
-        $employee = BPEmployee::findOrFail($employee_num);
+        $employee = $this->employeeFromRouteKey($employee_num);
         $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
 
         $assessment = \App\Models\EmployeeCompetencyAssessment::query()
@@ -2192,7 +2201,7 @@ class EmployeesController extends Controller
             $employee->save();
 
             DB::commit();
-            return redirect()->route('admin.employees.edit', $employee->employee_num)
+            return redirect()->route('admin.employees.edit', $employee->id)
                 ->with('success', 'Employee created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -2255,7 +2264,7 @@ class EmployeesController extends Controller
         // Always define draft responses and raw draft row for Part G
         $draftResponses = [];
         $rawDraftRow = null;
-        $employee = \App\Models\BPEmployee::with([
+        $employee = $this->employeeFromRouteKey($employee_num, [
             'phones',
             'addresses',
             'user',
@@ -2271,7 +2280,7 @@ class EmployeesController extends Controller
             'currentAssignment.position.reportsToPosition',
             'currentAssignment.hourlyStatus',
             'currentAssignment.compensationRate',
-        ])->findOrFail($employee_num); // $employee_num is PK id
+        ]);
         $this->authorizeEmployeeFacilityAccess($request, $employee);
         $employeesListFacilityId = $this->resolveFacilityFilterId($request);
         $employeesListFacility = $employeesListFacilityId

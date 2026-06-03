@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\Support\ResolvesPortalSeedData;
 use Database\Seeders\Support\SeedsUserEmployeeRecords;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
@@ -10,20 +11,26 @@ use Illuminate\Support\Facades\Hash;
 
 class TestUsersSeeder extends Seeder
 {
+    use ResolvesPortalSeedData;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
+        $corporate = $this->corporateFacility();
+        $pineridge = $this->facilityByMatcher('pineridge');
+        $santaMonica = $this->facilityByMatcher('santa_monica');
+
         $profiles = [
             [
-                'email' => 'rdhr@biopacific.com',
+                'email' => $this->demoEmail('rdhr', 'rdhr@biopacific.com'),
                 'name' => 'Liszel Justice',
-                'facility_id' => 99,
+                'facility_id' => $corporate?->id,
                 'roles' => ['rdhr'],
                 'employee' => [
                     'employee_num' => 'USR000101',
-                    'facility_id' => 99,
+                    'facility_id' => $corporate?->id,
                     'position_title' => 'Administrator',
                     'first_name' => 'Liszel',
                     'last_name' => 'Justice',
@@ -40,13 +47,13 @@ class TestUsersSeeder extends Seeder
                 ],
             ],
             [
-                'email' => 'facilityadmin@biopacific.com',
+                'email' => $this->demoEmail('facility_admin', 'facilityadmin@biopacific.com'),
                 'name' => 'Michael Monroe',
-                'facility_id' => 14,
+                'facility_id' => $pineridge?->id,
                 'roles' => ['facility-admin'],
                 'employee' => [
                     'employee_num' => 'USR000102',
-                    'facility_id' => 14,
+                    'facility_id' => $pineridge?->id,
                     'position_title' => 'Administrator',
                     'first_name' => 'Michael',
                     'last_name' => 'Monroe',
@@ -63,13 +70,13 @@ class TestUsersSeeder extends Seeder
                 ],
             ],
             [
-                'email' => 'facilitydsd@biopacific.com',
+                'email' => $this->demoEmail('facility_dsd', 'facilitydsd@biopacific.com'),
                 'name' => 'Chimere Randell',
-                'facility_id' => 17,
+                'facility_id' => $santaMonica?->id,
                 'roles' => ['facility-dsd'],
                 'employee' => [
                     'employee_num' => 'USR000103',
-                    'facility_id' => 17,
+                    'facility_id' => $santaMonica?->id,
                     'position_title' => 'Staff Development Coordinator',
                     'first_name' => 'Chimere',
                     'last_name' => 'Randell',
@@ -86,13 +93,13 @@ class TestUsersSeeder extends Seeder
                 ],
             ],
             [
-                'email' => 'don@biopacific.com',
+                'email' => $this->demoEmail('don', 'don@biopacific.com'),
                 'name' => 'Melijoy Adan',
-                'facility_id' => 14,
+                'facility_id' => $pineridge?->id,
                 'roles' => ['don'],
                 'employee' => [
                     'employee_num' => 'USR000104',
-                    'facility_id' => 14,
+                    'facility_id' => $pineridge?->id,
                     'position_title' => 'Director of Nursing',
                     'first_name' => 'Melijoy',
                     'last_name' => 'Adan',

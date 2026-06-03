@@ -27,26 +27,26 @@
         ->filter(fn($section) => !empty($activeSections) && in_array($section, $activeSections));
         @endphp
         <nav class="flex flex-col gap-2 mt-2">
-            {{-- Admin Dashboard for Bio-Pacific facility only --}}
             @php
-            $facilityId = null;
-            if (isset($facility) && is_array($facility) && isset($facility['id'])) {
-            $facilityId = $facility['id'];
-            } elseif (isset($facility) && is_object($facility) && isset($facility->id)) {
-            $facilityId = $facility->id;
+            $mobileFacilityModel = null;
+            if (isset($facility) && is_object($facility) && $facility instanceof \App\Models\Facility) {
+                $mobileFacilityModel = $facility;
+            } elseif (isset($facility) && is_array($facility) && !empty($facility['slug'])) {
+                $mobileFacilityModel = \App\Models\Facility::query()->where('slug', $facility['slug'])->first();
             }
+            $mobileCta = $mobileFacilityModel?->publicHeaderCta();
             @endphp
-            @if($facilityId === 99)
-            <a href="{{ route('admin.dashboard.index') }}" @click="mobileOpen = false"
+            @if($mobileCta)
+            <a href="{{ $mobileCta['url'] }}" @click="mobileOpen = false"
                 class="w-full cursor-pointer py-3 px-4 text-lg font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center shadow-md"
                 style="background-color: {{ $primary }}; color: white; border: none;"
                 @mouseenter="$el.style.backgroundColor = '{{ $secondary }}'; $el.style.color = 'white';"
                 @mouseleave="$el.style.backgroundColor = '{{ $primary }}'; $el.style.color = 'white';">
                 <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm4-4h2v-2H7v2zm0 4h2v-2H7v2zm4-4h2v-2h-2v2zm0 4h2v-2h-2v2zm4-4h2v-2h-2v2zm0 4h2v-2h-2v2z" />
+                        d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
                 </svg>
-                Admin Dashboard
+                {{ $mobileCta['label'] }}
             </a>
             @endif
             @if(!empty($activeSections) && in_array('book', $activeSections))

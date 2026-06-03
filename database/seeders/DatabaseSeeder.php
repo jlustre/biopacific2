@@ -60,6 +60,7 @@ class DatabaseSeeder extends Seeder
             SelectOptionsSeeder::class,
             MemberProfilePanelsSeeder::class,
             MemberEmergencyContactsSeeder::class,
+            MemberPortalDashboardSeeder::class,
         ]);
 
     }

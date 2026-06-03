@@ -1,180 +1,283 @@
 @extends('layouts.member-portal')
 
 @php
-    $newsEventsCount = $newsEventsCount ?? 0;
-    $todayLabel = $todayLabel ?? now()->format('l, F j, Y');
-    $complianceScore = $stats['employee_file_verified'] ?? null;
-    $documentsNeededCount = $stats['documents_needed'] ?? 0;
-    $showFacilityOversight = $showFacilityOversight ?? false;
-    $dashboardPersona = $dashboardPersona ?? 'employee-default';
-    $dashboardPersonaLabel = $dashboardPersonaLabel ?? 'Employee';
-    $dashboardIntro = $dashboardIntro ?? 'Dashboard focus: Employee';
-    $overviewCards = $overviewCards ?? [];
-    $personalActions = $personalActions ?? [];
-    $facilityActions = $facilityActions ?? [];
-    $helpfulLinks = $helpfulLinks ?? [];
+    $mode = $roleDashboardMode ?? 'staff';
+    $personaLabel = $dashboardPersonaLabel ?? 'Team Member';
+    $scopeLabel = $dashboardScopeLabel ?? ($facilityName ?? '—');
+    $facilityLabel = $dashboardFacilityName ?? ($facilityName ?? '—');
+    $intro = $dashboardIntro ?? '';
+    $kpis = $dashboardKpis ?? [];
+    $actionQueue = $dashboardActionQueue ?? [];
+    $awareness = $dashboardAwareness ?? [];
+    $quickActions = $dashboardQuickActions ?? [];
+    $myTasks = $dashboardMyTasks ?? [];
+    $expiringDocuments = $dashboardExpiringDocuments ?? [];
+    $expiringDocumentsTotal = $dashboardExpiringDocumentsTotal ?? count($expiringDocuments);
+    $facilityDocumentsUrl = $dashboardFacilityDocumentsUrl ?? null;
+    $assessmentsDue = $dashboardAssessmentsDue ?? [];
+    $toneMap = [
+        'brand' => ['bg' => 'bg-teal-50', 'text' => 'text-teal-700', 'ring' => 'ring-teal-100'],
+        'amber' => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'ring' => 'ring-amber-100'],
+        'rose' => ['bg' => 'bg-rose-50', 'text' => 'text-rose-700', 'ring' => 'ring-rose-100'],
+        'teal' => ['bg' => 'bg-slate-50', 'text' => 'text-slate-700', 'ring' => 'ring-slate-200'],
+    ];
 @endphp
 
 @section('content')
-<section class="px-4 py-6 sm:px-6 lg:px-8">
-    <div class="grid gap-6 xl:grid-cols-12">
-        <div class="relative overflow-hidden rounded-[2rem] bg-teal-700 text-white shadow-soft xl:col-span-8">
-            <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-600/40" aria-hidden="true"></div>
-            <div class="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-teal-800/50" aria-hidden="true"></div>
-            <div class="relative z-10 p-6 sm:p-8">
-                <div class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold ring-1 ring-white/20">Today • {{ $todayLabel }}</div>
-                <h2 class="mt-5 text-3xl font-black tracking-tight sm:text-4xl">Welcome, {{ $displayName }}</h2>
-                <p class="mt-3 max-w-3xl text-teal-50">
-                    {{ $dashboardIntro }}
-                </p>
-
-                <div class="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/20">
-                        <p class="text-xs uppercase tracking-wide text-teal-100">Role</p>
-                        <p class="mt-1 text-lg font-bold">{{ $dashboardPersonaLabel }}</p>
-                    </div>
-                    <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/20">
-                        <p class="text-xs uppercase tracking-wide text-teal-100">Assigned Facility</p>
-                        <p class="mt-1 text-lg font-bold">{{ $facilityName ?: 'Unassigned' }}</p>
-                    </div>
-                    <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/20">
-                        <p class="text-xs uppercase tracking-wide text-teal-100">File Compliance</p>
-                        <p class="mt-1 text-lg font-bold">{{ $complianceScore !== null ? $complianceScore . '%' : '—' }}</p>
-                    </div>
-                </div>
-            </div>
+<section class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:py-5">
+    {{-- Compact header --}}
+    <div class="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5">
+        <div class="min-w-0">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">{{ $todayLabel ?? now()->format('l, M j') }}</p>
+            <h1 class="mt-0.5 text-lg font-black text-slate-900 sm:text-xl">
+                @if($mode === 'leadership')
+                    {{ $scopeLabel }}
+                @else
+                    {{ $personaLabel }} dashboard
+                @endif
+            </h1>
+            <p class="mt-1 max-w-2xl text-xs leading-relaxed text-slate-600 sm:text-sm">{{ $intro }}</p>
         </div>
-
-        <section id="profile" class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card xl:col-span-4">
-            <div class="flex items-center gap-4">
-                @include('dashboard.member.partials.user-avatar', [
-                    'avatarUrl' => $avatarUrl ?? null,
-                    'initials' => $initials,
-                    'size' => 'lg',
-                    'shape' => 'rounded-3xl',
-                ])
-                <div>
-                    <h2 class="text-xl font-black text-slate-950">{{ $displayName }}</h2>
-                    <p class="text-sm text-slate-500">{{ $positionTitle }}</p>
-                    <span class="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Active</span>
-                </div>
-            </div>
-            <div class="mt-6 grid gap-3 text-sm">
-                <div class="flex justify-between border-b border-slate-100 pb-3"><span class="text-slate-500">Employee ID</span><span class="font-bold">{{ $employeeId }}</span></div>
-                <div class="flex justify-between border-b border-slate-100 pb-3"><span class="text-slate-500">Department</span><span class="font-bold">{{ $departmentName ?: '—' }}</span></div>
-                <div class="flex justify-between border-b border-slate-100 pb-3"><span class="text-slate-500">Facility</span><span class="font-bold">{{ $facilityName ?: '—' }}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Hire Date</span><span class="font-bold">{{ $hireDate }}</span></div>
-            </div>
-            <a href="{{ route('settings.profile') }}" class="mt-6 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-bold hover:bg-slate-50">View Profile</a>
-        </section>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="rounded-full bg-teal-50 px-2.5 py-1 font-bold text-teal-800">{{ $personaLabel }}</span>
+            @if($mode === 'leadership')
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-700">{{ $facilityLabel }}</span>
+            @endif
+            <a href="{{ route('settings.profile') }}"
+               class="rounded-full bg-teal-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-teal-700 hover:shadow">My Profile</a>
+        </div>
     </div>
 
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @foreach($overviewCards as $card)
-            @php
-                $toneMap = [
-                    'brand' => ['bg' => 'bg-brand-50', 'text' => 'text-brand-700'],
-                    'amber' => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700'],
-                    'rose' => ['bg' => 'bg-rose-50', 'text' => 'text-rose-700'],
-                    'teal' => ['bg' => 'bg-teal-50', 'text' => 'text-teal-700'],
-                ];
-                $tone = $toneMap[$card['tone']] ?? $toneMap['brand'];
-            @endphp
-            <a href="{{ $card['route'] }}" class="group block rounded-3xl border border-slate-200 bg-white p-5 shadow-card transition hover:border-brand-300 hover:shadow-md">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
-                    <span class="rounded-xl {{ $tone['bg'] }} p-2 {{ $tone['text'] }}"><i class="fa-solid {{ $card['icon'] }}"></i></span>
+    {{-- KPI strip --}}
+    <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach($kpis as $card)
+            @php $tone = $toneMap[$card['tone'] ?? 'brand'] ?? $toneMap['brand']; @endphp
+            <a href="{{ $card['route'] ?? '#' }}"
+               class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition hover:border-teal-300 hover:shadow">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ $tone['bg'] }} {{ $tone['text'] }} ring-1 {{ $tone['ring'] }}">
+                    <i class="fa-solid {{ $card['icon'] ?? 'fa-chart-simple' }} text-sm"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ $card['label'] }}</p>
+                    <p class="text-xl font-black leading-none text-slate-900">{{ $card['value'] }}</p>
+                    <p class="truncate text-[11px] text-slate-500">{{ $card['hint'] }}</p>
                 </div>
-                <p class="mt-4 text-3xl font-black text-slate-950 group-hover:text-brand-700">{{ $card['value'] }}</p>
-                <p class="text-sm font-semibold text-slate-500">{{ $card['hint'] }}</p>
             </a>
         @endforeach
     </div>
 
-    <div class="mt-6 grid gap-6 xl:grid-cols-12">
-        <div class="space-y-6 xl:col-span-8">
-            <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
-                <div class="mb-5 flex items-center justify-between">
+    <div class="mt-3 grid gap-3 lg:grid-cols-12">
+        @if($mode === 'leadership')
+        {{-- Staff action queue --}}
+        <div class="lg:col-span-8">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-950">My Work Center</h2>
-                        <p class="text-sm text-slate-500">Tools currently available in the portal</p>
+                        <h2 class="text-sm font-black text-slate-900">Staff needing action</h2>
+                        <p class="text-[11px] text-slate-500">Open items on your team’s training, documents, or credentials</p>
                     </div>
+                    @if(\Illuminate\Support\Facades\Route::has('admin.training-management.index'))
+                    <a href="{{ route('admin.training-management.index', array_filter(['department_id' => $dashboardDepartmentId ?? null, 'facility_id' => $dashboardFacilityId ?? null])) }}"
+                       class="text-xs font-bold text-teal-700 hover:text-teal-900">Training queue →</a>
+                    @endif
                 </div>
-                <div class="grid gap-3 sm:grid-cols-2">
-                    @foreach($personalActions as $action)
-                        <a href="{{ $action['route'] }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-brand-300 hover:bg-brand-50">
-                            <span class="text-2xl text-brand-600"><i class="fa-solid {{ $action['icon'] }}"></i></span>
-                            <p class="mt-3 font-bold text-slate-950">{{ $action['title'] }}</p>
-                            <p class="text-xs text-slate-500">{{ $action['subtitle'] }}</p>
-                        </a>
-                    @endforeach
-                </div>
-            </section>
 
-            @if($showFacilityOversight)
-                <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
-                    <div class="mb-5 flex items-center justify-between">
-                        <div>
-                            <h2 class="text-lg font-bold text-slate-950">Facility Oversight</h2>
-                            <p class="text-sm text-slate-500">{{ $dashboardPersonaLabel }} actions for {{ $facilityName ?: 'your facility' }}</p>
+                @if(count($actionQueue) === 0)
+                <p class="px-4 py-8 text-center text-sm text-slate-500">No staff flagged in this scope right now.</p>
+                @else
+                <ul class="divide-y divide-slate-100">
+                    @foreach($actionQueue as $row)
+                    <li class="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50/80">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-bold text-slate-900">{{ $row['name'] }}</span>
+                                <span class="text-[11px] text-slate-500">{{ $row['position'] }}</span>
+                                @if(($row['priority'] ?? '') === 'high')
+                                <span class="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-800">Urgent</span>
+                                @endif
+                            </div>
+                            <p class="mt-0.5 text-xs text-slate-600">{{ $row['summary'] }}</p>
                         </div>
-                        <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700">{{ $dashboardPersonaLabel }}</span>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        @foreach($facilityActions as $action)
-                            <a href="{{ $action['route'] }}" class="rounded-2xl border border-teal-100 bg-teal-50/50 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50">
-                                <span class="text-2xl text-teal-700"><i class="fa-solid {{ $action['icon'] }}"></i></span>
-                                <p class="mt-3 font-bold text-slate-950">{{ $action['title'] }}</p>
-                                <p class="text-xs text-slate-600">{{ $action['subtitle'] }}</p>
-                            </a>
-                        @endforeach
-                    </div>
-                </section>
-            @endif
+                        <a href="{{ $row['manage_url'] }}"
+                           class="shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-700">Review</a>
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
         </div>
 
-        <aside class="space-y-6 xl:col-span-4">
-            <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
-                <div class="mb-5 flex items-center justify-between">
-                    <h2 class="text-lg font-bold text-slate-950">Current Priorities</h2>
-                    <span class="text-xs font-bold text-slate-500">Action list</span>
-                </div>
+        <aside class="space-y-3 lg:col-span-4">
+            @if(count($awareness) > 0)
+            <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">Awareness</h3>
+                <ul class="mt-2 space-y-2">
+                    @foreach($awareness as $item)
+                    @php
+                        $aTone = match ($item['tone'] ?? 'slate') {
+                            'amber' => 'bg-amber-50 text-amber-900',
+                            'emerald' => 'bg-emerald-50 text-emerald-900',
+                            'brand' => 'bg-teal-50 text-teal-900',
+                            default => 'bg-slate-50 text-slate-700',
+                        };
+                    @endphp
+                    <li class="flex gap-2 rounded-lg px-2.5 py-2 text-xs {{ $aTone }}">
+                        <i class="fa-solid {{ $item['icon'] ?? 'fa-circle-info' }} mt-0.5 shrink-0"></i>
+                        <span>{{ $item['message'] }}</span>
+                    </li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
 
-                <div class="space-y-3 text-sm">
-                    <div class="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                        <span class="mt-0.5 text-brand-600"><i class="fa-solid fa-circle-check"></i></span>
-                        <p class="text-slate-700">
-                            @if($documentsNeededCount > 0)
-                                {{ $documentsNeededCount }} document {{ \Illuminate\Support\Str::plural('item', $documentsNeededCount) }} need your review.
+            <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">Quick actions</h3>
+                <div class="mt-2 grid gap-1.5">
+                    @foreach($quickActions as $action)
+                    <a href="{{ $action['route'] }}" class="flex items-center gap-2.5 rounded-lg border border-slate-100 px-2.5 py-2 text-left hover:border-teal-200 hover:bg-teal-50/50">
+                        <i class="fa-solid {{ $action['icon'] }} w-4 text-center text-sm text-teal-700"></i>
+                        <span>
+                            <span class="block text-xs font-bold text-slate-900">{{ $action['title'] }}</span>
+                            <span class="block text-[10px] text-slate-500">{{ $action['subtitle'] }}</span>
+                        </span>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+        </aside>
+
+        <div class="mt-3 grid gap-3 lg:col-span-12 lg:grid-cols-2">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
+                    <div>
+                        <h2 class="text-sm font-black text-slate-900">Documents, licenses & certifications</h2>
+                        <p class="text-[11px] text-slate-500">
+                            @if(($dashboardScopeType ?? '') === 'facility')
+                                All employees at {{ $facilityLabel }} — expiring within 60 days
                             @else
-                                Document checklist is currently up to date.
+                                Team uploads, credentials, and checklist items due within 60 days
                             @endif
                         </p>
                     </div>
-                    <div class="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                        <span class="mt-0.5 text-amber-600"><i class="fa-solid fa-user-pen"></i></span>
-                        <p class="text-slate-700">
-                            {{ $stats['trainings_pending_signature'] ?? 0 }} training {{ \Illuminate\Support\Str::plural('item', $stats['trainings_pending_signature'] ?? 0) }} pending signature.
-                        </p>
-                    </div>
-                    <div class="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                        <span class="mt-0.5 text-rose-600"><i class="fa-solid fa-shield"></i></span>
-                        <p class="text-slate-700">
-                            {{ ($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0) }} certification {{ \Illuminate\Support\Str::plural('item', ($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0)) }} need follow-up.
-                        </p>
-                    </div>
+                    @if($facilityDocumentsUrl)
+                    <a href="{{ $facilityDocumentsUrl }}" class="text-[11px] font-bold text-teal-700 hover:text-teal-900">Facility documents →</a>
+                    @endif
                 </div>
-            </section>
+                @if(count($expiringDocuments) === 0)
+                <p class="px-4 py-6 text-center text-sm text-slate-500">No expiring documents, licenses, or certifications in this window.</p>
+                @else
+                @if($expiringDocumentsTotal > count($expiringDocuments))
+                <p class="border-b border-slate-100 px-4 py-1.5 text-[11px] text-slate-500">
+                    Showing {{ count($expiringDocuments) }} of {{ $expiringDocumentsTotal }} items (most urgent first).
+                </p>
+                @endif
+                <ul class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+                    @foreach($expiringDocuments as $doc)
+                    <li class="flex flex-wrap items-center gap-2 px-4 py-2 text-sm {{ $doc['row_class'] ?? '' }}">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-bold text-slate-900">{{ $doc['employee_name'] }}</span>
+                                <span class="text-[11px] text-slate-500">{{ $doc['position'] ?? '' }}</span>
+                            </div>
+                            <p class="mt-0.5 text-xs font-semibold text-slate-800">{{ $doc['document'] }}</p>
+                            <p class="text-[11px] text-slate-500">{{ $doc['source'] ?? '' }} · {{ $doc['expires_on'] ?? '—' }}</p>
+                        </div>
+                        <span class="shrink-0 rounded px-2 py-0.5 text-[10px] font-bold {{ $doc['badge_class'] ?? 'bg-slate-100 text-slate-700' }}">
+                            {{ $doc['status_label'] ?? '' }}
+                        </span>
+                        @if(!empty($doc['manage_url']))
+                        <a href="{{ $doc['manage_url'] }}" class="shrink-0 text-[11px] font-bold text-teal-700 hover:text-teal-900">Open</a>
+                        @endif
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
 
-            <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-card">
-                <h2 class="text-lg font-bold text-slate-950">Helpful Links</h2>
-                <div class="mt-4 space-y-3 text-sm">
-                    @foreach($helpfulLinks as $link)
-                        <a href="{{ $link['route'] }}" class="block rounded-xl bg-slate-50 px-4 py-3 font-semibold text-slate-700 hover:bg-slate-100">{{ $link['label'] }}</a>
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-100 px-4 py-2.5">
+                    <h2 class="text-sm font-black text-slate-900">Appraisals & competencies due</h2>
+                    <p class="text-[11px] text-slate-500">Assessment periods ending in the next 30 days</p>
+                </div>
+                @if(count($assessmentsDue) === 0)
+                <p class="px-4 py-6 text-center text-sm text-slate-500">No performance or competency assessments due in this window.</p>
+                @else
+                <ul class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+                    @foreach($assessmentsDue as $row)
+                    <li class="flex flex-wrap items-center gap-2 px-4 py-2 text-sm {{ $row['row_class'] ?? '' }}">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-bold text-slate-900">{{ $row['employee_name'] }}</span>
+                                <span class="text-[11px] text-slate-500">{{ $row['position'] ?? '' }}</span>
+                            </div>
+                            <p class="mt-0.5 text-xs font-semibold text-slate-800">{{ $row['type'] }}</p>
+                            <p class="text-[11px] text-slate-500">Period ends {{ $row['due_on'] ?? '—' }}</p>
+                        </div>
+                        <span class="shrink-0 rounded px-2 py-0.5 text-[10px] font-bold {{ $row['badge_class'] ?? 'bg-slate-100 text-slate-700' }}">
+                            {{ $row['status_label'] ?? '' }}
+                        </span>
+                        @if(!empty($row['manage_url']))
+                        <a href="{{ $row['manage_url'] }}" class="shrink-0 text-[11px] font-bold text-teal-700 hover:text-teal-900">Open</a>
+                        @endif
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
+        </div>
+
+        @else
+        {{-- Staff: personal work queue only --}}
+        <div class="lg:col-span-7">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-100 px-4 py-2.5">
+                    <h2 class="text-sm font-black text-slate-900">My tasks</h2>
+                    <p class="text-[11px] text-slate-500">Your compliance work — profile and contact info are under My Profile</p>
+                </div>
+                @if(count($myTasks) === 0)
+                <p class="px-4 py-6 text-center text-sm text-slate-500">You’re caught up. Check back when HR assigns new items.</p>
+                @else
+                <ul class="divide-y divide-slate-100">
+                    @foreach($myTasks as $task)
+                    <li class="flex items-start gap-3 px-4 py-2.5 text-sm">
+                        <span class="mt-0.5 text-teal-600"><i class="fa-regular fa-circle"></i></span>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-semibold text-slate-900">{{ $task['title'] ?? 'Task' }}</p>
+                            @if(!empty($task['description']))
+                            <p class="text-xs text-slate-500">{{ $task['description'] }}</p>
+                            @endif
+                        </div>
+                        @if(!empty($task['route']))
+                        <a href="{{ $task['route'] }}" class="shrink-0 text-xs font-bold text-teal-700 hover:text-teal-900">Open</a>
+                        @endif
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
+        </div>
+
+        <aside class="lg:col-span-5">
+            <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">Work center</h3>
+                <div class="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
+                    @foreach($quickActions as $action)
+                    <a href="{{ $action['route'] }}" class="flex items-center gap-2.5 rounded-lg border border-slate-100 px-2.5 py-2 hover:border-teal-200 hover:bg-teal-50/50">
+                        <i class="fa-solid {{ $action['icon'] }} text-teal-700"></i>
+                        <span>
+                            <span class="block text-xs font-bold text-slate-900">{{ $action['title'] }}</span>
+                            <span class="block text-[10px] text-slate-500">{{ $action['subtitle'] }}</span>
+                        </span>
+                    </a>
                     @endforeach
                 </div>
-            </section>
+            </div>
+            <p class="mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+                Employee ID, department, hire date, and account settings are on
+                <a href="{{ route('settings.profile') }}" class="font-bold text-teal-700 hover:underline">My Profile</a>.
+            </p>
         </aside>
+        @endif
     </div>
 </section>
 @endsection

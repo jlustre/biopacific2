@@ -50,43 +50,92 @@ class DashboardController extends Controller
             )));
         }
 
-        // HR Portal dashboard for rdhr, facility-admin, facility-dsd
-        if ($routeName === 'admin.dashboard.index' && $hasRole(['rdhr', 'facility-admin', 'facility-dsd'])) {
+        // Regional HR landing (facility picker + portal links)
+        if ($routeName === 'admin.dashboard.index' && $hasRole(['rdhr'])) {
             return view('dashboard.hr-portal-dashboard');
         }
 
-        // Member / employee dashboard (static UI — refactor with live data later)
+        // Personal work-queue dashboard (all roles — facility leaders, DON, staff, etc.)
         if (in_array($routeName, ['user.dashboard', 'dashboard.index'], true)) {
-            if (!$hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'facility-editor'])) {
-                return $this->memberDashboard($user);
-            }
+            return $this->memberDashboard($user);
         }
 
-        // Fallback for any other roles/routes
         return $this->memberDashboard($user);
+    }
+
+    public function facilityDashboard(?Facility $facility = null)
+    {
+        return $this->renderFacilityPortalPage($facility, 'operations', 'facility-dashboard', 'Facility Dashboard');
+    }
+
+    public function hrManagementHub(?Facility $facility = null)
+    {
+        return $this->renderFacilityPortalPage($facility, 'hr_hub', 'hr-portal', 'HR Management');
+    }
+
+    protected function renderFacilityPortalPage(?Facility $facility, string $profile, string $portalActive, string $pageTitlePrefix)
+    {
+        $user = Auth::user();
+        $service = app(\App\Services\FacilityDashboardService::class);
+        $facilities = $service->facilitiesForUser($user);
+        $facilitySwitchRoute = $profile === 'hr_hub' ? 'user.hr-portal' : 'member.facility.dashboard';
+
+        if (!$facility && $facilities->count() === 1) {
+            $facility = $facilities->first();
+        }
+
+        if (!$facility && $user->facility_id) {
+            $facility = Facility::find($user->facility_id);
+        }
+
+        if (!$facility) {
+            return view('dashboard.member.facility-select', array_merge($this->memberPortalContext($user), [
+                'facilities' => $facilities,
+                'facilitySwitchRoute' => $facilitySwitchRoute,
+                'portalActive' => $portalActive,
+                'portalTitle' => 'Select Facility | Bio Pacific',
+                'portalEyebrow' => $profile === 'hr_hub' ? 'HR Management' : 'Facility Portal',
+                'portalPageTitle' => 'Select a facility',
+                'showPortalSearch' => false,
+                'showPortalNotifications' => true,
+            ]));
+        }
+
+        $payload = $service->build($user, $facility, $profile);
+
+        return view('dashboard.member.facility-dashboard', array_merge($this->memberPortalContext($user), $payload, [
+            'facilities' => $facilities,
+            'facilitySwitchRoute' => $facilitySwitchRoute,
+            'todayLabel' => now()->format('l, F j, Y'),
+            'portalActive' => $portalActive,
+            'portalTitle' => ($facility->name ?? 'Facility') . ' | Bio Pacific',
+            'portalEyebrow' => $profile === 'hr_hub' ? 'HR Management' : 'Facility Portal',
+            'portalPageTitle' => $profile === 'hr_hub' ? 'HR Management' : $facility->name,
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+        ]));
     }
 
     protected function memberDashboard($user)
     {
         $context = $this->memberPortalContext($user);
-        $dashboardService = app(MemberDashboardService::class);
-        $dashboardData = $dashboardService->build($user);
-        $newsEventsCount = $context['newsEventsCount'] ?? $this->countMemberNewsEvents($context['facility'] ?? null);
-        $dashboardModules = $dashboardService->buildDashboardModules(
-            $user,
-            $dashboardData['stats'] ?? [],
-            (int) $newsEventsCount,
-            $dashboardData['positionTitle'] ?? null
-        );
+        $roleDashboard = app(\App\Services\RoleMemberDashboardService::class)->build($user);
+        $isLeadership = ($roleDashboard['roleDashboardMode'] ?? '') === 'leadership';
 
-        return view('dashboard.member.index', array_merge($context, $dashboardData, $dashboardModules, [
-            'newsEventsCount' => $newsEventsCount,
+        $portalEyebrow = $isLeadership
+            ? ($roleDashboard['dashboardScopeType'] === 'department' ? 'Department' : 'Facility')
+            : 'My work';
+        $portalPageTitle = $isLeadership
+            ? ($roleDashboard['dashboardScopeLabel'] ?? 'Dashboard')
+            : 'Dashboard';
+
+        return view('dashboard.member.index', array_merge($context, $roleDashboard, [
             'todayLabel' => now()->format('l, F j, Y'),
             'portalActive' => 'dashboard',
-            'portalTitle' => 'Bio Pacific HR Management | Employee Dashboard',
-            'portalEyebrow' => 'Employee Dashboard',
-            'portalPageTitle' => 'Welcome back, ' . ($context['firstNameOnly'] ?? 'there'),
-            'showPortalSearch' => true,
+            'portalTitle' => 'Bio Pacific HR Management | Dashboard',
+            'portalEyebrow' => $portalEyebrow,
+            'portalPageTitle' => $portalPageTitle,
+            'showPortalSearch' => false,
             'showPortalNotifications' => true,
         ]));
     }

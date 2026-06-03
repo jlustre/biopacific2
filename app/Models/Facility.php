@@ -37,6 +37,58 @@ class Facility extends Model
     return (string) $this->name;
   }
 
+  public static function corporateSiteSlug(): string
+  {
+    return (string) config('member-portal.corporate_facility_slug', 'bio-pacific-corporate');
+  }
+
+  public static function corporateSite(): ?self
+  {
+    return static::query()->where('slug', static::corporateSiteSlug())->first();
+  }
+
+  public function isCorporatePublicSite(): bool
+  {
+    $settings = $this->settings;
+
+    if (is_array($settings) && !empty($settings['is_corporate_public_site'])) {
+      return true;
+    }
+
+    return $this->slug === static::corporateSiteSlug();
+  }
+
+  /**
+   * @return array{label: string, url: string}|null
+   */
+  public function publicHeaderCta(): ?array
+  {
+    $settings = $this->settings;
+
+    if (!is_array($settings)) {
+      return $this->isCorporatePublicSite()
+        ? ['label' => 'Login', 'url' => route('login')]
+        : null;
+    }
+
+    $cta = $settings['public_header_cta'] ?? null;
+
+    if (is_array($cta) && !empty($cta['label'])) {
+      $routeName = $cta['route'] ?? 'login';
+
+      return [
+        'label' => (string) $cta['label'],
+        'url' => \Illuminate\Support\Facades\Route::has($routeName)
+            ? route($routeName)
+            : url('/login'),
+      ];
+    }
+
+    return $this->isCorporatePublicSite()
+      ? ['label' => 'Login', 'url' => route('login')]
+      : null;
+  }
+
   public function getMeta(string $key, ?string $section = null): ?string
   {
     $sources = [];
@@ -152,4 +204,9 @@ class Facility extends Model
   public function values() { return $this->hasMany(FacilityValue::class); }
   public function testimonials() { return $this->hasMany(Testimonial::class); }
   public function galleryImages() { return $this->hasMany(GalleryImage::class); }
+
+  public function leadershipAssignments()
+  {
+    return $this->hasMany(FacilityLeadershipAssignment::class)->orderBy('sort_order')->orderBy('id');
+  }
 }

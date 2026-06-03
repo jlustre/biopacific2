@@ -12,8 +12,8 @@
     $managementOpen = request()->routeIs($managementRoutePatterns);
     $webSectionOpen = request()->routeIs($webRoutePatterns);
     $commSectionOpen = request()->routeIs($commRoutePatterns);
-    $hrActive = $active === 'facility-hr-portal'
-         || request()->routeIs(['user.hr-portal', 'hr-portal.*', 'admin.facility.dashboard', 'admin.facility.*', 'admin.employees.*', 'admin.facility.employees*', 'admin.facility.hiring', 'admin.facility.job_openings*', 'admin.facility.reports*', 'admin.facility.documents*', 'admin.facility.uploads*', 'admin.facility.pre-employment*', 'admin.reports.*', 'admin.scheduled-reports.*', 'admin.scheduled-report-runs.*', 'admin.hr-portal.*']);
+    $hrActive = $active === 'hr-portal' || $active === 'facility-hr-portal'
+         || request()->routeIs(['user.hr-portal', 'hr-portal.index', 'admin.facility.*', 'admin.employees.*', 'admin.facility.employees*', 'admin.facility.hiring', 'admin.facility.job_openings*', 'admin.facility.reports*', 'admin.facility.documents*', 'admin.facility.uploads*', 'admin.facility.pre-employment*', 'admin.reports.*', 'admin.scheduled-reports.*', 'admin.scheduled-report-runs.*', 'admin.hr-portal.*']);
     $subLinkClass = fn (array|string $patterns) => request()->routeIs($patterns)
         ? 'member-portal-nav-sub-active font-semibold text-white'
         : 'text-teal-100';
@@ -48,6 +48,19 @@
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $hrActive ? 'member-portal-nav-sub-active font-semibold text-white' : 'text-teal-100' }}">
             HR Management
         </a>
+
+        @php
+            $leadershipFacility = $authUser->facility_id ? \App\Models\Facility::find($authUser->facility_id) : null;
+            $leadershipHref = ($leadershipFacility && !$authUser->hasRole(['admin', 'super-admin', 'rdhr']))
+                ? route('admin.facility.leadership.edit', ['facility' => $leadershipFacility->getRouteKey()])
+                : route('admin.facilities.leadership.index');
+        @endphp
+        @if(in_array($portalNav, ['facility', 'corporate'], true) && \Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && ($authUser->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || $authUser->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL)))
+        <a href="{{ $leadershipHref }}"
+           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ request()->routeIs(['admin.facility.leadership*', 'admin.facilities.leadership*']) ? 'member-portal-nav-sub-active font-semibold text-white' : 'text-teal-100' }}">
+            Facility Leadership
+        </a>
+        @endif
 
         <a href="{{ route('admin.upload-types.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.upload-types.*') }}">

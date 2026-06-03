@@ -195,4 +195,24 @@ class BPEmployee extends Model
     {
         return $this->hasMany(\App\Models\BPEmpAddress::class, 'employee_num', 'employee_num');
     }
+
+    /**
+     * Resolve an employee from an admin route key (numeric id or employee_num).
+     *
+     * @param  list<string>  $with
+     */
+    public static function findForAdminRoute(string|int $routeKey, array $with = []): self
+    {
+        $query = static::query();
+
+        if ($with !== []) {
+            $query->with($with);
+        }
+
+        if (is_numeric($routeKey)) {
+            return $query->where('id', (int) $routeKey)->firstOrFail();
+        }
+
+        return $query->where('employee_num', $routeKey)->firstOrFail();
+    }
 }

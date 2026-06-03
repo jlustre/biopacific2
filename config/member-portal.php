@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'corporate_facility_slug' => env('CORPORATE_FACILITY_SLUG', 'bio-pacific-corporate'),
+
+    'demo_user_emails' => [
+        'rdhr' => 'rdhr@biopacific.com',
+        'facility_admin' => 'facilityadmin@biopacific.com',
+        'facility_dsd' => 'facilitydsd@biopacific.com',
+        'don' => 'don@biopacific.com',
+    ],
+
+    'demo_facility_matchers' => [
+        'pineridge' => ['facility_number' => '35494'],
+        'santa_monica' => ['facility_number' => '35479'],
+    ],
+
     'super_admin_role' => 'super-admin',
 
     'system_admin_roles' => ['admin', 'super-admin'],
@@ -11,6 +25,8 @@ return [
 
     'facility_manager_global_route_patterns' => [
         'admin.dashboard.index',
+        'member.facility.dashboard',
+        'admin.facility.dashboard',
         'hr-portal.*',
         'user.hr-portal',
         'admin.hr-portal.*',
@@ -23,6 +39,8 @@ return [
     'admin_route_patterns' => [
         'admin.dashboard.*',
         'admin.facilities.*',
+        'admin.facility.leadership*',
+        'admin.facilities.leadership*',
         'admin.users.*',
         'admin.settings.*',
         'admin.roles.*',
@@ -58,9 +76,18 @@ return [
                 'admin.facilities.show',
                 'admin.facilities.store',
                 'admin.facilities.destroy',
+                'admin.facilities.leadership*',
+                'admin.facility.leadership*',
             ],
             'icon' => '🏢',
             'label' => 'Facilities',
+        ],
+        [
+            'id' => 'facility-leadership',
+            'route' => 'admin.facilities.leadership.index',
+            'route_is' => ['admin.facilities.leadership*', 'admin.facility.leadership*'],
+            'icon' => '👔',
+            'label' => 'Facility Leadership',
         ],
         ['id' => 'users', 'route' => 'admin.users.index', 'route_is' => 'admin.users.*', 'icon' => '👥', 'label' => 'Users'],
         ['id' => 'roles', 'route' => 'admin.roles.index', 'route_is' => ['admin.roles.*', 'admin.permissions.*', 'admin.role-assignments.*'], 'icon' => '🛡️', 'label' => 'Roles & Permissions'],
@@ -119,7 +146,8 @@ return [
     ],
 
     'facility_dashboard_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '📊', 'label' => 'My work queue'],
+        ['id' => 'facility-dashboard', 'route' => 'member.facility.dashboard', 'route_is' => ['member.facility.dashboard', 'admin.facility.dashboard'], 'icon' => '🏢', 'label' => 'Facility Dashboard'],
     ],
 
     'employee_dashboard_nav' => [
@@ -166,6 +194,8 @@ return [
 
     'admin_active_map' => [
         'admin.dashboard.*' => 'admin-dashboard',
+        'admin.facilities.leadership*' => 'facility-leadership',
+        'admin.facility.leadership*' => 'facility-leadership',
         'admin.facilities.index' => 'facilities',
         'admin.facilities.create' => 'facilities',
         'admin.facilities.edit' => 'facilities',
@@ -222,6 +252,11 @@ return [
     ],
 
     'facility_active_map' => [
+        'member.facility.dashboard' => 'facility-dashboard',
+        'admin.facility.dashboard' => 'facility-dashboard',
+        'admin.facility.leadership*' => 'facility-dashboard',
+        'admin.facilities.leadership*' => 'facility-dashboard',
+        'dashboard.index' => 'dashboard',
         'dashboard.index' => 'dashboard',
         'settings.profile' => 'profile',
         'member.documents' => 'documents',
@@ -252,6 +287,8 @@ return [
         'admin.employees.*',
         'admin.facility.documents*',
         'admin.facility.reports*',
+        'admin.facility.leadership*',
+        'admin.facilities.leadership*',
         'admin.reports.*',
         'admin.scheduled-reports.*',
         'admin.scheduled-report-runs.*',
@@ -339,7 +376,8 @@ return [
         'admin.dashboard.index' => 'facility-hr-portal',
         'hr-portal.*' => 'facility-hr-portal',
         'user.hr-portal' => 'facility-hr-portal',
-        'admin.facility.dashboard' => 'facility-hr-portal',
+        'admin.facility.dashboard' => 'facility-dashboard',
+        'member.facility.dashboard' => 'facility-dashboard',
         'admin.facility.employees*' => 'facility-hr-portal',
         'admin.employees.*' => 'facility-hr-portal',
         'admin.facility.reports*' => 'facility-hr-portal',

@@ -260,7 +260,13 @@ Route::middleware(['auth'])->group(function () {
 // HR Portal access via RBA permission
 Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->group(function () {
     Route::get('/admin/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('hr-portal.index');
-    Route::get('/hr-portal', [\App\Http\Controllers\Admin\HrPortalController::class, 'index'])->name('user.hr-portal');
+    Route::get('/hr-portal/{facility?}', [DashboardController::class, 'hrManagementHub'])->name('user.hr-portal');
+});
+
+// Facility Dashboard (member portal layout) — extensible facility overview
+Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->group(function () {
+    Route::get('/facility-dashboard/{facility?}', [DashboardController::class, 'facilityDashboard'])
+        ->name('member.facility.dashboard');
 });
 
 // Facility-specific admin dashboard
@@ -294,6 +300,10 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
     // Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/reports', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reports'])->name('admin.facility.reports');
+    Route::get('/admin/facilities/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'index'])->name('admin.facilities.leadership.index');
+    Route::get('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'edit'])->name('admin.facility.leadership.edit');
+    Route::put('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'update'])->name('admin.facility.leadership.update');
+    Route::delete('/admin/facility/{facility}/leadership/{assignment}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroy'])->name('admin.facility.leadership.destroy');
     Route::resource('admin/facility/{facility}/uploads', UploadController::class)
         ->parameters(['uploads' => 'upload'])
         ->names([
@@ -312,7 +322,7 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
 });
 // Root route: show landing page (welcome)
 Route::get('/', function () {
-    return redirect('/bio-pacific-corporate');
+    return redirect('/' . config('member-portal.corporate_facility_slug', 'bio-pacific-corporate'));
 });
 
 // Debug route - temporarily check URL generation
@@ -788,7 +798,7 @@ Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 's
 
 // Redirect /home to /bio-pacific-corporate
 Route::get('/home', function() {
-    return redirect('/bio-pacific-corporate');
+    return redirect('/' . config('member-portal.corporate_facility_slug', 'bio-pacific-corporate'));
 })->name('home');
 
 // Redirect /{facility}/admin/dashboard to facility dashboard if user has access

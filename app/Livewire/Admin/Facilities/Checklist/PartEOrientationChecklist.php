@@ -499,16 +499,28 @@ class PartEOrientationChecklist extends Component
         $items = $this->empChecklistItems;
         $itemId = $itemRow['id'] ?? null;
         $name = $itemRow['name'] ?? '';
+        $raw = null;
 
         if ($itemId && isset($items['item_'.$itemId])) {
-            return (object) $items['item_'.$itemId];
+            $raw = $items['item_'.$itemId];
+        } elseif ($name !== '' && isset($items[$name])) {
+            $raw = $items[$name];
         }
 
-        if ($name !== '' && isset($items[$name])) {
-            return (object) $items[$name];
+        if ($raw === null) {
+            return null;
         }
 
-        return null;
+        $data = is_array($raw) ? $raw : (array) $raw;
+
+        return (object) array_merge([
+            'on_file' => false,
+            'verified_dt' => null,
+            'exp_dt' => null,
+            'verified_by' => null,
+            'comments' => null,
+            'exp_dt_not_required' => 0,
+        ], $data);
     }
 
     public function verifiedByLabel(?object $empChecklist): string

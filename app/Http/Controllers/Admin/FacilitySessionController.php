@@ -12,6 +12,6 @@ class FacilitySessionController extends Controller
         $facilityModel = Facility::where('slug', $facility)->orWhere('id', $facility)->firstOrFail();
         session(['facility_id' => $facilityModel->id]);
         // Redirect to dashboard or documents page as needed
-        return redirect()->route('admin.facility.dashboard', ['facility' => $facilityModel->slug ?? $facilityModel->id]);
+        return redirect()->route('member.facility.dashboard', ['facility' => $facilityModel->slug ?? $facilityModel->id]);
     }
 }

@@ -39,18 +39,28 @@ class AuthenticatedSessionController extends Controller
     session()->regenerate();
 
         $user = Auth::user();
-        $isAdmin = $user && method_exists($user, 'hasRole') ? $user->hasRole('admin') : ($user && $user->roles && $user->roles->pluck('name')->contains('admin'));
+        $hasRole = $user && method_exists($user, 'hasRole')
+            ? fn (string|array $roles) => $user->hasRole($roles)
+            : fn () => false;
 
-        if ($isAdmin) {
-            // Only redirect to /admin routes if the intended URL is an admin page
-            $intended = session()->pull('url.intended');
-            if ($intended && str_contains($intended, '/admin')) {
-                return redirect()->to($intended);
-            }
-            // Otherwise, go to user dashboard
+        $intended = session()->pull('url.intended');
+        if ($intended) {
+            return redirect()->to($intended);
+        }
+
+        // Facility leaders land on the personal work-queue dashboard
+        if ($hasRole(['facility-admin', 'facility-dsd', 'don', 'ssd', 'activities-director', 'facility-ssd'])) {
+            return redirect()->route('dashboard.index');
+        }
+
+        if ($hasRole(['admin', 'super-admin'])) {
             return redirect()->route('admin.dashboard.index');
         }
-        // All other users go to the employee dashboard
+
+        if ($hasRole(['rdhr', 'regional-director'])) {
+            return redirect()->route('admin.dashboard.index');
+        }
+
         return redirect()->route('dashboard.index');
     }
 

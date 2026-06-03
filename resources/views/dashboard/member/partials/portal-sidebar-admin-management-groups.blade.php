@@ -40,6 +40,13 @@
         <span>🏢</span><span>Facilities Management</span>
     </a>
 
+    @if(\Illuminate\Support\Facades\Route::has('admin.facilities.leadership.index'))
+    <a href="{{ route('admin.facilities.leadership.index') }}"
+       class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs(['admin.facility.leadership*', 'admin.facilities.leadership*'])) }}">
+        <span>👔</span><span>Facility Leadership</span>
+    </a>
+    @endif
+
     <a href="{{ route('admin.users.index') }}"
        class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs('admin.users.*')) }}">
         <span>👥</span><span>Users Management</span>

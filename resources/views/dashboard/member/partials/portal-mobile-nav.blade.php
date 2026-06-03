@@ -17,7 +17,8 @@
         ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
       ],
       'facility' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '📊', 'label' => 'Work'],
+        ['id' => 'facility-dashboard', 'route' => 'member.facility.dashboard', 'route_is' => ['member.facility.dashboard', 'admin.facility.dashboard'], 'icon' => '🏢', 'label' => 'Facility'],
         ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Docs'],
         ['id' => 'facility-hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
         ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
