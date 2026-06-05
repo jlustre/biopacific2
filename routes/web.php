@@ -325,6 +325,9 @@ Route::get('/', function () {
     return redirect('/' . config('member-portal.corporate_facility_slug', 'bio-pacific-corporate'));
 });
 
+// Auth routes early — must register before /{facility:slug} catch-all at bottom of file
+require __DIR__.'/auth.php';
+
 // Debug route - temporarily check URL generation
 Route::get('/test-urls', function () {
     $code = 'TESTCODE';
@@ -681,16 +684,14 @@ Route::post('/tours', [TourController::class, 'store'])->name('tours.store');
 // FAQ Section
 
 
-use App\Http\Controllers\HomeController;
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('/home', function () {
+    return redirect('/' . config('member-portal.corporate_facility_slug', 'bio-pacific-corporate'));
+})->name('home');
 Route::get('/faqs', [FaqController::class, 'index'])->name('faqs.index');
 
 Route::post('/careers/apply', [CareersPublicController::class, 'apply'])->name('careers.apply');
 Route::post('/book-a-tour', [BookATourController::class, 'store'])->name('book-a-tour.store');
 Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
-
-// Auth routes (must be before catch-all routes)
-require __DIR__.'/auth.php';
 
 // Explicit admin login routes (GET and POST)
 Route::middleware('guest')->group(function () {
@@ -797,11 +798,6 @@ Route::get('/{facility:slug}/terms-of-service', [TermsOfServiceController::class
 Route::get('/{facility:slug}/accessibility', [AccessibilityController::class, 'show'])->name('accessibility');
 
 // Public Facility Route (catch-all, must be last)
-
-// Redirect /home to /bio-pacific-corporate
-Route::get('/home', function() {
-    return redirect('/' . config('member-portal.corporate_facility_slug', 'bio-pacific-corporate'));
-})->name('home');
 
 // Redirect /{facility}/admin/dashboard to facility dashboard if user has access
 Route::get('/{facility:slug}/admin/dashboard', function ($facilitySlug) {

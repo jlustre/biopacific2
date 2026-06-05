@@ -11,12 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Add your middleware aliases here
-        // Add your middleware aliases here
+        // Authenticated users hitting /login or /register go to the member dashboard,
+        // not route('home') which redirects to the public corporate marketing site.
+        $middleware->redirectUsersTo(fn () => route('dashboard.index'));
+        $middleware->redirectGuestsTo(fn () => route('login'));
+
         $middleware->alias([
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
 
         // Register CheckFacilityShutdown as global middleware

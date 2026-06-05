@@ -13,6 +13,12 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        // Use IPv4 — Windows browsers often fail to load assets from http://[::1]:5173
+        host: '127.0.0.1',
+        port: 5173,
         cors: true,
+        hmr: {
+            host: '127.0.0.1',
+        },
     },
 });

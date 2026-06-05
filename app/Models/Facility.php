@@ -89,7 +89,7 @@ class Facility extends Model
 
     if (!is_array($settings)) {
       return $this->isCorporatePublicSite()
-        ? ['label' => 'Login', 'url' => static::publicCtaUrlForRoute('login')]
+        ? static::publicHeaderCtaForAuthState()
         : null;
     }
 
@@ -98,6 +98,10 @@ class Facility extends Model
     if (is_array($cta) && !empty($cta['label'])) {
       $routeName = $cta['route'] ?? 'login';
 
+      if (auth()->check() && $routeName === 'login') {
+        return static::publicHeaderCtaForAuthState();
+      }
+
       return [
         'label' => (string) $cta['label'],
         'url' => static::publicCtaUrlForRoute($routeName),
@@ -105,8 +109,27 @@ class Facility extends Model
     }
 
     return $this->isCorporatePublicSite()
-      ? ['label' => 'Login', 'url' => static::publicCtaUrlForRoute('login')]
+      ? static::publicHeaderCtaForAuthState()
       : null;
+  }
+
+  /**
+   * Login for guests; Dashboard for authenticated users on the public site header.
+   *
+   * @return array{label: string, url: string}
+   */
+  public static function publicHeaderCtaForAuthState(): array
+  {
+    if (!auth()->check()) {
+      return ['label' => 'Login', 'url' => static::publicCtaUrlForRoute('login')];
+    }
+
+    $user = auth()->user();
+    $routeName = ($user && method_exists($user, 'hasRole') && $user->hasRole('admin'))
+      ? 'admin.dashboard.index'
+      : 'dashboard.index';
+
+    return ['label' => 'Dashboard', 'url' => static::publicCtaUrlForRoute($routeName)];
   }
 
   public function getMeta(string $key, ?string $section = null): ?string
