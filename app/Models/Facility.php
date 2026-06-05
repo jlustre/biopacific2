@@ -59,6 +59,28 @@ class Facility extends Model
   }
 
   /**
+   * Same-origin path for public header CTAs (Login, etc.).
+   * Avoids broken links when APP_URL still points at a local/dev host on staging.
+   */
+  public static function publicCtaUrlForRoute(string $routeName = 'login'): string
+  {
+    $fallback = '/login';
+
+    if (!\Illuminate\Support\Facades\Route::has($routeName)) {
+      return $fallback;
+    }
+
+    $parts = parse_url(route($routeName));
+    $path = $parts['path'] ?? $fallback;
+
+    if (!empty($parts['query'])) {
+      $path .= '?' . $parts['query'];
+    }
+
+    return $path !== '' ? $path : $fallback;
+  }
+
+  /**
    * @return array{label: string, url: string}|null
    */
   public function publicHeaderCta(): ?array
@@ -67,7 +89,7 @@ class Facility extends Model
 
     if (!is_array($settings)) {
       return $this->isCorporatePublicSite()
-        ? ['label' => 'Login', 'url' => route('login')]
+        ? ['label' => 'Login', 'url' => static::publicCtaUrlForRoute('login')]
         : null;
     }
 
@@ -78,14 +100,12 @@ class Facility extends Model
 
       return [
         'label' => (string) $cta['label'],
-        'url' => \Illuminate\Support\Facades\Route::has($routeName)
-            ? route($routeName)
-            : url('/login'),
+        'url' => static::publicCtaUrlForRoute($routeName),
       ];
     }
 
     return $this->isCorporatePublicSite()
-      ? ['label' => 'Login', 'url' => route('login')]
+      ? ['label' => 'Login', 'url' => static::publicCtaUrlForRoute('login')]
       : null;
   }
 

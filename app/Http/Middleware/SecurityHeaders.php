@@ -32,8 +32,8 @@ class SecurityHeaders
         // Content Security Policy - adjust as needed for your application
         $csp = "default-src 'self'; " .
                "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; " .
-               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
-               "font-src 'self' https://fonts.gstatic.com; " .
+               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net; " .
+               "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net; " .
                "img-src 'self' data: https:; " .
                "connect-src 'self';";
         

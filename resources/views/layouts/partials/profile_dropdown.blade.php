@@ -67,6 +67,6 @@ use Illuminate\Support\Facades\Auth;
         </div>
     </div>
     @else
-    <a href="{{ route('login') }}" class="px-4 py-2 text-gray-700 hover:bg-green-300">Log In</a>
+    <a href="/login" class="px-4 py-2 text-gray-700 hover:bg-green-300">Log In</a>
     @endif
 </div>

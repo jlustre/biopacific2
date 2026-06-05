@@ -3,7 +3,7 @@
 
 <title>{{ isset($facility) && method_exists($facility, 'getMeta') ? $facility->getMeta('title', $section) : ($title ??
     '') }}</title>
-<meta name="description" content="{{ $facility->meta_description ?? $meta_description ?? '' }}">
+<meta name="description" content="{{ (isset($facility) && is_object($facility) ? $facility->meta_description : null) ?? $meta_description ?? '' }}">
 
 <link rel="icon" type="image/png" href="{{ asset('bplogo.png') }}">
 <link rel="apple-touch-icon" type="image/png" href="{{ asset('bplogo.png') }}">
