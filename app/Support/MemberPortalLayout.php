@@ -386,4 +386,33 @@ class MemberPortalLayout
 
         return false;
     }
+
+    /**
+     * Employee portal dashboard nav with employment vs pre-employment link resolved per user.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function employeeDashboardNavItems($user = null): array
+    {
+        $user = $user ?? auth()->user();
+        $items = config('member-portal.employee_dashboard_nav', []);
+        $isEmployee = $user && method_exists($user, 'resolvedBpEmployee') && $user->resolvedBpEmployee() !== null;
+
+        return collect($items)
+            ->filter(function (array $item) use ($isEmployee) {
+                $id = $item['id'] ?? '';
+
+                if ($isEmployee && $id === 'pre-employment') {
+                    return false;
+                }
+
+                if (!$isEmployee && $id === 'employment') {
+                    return false;
+                }
+
+                return true;
+            })
+            ->values()
+            ->all();
+    }
 }

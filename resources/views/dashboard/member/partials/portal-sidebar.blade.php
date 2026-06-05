@@ -10,7 +10,7 @@
     $dashboardNav = match ($portalNav) {
         'facility' => config('member-portal.facility_dashboard_nav', []),
         'corporate' => config('member-portal.corporate_dashboard_nav', []),
-        'employee' => config('member-portal.employee_dashboard_nav', []),
+        'employee' => \App\Support\MemberPortalLayout::employeeDashboardNavItems(auth()->user()),
         default => [],
     };
     $portalSubtitle = $portalSubtitle ?? match ($portalNav) {

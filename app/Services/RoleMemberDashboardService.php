@@ -73,7 +73,7 @@ class RoleMemberDashboardService
             'dashboardScopeLabel' => $scope['label'],
             'dashboardFacilityName' => $scope['facility']?->name ?? '—',
             'dashboardIntro' => $scope['intro'],
-            'dashboardKpis' => $operations['kpis'],
+            'dashboardKpis' => $this->buildPersonalKpis($user),
             'dashboardActionQueue' => $operations['action_queue'],
             'dashboardAwareness' => $operations['awareness'],
             'dashboardQuickActions' => $this->leadershipQuickActions($persona, $trainingRoute),
@@ -146,48 +146,80 @@ class RoleMemberDashboardService
         $stats = $payload['stats'] ?? [];
         $todos = collect($payload['todos'] ?? [])->where('done', false)->take(6)->values()->all();
 
-        $myActions = (int) ($stats['documents_needed'] ?? 0)
-            + (int) ($stats['trainings_needs_action'] ?? 0)
-            + (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0));
-
         return [
             'roleDashboardMode' => 'staff',
             'dashboardPersona' => $persona,
             'dashboardPersonaLabel' => $personaLabel,
             'dashboardScopeLabel' => $payload['facilityName'] ?? 'Your workplace',
             'dashboardIntro' => 'Your work queue — account and personal details live under My Profile.',
-            'dashboardKpis' => [
-                [
-                    'label' => 'My open tasks',
-                    'value' => $myActions,
-                    'hint' => 'Documents, training, credentials',
-                    'route' => route('member.documents'),
-                    'tone' => 'brand',
-                    'icon' => 'fa-list-check',
-                ],
-                [
-                    'label' => 'Trainings',
-                    'value' => (int) ($stats['trainings_needs_action'] ?? 0),
-                    'hint' => ($stats['trainings_pending_signature'] ?? 0) > 0
-                        ? ($stats['trainings_pending_signature'] . ' need signature')
-                        : 'Required items',
-                    'route' => route('member.trainings'),
-                    'tone' => 'amber',
-                    'icon' => 'fa-graduation-cap',
-                ],
-                [
-                    'label' => 'Credentials',
-                    'value' => (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0)),
-                    'hint' => 'Expiring or expired',
-                    'route' => route('member.certifications'),
-                    'tone' => 'rose',
-                    'icon' => 'fa-id-card',
-                ],
-            ],
+            'dashboardKpis' => $this->buildPersonalKpis($user, $stats),
             'dashboardActionQueue' => [],
             'dashboardMyTasks' => $todos,
             'dashboardQuickActions' => $this->staffQuickActions($persona),
             'stats' => $stats,
+        ];
+    }
+
+    /**
+     * Personal compliance KPIs for the member work-queue dashboard (/dashboard).
+     *
+     * @param  array<string, mixed>|null  $stats
+     * @return list<array<string, mixed>>
+     */
+    protected function buildPersonalKpis(User $user, ?array $stats = null): array
+    {
+        $stats ??= ($this->memberDashboard->build($user)['stats'] ?? []);
+
+        $myActions = (int) ($stats['documents_needed'] ?? 0)
+            + (int) ($stats['trainings_needs_action'] ?? 0)
+            + (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0));
+
+        $credentialCount = (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0));
+        if ($credentialCount === 0 && ($stats['certifications_needs_attention'] ?? 0) > 0) {
+            $credentialCount = (int) $stats['certifications_needs_attention'];
+        }
+
+        return [
+            [
+                'label' => 'My open tasks',
+                'value' => $myActions,
+                'hint' => 'Documents, training, credentials',
+                'route' => route('member.documents'),
+                'tone' => 'brand',
+                'icon' => 'fa-list-check',
+            ],
+            [
+                'label' => 'My Trainings',
+                'value' => (int) ($stats['trainings_needs_action'] ?? 0),
+                'hint' => ($stats['trainings_pending_signature'] ?? 0) > 0
+                    ? ($stats['trainings_pending_signature'] . ' need signature')
+                    : (($stats['trainings_total'] ?? 0) > 0
+                        ? ($stats['trainings_total'] . ' assigned')
+                        : 'Required items'),
+                'route' => route('member.trainings'),
+                'tone' => 'amber',
+                'icon' => 'fa-graduation-cap',
+            ],
+            [
+                'label' => 'My Credentials',
+                'value' => $credentialCount,
+                'hint' => ($stats['certifications_expired'] ?? 0) > 0
+                    ? ($stats['certifications_expired'] . ' expired')
+                    : 'Expiring or expired',
+                'route' => route('member.certifications'),
+                'tone' => 'rose',
+                'icon' => 'fa-id-card',
+            ],
+            [
+                'label' => 'My Documents',
+                'value' => (int) ($stats['documents_needed'] ?? 0),
+                'hint' => ($stats['signatures_needed'] ?? 0) > 0
+                    ? ($stats['signatures_needed'] . ' need signature')
+                    : 'Checklist gaps',
+                'route' => route('member.documents'),
+                'tone' => 'teal',
+                'icon' => 'fa-folder-open',
+            ],
         ];
     }
 

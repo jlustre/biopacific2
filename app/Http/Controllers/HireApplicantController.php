@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BPEmployee;
 use App\Models\PreEmploymentApplication;
-use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -27,19 +27,14 @@ class HireApplicantController extends Controller
 
         DB::beginTransaction();
         try {
-            // Update status to hired
-            $preEmployment->update([
-                'status' => 'hired',
-                'hired_at' => now(),
-            ]);
-
-            // Copy data from pre-employment to employee
+            /** @var BPEmployee $employee */
             $employee = $preEmployment->copyToEmployee($validated);
 
             DB::commit();
+
             return redirect()
-                ->route('admin.employees.show', $employee)
-                ->with('success', 'Applicant hired successfully! Data has been transferred to the employees table.');
+                ->route('admin.employees.profile', $employee->employee_num)
+                ->with('success', 'Applicant hired successfully! Pre-employment data has been transferred to the employee record.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Hiring applicant error: ' . $e->getMessage(), [

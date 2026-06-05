@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class PreEmploymentApplication extends Model
 {
@@ -95,67 +95,13 @@ class PreEmploymentApplication extends Model
     }
 
     /**
-     * Copy application data to employee table when hired
+     * Copy application data to Bio-Pacific employee tables when hired.
+     *
+     * @param  array{hire_date?: string, position_id?: int}  $hireData
      */
-    public function copyToEmployee($hireData = [])
+    public function copyToEmployee(array $hireData = []): BPEmployee
     {
-        $hireDate = $hireData['hire_date'] ?? now()->toDateString();
-        $positionId = $hireData['position_id'] ?? null;
-
-        // Create or update employee record
-        $employee = Employee::updateOrCreate(
-            ['user_id' => $this->user_id],
-            [
-                'first_name' => $this->first_name,
-                'middle_name' => $this->middle_name,
-                'last_name' => $this->last_name,
-                'position_applied_for' => $this->position_applied_for,
-                'position_id' => $positionId,
-                'employment_type' => $this->employment_type,
-                'employment_type_other' => $this->employment_type_other,
-                'shift_preference' => $this->shift_preference,
-                'date_available' => $this->date_available,
-                'wage_salary_expected' => $this->wage_salary_expected,
-                'worked_here_before' => $this->worked_here_before,
-                'worked_here_when_where' => $this->worked_here_when_where,
-                'relatives_work_here' => $this->relatives_work_here,
-                'relatives_details' => $this->relatives_details,
-                'has_drivers_license' => $this->has_drivers_license,
-                'drivers_license_number' => $this->drivers_license_number,
-                'how_heard_about_us' => $this->how_heard_about_us,
-                'how_heard_other' => $this->how_heard_other,
-                'authorized_to_work_usa' => $this->authorized_to_work_usa,
-                'hire_date' => $hireDate,
-                'status' => 'active',
-            ]
-        );
-
-        // Create initial address record with effective dating
-        EmployeeAddress::create([
-            'employee_num' => $employee->employee_num,
-            'address1' => $this->current_address,
-            'address2' => null,
-            'city' => $this->city,
-            'state' => $this->state,
-            'zip' => $this->zip_code,
-            'country' => 'usa',
-            'address_type' => 'H',
-            'effdt' => $hireDate,
-            'effseq' => 1,
-            'is_primary' => 'Y',
-        ]);
-
-        // Create initial phone record with effective dating
-        EmployeePhone::create([
-            'employee_num' => $employee->employee_num,
-            'phone_number' => $this->phone_number,
-            'phone_type' => 'H',
-            'effdt' => $hireDate,
-            'effseq' => 1,
-            'is_primary' => 'Y',
-        ]);
-
-        return $employee;
+        return app(\App\Services\PreEmploymentHireService::class)->hire($this, $hireData);
     }
 }
 

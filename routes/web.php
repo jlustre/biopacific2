@@ -653,6 +653,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
     Route::get('/dashboard/trainings', [DashboardController::class, 'memberTrainings'])->name('member.trainings');
     Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
+    Route::get('/dashboard/facilities-websites', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'index'])->name('member.facilities.websites');
+    Route::get('/dashboard/facilities-websites/{facility}', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'show'])->name('member.facilities.websites.show');
     Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');
     Route::patch('settings/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('settings.profile.update');
     Route::post('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'update'])->name('settings.profile.avatar.update');

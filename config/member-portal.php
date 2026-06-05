@@ -3,6 +3,31 @@
 return [
     'corporate_facility_slug' => env('CORPORATE_FACILITY_SLUG', 'bio-pacific-corporate'),
 
+    'corporate_public_domain' => env('CORPORATE_PUBLIC_DOMAIN', 'biopacificoperational.com'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Operational public site (facility website links)
+    |--------------------------------------------------------------------------
+    |
+    | Production facility rows use short marketing domains (e.g. *hcc.com) that
+    | forward via Namecheap to www.biopacificoperational.com. Those forwards cannot
+    | target staging — set OPERATIONAL_SITE_BASE (or APP_ENV=staging/local) so the
+    | member portal links directly to staging.biopacificoperational.com/{facility-slug}.
+    |
+    */
+    'operational_site_base' => env('OPERATIONAL_SITE_BASE'),
+
+    'operational_site_staging_base' => env(
+        'OPERATIONAL_SITE_STAGING_BASE',
+        'https://staging.biopacificoperational.com'
+    ),
+
+    'operational_site_production_base' => env(
+        'OPERATIONAL_SITE_PRODUCTION_BASE',
+        'https://www.biopacificoperational.com'
+    ),
+
     'demo_user_emails' => [
         'rdhr' => 'rdhr@biopacific.com',
         'facility_admin' => 'facilityadmin@biopacific.com',
@@ -142,20 +167,23 @@ return [
     ],
 
     'corporate_dashboard_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'My Dashboard'],
+        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Facilities Websites'],
     ],
 
     'facility_dashboard_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '📊', 'label' => 'My work queue'],
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '📊', 'label' => 'My Dashboard'],
+        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Facilities Websites'],
         ['id' => 'facility-dashboard', 'route' => 'member.facility.dashboard', 'route_is' => ['member.facility.dashboard', 'admin.facility.dashboard'], 'icon' => '🏢', 'label' => 'Facility Dashboard'],
     ],
 
     'employee_dashboard_nav' => [
-        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Dashboard'],
+        ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'My Dashboard'],
+        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Facilities Websites'],
         ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News & Events'],
         ['id' => 'pre-employment', 'route' => 'pre-employment.portal', 'route_is' => 'pre-employment.*', 'icon' => '📋', 'label' => 'Pre-Employment'],
-        ['id' => 'employment', 'route' => 'employment.portal', 'route_is' => 'employment.*', 'icon' => '💼', 'label' => 'Employment'],
-        ['id' => 'messages', 'route' => 'dashboard.index', 'fragment' => 'messages', 'icon' => '💬', 'label' => 'Messages'],
+        ['id' => 'employment', 'route' => 'employment.portal', 'route_is' => 'employment.*', 'icon' => '💼', 'label' => 'My Employment'],
+        ['id' => 'messages', 'route' => 'dashboard.index', 'fragment' => 'messages', 'icon' => '💬', 'label' => 'My Messages'],
     ],
 
     /** @deprecated Use corporate_dashboard_nav + personal_portal_nav + management groups */
@@ -222,6 +250,7 @@ return [
 
     'corporate_active_map' => [
         'dashboard.index' => 'dashboard',
+        'member.facilities.websites' => 'facilities-websites',
         'settings.profile' => 'profile',
         'member.trainings' => 'trainings',
         'member.trainings.*' => 'trainings',
@@ -238,6 +267,7 @@ return [
 
     'employee_active_map' => [
         'dashboard.index' => 'dashboard',
+        'member.facilities.websites' => 'facilities-websites',
         'member.news-events.index' => 'news',
         'member.news-events.*' => 'news',
         'pre-employment.*' => 'pre-employment',
@@ -256,7 +286,7 @@ return [
         'admin.facility.dashboard' => 'facility-dashboard',
         'admin.facility.leadership*' => 'facility-dashboard',
         'admin.facilities.leadership*' => 'facility-dashboard',
-        'dashboard.index' => 'dashboard',
+        'member.facilities.websites' => 'facilities-websites',
         'dashboard.index' => 'dashboard',
         'settings.profile' => 'profile',
         'member.documents' => 'documents',
