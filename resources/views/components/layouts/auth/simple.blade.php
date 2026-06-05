@@ -11,7 +11,7 @@
     <div class="bg-white/60 border-2 border-gray-700 rounded-xl shadow-lg flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10"
         style="box-shadow: 0 4px 32px 0 rgba(0,0,0,0.12);">
         <div class="flex w-full max-w-sm flex-col gap-3">
-            <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
+            <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium">
                 <span class="flex h-9 w-9 mb-1 items-center justify-center rounded-md">
                     <style>
                         .logo-img {

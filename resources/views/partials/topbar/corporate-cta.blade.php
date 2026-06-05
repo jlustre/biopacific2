@@ -8,8 +8,8 @@
     $cta = $facilityModel?->publicHeaderCta();
 @endphp
 @if($cta)
-<a href="{{ $cta['url'] }}"
-  class="max-w-[180px] min-w-[120px] mx-auto cursor-pointer px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center ml-2 shadow-md"
+<a href="{{ $cta['url'] }}" target="_self"
+  class="relative z-[60] max-w-[180px] min-w-[120px] mx-auto cursor-pointer px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center ml-2 shadow-md"
   style="background-color: {{ $primary }}; color: white; border: none;"
   @mouseenter="$el.style.backgroundColor = '{{ $secondary }}'; $el.style.color = 'white';"
   @mouseleave="$el.style.backgroundColor = '{{ $primary }}'; $el.style.color = 'white';">
