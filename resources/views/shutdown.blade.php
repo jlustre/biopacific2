@@ -18,7 +18,7 @@
                 <h2 class="text-xl font-bold text-gray-800">{{ $facilityName }}</h2>
             </div>
             @endif
-            <img src="{{ asset('images/website_maintenance.png') }}" alt="Maintenance"
+            <img src="{{ asset('images/website_maintenance.jpg') }}" alt="Maintenance"
                 class="mx-auto mb-6 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72">
             <p class="mb-4 text-gray-700 text-center">
                 {{ $message ?? 'This site is temporarily unavailable while we complete scheduled improvements.

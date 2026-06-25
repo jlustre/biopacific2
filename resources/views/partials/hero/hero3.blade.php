@@ -1,10 +1,7 @@
 @php
-$posterFilename = $facility['hero_image_url'] ?? null;
-if (!empty($posterFilename)) {
-$poster = url('images/' . $posterFilename);
-} else {
-$poster = asset('images/hero1.jpg');
-}
+use App\Helpers\FacilityDataHelper;
+
+$poster = FacilityDataHelper::resolvePublicImageUrl($facility['hero_image_url'] ?? null, 'images/hero1.jpg');
 @endphp
 
 <section class="relative isolate overflow-hidden min-h-[78vh] md:min-h-screen">

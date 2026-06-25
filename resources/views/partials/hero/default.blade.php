@@ -1,36 +1,34 @@
 {{-- HERO — Version C: Full-width background video with image fallback --}}
 @php
-// Color variables ($primary, $secondary, $accent) are now passed from the controller.
-// Build poster image URL for video background
-$posterFilename = $facility['hero_image_url'] ?? null;
-if (!empty($posterFilename)) {
-$poster = url('images/' . $posterFilename);
-} else {
-$poster = asset('images/hero1.jpg');
-}
-$hasVideo = !empty($facility['hero_video_id']);
+use App\Helpers\FacilityDataHelper;
+
+$poster = FacilityDataHelper::resolvePublicImageUrl($facility['hero_image_url'] ?? null);
+$hasVideo = ! empty($facility['hero_video_id']);
 @endphp
 
 <section class="relative min-h-[80vh] md:min-h-screen overflow-hidden isolate">
   {{-- Background media --}}
   <div class="absolute inset-0 -z-10">
-    {{-- Video (autoplays silently; pauses for reduced motion) --}}
+    @if($hasVideo)
     <video id="heroBgVideo" class="absolute inset-0 h-full w-full object-cover" playsinline autoplay muted loop
       preload="auto" poster="{{ $poster }}" aria-hidden="true">
       @if(!empty($facility['hero_video_webm']))
       <source src="{{ asset($facility['hero_video_webm']) }}" type="video/webm">
       @endif
-      {{--
-      <source src="{{ asset($facility['hero_video_mp4'] ?? 'videos/hero.mp4') }}" type="video/mp4"> --}}
-      {{-- If the browser can't play the video, it will show the poster automatically --}}
     </video>
+    @else
+    <img src="{{ $poster }}" alt="{{ $facility['name'] ?? 'Our facility' }}"
+      class="absolute inset-0 h-full w-full object-cover" loading="eager" fetchpriority="high" />
+    @endif
 
-    {{-- Fallback image (for <noscript> or if video fails completely) --}}
+    {{-- Fallback image (for <noscript> when video is enabled) --}}
+    @if($hasVideo)
       <noscript>
         <img src="{{ $poster }}" alt="Residents and caregiver at {{ $facility['name'] ?? 'our facility' }}"
           class="absolute inset-0 w-full h-auto max-w-full object-cover block" loading="lazy"
           srcset="{{ $poster }} 1200w, {{ $poster }} 800w" sizes="(max-width: 768px) 100vw, 1200px" />
       </noscript>
+    @endif
 
       {{-- Readability overlays --}}
       <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50"></div>
@@ -151,11 +149,15 @@ $hasVideo = !empty($facility['hero_video_id']);
 <script>
   document.addEventListener('DOMContentLoaded', function() {
   var bgVideo = document.getElementById('heroBgVideo');
+  if (!bgVideo) {
+    return;
+  }
+
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced && bgVideo) {
+  if (prefersReduced) {
     try { bgVideo.pause(); } catch(e) {}
     bgVideo.closest('section')?.classList.add('reduced-motion-fallback');
-  } else if (bgVideo) {
+  } else {
     var tryPlay = bgVideo.play();
     if (tryPlay && typeof tryPlay.catch === 'function') {
       tryPlay.catch(function(){});

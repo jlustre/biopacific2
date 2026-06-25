@@ -3,7 +3,7 @@
 $name = $facility['name'] ?? 'Our Care Center';
 $cityState = trim(($facility['city'] ?? '') . ' ' . ($facility['state'] ?? ''));
 $aboutUrl = $facility['about_image_url'] ?? null;
-$hero = $facility['images']['hero'] ?? '/build/images/about-hero.png';
+$hero = $facility['images']['hero'] ?? '/build/images/about-hero.jpg';
 if ($aboutUrl) {
 if (preg_match('/^https?:\/\//i', $aboutUrl) || strpos($aboutUrl, '/') === 0) {
 $hero = $aboutUrl;

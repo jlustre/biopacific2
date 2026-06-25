@@ -6,8 +6,7 @@ $sections = $sections ?? [];
 
 
 
-{{-- @extends('layouts.' . ($layoutTemplate ?? 'default-template')) --}}
-@extends('layouts.' . ($layoutTemplate ?? 'default-template'))
+@extends('layouts.' . (\App\Helpers\FacilityDataHelper::resolveLayoutTemplate($layoutTemplate ?? null)))
 
 @section('content')
 

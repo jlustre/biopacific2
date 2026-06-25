@@ -36,6 +36,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased pb-20 lg:pb-0"
       x-data="{ sidebarOpen: false, profileOpen: false, notifyOpen: false }">
+  @include('layouts.partials.page-loader')
   <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
 
   <div class="min-h-screen lg:flex">
@@ -51,6 +52,7 @@
     ])
 
     <main class="flex-1 lg:min-w-0 flex flex-col min-h-screen">
+      @include('layouts.partials.email-verification-banner', ['user' => $user ?? auth()->user()])
       @include('dashboard.member.partials.portal-topbar', [
         'eyebrow' => $portalEyebrow,
         'pageTitle' => $portalPageTitle,
@@ -110,9 +112,11 @@
 
 <body class="min-h-screen antialiased"
     style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
+    @include('layouts.partials.page-loader')
     @include('layouts.partials.go_to_top')
 
     @include('layouts.topnav')
+    @include('layouts.partials.email-verification-banner')
     <div class="flex min-h-screen" x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
         @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
         x-init="window.addEventListener('resize', () => { sidebarOpen = window.innerWidth >= 1024 })">

@@ -1,9 +1,11 @@
 {{-- HERO — Alt Design: Split layout, framed image, soft texture --}}
 @php
-$poster = !empty($facility['hero_image_url'])
-? asset('images/'.$facility['hero_image_url'])
-: ($facility['hero_config']['background_image'] ??
-asset('images/hero1.jpg'));
+use App\Helpers\FacilityDataHelper;
+
+$poster = FacilityDataHelper::resolvePublicImageUrl(
+    $facility['hero_image_url'] ?? null,
+    $facility['hero_config']['background_image'] ?? 'images/hero1.jpg'
+);
 @endphp
 
 <section class="relative isolate overflow-hidden">

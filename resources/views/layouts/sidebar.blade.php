@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Log;
         @endif
 
         <!-- Admin Access Only Menu -->
-        @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+        @if($user && (($user->hasRole('admin') && $user->roles->count() === 1) || \App\Support\MemberPortalLayout::userIsSystemAdmin($user)))
 
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
@@ -126,7 +126,7 @@ use Illuminate\Support\Facades\Log;
                                         class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-hospital mr-2"></i> {{ $abbr }}
                                     </a>
-                                    @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
+                                    @if($user && (($user->hasRole('admin') && $user->roles->count() === 1) || \App\Support\MemberPortalLayout::userIsSystemAdmin($user)))
                                     <a href="{{ route('admin.facility.dashboard', $facility) }}"
                                         class="flex items-center w-full px-4 py-2 text-blue-700 hover:bg-blue-50">
                                         <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
@@ -277,7 +277,7 @@ use Illuminate\Support\Facades\Log;
         </div>
         @endif
 
-        @if($user && $user->hasRole(['admin','rdhr','facility-admin','facility-dsd']))
+        @if($user && \App\Support\MemberPortalLayout::userCanAccessWebContentsNav($user))
         <!-- Web Contents Menu -->
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
@@ -379,10 +379,15 @@ use Illuminate\Support\Facades\Log;
         @endif
 
         <!-- Show HR Management when user has HR portal access permission -->
-        @if($user && $user->hasRole('admin') && $user->roles->count() === 1)
-        <a href="{{ route('hr-portal.index') }}"
-            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('admin.hr-portal.*') ? 'bg-indigo-100 font-bold' : '' }}">
-            <i class="fas fa-users-cog mr-2"></i> HR Management
+        @if($user && \App\Support\MemberPortalLayout::userIsSystemAdmin($user))
+        <a href="{{ route('user.hr-portal') }}"
+            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs(['admin.hr-portal.*', 'hr-portal.*', 'user.hr-portal']) ? 'bg-indigo-100 font-bold' : '' }}">
+            <i class="fas fa-users-cog mr-2"></i> Employee Management
+        </a>
+        @elseif($user && $user->hasRole('admin') && $user->roles->count() === 1)
+        <a href="{{ route('user.hr-portal') }}"
+            class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs(['admin.hr-portal.*', 'hr-portal.*', 'user.hr-portal']) ? 'bg-indigo-100 font-bold' : '' }}">
+            <i class="fas fa-users-cog mr-2"></i> Employee Management
         </a>
         @elseif($user && $user->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL))
         <a href="{{ route('user.hr-portal') }}"

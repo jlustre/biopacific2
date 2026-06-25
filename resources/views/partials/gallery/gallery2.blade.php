@@ -2,15 +2,15 @@
 $primary = $facility['primary_color'] ?? '#0EA5E9';
 $accent = $facility['accent_color'] ?? '#F59E0B';
 $galleryImages = [
-asset('images/gallery/nursinghome_image1.png'),
-asset('images/gallery/nursinghome_image2.png'),
-asset('images/gallery/nursinghome_image3.png'),
-asset('images/gallery/nursinghome_image4.png'),
-asset('images/gallery/nursinghome_image5.png'),
-asset('images/gallery/nursinghome_image6.png'),
-asset('images/gallery/nursinghome_image7.png'),
-asset('images/gallery/nursinghome_image8.png'),
-asset('images/gallery/nursinghome_image9.png'),
+asset('images/gallery/nursinghome_image1.jpg'),
+asset('images/gallery/nursinghome_image2.jpg'),
+asset('images/gallery/nursinghome_image3.jpg'),
+asset('images/gallery/nursinghome_image4.jpg'),
+asset('images/gallery/nursinghome_image5.jpg'),
+asset('images/gallery/nursinghome_image6.jpg'),
+asset('images/gallery/nursinghome_image7.jpg'),
+asset('images/gallery/nursinghome_image8.jpg'),
+asset('images/gallery/nursinghome_image9.jpg'),
 ];
 
 

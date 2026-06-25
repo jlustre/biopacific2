@@ -46,6 +46,7 @@ $metaDescription = $facility['meta_description'] ?? '';
 </head>
 
 <body>
+    @include('layouts.partials.page-loader')
     @yield('body')
 
     {{-- Scripts Section --}}

@@ -54,9 +54,11 @@ class RoleMemberDashboardService
         $scope = $this->resolveScope($user, $bpEmployee, $persona);
         $excludeSelf = $scope['type'] === 'facility' ? null : $bpEmployee?->employee_num;
         $team = $this->loadTeamEmployees($scope['facility'], $scope['department_id'], $excludeSelf);
-        $operations = $this->summarizeTeamOperations($team);
+        $teamScopeLabel = $this->teamScopeLabel($scope);
+        $operations = $this->summarizeTeamOperations($team, $teamScopeLabel);
         $expiringDocuments = $this->buildExpiringDocumentsPanel($team);
         $assessmentsDue = $this->buildAssessmentsDuePanel($team);
+        $personalKpis = $this->buildPersonalKpis($user);
 
         $trainingRoute = \Illuminate\Support\Facades\Route::has('admin.training-management.index')
             ? route('admin.training-management.index', array_filter([
@@ -71,9 +73,14 @@ class RoleMemberDashboardService
             'dashboardPersonaLabel' => $personaLabel,
             'dashboardScopeType' => $scope['type'],
             'dashboardScopeLabel' => $scope['label'],
-            'dashboardFacilityName' => $scope['facility']?->name ?? '—',
+            'dashboardFacilityName' => $scope['facility']?->name ?? ($scope['type'] === 'organization' ? 'All facilities' : '—'),
             'dashboardIntro' => $scope['intro'],
-            'dashboardKpis' => $this->buildPersonalKpis($user),
+            'dashboardKpis' => $personalKpis,
+            'dashboardPersonalKpis' => $personalKpis,
+            'dashboardTeamKpis' => $operations['kpis'],
+            'dashboardPersonalStatsTitle' => 'My stats',
+            'dashboardTeamStatsTitle' => $this->teamStatsTitle($scope),
+            'dashboardTeamStatsDescription' => $this->teamStatsDescription($scope),
             'dashboardActionQueue' => $operations['action_queue'],
             'dashboardAwareness' => $operations['awareness'],
             'dashboardQuickActions' => $this->leadershipQuickActions($persona, $trainingRoute),
@@ -118,7 +125,7 @@ class RoleMemberDashboardService
         ?string $excludeEmployeeNum = null
     ): array {
         $team = $this->loadTeamEmployees($facility, $departmentId, $excludeEmployeeNum);
-        $operations = $this->summarizeTeamOperations($team);
+        $operations = $this->summarizeTeamOperations($team, $departmentId ? 'department team' : 'facility team');
         $expiring = $this->buildExpiringDocumentsPanel($team);
 
         return [
@@ -301,6 +308,17 @@ class RoleMemberDashboardService
      */
     protected function resolveScope(User $user, ?BPEmployee $bpEmployee, string $persona): array
     {
+        if ($persona === 'rdhr' || $this->memberDashboard->userHasRole($user, 'rdhr')) {
+            return [
+                'type' => 'organization',
+                'label' => 'All employees',
+                'intro' => 'Organization-wide dashboard - personal items for you, plus staff priorities across all facilities.',
+                'facility' => null,
+                'department_id' => null,
+                'department_name' => null,
+            ];
+        }
+
         $facility = $user->facility;
         if (!$facility && $user->facility_id) {
             $facility = Facility::find($user->facility_id);
@@ -339,17 +357,53 @@ class RoleMemberDashboardService
     }
 
     /**
+     * @param  array{type: string, label: string, intro: string, facility: ?Facility, department_id: ?int, department_name: ?string}  $scope
+     */
+    protected function teamScopeLabel(array $scope): string
+    {
+        return match ($scope['type']) {
+            'organization' => 'all employees',
+            'department' => 'your department',
+            default => 'your facility',
+        };
+    }
+
+    /**
+     * @param  array{type: string, label: string, intro: string, facility: ?Facility, department_id: ?int, department_name: ?string}  $scope
+     */
+    protected function teamStatsTitle(array $scope): string
+    {
+        return match ($scope['type']) {
+            'organization' => 'All employee stats',
+            'department' => 'Team stats',
+            default => 'Facility employee stats',
+        };
+    }
+
+    /**
+     * @param  array{type: string, label: string, intro: string, facility: ?Facility, department_id: ?int, department_name: ?string}  $scope
+     */
+    protected function teamStatsDescription(array $scope): string
+    {
+        return match ($scope['type']) {
+            'organization' => 'Counts and risk indicators across every facility.',
+            'department' => 'Counts and risk indicators for employees in your department.',
+            default => 'Counts and risk indicators for employees under your facility.',
+        };
+    }
+
+    /**
      * @return Collection<int, BPEmployee>
      */
     protected function loadTeamEmployees(?Facility $facility, ?int $departmentId, ?string $excludeEmployeeNum): Collection
     {
-        if (!$facility) {
-            return collect();
-        }
-
         $query = BPEmployee::query()
             ->with(['currentAssignment.position.department'])
-            ->whereHas('currentAssignment', fn ($q) => $q->where('facility_id', $facility->id))
+            ->whereHas('currentAssignment', function ($q) use ($facility) {
+                if ($facility) {
+                    $q->where('facility_id', $facility->id);
+                }
+            })
             ->when($departmentId, function ($q, $departmentId) {
                 $q->whereHas('currentAssignment.position', fn ($pq) => $pq->where('department_id', $departmentId));
             })
@@ -364,11 +418,11 @@ class RoleMemberDashboardService
      * @param  Collection<int, BPEmployee>  $team
      * @return array{kpis: list<array<string, mixed>>, action_queue: list<array<string, mixed>>, awareness: list<array<string, mixed>>}
      */
-    protected function summarizeTeamOperations(Collection $team): array
+    protected function summarizeTeamOperations(Collection $team, string $scopeLabel = 'your team'): array
     {
         if ($team->isEmpty()) {
             return [
-                'kpis' => $this->emptyKpis(),
+                'kpis' => $this->emptyKpis($scopeLabel),
                 'action_queue' => [],
                 'awareness' => [
                     [
@@ -467,7 +521,7 @@ class RoleMemberDashboardService
                 [
                     'label' => 'Team size',
                     'value' => $team->count(),
-                    'hint' => 'Active in scope',
+                    'hint' => 'Active in ' . $scopeLabel,
                     'tone' => 'teal',
                     'icon' => 'fa-users',
                     'route' => route('user.hr-portal'),
@@ -483,7 +537,7 @@ class RoleMemberDashboardService
                 [
                     'label' => 'Overdue training',
                     'value' => $overdueTraining,
-                    'hint' => 'Across your team',
+                    'hint' => 'Across ' . $scopeLabel,
                     'tone' => 'amber',
                     'icon' => 'fa-graduation-cap',
                     'route' => $trainingRoute,
@@ -521,12 +575,12 @@ class RoleMemberDashboardService
     /**
      * @return list<array<string, mixed>>
      */
-    protected function emptyKpis(): array
+    protected function emptyKpis(string $scopeLabel = 'this scope'): array
     {
         return [
-            ['label' => 'Team size', 'value' => 0, 'hint' => 'Active in scope', 'tone' => 'teal', 'icon' => 'fa-users', 'route' => route('user.hr-portal')],
+            ['label' => 'Team size', 'value' => 0, 'hint' => 'Active in ' . $scopeLabel, 'tone' => 'teal', 'icon' => 'fa-users', 'route' => route('user.hr-portal')],
             ['label' => 'Need attention', 'value' => 0, 'hint' => 'Staff with open issues', 'tone' => 'brand', 'icon' => 'fa-user-clock', 'route' => route('user.hr-portal')],
-            ['label' => 'Overdue training', 'value' => 0, 'hint' => 'Across your team', 'tone' => 'amber', 'icon' => 'fa-graduation-cap', 'route' => route('member.trainings')],
+            ['label' => 'Overdue training', 'value' => 0, 'hint' => 'Across ' . $scopeLabel, 'tone' => 'amber', 'icon' => 'fa-graduation-cap', 'route' => route('member.trainings')],
             ['label' => 'Credential risks', 'value' => 0, 'hint' => 'Licenses & certifications', 'tone' => 'rose', 'icon' => 'fa-id-card', 'route' => route('member.certifications')],
         ];
     }

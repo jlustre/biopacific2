@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Auto-generated from Import Preset Management → Update seeder.
- * Last exported: 2026-05-21 15:49:35
+ * Last exported: 2026-06-25 12:03:17
  *
  * Do not edit preset data by hand; use the admin UI and re-export.
  */
@@ -116,20 +116,20 @@ class ImportMappingPresetsTableSeeder extends Seeder
             {
                 "table": "bp_employees",
                 "worksheet": "Profile",
-                "table_column": "badge_num",
-                "worksheet_column": "Badge Number"
-            },
-            {
-                "table": "bp_employees",
-                "worksheet": "Profile",
                 "table_column": "union_code",
-                "worksheet_column": "Bargaining Unit"
+                "worksheet_column": "Union Code"
             },
             {
                 "table": "bp_employees",
                 "worksheet": "Profile",
                 "table_column": "effdt_of_membership",
                 "worksheet_column": "Union Seniority Date"
+            },
+            {
+                "table": "bp_employees",
+                "worksheet": "Profile",
+                "table_column": "badge_num",
+                "worksheet_column": "Badge Number"
             },
             {
                 "table": "bp_emp_job_data",
@@ -194,14 +194,14 @@ class ImportMappingPresetsTableSeeder extends Seeder
             {
                 "table": "bp_emp_job_data",
                 "worksheet": "JobData",
-                "table_column": "compensation_rate_id",
-                "worksheet_column": "Compensation Rate"
+                "table_column": "amount",
+                "worksheet_column": "Amount"
             },
             {
                 "table": "bp_emp_job_data",
                 "worksheet": "JobData",
-                "table_column": "amount",
-                "worksheet_column": "Amount"
+                "table_column": "compensation_rate_id",
+                "worksheet_column": "Compensation Rate"
             },
             {
                 "table": "bp_emp_tax_data",
@@ -378,6 +378,11 @@ IMPORT_MAPPING_PRESETS_JSON, true) ?? [];
 
         foreach ($presets as $preset) {
             $userId = User::where('email', $preset['owner_email'])->value('id');
+
+            if (! $userId) {
+                $fallbackEmail = config('member-portal.super_admin_email', 'super-admin@biopacific.com');
+                $userId = User::where('email', $fallbackEmail)->value('id');
+            }
 
             if (! $userId) {
                 $this->command?->warn(

@@ -9,6 +9,12 @@ class ColorSchemesTableSeeder extends Seeder
 {
     public function run(): void
     {
+        if (DB::table('color_schemes')->count() >= 33) {
+            $this->command?->info('Color schemes already seeded — skipping.');
+
+            return;
+        }
+
         $schemes = [
             [
                 'name' => 'Amber Calm',

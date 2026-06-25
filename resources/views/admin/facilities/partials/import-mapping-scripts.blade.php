@@ -10,6 +10,25 @@
         return `Creating mapping presets is not available yet for ${role}. Please select an existing preset or contact a Super Administrator.`;
     }
 
+    function shouldUpdatePresetSeeder(checkboxId = 'updateSeederOnSave') {
+        const el = document.getElementById(checkboxId);
+        return el ? el.checked : false;
+    }
+
+    function presetSeederSyncMessage(data) {
+        const seeder = data?.seeder;
+        if (!seeder) {
+            return '';
+        }
+        if (seeder.synced) {
+            return `\n\nSeeder updated with ${seeder.count ?? 0} preset(s). Commit database/seeders/ImportMappingPresetsTableSeeder.php for migrate:fresh --seed.`;
+        }
+        if (seeder.error) {
+            return `\n\nSeeder update failed: ${seeder.error}`;
+        }
+        return '';
+    }
+
     // --- Mapping Preset Logic ---
     function getCurrentMappings() {
         const tbody = document.getElementById('mappingTableBody');
@@ -68,38 +87,64 @@
             alert('No mappings to save.');
             return;
         }
-        // Check if a preset with this name exists
-        let existingId = null;
-        try {
-            const res = await fetch('/admin/facility/files/mapping-presets');
-            const data = await res.json();
-            if (data.presets) {
-                const found = data.presets.find(p => p.name === name);
-                if (found) existingId = found.id;
-            }
-        } catch (e) {}
 
-        const url = existingId
-            ? `/admin/facility/files/mapping-presets/${existingId}`
-            : '/admin/facility/files/mapping-presets';
-        const method = existingId ? 'PUT' : 'POST';
-        fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('[name=_token]').value
-            },
-            body: JSON.stringify({ name, mappings })
-        })
-        .then(async res => {
+        const saveBtn = document.getElementById('saveMappingPresetBtn');
+        const prevLabel = saveBtn?.innerHTML;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving…';
+        }
+
+        window.showImportDataLoader?.('Saving mapping preset…');
+
+        try {
+            let existingId = null;
+            try {
+                const res = await fetch('/admin/facility/files/mapping-presets');
+                const data = await res.json();
+                if (data.presets) {
+                    const found = data.presets.find(p => p.name === name);
+                    if (found) existingId = found.id;
+                }
+            } catch (e) {}
+
+            const url = existingId
+                ? `/admin/facility/files/mapping-presets/${existingId}`
+                : '/admin/facility/files/mapping-presets';
+            const method = existingId ? 'PUT' : 'POST';
+            const facilityId = window.importContextFacilityId || window.importGlobalFacilityId;
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('[name=_token]').value
+                },
+                body: JSON.stringify({
+                    name,
+                    mappings,
+                    facility_id: facilityId ? parseInt(facilityId, 10) : undefined,
+                    update_seeder: shouldUpdatePresetSeeder('updateSeederOnSave'),
+                })
+            });
+
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.success) {
-                alert('Mapping preset saved!');
-                loadMappingPresets();
+                alert('Mapping preset saved!' + presetSeederSyncMessage(data));
+                await loadMappingPresets();
+                await reloadAllPresetDropdowns(data.preset?.id || null);
             } else {
-                alert(data.error || 'Failed to save preset.');
+                alert(data.error || data.message || `Failed to save preset (${res.status}).`);
             }
-        });
+        } catch (err) {
+            alert('Failed to save preset: ' + (err?.message || 'Unknown error'));
+        } finally {
+            window.hideImportDataLoader?.();
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = prevLabel || 'Save Preset';
+            }
+        }
     }
     
     function loadMappingPresets() {
@@ -301,6 +346,8 @@
             submitBtn.textContent = 'Saving…';
         }
 
+        window.showImportDataLoader?.('Updating mapping preset…');
+
         try {
             const res = await fetch(`/admin/facility/files/mapping-presets/${presetId}/details`, {
                 method: 'PUT',
@@ -312,6 +359,7 @@
                     name,
                     facility_id: parseInt(facilityId, 10),
                     context_facility_id: window.importContextFacilityId,
+                    update_seeder: shouldUpdatePresetSeeder('updateSeederOnEdit'),
                 }),
             });
             const data = await res.json().catch(() => ({}));
@@ -322,7 +370,7 @@
             }
 
             closeEditPresetModal();
-            showImportPresetMessage('success', `Preset "${data.preset.name}" updated.`);
+            showImportPresetMessage('success', `Preset "${data.preset.name}" updated.` + presetSeederSyncMessage(data).replace(/^\n\n/, ' '));
 
             const nameInputMapping = document.getElementById('mappingPresetName');
             if (nameInputMapping) nameInputMapping.value = data.preset.name;
@@ -331,6 +379,7 @@
         } catch (err) {
             showEditPresetMessage('error', 'Update failed: ' + (err?.message || 'Unknown error'));
         } finally {
+            window.hideImportDataLoader?.();
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = prevLabel || 'Save changes';
@@ -365,6 +414,8 @@
             submitBtn.textContent = 'Saving…';
         }
 
+        window.showImportDataLoader?.('Creating duplicate preset…');
+
         try {
             const res = await fetch(`/admin/facility/files/mapping-presets/${presetId}/duplicate`, {
                 method: 'POST',
@@ -376,6 +427,7 @@
                     name,
                     facility_id: parseInt(facilityId, 10),
                     context_facility_id: window.importContextFacilityId,
+                    update_seeder: shouldUpdatePresetSeeder('updateSeederOnDuplicate'),
                 }),
             });
             const data = await res.json().catch(() => ({}));
@@ -386,12 +438,13 @@
             }
 
             closeDuplicatePresetModal();
-            showImportPresetMessage('success', `Preset "${data.preset.name}" created.`);
+            showImportPresetMessage('success', `Preset "${data.preset.name}" created.` + presetSeederSyncMessage(data).replace(/^\n\n/, ' '));
 
             await reloadAllPresetDropdowns(data.preset.id);
         } catch (err) {
             showDuplicatePresetMessage('error', 'Duplicate failed: ' + (err?.message || 'Unknown error'));
         } finally {
+            window.hideImportDataLoader?.();
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = prevLabel || 'Save duplicate';
@@ -498,13 +551,17 @@
                 fetch(`/admin/facility/files/mapping-presets/${id}`, {
                     method: 'DELETE',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('[name=_token]').value
-                    }
+                    },
+                    body: JSON.stringify({
+                        update_seeder: shouldUpdatePresetSeeder('updateSeederOnSave'),
+                    }),
                 })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Preset deleted!');
+                        alert('Preset deleted!' + presetSeederSyncMessage(data));
                         select.value = '';
                         setMappings([]);
                         deleteBtn.classList.add('hidden');
@@ -573,6 +630,33 @@
         `;
 		tbody.appendChild(tr);
         }
+    function updateImportMappingFileName() {
+        const fileInput = document.getElementById('importFile');
+        const fileNameEl = document.getElementById('importMappingFileName');
+        const fileNameWrap = document.getElementById('importMappingFileNameWrap');
+
+        if (!fileNameEl) {
+            return;
+        }
+
+        const file = fileInput?.files?.[0];
+        const fileName = file?.name || window._lastImportFilename || '';
+
+        if (fileName) {
+            fileNameEl.textContent = fileName;
+            fileNameEl.title = fileName;
+            if (fileNameWrap) {
+                fileNameWrap.title = fileName;
+            }
+        } else {
+            fileNameEl.textContent = 'No file selected';
+            fileNameEl.title = '';
+            if (fileNameWrap) {
+                fileNameWrap.title = 'Excel file used for this preset';
+            }
+        }
+    }
+
     // Step 1: Upload Excel and fetch worksheet/column info
     function showMappingStep(e) {
         e.preventDefault();
@@ -582,6 +666,16 @@
         }
         const form = document.getElementById('excelUploadForm');
         const formData = new FormData(form);
+        const createBtn = document.getElementById('createPresetBtn');
+        const prevCreateLabel = createBtn?.textContent;
+
+        if (createBtn) {
+            createBtn.disabled = true;
+            createBtn.textContent = 'Reading file…';
+        }
+
+        window.showImportDataLoader?.('Reading Excel file for preset mapping…');
+
         fetch(form.action, {
             method: 'POST',
             headers: {
@@ -615,6 +709,11 @@
                 }, {});
                 form.classList.add('hidden');
                 document.getElementById('mappingStep').classList.remove('hidden');
+                const selectedFile = document.getElementById('importFile')?.files?.[0];
+                if (selectedFile) {
+                    window._lastImportFilename = selectedFile.name;
+                }
+                updateImportMappingFileName();
                 updateWorksheetColumnSelect();
             } else {
                 let msg = data && data.error ? data.error : 'Unknown error.';
@@ -623,6 +722,13 @@
         })
         .catch(err => {
             alert('Failed to process Excel file. ' + (err && err.message ? err.message : ''));
+        })
+        .finally(() => {
+            window.hideImportDataLoader?.();
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.textContent = prevCreateLabel || 'Create Preset';
+            }
         });
     }
 
@@ -1080,6 +1186,7 @@
         document.getElementById('importFile')?.addEventListener('change', () => {
             clearImportPresetMessage();
             toggleImportPresetBtn();
+            updateImportMappingFileName();
         });
 
         importBtn?.addEventListener('click', importUsingPreset);

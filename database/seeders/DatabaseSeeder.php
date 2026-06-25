@@ -2,66 +2,33 @@
 
 namespace Database\Seeders;
 
-use App\Models\ColorScheme;
-use App\Models\JobDescriptionTemplate;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
+     *
+     * Controlled by SEED_DEMO_DATA in .env (see config/seeding.php).
+     *
+     * Structure only:
+     *   php artisan db:seed --class=StructuralSeeder
+     *
+     * Demo data only (after structure):
+     *   php artisan db:seed --class=DemoDataSeeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
         $this->call([
-            ColorSchemesTableSeeder::class,
-            FacilitySeeder::class,
-            BioPacificCorporateSeeder::class,
-            RolePermissionSeeder::class,
-            SuperAdminSeeder::class,
-            ImportMappingPresetsTableSeeder::class,
-            WebContentsSeeder::class,
-            FaqSeeder::class,
-            TestimonialSeeder::class,
-            ServiceSeeder::class,
-            FacilityServiceSeeder::class,
-            NewsSeeder::class,
-            FacilityNewsSeeder::class,
-            EmailRecipientsTableSeeder::class,
-            EmployeeEmailMappingsTableSeeder::class,
-            DepartmentSeeder::class,
-            PositionsSeeder::class,
-            TestUsersSeeder::class,
-            JobDescriptionsSeeder::class,
-            UsersTableSeeder::class,
-            DocTypesTableSeeder::class,
-            BPBargainingUnitsTableSeeder::class,
-            BPEmpEmployeesTableSeeder::class,
-            BPEmpJobDataTableSeeder::class,
-            BPEmpCompensationTableSeeder::class,
-            BPEmpCredentialsTableSeeder::class,
-            BPEmpPhonesTableSeeder::class,
-            BPEmpAddressesTableSeeder::class,
-            BPEmpHealthScreeningsTableSeeder::class,
-            ChecklistItemsSeeder::class,
-            OrientationChecklistItemsSeeder::class,
-            ChecklistItemPositionBackfillSeeder::class,
-            BPEmpChecklistSeeder::class,
-            EmployeePerformanceItemsSeeder::class,
-            EmployeeCompetencyItemsSeeder::class,
-            StatesTableSeeder::class,
-            UploadTypesTableSeeder::class,
-            UploadsSeeder::class,
-            ReportCategoriesTableSeeder::class,
-            ReportSeeder::class,
-            OptionTypesSeeder::class,
-            SelectOptionsSeeder::class,
-            MemberProfilePanelsSeeder::class,
-            MemberEmergencyContactsSeeder::class,
-            MemberPortalDashboardSeeder::class,
+            StructuralSeeder::class,
         ]);
 
+        if (config('seeding.demo_data')) {
+            $this->call([
+                DemoDataSeeder::class,
+            ]);
+        } else {
+            $this->command?->info('Skipping DemoDataSeeder (SEED_DEMO_DATA=false).');
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Livewire\Auth;
 
 use App\Models\User;
 use App\Models\RegistrationCode;
+use App\Support\PostRegistrationMailService;
 use App\Support\RegistrationCodeService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
@@ -105,18 +106,20 @@ class Register extends Component
         $registrationCodeService->markAsUsed($codeRecord, $user);
         $registrationCodeService->linkRegisteredUser($codeRecord, $user);
 
+        app(PostRegistrationMailService::class)->sendWelcome($user, $codeRecord);
+
         event(new Registered($user));
 
         Auth::login($user);
 
         if ($codeRecord->type === RegistrationCode::TYPE_APPLICANT) {
             $applicationCode = $codeRecord->jobApplication?->applicant_code ?? $this->applicantCode;
-            $this->redirect(
-                route('pre-employment.index', array_filter(['code' => $applicationCode]), absolute: false),
-                navigate: true
+            session()->put(
+                'url.intended',
+                route('pre-employment.index', array_filter(['code' => $applicationCode]), absolute: false)
             );
-
-            return;
+        } else {
+            session()->put('url.intended', route('dashboard.index', absolute: false));
         }
 
         $this->redirect(route('dashboard.index', absolute: false), navigate: true);

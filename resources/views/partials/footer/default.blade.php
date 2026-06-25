@@ -18,7 +18,7 @@
             <div class="flex items-center gap-3">
               <div class="relative">
                 @if(!empty($facility['logo_url']))
-                <img src="{{ asset('images/' . $facility['logo_url']) }}"
+                <img src="{{ \App\Helpers\FacilityDataHelper::resolvePublicImageUrl($facility['logo_url'], 'images/bplogo.png') }}"
                   alt="{{ $facility['name'] ?? 'Bio-Pacific' }} Logo"
                   class="h-12 w-12 rounded-2xl object-contain bg-white/70 shadow-lg">
                 @else

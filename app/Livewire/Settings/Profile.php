@@ -55,6 +55,10 @@ class Profile extends Component
         $user->save();
         $user->syncRoles([$this->role]);
 
+        if ($user->wasChanged('email') && ! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+        }
+
         $this->dispatch('profile-updated', name: $user->name);
     }
 
@@ -66,7 +70,7 @@ class Profile extends Component
         $user = Auth::user();
 
         if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
+            $this->redirectIntended(default: route('dashboard.index', absolute: false));
 
             return;
         }

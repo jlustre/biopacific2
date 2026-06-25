@@ -8,6 +8,7 @@
 
 <body class="min-h-screen antialiased"
     style="background-image: url('{{ asset('images/auth_background.jpg') }}'); background-size: cover; background-position: center;">
+    @include('layouts.partials.page-loader')
     <div class="bg-white/60 border-2 border-gray-700 rounded-xl shadow-lg flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10"
         style="box-shadow: 0 4px 32px 0 rgba(0,0,0,0.12);">
         <div class="flex w-full max-w-sm flex-col gap-3">

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Services\MemberPortalContextResolver;
+use App\Support\Rbac\Permissions;
 use Illuminate\Http\Request;
 
 class MemberPortalLayout
@@ -18,6 +19,35 @@ class MemberPortalLayout
 
         return $user && method_exists($user, 'hasRole')
             && $user->hasRole(self::systemAdminRoles());
+    }
+
+    public static function webContentsNavRoles(): array
+    {
+        $configured = config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd');
+
+        if (is_string($configured)) {
+            return array_values(array_filter(explode('|', $configured)));
+        }
+
+        return is_array($configured) ? $configured : [];
+    }
+
+    public static function userCanAccessWebContentsNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return $user && method_exists($user, 'hasRole')
+            && $user->hasRole(self::webContentsNavRoles());
+    }
+
+    public static function userHasFullNavAccess($user = null): bool
+    {
+        return self::userIsSystemAdmin($user);
+    }
+
+    public static function hrPortalRouteForUser($user = null): string
+    {
+        return route('user.hr-portal');
     }
 
     public static function facilityManagerRoles(): array
@@ -46,6 +76,11 @@ class MemberPortalLayout
             && $user->hasRole(self::corporateRoles());
     }
 
+    public static function hrPortalRoutePatterns(): array
+    {
+        return ['hr-portal.*', 'admin.hr-portal.*', 'user.hr-portal'];
+    }
+
     public static function sidebarModeForCurrentRequest(?Request $request = null): string
     {
         $request = $request ?? request();
@@ -53,6 +88,20 @@ class MemberPortalLayout
 
         if (!$user) {
             return 'employee';
+        }
+
+        if ($request->routeIs(self::hrPortalRoutePatterns()) && $user->can(Permissions::ACCESS_HR_PORTAL)) {
+            if (self::userIsSystemAdmin($user) || $user->hasRole('admin')) {
+                return 'admin';
+            }
+
+            if (self::userIsCorporateManager($user)) {
+                return 'corporate';
+            }
+
+            if (self::userIsFacilityManager($user)) {
+                return 'facility';
+            }
         }
 
         if (self::userIsSystemAdmin($user) && $request->routeIs(self::adminRoutePatterns())) {

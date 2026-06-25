@@ -10,17 +10,20 @@
         No facilities are available for your account.
     </p>
     @else
-    <ul class="mt-6 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm ring-1 ring-amber-100/80">
+        <p class="text-xs font-bold uppercase tracking-wide text-amber-900/70">Select a facility</p>
+        <ul class="mt-3 divide-y divide-amber-100 rounded-xl border border-amber-100 bg-white shadow-sm">
         @foreach($facilities as $f)
         <li>
             <a href="{{ route($facilitySwitchRoute ?? 'member.facility.dashboard', ['facility' => $f->slug ?? $f->id]) }}"
-               class="flex items-center justify-between px-4 py-3 text-sm font-semibold text-teal-700 hover:bg-teal-50">
+               class="flex items-center justify-between px-4 py-3 text-sm font-semibold text-teal-700 hover:bg-amber-50/80">
                 <span>{{ $f->name }}</span>
                 <span class="text-teal-500">→</span>
             </a>
         </li>
         @endforeach
-    </ul>
+        </ul>
+    </div>
     @endif
 </section>
 @endsection

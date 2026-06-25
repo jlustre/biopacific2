@@ -40,7 +40,7 @@ $poster = asset($facility['hero_poster'] ?? 'images/hero1.jpg');
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <!-- Left Grid: Image -->
             <div>
-                <img src="{{ asset('images/book-a-tour1.png') }}" alt="Book a Tour" class="w-full h-auto">
+                <img src="{{ asset('images/book-a-tour1.jpg') }}" alt="Book a Tour" class="w-full h-auto">
 
                 {{-- Photo collage card --}}
                 <div class="rounded-md overflow-hidden ring-1 ring-slate-200 bg-white shadow-sm my-4">

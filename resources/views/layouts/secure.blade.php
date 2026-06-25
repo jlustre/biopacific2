@@ -21,6 +21,7 @@
 </head>
 
 <body class="font-sans text-gray-900 antialiased bg-gray-50">
+    @include('layouts.partials.page-loader')
     @yield('content')
 
     {{-- Scripts Section --}}

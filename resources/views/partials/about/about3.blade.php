@@ -73,7 +73,7 @@
                 </div>
                 <div class="lg:col-span-6 order-1 lg:order-2">
                     <div class="aspect-[16/10] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100">
-                        <img src="{{ asset('images/physical-therapy-session.png') }}" alt="Therapy & compassionate care"
+                        <img src="{{ asset('images/physical-therapy-session.jpg') }}" alt="Therapy & compassionate care"
                             class="w-full h-full object-cover">
                     </div>
                 </div>
@@ -83,7 +83,7 @@
             <div class="grid lg:grid-cols-12 gap-8 items-center">
                 <div class="lg:col-span-6">
                     <div class="aspect-[16/10] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100">
-                        <img src="{{ asset('images/recreation_activities-room.png') }}"
+                        <img src="{{ asset('images/recreation_activities-room.jpg') }}"
                             alt="Activities & community life" class="w-full h-full object-cover">
                     </div>
                 </div>

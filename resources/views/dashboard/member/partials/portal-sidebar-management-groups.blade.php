@@ -2,6 +2,7 @@
     $active = $active ?? 'dashboard';
     $authUser = auth()->user();
     $portalNav = $portalNav ?? 'facility';
+    $showAllOpsLinks = $showAllOpsLinks ?? false;
     $sectionLabel = $sectionLabel ?? match ($portalNav) {
         'corporate' => 'Corporate Management',
         default => 'Facility Portal',
@@ -20,6 +21,7 @@
     $careersUrl = ($authUser && $authUser->facility_id)
         ? route('admin.facilities.webcontents.careers', ['facility_id' => $authUser->facility_id])
         : route('admin.facilities.webcontents.careers');
+    $hrPortalUrl = \App\Support\MemberPortalLayout::hrPortalRouteForUser($authUser);
 @endphp
 
 @if($authUser)
@@ -33,7 +35,7 @@
     </button>
 
     <div x-show="managementOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">
-        @if($portalNav === 'corporate')
+        @if($portalNav === 'corporate' || $showAllOpsLinks)
         <a href="{{ route('admin.positions.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.positions.*') }}">
             Positions Management
@@ -44,9 +46,9 @@
         </a>
         @endif
 
-        <a href="{{ route('user.hr-portal') }}"
+        <a href="{{ $hrPortalUrl }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $hrActive ? 'member-portal-nav-sub-active font-semibold text-white' : 'text-teal-100' }}">
-            HR Management
+            Employee Management
         </a>
 
         @php
@@ -55,7 +57,7 @@
                 ? route('admin.facility.leadership.edit', ['facility' => $leadershipFacility->getRouteKey()])
                 : route('admin.facilities.leadership.index');
         @endphp
-        @if(in_array($portalNav, ['facility', 'corporate'], true) && \Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && ($authUser->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || $authUser->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL)))
+        @if($showAllOpsLinks || (in_array($portalNav, ['facility', 'corporate'], true) && \Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && ($authUser->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || $authUser->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL))))
         <a href="{{ $leadershipHref }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ request()->routeIs(['admin.facility.leadership*', 'admin.facilities.leadership*']) ? 'member-portal-nav-sub-active font-semibold text-white' : 'text-teal-100' }}">
             Facility Leadership
@@ -72,54 +74,14 @@
             Training Management
         </a>
 
-        @if($portalNav === 'facility' && ($authUser->can(\App\Support\Rbac\Permissions::VIEW_POSITIONS) || $authUser->hasRole(['facility-admin', 'facility-dsd', 'don'])))
+        @if($showAllOpsLinks || ($portalNav === 'facility' && ($authUser->can(\App\Support\Rbac\Permissions::VIEW_POSITIONS) || $authUser->hasRole(['facility-admin', 'facility-dsd', 'don']))))
         <a href="{{ route('admin.positions.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.positions.*') }}">
             Positions Management
         </a>
         @endif
 
-        <button type="button" @click="webOpen = !webOpen"
-                class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $webSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">
-            <span class="flex items-center gap-2"><span>🌐</span><span>Web Contents</span></span>
-            <span class="text-xs" x-text="webOpen ? '▲' : '▼'"></span>
-        </button>
-        <div x-show="webOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">
-            <a href="{{ route('admin.facilities.webcontents.testimonials') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.facilities.webcontents.testimonials', 'facilities.webcontents.testimonials*']) }}">Testimonials</a>
-            <a href="{{ route('admin.facilities.webcontents.faqs') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.facilities.webcontents.faqs', 'facilities.webcontents.faqs*']) }}">FAQs</a>
-            <a href="{{ route('admin.galleries.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.galleries.*') }}">Galleries</a>
-            <a href="{{ route('admin.news.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.news.*', 'facilities.news-events.*', 'facilities.webcontents.news-events']) }}">News</a>
-            <a href="{{ route('admin.facilities.webcontents.blogs') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.facilities.webcontents.blogs', 'facilities.webcontents.blogs', 'admin.blogs.*']) }}">Blogs</a>
-            <a href="{{ $careersUrl }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.facilities.webcontents.careers*') }}">Careers</a>
-            <a href="{{ route('admin.services.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.services.*') }}">Services</a>
-        </div>
-
-        <button type="button" @click="commOpen = !commOpen"
-                class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $commSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">
-            <span class="flex items-center gap-2"><span>💬</span><span>Communications</span></span>
-            <span class="text-xs" x-text="commOpen ? '▲' : '▼'"></span>
-        </button>
-        <div x-show="commOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">
-            <a href="{{ route('admin.tour-requests.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.tour-requests.*') }}">Tour Requests</a>
-            <a href="{{ route('admin.inquiries.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.inquiries.*') }}">General Inquiries</a>
-            <a href="{{ route('admin.job-applications.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.job-applications.*') }}">Job Applications</a>
-            <a href="{{ route('admin.email-recipients.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.email-recipients.*') }}">Email Recipients</a>
-            <a href="{{ route('admin.email-templates.index') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.email-templates.*') }}">Email Templates</a>
-            <a href="{{ route('admin.communications.employee-email-mappings') }}"
-               class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.communications.employee-email-mappings') }}">Employee Email Mappings</a>
-        </div>
+        @include('dashboard.member.partials.portal-sidebar-web-communications-groups')
     </div>
 </div>
 @endif

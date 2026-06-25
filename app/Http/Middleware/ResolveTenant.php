@@ -62,7 +62,10 @@ class ResolveTenant
         View::share('facility', $facility->toArray());
 
         // Set layout template for views (it's a string field, not a relationship)
-        View::share('layoutTemplate', $facility->layout_template ?? 'default-template');
+        View::share('layoutTemplate', \App\Helpers\FacilityDataHelper::resolveLayoutTemplate(
+            $facility->layout_template,
+            $facility,
+        ));
 
         return $next($request);
     }

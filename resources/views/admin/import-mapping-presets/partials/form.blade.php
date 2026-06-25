@@ -96,6 +96,9 @@
 
         <p class="mt-3 text-xs text-slate-500">Global presets (ID {{ $globalId }}) are shared across all facilities during import.</p>
 
+        <div class="mt-4">
+            @include('admin.import-mapping-presets.partials.seeder-sync-option')
+        </div>
     </div>
 
 

@@ -17,8 +17,9 @@ use Illuminate\Validation\Rule;
 
 class ImportMappingPresetAdminController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        protected ImportMappingPresetSeederExporter $seederExporter,
+    ) {
         $this->middleware(['auth', 'role:admin|super-admin']);
     }
 
@@ -57,6 +58,22 @@ class ImportMappingPresetAdminController extends Controller
         $validated['mappings'] = array_values($validated['mappings']);
 
         return $validated;
+    }
+
+    protected function redirectWithSeederSync(Request $request, \Illuminate\Http\RedirectResponse $redirect, string $successMessage): \Illuminate\Http\RedirectResponse
+    {
+        $sync = $this->seederExporter->syncFromRequest($request);
+        $seederMessage = $this->seederExporter->seederSyncMessage($sync);
+
+        if ($seederMessage && !empty($sync['error'])) {
+            return $redirect->with('error', trim($successMessage . $seederMessage));
+        }
+
+        if ($seederMessage) {
+            return $redirect->with('success', trim($successMessage . $seederMessage));
+        }
+
+        return $redirect->with('success', $successMessage);
     }
 
     public function index(Request $request)
@@ -232,8 +249,11 @@ class ImportMappingPresetAdminController extends Controller
 
         ImportMappingPreset::create($validated);
 
-        return redirect()->route('admin.import-mapping-presets.index')
-            ->with('success', 'Import preset created successfully.');
+        return $this->redirectWithSeederSync(
+            $request,
+            redirect()->route('admin.import-mapping-presets.index'),
+            'Import preset created successfully.'
+        );
     }
 
     public function show(ImportMappingPreset $importMappingPreset)
@@ -315,11 +335,14 @@ class ImportMappingPresetAdminController extends Controller
         $validated = $this->validatePresetRequest($request, $importMappingPreset->id);
         $importMappingPreset->update($validated);
 
-        return redirect()->route('admin.import-mapping-presets.show', $importMappingPreset)
-            ->with('success', 'Import preset updated successfully.');
+        return $this->redirectWithSeederSync(
+            $request,
+            redirect()->route('admin.import-mapping-presets.show', $importMappingPreset),
+            'Import preset updated successfully.'
+        );
     }
 
-    public function destroy(ImportMappingPreset $importMappingPreset)
+    public function destroy(Request $request, ImportMappingPreset $importMappingPreset)
     {
         if (!ImportMappingPresetAccess::canCreate()) {
             return redirect()->route('admin.import-mapping-presets.index')
@@ -329,8 +352,11 @@ class ImportMappingPresetAdminController extends Controller
         $name = $importMappingPreset->name;
         $importMappingPreset->delete();
 
-        return redirect()->route('admin.import-mapping-presets.index')
-            ->with('success', "Import preset \"{$name}\" deleted successfully.");
+        return $this->redirectWithSeederSync(
+            $request,
+            redirect()->route('admin.import-mapping-presets.index'),
+            "Import preset \"{$name}\" deleted successfully."
+        );
     }
 
     public function syncSeeder(ImportMappingPresetSeederExporter $exporter)
@@ -381,8 +407,11 @@ class ImportMappingPresetAdminController extends Controller
             'mappings' => $importMappingPreset->mappings,
         ]);
 
-        return redirect()->route('admin.import-mapping-presets.edit', $copy)
-            ->with('success', 'Preset duplicated. Review the copy and save any changes.');
+        return $this->redirectWithSeederSync(
+            $request,
+            redirect()->route('admin.import-mapping-presets.edit', $copy),
+            'Preset duplicated. Review the copy and save any changes.'
+        );
     }
 
     protected function formData(): array

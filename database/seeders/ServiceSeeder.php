@@ -16,7 +16,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Skilled Nursing services provide 24/7 care from licensed professionals, ensuring every resident receives the highest level of medical attention and support. We offer medication management, wound care, IV therapy, and pain management in a compassionate, home-like environment.',
                 'is_global' => true,
                 'order' => 1,
-                'image' => 'images/skilled_nursing.png',
+                'image' => 'images/skilled_nursing.jpg',
                 'features' => [
                     '24/7 licensed nursing staff',
                     'Medication management',
@@ -31,7 +31,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Rehabilitation program is designed to help residents regain strength, mobility, and independence after illness or injury. We provide physical, occupational, and speech therapy with personalized care plans tailored to each individual’s needs.',
                 'is_global' => true,
                 'order' => 2,
-                'image' => 'images/rehab_care.png',
+                'image' => 'images/rehab_care.jpg',
                 'features' => [
                     'Physical therapy',
                     'Occupational therapy',
@@ -45,7 +45,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Long-term Care services offer a supportive environment for residents who need ongoing assistance with daily living. We focus on comfort, dignity, and quality of life, providing social and recreational activities as well as personalized care.',
                 'is_global' => true,
                 'order' => 3,
-                'image' => 'images/long_term_care.png',
+                'image' => 'images/long_term_care.jpg',
                 'features' => [
                     'Daily living assistance',
                     'Social and recreational activities',
@@ -58,7 +58,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Memory Care program is tailored for residents with Alzheimer’s, dementia, or other memory impairments. We provide a secure environment, specialized staff, and therapeutic activities to promote engagement and well-being.',
                 'is_global' => true,
                 'order' => 4,
-                'image' => 'images/memory_care.png',
+                'image' => 'images/memory_care.jpg',
                 'features' => [
                     'Secure environment',
                     'Specialized staff',
@@ -71,7 +71,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Hospice Care services provide compassionate support for residents and their families during end-of-life care. We focus on pain and symptom management, emotional and spiritual support, and family counseling in a respectful, comforting setting.',
                 'is_global' => true,
                 'order' => 5,
-                'image' => 'images/hospice_care.png',
+                'image' => 'images/hospice_care.jpg',
                 'features' => [
                     'Pain and symptom management',
                     'Emotional and spiritual support',
@@ -84,7 +84,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Dining & Nutrition services offer dietitian-approved menus, special dietary accommodations, and flexible meal times. We are committed to providing nutritious, delicious meals that support the health and preferences of every resident.',
                 'is_global' => true,
                 'order' => 6,
-                'image' => 'images/dining_and_nutrition_care.png',
+                'image' => 'images/dining_and_nutrition_care.jpg',
                 'features' => [
                     'Dietitian-approved menus',
                     'Special dietary accommodations',
@@ -97,7 +97,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Recreation & Activities program offers a variety of daily group activities, arts and crafts, music, and entertainment. We encourage socialization and engagement to enhance the quality of life for all residents.',
                 'is_global' => true,
                 'order' => 7,
-                'image' => 'images/recreation_and_activities_care2.png',
+                'image' => 'images/recreation_and_activities_care2.jpg',
                 'features' => [
                     'Daily group activities',
                     'Arts and crafts',
@@ -110,7 +110,7 @@ class ServiceSeeder extends Seeder
                 'detailed_description' => 'Our Transportation services ensure residents have access to scheduled outings, medical appointments, and community events. We provide safe, reliable, and wheelchair-accessible vehicles for all transportation needs.',
                 'is_global' => true,
                 'order' => 8,
-                'image' => 'images/transportation_care2.png',
+                'image' => 'images/transportation_care2.jpg',
                 'features' => [
                     'Scheduled outings',
                     'Medical appointment transport',

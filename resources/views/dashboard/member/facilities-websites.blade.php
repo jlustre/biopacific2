@@ -44,11 +44,7 @@ document.addEventListener('alpine:init', () => {
             this.openingWebsite = true;
             this.openingWebsiteLabel = label || 'facility website';
 
-            const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-
-            if (!newWindow) {
-                window.location.href = url;
-            }
+            window.open(url, '_blank', 'noopener,noreferrer');
 
             window.setTimeout(() => {
                 this.openingWebsite = false;

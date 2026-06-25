@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PostRegistrationMailService;
 use App\Support\RegistrationCodeService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -73,10 +74,14 @@ class RegisteredUserController extends Controller
         $registrationCodeService->markAsUsed($codeRecord, $user);
         $registrationCodeService->linkRegisteredUser($codeRecord, $user);
 
+        app(PostRegistrationMailService::class)->sendWelcome($user, $codeRecord);
+
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        session()->put('url.intended', route('dashboard.index', absolute: false));
+
+        return redirect()->route('dashboard.index');
     }
 }

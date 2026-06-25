@@ -19,10 +19,14 @@
         'admin.import-logs.*',
     ]);
     $hipaaOpen = request()->routeIs(['admin.baa-registry.*', 'admin.hipaa-checklist.*']);
+    $webRoutePatterns = config('member-portal.facility_management_web_route_patterns', []);
+    $commRoutePatterns = config('member-portal.facility_management_comm_route_patterns', []);
+    $webSectionOpen = request()->routeIs($webRoutePatterns);
+    $commSectionOpen = request()->routeIs($commRoutePatterns);
 @endphp
 
 <div class="my-3 space-y-1 border-t border-white/10 pt-3"
-     x-data="{ rolesOpen: {{ $rolesOpen ? 'true' : 'false' }}, tablesOpen: {{ $tablesOpen ? 'true' : 'false' }}, hipaaOpen: {{ $hipaaOpen ? 'true' : 'false' }} }">
+     x-data="{ rolesOpen: {{ $rolesOpen ? 'true' : 'false' }}, tablesOpen: {{ $tablesOpen ? 'true' : 'false' }}, hipaaOpen: {{ $hipaaOpen ? 'true' : 'false' }}, webOpen: {{ $webSectionOpen ? 'true' : 'false' }}, commOpen: {{ $commSectionOpen ? 'true' : 'false' }} }">
     <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Admin Management</p>
 
     <a href="{{ route('admin.arbitration-templates.index') }}"
@@ -38,6 +42,11 @@
     <a href="{{ route('admin.facilities.index') }}"
        class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs(['admin.facilities.index', 'admin.facilities.create', 'admin.facilities.edit', 'admin.facilities.show'])) }}">
         <span>🏢</span><span>Facilities Management</span>
+    </a>
+
+    <a href="{{ route('user.hr-portal') }}"
+       class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs(['user.hr-portal', 'hr-portal.*', 'admin.hr-portal.*', 'admin.facility.employees*', 'admin.facility.hiring*', 'admin.facility.job_openings*', 'admin.facility.documents*', 'admin.facility.reports*'])) }}">
+        <span>👥</span><span>Employee Management</span>
     </a>
 
     @if(\Illuminate\Support\Facades\Route::has('admin.facilities.leadership.index'))

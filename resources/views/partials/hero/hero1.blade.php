@@ -1,10 +1,7 @@
 @php
-$posterFilename = $facility['hero_image_url'] ?? null;
-if (!empty($posterFilename)) {
-$poster = url('images/' . $posterFilename);
-} else {
-$poster = null;
-}
+use App\Helpers\FacilityDataHelper;
+
+$poster = FacilityDataHelper::resolvePublicImageUrl($facility['hero_image_url'] ?? null, 'images/hero1.jpg');
 @endphp
 
 <section class="relative overflow-hidden min-h-screen bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500"

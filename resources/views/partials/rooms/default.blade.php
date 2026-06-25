@@ -31,7 +31,7 @@ $accent = $accent ?? '#F59E0B';
         <!-- Image Section -->
         <div class="lg:w-2/5 relative">
           <div class="relative overflow-hidden h-72 lg:h-full lg:min-h-96">
-            <img src="{{ asset('images/private_room.png') }}"
+            <img src="{{ asset('images/private_room.jpg') }}"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               alt="Private Room">
             <div
@@ -130,7 +130,7 @@ $accent = $accent ?? '#F59E0B';
         <!-- Image Section -->
         <div class="lg:w-2/5 relative">
           <div class="relative overflow-hidden h-72 lg:h-full lg:min-h-96">
-            <img src="{{ asset('images/semi-private.png') }}"
+            <img src="{{ asset('images/semi-private.jpg') }}"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               alt="Semi-Private Room">
             <div
@@ -234,7 +234,7 @@ $accent = $accent ?? '#F59E0B';
         <!-- Image Section -->
         <div class="lg:w-2/5 relative">
           <div class="relative overflow-hidden h-72 lg:h-full lg:min-h-96">
-            <img src="{{ asset('images/regular_room.png') }}"
+            <img src="{{ asset('images/regular_room.jpg') }}"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               alt="Regular Room">
             <div

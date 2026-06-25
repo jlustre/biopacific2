@@ -52,7 +52,10 @@ class HomeController extends Controller
                 }
             }
 
-            $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
+            $layoutTemplate = \App\Helpers\FacilityDataHelper::resolveLayoutTemplate(
+                $activeWebContent?->layout_template,
+                $facility,
+            );
         }
 
     // Fetch FAQ data for dynamic FAQ section

@@ -2274,7 +2274,7 @@ class MemberDashboardService
         $todos = [];
 
         if (!$user->email_verified_at) {
-            $todos[] = $this->todoItem('todo-verify-email', 'Verify your email address', 'Confirm your email to secure your account.', 'account', 'high', route('settings.profile'), false);
+            $todos[] = $this->todoItem('todo-verify-email', 'Verify your email address', 'Confirm your email to secure your account.', 'account', 'high', route('verification.notice'), false);
         }
 
         if (empty($user->google2fa_secret ?? null)) {

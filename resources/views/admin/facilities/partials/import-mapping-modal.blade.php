@@ -33,7 +33,7 @@
             You do not have permission to import facility data. Contact a Super Administrator if you need access.
         </div>
         @else
-        <form id="excelUploadForm" method="POST" action="{{ route('admin.facility.files.import', ['facility' => $facility->id]) }}" enctype="multipart/form-data" onsubmit="showMappingStep(event)" class="px-8 pt-6 pb-2">
+        <form id="excelUploadForm" method="POST" action="{{ route('admin.facility.files.import', ['facility' => $facility->id]) }}" enctype="multipart/form-data" onsubmit="showMappingStep(event)" data-no-loader class="px-8 pt-6 pb-2">
             <input type="hidden" name="facility_id" value="{{ $facility->id }}">
             @csrf
             <div id="importPresetMessage" class="mb-4 hidden rounded-lg border px-4 py-3 text-sm" role="alert"></div>
@@ -47,7 +47,7 @@
                     </select>
                     @if($canCreateMappingPreset)
                     <button type="button" id="editTopPresetBtn" class="hidden shrink-0 rounded-lg border border-teal-300 bg-white px-3 py-2 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50" title="Edit selected preset">
-                        Edit
+                        Edit Preset
                     </button>
                     <button type="button" id="duplicateTopPresetBtn" class="hidden shrink-0 rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50" title="Duplicate selected preset">
                         Duplicate
@@ -130,6 +130,11 @@
                         <p class="mt-1 text-xs text-gray-500">Global presets use facility ID {{ $globalPresetFacilityId }} and are available to every facility.</p>
                     </div>
                     <div id="editPresetMessage" class="hidden rounded-lg border px-3 py-2 text-sm" role="alert"></div>
+                    <div>
+                        @include('admin.import-mapping-presets.partials.seeder-sync-option', [
+                            'seederCheckboxId' => 'updateSeederOnEdit',
+                        ])
+                    </div>
                     <div class="flex justify-end gap-2 border-t border-gray-100 pt-2">
                         <button type="button" class="rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300" onclick="closeEditPresetModal()">Cancel</button>
                         <button type="submit" id="editPresetSubmitBtn" class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-teal-700">Save changes</button>
@@ -167,6 +172,11 @@
                         <p class="mt-1 text-xs text-gray-500">Global presets use facility ID {{ $globalPresetFacilityId }} and are available to every facility.</p>
                     </div>
                     <div id="duplicatePresetMessage" class="hidden rounded-lg border px-3 py-2 text-sm" role="alert"></div>
+                    <div>
+                        @include('admin.import-mapping-presets.partials.seeder-sync-option', [
+                            'seederCheckboxId' => 'updateSeederOnDuplicate',
+                        ])
+                    </div>
                     <div class="flex justify-end gap-2 border-t border-gray-100 pt-2">
                         <button type="button" class="rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300" onclick="closeDuplicatePresetModal()">Cancel</button>
                         <button type="submit" id="duplicatePresetSubmitBtn" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700">Save duplicate</button>

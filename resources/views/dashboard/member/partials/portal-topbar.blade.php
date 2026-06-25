@@ -42,9 +42,9 @@
         @yield('header-actions')
       @endif
 
-      <select class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm md:block max-w-[180px] truncate">
-        <option>{{ $facilityName }}</option>
-      </select>
+      <span class="hidden max-w-[200px] truncate text-sm font-bold text-slate-900 md:block" title="{{ $facilityName }}">
+        {{ $facilityName }}
+      </span>
 
       @if($showNotifications)
       <div class="relative">

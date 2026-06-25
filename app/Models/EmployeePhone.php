@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\PhoneHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -29,5 +30,10 @@ class EmployeePhone extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_num', 'employee_num');
+    }
+
+    public function setPhoneNumberAttribute(?string $value): void
+    {
+        $this->attributes['phone_number'] = PhoneHelper::normalizeForStorage($value);
     }
 }

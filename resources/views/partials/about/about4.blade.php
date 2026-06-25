@@ -1,9 +1,12 @@
 {{-- ABOUT — Version G: Magazine Banner, Editorial Grid, Vertical Milestones, Stats Band, Leadership, Compliance --}}
 @php
+use App\Helpers\FacilityDataHelper;
+
 $years = (int)($facility['years'] ?? 20);
-$poster = !empty($facility['about_image_url'])
-? url('images/' . $facility['about_image_url'])
-: asset('images/physical-therapy-session.png');
+$poster = FacilityDataHelper::resolvePublicImageUrl(
+    $facility['about_image_url'] ?? null,
+    'images/physical-therapy-session.jpg'
+);
 @endphp
 
 <section class="relative overflow-hidden" id="about">
@@ -188,7 +191,7 @@ $poster = !empty($facility['about_image_url'])
                             </div>
                         </div>
                         <div class="aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100">
-                            <img src="{{ asset('images/garden-outdoor-activities.png') }}"
+                            <img src="{{ asset('images/garden-outdoor-activities.jpg') }}"
                                 alt="Happy residents enjoying life at our facility" class="w-full h-full object-cover">
                         </div>
                     </div>
@@ -228,7 +231,7 @@ $poster = !empty($facility['about_image_url'])
                             </div>
                         </div>
                         <div class="aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-slate-200 bg-slate-100">
-                            <img src="{{ asset('images/nursinghome_image1.png') }}"
+                            <img src="{{ asset('images/nursinghome_image1.jpg') }}"
                                 alt="Our nursing home facility demonstrating our core values"
                                 class="w-full h-full object-cover">
                         </div>

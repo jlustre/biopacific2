@@ -1,9 +1,8 @@
 {{-- HERO — Curved Mask Image, Right-Rail Content, Vertical Facts --}}
 @php
-// Color variables ($primary, $secondary, $accent) are now passed from the controller.
-// Build poster image URL for background
-$posterFilename = $facility['hero_image_url'] ?? null;
-$poster = !empty($posterFilename) ? url('images/' . $posterFilename) : asset('images/hero1.jpg');
+use App\Helpers\FacilityDataHelper;
+
+$poster = FacilityDataHelper::resolvePublicImageUrl($facility['hero_image_url'] ?? null, 'images/hero1.jpg');
 $hasVideo = !empty($facility['hero_video_id']);
 @endphp
 

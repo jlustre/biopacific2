@@ -44,6 +44,9 @@ return [
 
     'system_admin_roles' => ['admin', 'super-admin'],
 
+    /** Roles that can manage public-site content and communications menus/routes */
+    'web_contents_manager_roles' => 'admin|super-admin|rdhr|facility-admin|facility-dsd',
+
     'corporate_roles' => ['rdhr', 'regional-director'],
 
     'facility_manager_roles' => ['facility-admin', 'facility-dsd', 'facility-ssd', 'don'],
@@ -86,6 +89,8 @@ return [
         'admin.reports.*',
         'admin.scheduled-reports.*',
         'admin.blogs.*',
+        'hr-portal.*',
+        'admin.hr-portal.*',
     ],
 
     'admin_sidebar_nav' => [
@@ -117,6 +122,9 @@ return [
         ['id' => 'users', 'route' => 'admin.users.index', 'route_is' => 'admin.users.*', 'icon' => '👥', 'label' => 'Users'],
         ['id' => 'roles', 'route' => 'admin.roles.index', 'route_is' => ['admin.roles.*', 'admin.permissions.*', 'admin.role-assignments.*'], 'icon' => '🛡️', 'label' => 'Roles & Permissions'],
         ['id' => 'settings', 'route' => 'admin.settings.index', 'route_is' => 'admin.settings.*', 'icon' => '🔧', 'label' => 'System Settings'],
+        ['id' => 'hr-portal', 'route' => 'user.hr-portal', 'route_is' => ['hr-portal.*', 'user.hr-portal', 'admin.hr-portal.*', 'admin.facility.employees*', 'admin.facility.hiring*', 'admin.facility.job_openings*', 'admin.facility.documents*', 'admin.facility.reports*'], 'icon' => '👥', 'label' => 'Employee Management'],
+        ['id' => 'reports', 'route' => 'admin.reports.index', 'route_is' => ['admin.reports.*', 'admin.scheduled-reports.*'], 'icon' => '📊', 'label' => 'Reports'],
+        ['id' => 'training', 'route' => 'admin.training-management.index', 'route_is' => 'admin.training-management.*', 'icon' => '🎓', 'label' => 'Training Management'],
         ['id' => 'employee-portal', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Employee Portal'],
     ],
 
@@ -194,6 +202,8 @@ return [
 
     'admin_titles' => [
         'admin.dashboard.*' => 'Admin Dashboard',
+        'hr-portal.*' => 'HR Management',
+        'admin.hr-portal.*' => 'HR Management',
         'admin.users.*' => 'Users',
         'admin.settings.*' => 'System Settings',
         'admin.roles.*' => 'Roles',
@@ -230,6 +240,12 @@ return [
         'admin.facilities.show' => 'facilities',
         'admin.users.*' => 'users',
         'admin.settings.*' => 'settings',
+        'hr-portal.*' => 'hr-portal',
+        'user.hr-portal' => 'hr-portal',
+        'admin.hr-portal.*' => 'hr-portal',
+        'admin.reports.*' => 'reports',
+        'admin.scheduled-reports.*' => 'reports',
+        'admin.training-management.*' => 'training',
         'admin.roles.*' => 'roles',
         'admin.permissions.*' => 'roles',
         'admin.role-assignments.*' => 'roles',
@@ -339,6 +355,7 @@ return [
         'admin.email-recipients.*',
         'admin.email-templates.*',
         'admin.communications.employee-email-mappings',
+        'admin.scheduled-reports.*',
         'admin.upload-types.*',
         'admin.positions.*',
         'admin.training-management.*',
@@ -366,6 +383,7 @@ return [
         'admin.job-applications.*',
         'admin.email-recipients.*',
         'admin.email-templates.*',
+        'admin.scheduled-reports.*',
         'admin.communications.employee-email-mappings',
     ],
 

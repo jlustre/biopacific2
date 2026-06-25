@@ -141,7 +141,7 @@ $accent = $accent ?? '#F59E0B';
                     </div>
                 </div>
                 <div class="relative">
-                    <img src="{{ asset('images/testimonials.png') }}" alt="Testimonials Photo"
+                    <img src="{{ asset('images/testimonials.jpg') }}" alt="Testimonials Photo"
                         class="h-full w-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
                 </div>

@@ -14,7 +14,7 @@
                 <!-- Image Side -->
                 <div class="lg:col-span-1 relative">
                     <div class="relative overflow-hidden rounded-3xl shadow-2xl">
-                        <img src="{{ asset('images/'.($facility['about_image_url'] ?? 'nursehuggingpatient.jpg')) }}"
+                        <img src="{{ \App\Helpers\FacilityDataHelper::resolvePublicImageUrl($facility['about_image_url'] ?? null, 'images/nursehuggingpatient.jpg') }}"
                             alt="About Us" class="w-full h-80 lg:h-96 object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>

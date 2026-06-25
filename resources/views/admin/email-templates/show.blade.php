@@ -135,8 +135,35 @@
                 </div>
                 <div class="bg-gray-50 rounded p-3">
                     <span class="text-gray-600 font-medium">{pre_employment_link}</span>
-                    <p class="text-gray-900 mt-1">{{ url('/pre-employment') }}{{ $jobApplication->applicant_code ? '?c='
-                        . urlencode($jobApplication->applicant_code) : '' }}</p>
+                    <p class="text-gray-900 mt-1 break-all">
+                        {{ $jobApplication->applicant_code
+                            ? route('pre-employment.index', ['code' => $jobApplication->applicant_code])
+                            : url('/pre-employment') }}
+                    </p>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                    <span class="text-gray-600 font-medium">{registration_code}</span>
+                    <p class="text-gray-900 mt-1">{{ $jobApplication->activeRegistrationCode?->code ?? 'N/A' }}</p>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                    <span class="text-gray-600 font-medium">{registration_link}</span>
+                    <p class="text-gray-900 mt-1 break-all">
+                        @if($jobApplication->activeRegistrationCode)
+                            {{ app(\App\Support\RegistrationCodeService::class)->registrationUrl($jobApplication->activeRegistrationCode) }}
+                        @else
+                            N/A
+                        @endif
+                    </p>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                    <span class="text-gray-600 font-medium">{registration_expiration}</span>
+                    <p class="text-gray-900 mt-1">
+                        @if($jobApplication->activeRegistrationCode?->expires_at)
+                            {{ $jobApplication->activeRegistrationCode->expires_at->timezone(config('app.timezone'))->format('F j, Y g:i A T') }}
+                        @else
+                            N/A
+                        @endif
+                    </p>
                 </div>
             </div>
         </div>

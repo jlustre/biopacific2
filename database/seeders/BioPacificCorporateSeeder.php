@@ -13,6 +13,14 @@ class BioPacificCorporateSeeder extends Seeder
         $slug = config('member-portal.corporate_facility_slug', 'bio-pacific-corporate');
         $globalId = (int) config('import-mapping.global_facility_id', 99);
 
+        Facility::query()
+            ->where(function ($query) {
+                $query->where('slug', 'bio-pacific-corporation')
+                    ->orWhere('facility_number', 'CORP001');
+            })
+            ->where('slug', '!=', $slug)
+            ->update(['slug' => $slug]);
+
         Facility::query()->where('id', $globalId)->where('slug', '!=', $slug)->delete();
 
         $attributes = [
@@ -30,22 +38,22 @@ class BioPacificCorporateSeeder extends Seeder
             'beds' => 0,
             'color_scheme_id' => 33,
             'logo_url' => 'bplogo.png',
-            'about_image_url' => 'about-people.png',
+            'about_image_url' => 'about-people.jpg',
             'location_map' => 'https://maps.google.com/maps?q=123+Corporate+Drive,Los+Angeles,CA+90210&output=embed',
-            'domain' => 'biopacific.com',
+            'domain' => 'biopacificoperational.com',
             'subdomain' => 'corporate.biopacific.com',
             'years' => 25,
             'facility_image' => 'corporate-hero.jpg',
             'hours' => '8:00 AM - 5:00 PM',
-            'hero_image_url' => 'hero17.png',
+            'hero_image_url' => 'hero17.jpg',
             'region' => 'socal',
             'facility_number' => 'CORP001',
             'legal_name' => 'Bio-Pacific Healthcare Corporation',
-            'administrator' => 'Chief Executive Officer',
+            'administrator' => 'President',
             'don' => 'Chief Nursing Officer',
             'dsd' => 'Chief Operating Officer',
             'staffer' => 'HR Director',
-            'is_active' => false,
+            'is_active' => true,
             'slug' => $slug,
             'about_text' => 'Bio-Pacific Corporation is dedicated to providing top-tier management services to our network of healthcare facilities across California. Our corporate team ensures operational excellence, regulatory compliance, and the highest standards of patient care.',
             'settings' => [

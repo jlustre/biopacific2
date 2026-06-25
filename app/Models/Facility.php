@@ -59,6 +59,27 @@ class Facility extends Model
   }
 
   /**
+   * Full mailing address: street, city, state, and ZIP.
+   */
+  public function formattedAddress(): string
+  {
+    $street = trim((string) ($this->address ?? ''));
+    $city = trim((string) ($this->city ?? ''));
+    $state = trim((string) ($this->state ?? ''));
+    $zip = trim((string) ($this->zip ?? ''));
+
+    $cityStateZip = $city;
+    if ($state !== '') {
+      $cityStateZip = $cityStateZip !== '' ? "{$cityStateZip}, {$state}" : $state;
+    }
+    if ($zip !== '') {
+      $cityStateZip = trim($cityStateZip . ($cityStateZip !== '' ? ' ' : '') . $zip);
+    }
+
+    return collect([$street, $cityStateZip])->filter()->implode(', ');
+  }
+
+  /**
    * Same-origin path for public header CTAs (Login, etc.).
    * Avoids broken links when APP_URL still points at a local/dev host on staging.
    */
@@ -199,6 +220,7 @@ class Facility extends Model
     'settings' => 'array',
     'layout_config' => 'array',
     'is_active' => 'boolean',
+    'is_shutdown' => 'boolean',
     'hipaa_flags' => 'array',
   ];
 
@@ -210,6 +232,28 @@ class Facility extends Model
       return 'id';
     }
     return 'slug';
+  }
+
+  public function resolveRouteBinding($value, $field = null)
+  {
+    $field = $field ?: $this->getRouteKeyName();
+
+    $facility = static::query()->where($field, $value)->first();
+
+    if ($facility || $field !== 'slug' || $value !== static::corporateSiteSlug()) {
+      return $facility;
+    }
+
+    $legacy = static::query()
+      ->where('slug', 'bio-pacific-corporation')
+      ->orWhere('facility_number', 'CORP001')
+      ->first();
+
+    if ($legacy && $legacy->slug !== static::corporateSiteSlug()) {
+      $legacy->forceFill(['slug' => static::corporateSiteSlug()])->save();
+    }
+
+    return $legacy;
   }
 
   // Multi-tenant methods

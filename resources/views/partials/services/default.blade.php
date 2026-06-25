@@ -1,12 +1,4 @@
-@php
-use App\Models\Service;
-// Color scheme variables ($primary, $secondary, $accent) are now passed from the controller.
-if (isset($facility) && $facility) {
-$services = $facility->services()->where('is_active', 1)->orderBy('order')->get();
-} else {
-$services = Service::where('is_active', 1)->orderBy('order')->get();
-}
-@endphp
+@include('partials.services._resolve-services')
 
 <section id="services" class="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-slate-50 to-white">
   {{-- Decorative brand glows (very subtle) --}}

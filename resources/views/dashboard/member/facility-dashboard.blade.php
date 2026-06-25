@@ -46,10 +46,10 @@
 @section('content')
 <section class="mx-auto max-w-7xl space-y-4 px-4 py-4 sm:px-6 lg:py-5">
     @if($canSwitchFacility)
-    <div class="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+    <div class="flex flex-wrap items-end gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm ring-1 ring-amber-100/80">
         <div class="min-w-[12rem] flex-1">
-            <label for="facility-switch" class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Facility</label>
-            <select id="facility-switch" class="mt-0.5 w-full rounded-lg border-slate-200 text-sm"
+            <label for="facility-switch" class="text-[11px] font-bold uppercase tracking-wide text-amber-900/70">Facility</label>
+            <select id="facility-switch" class="mt-0.5 w-full rounded-lg border-amber-200 bg-white text-sm focus:border-amber-400 focus:ring-amber-200"
                     onchange="if (this.value) window.location.href = this.value">
                 @foreach($facilities as $f)
                 <option value="{{ route($facilitySwitchRoute, ['facility' => $f->slug ?? $f->id]) }}"

@@ -1707,7 +1707,11 @@ class FilesController extends Controller
                 } elseif ($targetTable === 'bp_emp_addresses') {
                     $addressData[$targetCol] = $this->resolveCrossWorksheetValue($row, $employeeData, $map, $worksheetDataMap);
                 } elseif ($targetTable === 'bp_emp_phones') {
-                    $phoneData[$targetCol] = $this->resolveCrossWorksheetValue($row, $employeeData, $map, $worksheetDataMap);
+                    $value = $this->resolveCrossWorksheetValue($row, $employeeData, $map, $worksheetDataMap);
+                    if ($targetCol === 'phone_number') {
+                        $value = \App\Helpers\PhoneHelper::normalizeForStorage($value);
+                    }
+                    $phoneData[$targetCol] = $value;
                 }
             }
 

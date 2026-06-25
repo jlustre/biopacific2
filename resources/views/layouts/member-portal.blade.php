@@ -37,6 +37,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased pb-20 lg:pb-0"
       x-data="{ sidebarOpen: false, profileOpen: false, notifyOpen: false }">
+  @include('layouts.partials.page-loader')
   <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
 
   @if(session('status') && in_array(session('status'), ['profile-updated', 'avatar-updated'], true))
@@ -44,6 +45,10 @@
        x-data x-init="setTimeout(() => $el.remove(), 4000)">
     {{ session('status') === 'avatar-updated' ? 'Profile photo updated.' : 'Profile saved successfully.' }}
   </div>
+  @endif
+
+  @if($user && method_exists($user, 'hasVerifiedEmail') && ! $user->hasVerifiedEmail())
+  @include('layouts.partials.email-verification-banner', ['user' => $user])
   @endif
 
   <div class="min-h-screen lg:flex">

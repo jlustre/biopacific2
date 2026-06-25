@@ -185,7 +185,7 @@ class FacilityDashboardService
 
         return [
             'name' => $facility->name,
-            'address' => $facility->address,
+            'address' => $facility->formattedAddress() ?: null,
             'phone' => $facility->phone,
             'email' => $facility->email,
             'status' => $statusLabel,

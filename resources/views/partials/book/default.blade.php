@@ -31,7 +31,7 @@
         <div class="mt-10 grid gap-8 lg:grid-cols-2">
             {{-- Left: highlights / steps / info card --}}
             <div class="rounded-3xl ring-1 ring-slate-200 bg-white/80 backdrop-blur p-6 md:p-8 shadow-sm">
-                <img src="{{ asset('images/book-a-tour.png') }}" alt="Book a Tour"
+                <img src="{{ asset('images/book-a-tour.jpg') }}" alt="Book a Tour"
                     class="mb-6 w-full h-auto object-cover rounded-2xl" style="max-width:100%;" />
                 {{-- 3-step rail --}}
                 <ol class="grid gap-4 sm:grid-cols-3">

@@ -42,29 +42,77 @@
             </div>
         </div>
     </div>
-    <div class="flex flex-wrap items-center gap-2 mt-4 mb-2">
-        <select id="mappingPresetSelect" class="border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 w-56 focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm">
-            <option value="">-- Load Mapping Preset --</option>
-        </select>
+    <div class="mt-4 space-y-4">
+        @php
+            $importFieldClass = 'min-h-[42px] border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-400 focus:outline-none';
+            $importBtnClass = 'inline-flex min-h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-lg border-2 px-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50';
+        @endphp
+
+        <div>
+            <label for="mappingPresetSelect" class="mb-2 block text-gray-700 font-medium">Load Mapping Preset</label>
+            <div class="flex flex-wrap items-stretch gap-2">
+                <select id="mappingPresetSelect" class="{{ $importFieldClass }} min-w-0 flex-1 basis-[14rem]">
+                    <option value="">-- Load Mapping Preset --</option>
+                </select>
+                @if($canCreateMappingPreset ?? false)
+                <button type="button" id="editMappingPresetBtn"
+                    class="{{ $importBtnClass }} hidden border-teal-800 bg-teal-50 text-teal-900 hover:bg-teal-100 focus:ring-teal-300"
+                    title="Edit selected preset" onclick="openEditPresetModalFromMapping()">
+                    <i class="fas fa-pen text-xs" aria-hidden="true"></i>
+                    <span>Edit Preset</span>
+                </button>
+                <button type="button" id="duplicateMappingPresetBtn"
+                    class="{{ $importBtnClass }} hidden border-indigo-800 bg-indigo-50 text-indigo-900 hover:bg-indigo-100 focus:ring-indigo-300"
+                    title="Duplicate selected preset" onclick="openDuplicatePresetModalFromMapping()">
+                    <i class="fas fa-copy text-xs" aria-hidden="true"></i>
+                    <span>Duplicate</span>
+                </button>
+                <button type="button" id="deletePresetBtn"
+                    class="{{ $importBtnClass }} hidden border-red-700 bg-red-50 text-red-800 hover:bg-red-100 focus:ring-red-300"
+                    title="Delete selected preset">
+                    <i class="fas fa-times text-xs" aria-hidden="true"></i>
+                    <span>Delete</span>
+                </button>
+                @endif
+            </div>
+        </div>
+
         @if($canCreateMappingPreset ?? false)
-        <button type="button" id="editMappingPresetBtn" class="hidden bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm" title="Edit selected preset" onclick="openEditPresetModalFromMapping()">
-            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'/></svg>Edit
-        </button>
-        <button type="button" id="duplicateMappingPresetBtn" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm" title="Duplicate selected preset" onclick="openDuplicatePresetModalFromMapping()">
-            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2'/></svg>Duplicate
-        </button>
-        <button type="button" id="deletePresetBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-lg shadow-sm text-sm hidden" title="Delete selected preset">
-            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>Delete
-        </button>
-        <input type="text" id="mappingPresetName" class="border-2 border-teal-800 bg-teal-100 rounded-lg px-3 py-2 w-44 focus:ring-2 focus:ring-teal-400 focus:outline-none text-sm" placeholder="Preset Name">
-        <button type="button" id="saveMappingPresetBtn" class="bg-orange-500 hover:bg-orange-700 text-white font-bold px-2 py-1 rounded-lg shadow-sm text-sm" onclick="saveMappingPreset()">
-            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'/></svg>Save Preset
-        </button>
+        <div>
+            <label for="mappingPresetName" class="mb-2 block text-gray-700 font-medium">Save as New Preset</label>
+            <div class="flex flex-wrap items-stretch gap-2">
+                <input type="text" id="mappingPresetName"
+                    class="{{ $importFieldClass }} min-w-0 flex-1 basis-[14rem]"
+                    placeholder="Preset name">
+                <button type="button" id="saveMappingPresetBtn"
+                    class="{{ $importBtnClass }} border-amber-700 bg-amber-50 text-amber-900 hover:bg-amber-100 focus:ring-amber-300"
+                    onclick="saveMappingPreset()">
+                    <i class="fas fa-check text-xs" aria-hidden="true"></i>
+                    <span>Save Preset</span>
+                </button>
+                <div id="importMappingFileNameWrap"
+                    class="{{ $importFieldClass }} flex min-w-0 max-w-full basis-[14rem] flex-1 items-center gap-2 bg-white text-gray-700 lg:max-w-[18rem] lg:flex-none"
+                    title="Excel file used for this preset">
+                    <i class="fas fa-file-excel shrink-0 text-teal-700" aria-hidden="true"></i>
+                    <span id="importMappingFileName" class="truncate font-semibold text-teal-900">No file selected</span>
+                </div>
+            </div>
+            <div class="mt-3">
+                @include('admin.import-mapping-presets.partials.seeder-sync-option', [
+                    'seederCheckboxId' => 'updateSeederOnSave',
+                ])
+            </div>
+        </div>
         @endif
 
-        <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-2 py-1 rounded-lg shadow-sm text-sm" onclick="addMappingRow()">
-            <svg xmlns='http://www.w3.org/2000/svg' class='inline h-4 w-4 mr-1 -mt-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 4v16m8-8H4'/></svg>Add Mapping
-        </button>
+        <div class="flex justify-end pt-1">
+            <button type="button"
+                class="{{ $importBtnClass }} border-blue-700 bg-blue-50 text-blue-900 hover:bg-blue-100 focus:ring-blue-300"
+                onclick="addMappingRow()">
+                <i class="fas fa-plus text-xs" aria-hidden="true"></i>
+                <span>Add Mapping</span>
+            </button>
+        </div>
     </div>
     <!-- Mapping Table -->
     <div class="mt-6">

@@ -24,10 +24,10 @@
                     Facility operations hub
                 </div>
                 <h2 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">{{ $facility->name }}</h2>
-                @if($facility->address)
+                @if($facility->formattedAddress())
                 <p class="mt-2 flex items-start gap-2 text-sm text-teal-100 sm:text-base">
                     <i class="fas fa-map-marker-alt mt-1 shrink-0 opacity-80"></i>
-                    <span>{{ $facility->address }}</span>
+                    <span>{{ $facility->formattedAddress() }}</span>
                 </p>
                 @endif
                 <div class="mt-5 flex flex-wrap gap-3 text-sm">

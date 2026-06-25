@@ -1,11 +1,4 @@
-@php
-use App\Models\Service;
-if (isset($facility) && $facility) {
-$services = $facility->services()->where('is_active', 1)->orderBy('order')->get();
-} else {
-$services = Service::where('is_active', 1)->orderBy('order')->get();
-}
-@endphp
+@include('partials.services._resolve-services')
 
 <section id="services" class="py-16"
     style="background: linear-gradient(to top right, {{ $primary }}, {{ $accent }}, {{ $accent }});">

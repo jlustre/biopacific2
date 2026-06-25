@@ -3,8 +3,8 @@ $cityState = trim(($facility['city'] ?? '').(isset($facility['state']) ? ', '.$f
 $beds = $facility->beds ?? null;
 
 // Optional images (swap with your own)
-$aboutHero = asset('images/about-hero.png');
-$aboutPeople = asset('images/about-people.png');
+$aboutHero = asset('images/about-hero.jpg');
+$aboutPeople = asset('images/about-people.jpg');
 @endphp
 
 <section id="about" class="relative isolate overflow-hidden py-16 sm:py-24 scroll-mt-24">

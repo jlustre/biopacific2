@@ -51,7 +51,7 @@ class SuperAdminSeeder extends Seeder
             [
                 'name' => 'Joey Lustre',
                 'email_verified_at' => now(),
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('Password123'),
                 'facility_id' => 99,
             ]
         );

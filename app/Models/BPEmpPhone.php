@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\PhoneHelper;
 use Illuminate\Database\Eloquent\Model;
 
 class BPEmpPhone extends Model
@@ -27,4 +28,9 @@ class BPEmpPhone extends Model
         'effdt' => 'date',
         'effseq' => 'integer',
     ];
+
+    public function setPhoneNumberAttribute(?string $value): void
+    {
+        $this->attributes['phone_number'] = PhoneHelper::normalizeForStorage($value);
+    }
 }

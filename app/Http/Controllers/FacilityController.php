@@ -6,11 +6,9 @@ use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
 use App\Models\ColorScheme;
 use App\Models\Service;
+use App\Support\FacilityShutdown;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class FacilityController extends Controller
 {
@@ -52,24 +50,8 @@ class FacilityController extends Controller
      */
     public function publicView(Facility $facility)
     {
-        $global = Schema::hasTable('global_shutdowns')
-            ? DB::table('global_shutdowns')->orderByDesc('id')->first()
-            : null;
-        if ($global && $global->is_shutdown) {
-            return response()->view('shutdown', [
-                'message' => $global->shutdown_message,
-                'eta' => $global->shutdown_eta,
-                'isGlobal' => true,
-            ]);
-        }
-        
-        if ($facility->is_shutdown) {
-            return response()->view('shutdown', [
-                'message' => $facility->shutdown_message,
-                'eta' => $facility->shutdown_eta,
-                'isGlobal' => false,
-                'facilityName' => (string) $facility,
-            ]);
+        if ($response = FacilityShutdown::responseFor($facility)) {
+            return $response;
         }
 
         $colors = FacilityDataHelper::getColors($facility);
@@ -86,7 +68,7 @@ class FacilityController extends Controller
         $activeWebContent = $facility->webcontents()->where('is_active', true)->first();
         $sections = [];
         $sectionVariances = [];
-        $layoutTemplate = '';
+        $layoutTemplate = FacilityDataHelper::resolveLayoutTemplate(null, $facility);
         if ($activeWebContent) {
             // Restore robust section decoding for main page rendering
             $rawSections = $activeWebContent->sections;
@@ -100,7 +82,10 @@ class FacilityController extends Controller
                 $sections = (array) $rawSections;
             }
             $sectionVariances = is_array($activeWebContent->variances) ? $activeWebContent->variances : json_decode($activeWebContent->variances, true);
-            $layoutTemplate = $activeWebContent->layout_template;
+            $layoutTemplate = FacilityDataHelper::resolveLayoutTemplate(
+                $activeWebContent->layout_template,
+                $facility,
+            );
         }
         $activeSections = FacilityDataHelper::getActiveSections($facility);
 

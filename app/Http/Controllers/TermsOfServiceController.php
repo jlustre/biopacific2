@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Facility;
 use App\Helpers\FacilityDataHelper;
+use App\Support\FacilityShutdown;
 use Illuminate\Http\Request;
 
 class TermsOfServiceController extends Controller
 {
     public function show(Facility $facility)
     {
+        if ($response = FacilityShutdown::responseFor($facility)) {
+            return $response;
+        }
+
         // Format facility data like the welcome view does
         $facilityData = $facility->toArray();
         $colors = FacilityDataHelper::getColorsFromColorScheme($facility->color_scheme_id);

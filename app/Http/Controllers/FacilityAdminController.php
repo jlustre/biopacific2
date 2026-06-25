@@ -17,11 +17,44 @@ use App\Helpers\FacilityDataHelper;
 use Carbon\Carbon;
 use App\Models\News;
 use App\Models\Event;
+use App\Services\FacilitySeederExporter;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 class FacilityAdminController extends Controller
 {
+    public function __construct(
+        protected FacilitySeederExporter $facilitySeederExporter,
+    ) {
+    }
+
+    protected function canSyncFacilitySeeder(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user && ($user->hasRole('super-admin') || $user->hasRole('admin'));
+    }
+
+    protected function redirectWithFacilitySeederSync(Request $request, $redirect, string $baseMessage, Facility $facility)
+    {
+        $message = $baseMessage;
+
+        if ($this->canSyncFacilitySeeder($request)) {
+            try {
+                $sync = $this->facilitySeederExporter->syncFromRequest($request, $facility);
+                $extra = $this->facilitySeederExporter->seederSyncMessage($sync);
+                if ($extra) {
+                    $message .= $extra;
+                }
+            } catch (\Throwable $e) {
+                report($e);
+                $message .= ' FacilitySeeder update failed: ' . $e->getMessage();
+            }
+        }
+
+        return $redirect->with('success', $message);
+    }
+
     protected function scopedFacilityId(Request $request): ?int
     {
         $user = $request->user();
@@ -342,9 +375,40 @@ class FacilityAdminController extends Controller
     // Sync services if present
     $serviceIds = $request->input('services', []);
     $syncResult = $facility->services()->sync($serviceIds);
-    return redirect()->route('admin.facilities.edit', $facility->id)
-        ->with('success', 'Facility updated successfully!');
+
+    return $this->redirectWithFacilitySeederSync(
+        $request,
+        redirect()->route('admin.facilities.edit', $facility->id),
+        'Facility updated successfully!',
+        $facility
+    );
     }
+
+    public function syncSeeder(Request $request, Facility $facility)
+    {
+        if (! $this->canSyncFacilitySeeder($request)) {
+            return redirect()->route('admin.facilities.edit', $facility->id)
+                ->with('error', 'You do not have permission to update FacilitySeeder.');
+        }
+
+        try {
+            $result = $this->facilitySeederExporter->syncFacility($facility);
+
+            return redirect()->route('admin.facilities.edit', $facility->id)
+                ->with(
+                    'success',
+                    'FacilitySeeder updated for ' . $result['facility']
+                    . ' (' . $result['total'] . ' total in facilities.json). '
+                    . 'Commit database/seeders/data/facilities.json so migrate:fresh --seed restores settings.'
+                );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('admin.facilities.edit', $facility->id)
+                ->with('error', 'Failed to update FacilitySeeder: ' . $e->getMessage());
+        }
+    }
+
 
     private function formatLocationMap($locationMap)
     {

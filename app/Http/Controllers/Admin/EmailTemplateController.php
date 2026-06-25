@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EmailTemplate;
 use App\Models\JobApplication;
+use App\Support\EmailTemplatePlaceholderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Mail;
@@ -54,7 +55,7 @@ class EmailTemplateController extends Controller
     public function show(EmailTemplate $emailTemplate, Request $request)
     {
         $jobApplication = $request->filled('job_application_id')
-            ? JobApplication::find($request->input('job_application_id'))
+            ? JobApplication::with(['jobOpening.facility', 'activeRegistrationCode'])->find($request->input('job_application_id'))
             : null;
 
         [$filledSubject, $filledBody] = $this->fillTemplate($emailTemplate, $jobApplication);
@@ -70,7 +71,7 @@ class EmailTemplateController extends Controller
         ]);
 
         $jobApplication = !empty($validated['job_application_id'])
-            ? JobApplication::find($validated['job_application_id'])
+            ? JobApplication::with(['jobOpening.facility', 'activeRegistrationCode'])->find($validated['job_application_id'])
             : null;
 
         [$filledSubject, $filledBody] = $this->fillTemplate($emailTemplate, $jobApplication);
@@ -121,27 +122,10 @@ class EmailTemplateController extends Controller
 
     private function fillTemplate(EmailTemplate $emailTemplate, ?JobApplication $jobApplication): array
     {
-        $filledSubject = $emailTemplate->subject;
-        $filledBody = $emailTemplate->body;
-
         if (!$jobApplication) {
-            return [$filledSubject, $filledBody];
+            return [$emailTemplate->subject, $emailTemplate->body];
         }
 
-        $firstName = $jobApplication->first_name ?? '';
-        $lastName = $jobApplication->last_name ?? '';
-        $facilityName = $jobApplication->jobOpening?->facility?->name ?? '';
-        $jobTitle = $jobApplication->jobOpening?->title ?? '';
-        $applicationId = $jobApplication->id ?? '';
-        $applicantCode = $jobApplication->applicant_code ?? '';
-        $preEmploymentLink = $applicantCode ? route('pre-employment.index', ['code' => $applicantCode]) : url('/pre-employment');
-
-        $placeholders = ['{first_name}', '{last_name}', '{facility_name}', '{job_title}', '{application_id}', '{applicant_code}', '{pre_employment_link}'];
-        $values = [$firstName, $lastName, $facilityName, $jobTitle, $applicationId, $applicantCode, $preEmploymentLink];
-
-        $filledSubject = str_replace($placeholders, $values, $filledSubject);
-        $filledBody = str_replace($placeholders, $values, $filledBody);
-
-        return [$filledSubject, $filledBody];
+        return app(EmailTemplatePlaceholderService::class)->fillForJobApplication($emailTemplate, $jobApplication);
     }
 }

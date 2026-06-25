@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+        ]);
+
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
 
         // Register CheckFacilityShutdown as global middleware

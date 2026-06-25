@@ -1,7 +1,10 @@
 @php
     $active = $active ?? 'dashboard';
-    $profileComplete = $profileComplete ?? 88;
+    $profileComplete = $profileComplete ?? 0;
     $portalNav = $portalNav ?? 'employee';
+    $currentUser = auth()->user();
+    $isSystemAdmin = $currentUser && \App\Support\MemberPortalLayout::userHasFullNavAccess($currentUser);
+    $showHelpCard = ! ($currentUser && $currentUser->hasRole('rdhr'));
     $usesStructuredNav = in_array($portalNav, ['employee', 'facility', 'corporate'], true);
     $navItems = match ($portalNav) {
         'admin' => config('member-portal.admin_sidebar_nav', []),
@@ -51,14 +54,10 @@
 
         @include('dashboard.member.partials.portal-sidebar-personal-portal', ['active' => $active])
 
-        @if(in_array($portalNav, ['corporate', 'facility'], true)
-            || (auth()->user() && \App\Support\MemberPortalLayout::userIsSystemAdmin(auth()->user()) && request()->routeIs(array_merge(
-                config('member-portal.facility_manager_global_route_patterns', []),
-                config('member-portal.facility_management_route_patterns', [])
-            ))))
+        @if(in_array($portalNav, ['corporate', 'facility'], true))
           @include('dashboard.member.partials.portal-sidebar-management-groups', [
               'active' => $active,
-              'portalNav' => $portalNav === 'admin' ? 'facility' : $portalNav,
+              'portalNav' => $portalNav,
           ])
         @endif
 
@@ -91,8 +90,24 @@
           </a>
         @endforeach
 
-        @if(($portalNav ?? '') === 'admin' && auth()->user() && \App\Support\MemberPortalLayout::userIsSystemAdmin(auth()->user()))
+        @if(($portalNav ?? '') === 'admin' && $isSystemAdmin)
           @include('dashboard.member.partials.portal-sidebar-admin-management-groups', ['active' => $active])
+
+          @include('dashboard.member.partials.portal-sidebar-management-groups', [
+              'active' => $active,
+              'portalNav' => 'corporate',
+              'sectionLabel' => 'HR & Operations',
+              'showAllOpsLinks' => true,
+          ])
+
+          <p class="px-4 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-teal-200/80 border-t border-white/10">Personal Portal</p>
+          @include('dashboard.member.partials.portal-sidebar-personal-portal', ['active' => $active])
+
+          <p class="px-4 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Employee Links</p>
+          @include('dashboard.member.partials.portal-sidebar-dashboard-nav', [
+              'active' => $active,
+              'items' => \App\Support\MemberPortalLayout::employeeDashboardNavItems($currentUser),
+          ])
         @endif
       @endif
     </nav>
@@ -106,7 +121,7 @@
         </div>
         <p class="mt-2 text-xs text-teal-100">{{ $profileComplete }}% complete</p>
       </div>
-      @else
+      @elseif($showHelpCard)
       <div class="member-portal-help-card overflow-hidden rounded-2xl p-4">
         <div class="member-portal-help-card-glow pointer-events-none absolute inset-0" aria-hidden="true"></div>
         <div class="relative">

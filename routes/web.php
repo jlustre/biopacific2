@@ -140,9 +140,10 @@ Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->grou
 });
 
 // Import Mapping Presets
-Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|facility-editor'])->prefix('admin/facility/files')->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor'])->prefix('admin/facility/files')->group(function () {
     Route::get('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'index']);
     Route::post('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'store']);
+    Route::post('mapping-presets/sync-seeder', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'syncSeeder']);
     Route::post('mapping-presets/{id}/duplicate', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'duplicate']);
     Route::put('mapping-presets/{id}/details', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'updateDetails']);
     Route::put('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'update']);
@@ -342,7 +343,7 @@ Route::get('/test-urls', function () {
 });
 
 // Services Management CRUD (Web Contents)
-Route::middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:' . config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd')])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('services', ServicesController::class)->except(['show']);
 });
 
@@ -365,6 +366,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::get('/facilities/{facility:slug}', [FacilityAdminController::class, 'show'])->name('facilities.show');
     Route::get('/facilities/{facility}/edit', [FacilityAdminController::class, 'edit'])->name('facilities.edit');
     Route::put('/facilities/{facility}', [FacilityAdminController::class, 'update'])->name('facilities.update');
+    Route::post('/facilities/{facility}/sync-seeder', [FacilityAdminController::class, 'syncSeeder'])->name('facilities.sync-seeder');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
 
     // Add resource route for employees (show, edit, update, create)
@@ -554,7 +556,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     // Employee Email Mappings Management
     Route::get('/communications/employee-email-mappings', function () {
         return view('admin.employee-email-mappings');
-    })->middleware(['auth', 'role:admin|facility-admin|rdhr|facility-dsd'])->name('communications.employee-email-mappings');
+    })->middleware(['auth', 'role:' . config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd')])->name('communications.employee-email-mappings');
 
     
     // Gallery image management
@@ -567,7 +569,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::post('/facilities/{facility}/gallery/clear', [GalleryController::class, 'clearFacility'])->name('gallery.clear');
 
     // Admin Facility Testimonials Management
-    Route::prefix('facilities')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])->group(function () {
+    Route::prefix('facilities')->middleware(['auth', 'role:' . config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd')])->group(function () {
         Route::get('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'index'])->name('admin.facilities.testimonials.index');
         Route::get('/{facility}/testimonials/create', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'create'])->name('admin.facilities.testimonials.create');
         Route::post('/{facility}/testimonials', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'store'])->name('admin.facilities.testimonials.store');
@@ -592,7 +594,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::get('/users/{user}/dashboard', [DashboardController::class, 'showUserDashboard'])->name('users.dashboard');
 
     // API endpoint for fetching a single testimonial (for edit modal)
-    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])->name('admin.facilities.testimonials.show');
+    Route::get('/facilities/web-contents/testimonials/{testimonial}', [\App\Http\Controllers\Admin\FacilityTestimonialController::class, 'show'])->middleware(['auth', 'role:' . config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd')])->name('admin.facilities.testimonials.show');
 
     // Security Monitoring Routes
     Route::prefix('security')->name('security.')->group(function () {
@@ -613,7 +615,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
 });
 
 // Email Templates Management (admin + facility-admin + facility-dsd + rdhr)
-Route::prefix('admin')->middleware(['auth', 'role:admin|facility-admin|facility-dsd|rdhr'])
+Route::prefix('admin')->middleware(['auth', 'role:' . config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd')])
     ->name('admin.')
     ->group(function () {
         Route::resource('email-templates', \App\Http\Controllers\Admin\EmailTemplateController::class)->names('email-templates');
@@ -634,7 +636,7 @@ Route::prefix('admin')->middleware(['auth', 'role:facility-admin|facility-editor
     });
 
 // Careers CRUD and applications routes
-Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:admin|facility-admin|rdhr|facility-dsd'])->group(function () {
+Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:' . config('member-portal.web_contents_manager_roles', 'admin|super-admin|rdhr|facility-admin|facility-dsd')])->group(function () {
     Route::get('careers/templates', [CareersController::class, 'templates'])->name('admin.facilities.webcontents.careers.templates');
     Route::get('careers', [CareersController::class, 'indexAll'])->name('admin.facilities.webcontents.careers');
     Route::get('careers/{facility}', [CareersController::class, 'index'])->name('admin.facilities.webcontents.careers.show');

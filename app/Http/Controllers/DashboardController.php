@@ -8,6 +8,7 @@ use App\Services\PersonalProfilePanelsService;
 use Illuminate\Http\Request;
 use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
+use App\Support\FacilityShutdown;
 use App\Models\Testimonial;
 use App\Models\Faq;
 use App\Models\Service;
@@ -383,70 +384,78 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function facility(Request $request)
+    public function facility(Request $request, int|string $id)
     {
-
         $user = Auth::user();
-        if ($user->hasRole('admin')) {
-            // Admin dashboard
-            $facility = Facility::find($request->id);
 
-            if ($facility) {
-                $activeWebContent = $facility->webContents()->where('is_active', true)->first();
-                $sections = [];
-                $sectionVariances = [];
-                $layoutTemplate = 'default-template';
-                
-                if ($activeWebContent) {
-                    $rawSections = $activeWebContent->sections;
-                    if (is_string($rawSections)) {
-                        $sections = json_decode($rawSections, true) ?: [];
-                    } elseif (is_array($rawSections)) {
-                        $sections = $rawSections;
-                    } elseif ($rawSections instanceof \Illuminate\Support\Collection) {
-                        $sections = $rawSections->toArray();
-                    } else {
-                        $sections = (array) $rawSections;
-                    }
-                     $sectionVariances = is_array($activeWebContent->variances) ? $activeWebContent->variances : (json_decode($activeWebContent->variances, true) ?: []);
-                     $layoutTemplate = $activeWebContent->layout_template;
-                }
-
-                $aboutMenuItems = collect(['about', 'services', 'testimonials'])
-                    ->filter(fn($section) => !empty($sections) && in_array($section, $sections));
-                $roomsMenuItems = collect(['news', 'gallery'])
-                    ->filter(fn($section) => !empty($sections) && in_array($section, $sections));
-                $contactMenuItems = collect(['contact', 'faqs', 'resources', 'careers'])
-                    ->filter(fn($section) => !empty($sections) && in_array($section, $sections));
-
-                $faqs = FacilityDataHelper::getFaqs($facility);
-                $categories = $faqs->pluck('category')->filter()->unique()->values();
-                $testimonials = FacilityDataHelper::getTestimonials($facility);
-                $services = FacilityDataHelper::getServices($facility);
-                $newsItems = FacilityDataHelper::getFormattedNews($facility);
-                $colors = FacilityDataHelper::getColors($facility);
-        
-                return view('welcome', [
-                    'facility' => $facility,
-                    'activeSections' => is_array($sections) ? $sections : [],
-                    'layoutTemplate' => $layoutTemplate,
-                    'sections' => $sections,
-                    'sectionVariances' => $sectionVariances,
-                    'services' => $services,
-                    'faqs' => $faqs,
-                    'categories' => $categories,
-                    'testimonials' => $testimonials,
-                    'primary' => $colors['primary'],
-                    'secondary' => $colors['secondary'],
-                    'accent' => $colors['accent'],
-                    'neutral_light' => $colors['neutral_light'],
-                    'neutral_dark' => $colors['neutral_dark'],
-                    'newsItems' => $newsItems,
-                    'aboutMenuItems' => $aboutMenuItems,
-                    'roomsMenuItems' => $roomsMenuItems,
-                    'contactMenuItems' => $contactMenuItems,
-                ]);
-            }
+        if (!$user || !$user->hasRole(['admin', 'super-admin', 'facility-admin', 'facility-dsd', 'rdhr', 'don'])) {
+            abort(403);
         }
+
+        $facility = Facility::findOrFail($id);
+
+        if ($response = FacilityShutdown::responseFor($facility)) {
+            return $response;
+        }
+
+        $activeWebContent = $facility->webContents()->where('is_active', true)->first();
+        $sections = [];
+        $sectionVariances = [];
+        $layoutTemplate = 'default-template';
+
+        if ($activeWebContent) {
+            $rawSections = $activeWebContent->sections;
+            if (is_string($rawSections)) {
+                $sections = json_decode($rawSections, true) ?: [];
+            } elseif (is_array($rawSections)) {
+                $sections = $rawSections;
+            } elseif ($rawSections instanceof \Illuminate\Support\Collection) {
+                $sections = $rawSections->toArray();
+            } else {
+                $sections = (array) $rawSections;
+            }
+            $sectionVariances = is_array($activeWebContent->variances)
+                ? $activeWebContent->variances
+                : (json_decode($activeWebContent->variances, true) ?: []);
+            $layoutTemplate = FacilityDataHelper::resolveLayoutTemplate(
+                $activeWebContent->layout_template,
+                $facility,
+            );
+        }
+
+        $aboutMenuItems = collect(['about', 'services', 'testimonials'])
+            ->filter(fn ($section) => !empty($sections) && in_array($section, $sections));
+        $roomsMenuItems = collect(['news', 'gallery'])
+            ->filter(fn ($section) => !empty($sections) && in_array($section, $sections));
+        $contactMenuItems = collect(['contact', 'faqs', 'resources', 'careers'])
+            ->filter(fn ($section) => !empty($sections) && in_array($section, $sections));
+
+        $faqs = FacilityDataHelper::getFaqs($facility);
+        $categories = $faqs->pluck('category')->filter()->unique()->values();
+        $testimonials = FacilityDataHelper::getTestimonials($facility);
+        $services = FacilityDataHelper::getServices($facility);
+        $newsItems = FacilityDataHelper::getFormattedNews($facility);
+        $colors = FacilityDataHelper::getColors($facility);
+
+        return view('welcome', [
+            'facility' => $facility,
+            'activeSections' => is_array($sections) ? $sections : [],
+            'layoutTemplate' => $layoutTemplate,
+            'sections' => $sections,
+            'sectionVariances' => $sectionVariances,
+            'services' => $services,
+            'faqs' => $faqs,
+            'categories' => $categories,
+            'testimonials' => $testimonials,
+            'primary' => $colors['primary'],
+            'secondary' => $colors['secondary'],
+            'accent' => $colors['accent'],
+            'neutral_light' => $colors['neutral_light'],
+            'neutral_dark' => $colors['neutral_dark'],
+            'newsItems' => $newsItems,
+            'aboutMenuItems' => $aboutMenuItems,
+            'roomsMenuItems' => $roomsMenuItems,
+            'contactMenuItems' => $contactMenuItems,
+        ]);
     }
 }

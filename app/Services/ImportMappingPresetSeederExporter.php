@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ImportMappingPreset;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class ImportMappingPresetSeederExporter
@@ -32,6 +33,60 @@ class ImportMappingPresetSeederExporter
         }
 
         return ['count' => count($presets), 'path' => $path];
+    }
+
+    public function shouldSyncFromRequest(Request $request): bool
+    {
+        return $request->boolean('update_seeder');
+    }
+
+    /**
+     * @return array{synced: bool, count?: int, path?: string, error?: string}
+     */
+    public function syncFromRequest(Request $request): array
+    {
+        if (!$this->shouldSyncFromRequest($request)) {
+            return ['synced' => false];
+        }
+
+        try {
+            $result = $this->writeSeederFile();
+
+            return [
+                'synced' => true,
+                'count' => $result['count'],
+                'path' => 'database/seeders/ImportMappingPresetsTableSeeder.php',
+            ];
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [
+                'synced' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function seederSyncMessage(array $sync): ?string
+    {
+        if (!empty($sync['synced'])) {
+            return ' Seeder updated with ' . ($sync['count'] ?? 0)
+                . ' preset(s). Commit database/seeders/ImportMappingPresetsTableSeeder.php so migrate:fresh --seed restores them.';
+        }
+
+        if (!empty($sync['error'])) {
+            return ' Seeder update failed: ' . $sync['error'];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function seederSyncResponsePayload(array $sync): array
+    {
+        return ['seeder' => $sync];
     }
 
     /**
@@ -97,6 +152,11 @@ IMPORT_MAPPING_PRESETS_JSON, true) ?? [];
 
         foreach (\$presets as \$preset) {
             \$userId = User::where('email', \$preset['owner_email'])->value('id');
+
+            if (! \$userId) {
+                \$fallbackEmail = config('member-portal.super_admin_email', 'super-admin@biopacific.com');
+                \$userId = User::where('email', \$fallbackEmail)->value('id');
+            }
 
             if (! \$userId) {
                 \$this->command?->warn(

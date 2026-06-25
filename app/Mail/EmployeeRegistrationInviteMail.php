@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\RegistrationCode;
+use App\Support\EmailTemplatePlaceholderService;
 use App\Support\RegistrationCodeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -18,6 +19,15 @@ class EmployeeRegistrationInviteMail extends Mailable
 
     public function build()
     {
+        $templateService = app(EmailTemplatePlaceholderService::class);
+        $template = $templateService->employeeRegistrationTemplate();
+
+        if ($template) {
+            [$subject, $body] = $templateService->fillForRegistrationCode($template, $this->registrationCodeRecord);
+
+            return $this->subject($subject)->html($body);
+        }
+
         $registrationUrl = app(RegistrationCodeService::class)->registrationUrl($this->registrationCodeRecord);
 
         return $this->subject('Your Bio-Pacific HR portal registration code')

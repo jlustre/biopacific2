@@ -1,10 +1,18 @@
 @php
 $placeholders = [
-'{first_name}',
-'{last_name}',
-'{facility_name}',
-'{job_title}',
-'{application_id}',
+    '{first_name}',
+    '{last_name}',
+    '{facility_name}',
+    '{job_title}',
+    '{application_id}',
+    '{employee_num}',
+    '{applicant_code}',
+    '{pre_employment_link}',
+    '{registration_code}',
+    '{registration_link}',
+    '{registration_expiration}',
+    '{verification_link}',
+    '{dashboard_link}',
 ];
 @endphp
 
@@ -85,7 +93,7 @@ $placeholders = [
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Body</label>
-            <textarea name="body" rows="10"
+            <textarea id="email-template-body" name="body" rows="12"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Write the email body here...">{{ old('body', $emailTemplate->body ?? '') }}</textarea>
             @error('body')
@@ -107,13 +115,81 @@ $placeholders = [
             @foreach($placeholders as $placeholder)
             <li class="flex items-center justify-between">
                 <span>{{ $placeholder }}</span>
-                <button type="button" class="text-blue-600"
-                    onclick="navigator.clipboard.writeText('{{ $placeholder }}')">
-                    Copy
+                <button type="button" class="text-blue-600 hover:text-blue-800"
+                    onclick="window.insertEmailTemplatePlaceholder && window.insertEmailTemplatePlaceholder('{{ $placeholder }}')">
+                    Insert
                 </button>
             </li>
             @endforeach
         </ul>
-        <p class="text-xs text-gray-500 mt-4">Placeholders are replaced when sending emails.</p>
+        <p class="text-xs text-gray-500 mt-4">Click Insert to add placeholders at the cursor in the body editor.</p>
     </div>
 </div>
+
+@once
+@push('scripts')
+<script src="https://cdn.tiny.cloud/1/hggcx7g2kfrgugocare6vapc39m9hxb4unvnk9nui4od2ftg/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+(function () {
+    const EDITOR_ID = 'email-template-body';
+
+    window.insertEmailTemplatePlaceholder = function (placeholder) {
+        const editor = typeof tinymce !== 'undefined' ? tinymce.get(EDITOR_ID) : null;
+        if (editor) {
+            editor.insertContent(placeholder);
+            editor.focus();
+            return;
+        }
+        const textarea = document.getElementById(EDITOR_ID);
+        if (!textarea) {
+            return;
+        }
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? textarea.value.length;
+        textarea.value = textarea.value.slice(0, start) + placeholder + textarea.value.slice(end);
+        textarea.focus();
+    };
+
+    function initEmailTemplateTinyMCE() {
+        if (typeof tinymce === 'undefined' || !document.getElementById(EDITOR_ID)) {
+            return;
+        }
+
+        if (tinymce.get(EDITOR_ID)) {
+            return;
+        }
+
+        tinymce.init({
+            selector: '#' + EDITOR_ID,
+            menubar: false,
+            plugins: 'lists link autolink table code',
+            toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link table | removeformat code',
+            min_height: 280,
+            max_height: 520,
+            branding: false,
+            promotion: false,
+            resize: true,
+            convert_urls: false,
+            setup: function (editor) {
+                editor.on('change keyup', function () {
+                    editor.save();
+                });
+            },
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initEmailTemplateTinyMCE();
+
+        document.querySelectorAll('form[data-email-template-form]').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                if (typeof tinymce !== 'undefined') {
+                    tinymce.triggerSave();
+                }
+            });
+        });
+    });
+})();
+</script>
+@endpush
+@endonce

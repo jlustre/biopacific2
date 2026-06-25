@@ -20,7 +20,7 @@
     @endif
 
     <div class="bg-white rounded-lg shadow-sm border p-6">
-        <form method="POST" action="{{ route('admin.email-templates.update', $emailTemplate) }}" class="space-y-6">
+        <form method="POST" action="{{ route('admin.email-templates.update', $emailTemplate) }}" class="space-y-6" data-email-template-form>
             @csrf
             @method('PUT')
             @include('admin.email-templates._form', ['emailTemplate' => $emailTemplate])

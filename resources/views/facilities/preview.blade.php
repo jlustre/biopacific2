@@ -1,1 +1,1 @@
-@extends('layouts.' . ($layoutTemplate ?? 'dashboard'))
+@extends('layouts.' . (\App\Helpers\FacilityDataHelper::resolveLayoutTemplate($layoutTemplate ?? null, null, 'dashboard')))

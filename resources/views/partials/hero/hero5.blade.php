@@ -1,14 +1,8 @@
 {{-- HERO — Split with Angled Media Panel + Compact Actions --}}
 @php
-// Color variables ($primary, $secondary, $accent) are now passed from the controller.
-// Build poster image URL - try multiple approaches for compatibility
-$posterFilename = $facility['hero_image_url'] ?? null;
-if (!empty($posterFilename)) {
-// Method 1: Try direct public path construction
-$poster = url('images/' . $posterFilename);
-} else {
-$poster = asset('images/hero1.jpg');
-}
+use App\Helpers\FacilityDataHelper;
+
+$poster = FacilityDataHelper::resolvePublicImageUrl($facility['hero_image_url'] ?? null, 'images/hero1.jpg');
 @endphp
 
 <section class="relative isolate overflow-hidden bg-gradient-to-b from-white via-slate-50 to-slate-100 py-10 md:py-16">

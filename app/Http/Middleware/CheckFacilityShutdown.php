@@ -2,45 +2,22 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\FacilityShutdown;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use App\Models\Facility;
 
 class CheckFacilityShutdown
 {
     public function handle(Request $request, Closure $next)
     {
-        // Check global shutdown
-        $global = Schema::hasTable('global_shutdowns')
-            ? DB::table('global_shutdowns')->orderByDesc('id')->first()
-            : null;
-        if ($global && $global->is_shutdown) {
-            return response()->view('shutdown', [
-                'message' => $global->shutdown_message,
-                'eta' => $global->shutdown_eta,
-                'isGlobal' => true,
-            ]);
+        if (str_starts_with(trim($request->path(), '/'), 'admin/')) {
+            return $next($request);
         }
 
-        // Check per-facility shutdown (assuming route has facility or subdomain logic)
-        $facility = null;
-        $routeFacility = $request->route('facility');
-        if ($routeFacility instanceof Facility) {
-            $facility = $routeFacility;
-        } elseif (is_string($routeFacility)) {
-            $facility = Facility::where('slug', $routeFacility)->first();
-        } elseif ($request->user() && $request->user()->facility_id) {
-            $facility = Facility::find($request->user()->facility_id);
-        }
+        $facility = FacilityShutdown::resolveFromRequest($request);
 
-        if ($facility && $facility->is_shutdown) {
-            return response()->view('shutdown', [
-                'message' => $facility->shutdown_message,
-                'eta' => $facility->shutdown_eta,
-                'isGlobal' => false,
-            ]);
+        if ($response = FacilityShutdown::responseFor($facility)) {
+            return $response;
         }
 
         return $next($request);

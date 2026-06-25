@@ -79,12 +79,35 @@ $sectionVariances[$key][] = $name;
     @include('components.success', ['message' => session('success')])
     @endif
 
+    @if(session('error'))
+    <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4">
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
+    </div>
+    @endif
+
     @if($errors->any())
     @include('components.errors', ['errors' => $errors->all()])
     @endif
 
     <!-- Main Form -->
     <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
+        @if(auth()->user() && (auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin')))
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
+            <div class="text-sm text-amber-950">
+                <span class="font-semibold">FacilitySeeder export</span>
+                <span class="block text-xs text-amber-900/80 mt-0.5">Write this facility's current database settings into the seed data file.</span>
+            </div>
+            <form method="POST" action="{{ route('admin.facilities.sync-seeder', $facility) }}"
+                  onsubmit="return confirm('Export {{ addslashes($facility->name) }} into database/seeders/data/facilities.json?\n\nOther facilities in that file are preserved. Commit the file so migrate:fresh --seed restores your changes.');">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+                    <i class="fas fa-database mr-2"></i> Update FacilitySeeder
+                </button>
+            </form>
+        </div>
+        @endif
+
         <form action="{{ route('admin.facilities.update', $facility) }}" method="POST" class="space-y-8">
             @csrf
             @method('PUT')
@@ -149,7 +172,10 @@ $sectionVariances[$key][] = $name;
             </div>
 
             <!-- Save Button -->
-            <div class="flex justify-end">
+            <div class="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:justify-end">
+                @if(auth()->user() && (auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin')))
+                    @include('admin.facilities.partials.seeder-sync-option')
+                @endif
                 <button type="submit" id="save-button"
                     class="text-white px-8 py-3 rounded-lg transition-colors font-medium bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     style="border: 2px solid var(--color-accent); opacity: 1 !important; pointer-events: auto !important; display: block !important; visibility: visible !important; z-index: 9999 !important; position: relative !important; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">Save

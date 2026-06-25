@@ -107,8 +107,16 @@ class MemberFacilitiesWebsitesController extends Controller
 
     protected function websiteUrl(Facility $facility): ?string
     {
-        if ($this->shouldUseOperationalSiteUrls()) {
-            return $this->operationalSiteUrlFor($facility);
+        if ($this->shouldUseCurrentRequestHostUrls()) {
+            return $this->currentRequestHostUrlFor($facility);
+        }
+
+        if ($this->shouldUseStagingSiteUrls()) {
+            return $this->stagingSiteUrlFor($facility);
+        }
+
+        if ($this->shouldUseConfiguredOperationalSiteUrls()) {
+            return $this->configuredOperationalSiteUrlFor($facility);
         }
 
         if ($facility->isCorporatePublicSite()) {
@@ -128,8 +136,10 @@ class MemberFacilitiesWebsitesController extends Controller
 
     protected function websiteLabel(Facility $facility): ?string
     {
-        if ($this->shouldUseOperationalSiteUrls()) {
-            return $this->operationalSiteHostLabel();
+        if ($this->shouldUseCurrentRequestHostUrls()
+            || $this->shouldUseStagingSiteUrls()
+            || $this->shouldUseConfiguredOperationalSiteUrls()) {
+            return $this->websiteUrlLabel($this->websiteUrl($facility));
         }
 
         if ($facility->isCorporatePublicSite()) {
@@ -153,39 +163,35 @@ class MemberFacilitiesWebsitesController extends Controller
         return is_string($host) && $host !== '' ? $host : null;
     }
 
-    protected function shouldUseOperationalSiteUrls(): bool
+    protected function shouldUseCurrentRequestHostUrls(): bool
     {
-        if (filled(config('member-portal.operational_site_base'))) {
-            return true;
-        }
+        $host = strtolower((string) request()->getHost());
 
-        return app()->environment(['local', 'staging']);
+        return app()->environment('local')
+            || $host === 'localhost'
+            || $host === '127.0.0.1'
+            || $host === '::1'
+            || str_ends_with($host, '.test')
+            || str_ends_with($host, '.localhost');
     }
 
-    protected function operationalSiteBase(): string
+    protected function shouldUseStagingSiteUrls(): bool
     {
-        $configured = rtrim((string) config('member-portal.operational_site_base', ''), '/');
+        $host = strtolower((string) request()->getHost());
 
-        if ($configured !== '') {
-            return $configured;
-        }
-
-        if (app()->environment(['local', 'staging'])) {
-            return rtrim((string) config(
-                'member-portal.operational_site_staging_base',
-                'https://staging.biopacificoperational.com'
-            ), '/');
-        }
-
-        return rtrim((string) config(
-            'member-portal.operational_site_production_base',
-            'https://www.biopacificoperational.com'
-        ), '/');
+        return app()->environment('staging')
+            || str_contains($host, 'staging');
     }
 
-    protected function operationalSiteUrlFor(Facility $facility): string
+    protected function shouldUseConfiguredOperationalSiteUrls(): bool
     {
-        $base = $this->operationalSiteBase();
+        return ! app()->environment('production')
+            && filled(config('member-portal.operational_site_base'));
+    }
+
+    protected function currentRequestHostUrlFor(Facility $facility): string
+    {
+        $base = rtrim(request()->getSchemeAndHttpHost(), '/');
 
         if ($facility->isCorporatePublicSite()) {
             return $base . '/';
@@ -196,11 +202,47 @@ class MemberFacilitiesWebsitesController extends Controller
         return $slug !== '' ? $base . '/' . $slug : $base . '/';
     }
 
-    protected function operationalSiteHostLabel(): string
+    protected function stagingSiteBase(): string
     {
-        $host = parse_url($this->operationalSiteBase(), PHP_URL_HOST);
+        return rtrim((string) config(
+            'member-portal.operational_site_staging_base',
+            'https://staging.biopacificoperational.com'
+        ), '/');
+    }
 
-        return is_string($host) && $host !== '' ? $host : 'biopacificoperational.com';
+    protected function stagingSiteUrlFor(Facility $facility): string
+    {
+        return $this->operationalSiteUrlForBase($facility, $this->stagingSiteBase());
+    }
+
+    protected function configuredOperationalSiteBase(): string
+    {
+        return rtrim((string) config('member-portal.operational_site_base'), '/');
+    }
+
+    protected function configuredOperationalSiteUrlFor(Facility $facility): string
+    {
+        return $this->operationalSiteUrlForBase($facility, $this->configuredOperationalSiteBase());
+    }
+
+    protected function operationalSiteUrlForBase(Facility $facility, string $base): string
+    {
+        if ($facility->isCorporatePublicSite()) {
+            return $base . '/';
+        }
+
+        $slug = trim((string) ($facility->slug ?? ''));
+
+        return $slug !== '' ? $base . '/' . $slug : $base . '/';
+    }
+
+    protected function websiteUrlLabel(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+
+        return preg_replace('~^https?://~i', '', rtrim($url, '/')) ?: null;
     }
 
     /**
@@ -256,8 +298,16 @@ class MemberFacilitiesWebsitesController extends Controller
 
     protected function corporatePublicWebsiteUrl(): string
     {
-        if ($this->shouldUseOperationalSiteUrls()) {
-            return $this->operationalSiteBase() . '/';
+        if ($this->shouldUseCurrentRequestHostUrls()) {
+            return $this->currentRequestHostUrlFor(Facility::corporateSite() ?? new Facility());
+        }
+
+        if ($this->shouldUseStagingSiteUrls()) {
+            return $this->stagingSiteBase() . '/';
+        }
+
+        if ($this->shouldUseConfiguredOperationalSiteUrls()) {
+            return $this->configuredOperationalSiteBase() . '/';
         }
 
         $domain = preg_replace('/^www\./i', '', (string) config(

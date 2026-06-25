@@ -1,5 +1,13 @@
 {{-- ABOUT — Version B: Collage + Tabs + Timeline + Accreditations --}}
-@php use Illuminate\Support\Facades\DB; @endphp
+@php
+use App\Helpers\FacilityDataHelper;
+use Illuminate\Support\Facades\DB;
+
+$aboutImage = FacilityDataHelper::resolvePublicImageUrl(
+    $facility['about_image_url'] ?? null,
+    'images/physical-therapy-session.jpg'
+);
+@endphp
 <section class="relative overflow-hidden py-20 md:py-28" id="about">
   @php
   $primary = $primary ?? '#0EA5E9';
@@ -35,9 +43,9 @@
       <div class="lg:col-span-5">
         <div class="grid grid-cols-2 gap-3 sm:gap-4">
           <div class="aspect-[3/2] overflow-hidden rounded-2xl shadow-lg col-span-2 relative">
-            <img src="{{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }}"
+            <img src="{{ $aboutImage }}"
               alt="Physical therapy session" class="w-full object-cover max-w-full block" loading="lazy"
-              srcset="{{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }} 800w, {{ asset('images/'.($facility['about_image_url'] ?? 'physical-therapy-session.png')) }} 400w"
+              srcset="{{ $aboutImage }} 800w, {{ $aboutImage }} 400w"
               sizes="(max-width: 768px) 100vw, 800px">
             <div class="absolute bottom-4 right-4 z-10">
               <div class="rounded-2xl border bg-white/90 backdrop-blur px-5 py-4 shadow-xl">
@@ -53,7 +61,7 @@
               style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
           </div>
           <div class="aspect-[4/5] overflow-hidden rounded-2xl shadow-lg flex items-start">
-            <img src="{{ asset('images/recreation_activities-room.png') }}"
+            <img src="{{ asset('images/recreation_activities-room.jpg') }}"
               alt="Residents enjoying recreation activities"
               style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
           </div>

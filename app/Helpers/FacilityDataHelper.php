@@ -27,9 +27,118 @@ class FacilityDataHelper
             ->get();
     }
     /**
+     * Resolve a Blade layout name under layouts.* with a safe default.
+     */
+    public static function resolveLayoutTemplate(
+        ?string $layoutTemplate,
+        ?Facility $facility = null,
+        string $default = 'default-template',
+    ): string {
+        if (filled($layoutTemplate)) {
+            return $layoutTemplate;
+        }
+
+        if ($facility && filled($facility->layout_template)) {
+            return $facility->layout_template;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Return the on-disk filename for a stored image reference, trying alternate extensions.
+     *
+     * @param  list<string>  $directories  Public subdirectories to search (e.g. images, images/facilities)
+     */
+    public static function normalizeImageFilename(?string $filename, array $directories = ['images']): ?string
+    {
+        if (blank($filename)) {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $filename) || str_starts_with($filename, '/')) {
+            return $filename;
+        }
+
+        $basename = basename(ltrim(str_replace('\\', '/', $filename), '/'));
+        $candidates = [$basename];
+        $info = pathinfo($basename);
+
+        if (! empty($info['filename'])) {
+            foreach (['jpg', 'jpeg', 'png', 'webp'] as $extension) {
+                $candidate = $info['filename'] . '.' . $extension;
+                if (! in_array($candidate, $candidates, true)) {
+                    $candidates[] = $candidate;
+                }
+            }
+        }
+
+        foreach ($directories as $directory) {
+            $dir = public_path(trim($directory, '/'));
+
+            if (! is_dir($dir)) {
+                continue;
+            }
+
+            foreach ($candidates as $candidate) {
+                if (is_file($dir . DIRECTORY_SEPARATOR . $candidate)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return $basename;
+    }
+
+    /**
+     * Resolve a facility image filename to a public asset URL.
+     * Tries common extensions when the stored filename does not exist on disk.
+     *
+     * @param  list<string>  $directories
+     */
+    public static function resolvePublicImageUrl(
+        ?string $filename,
+        string $defaultRelativePath = 'images/hero1.jpg',
+        array $directories = ['images', 'images/facilities'],
+    ): string {
+        if (blank($filename)) {
+            return asset($defaultRelativePath);
+        }
+
+        if (preg_match('/^https?:\/\//i', $filename)) {
+            return $filename;
+        }
+
+        if (str_starts_with($filename, '/')) {
+            return asset(ltrim($filename, '/'));
+        }
+
+        $normalized = self::normalizeImageFilename($filename, $directories);
+
+        if (blank($normalized)) {
+            return asset($defaultRelativePath);
+        }
+
+        if (preg_match('/^https?:\/\//i', $normalized) || str_starts_with($normalized, '/')) {
+            return $normalized;
+        }
+
+        $basename = basename(str_replace('\\', '/', $normalized));
+
+        foreach ($directories as $directory) {
+            $dir = public_path(trim($directory, '/'));
+            if (is_file($dir . DIRECTORY_SEPARATOR . $basename)) {
+                return asset(trim($directory, '/') . '/' . $basename);
+            }
+        }
+
+        return asset('images/' . $basename);
+    }
+
+    /**
      * Extract sections, section variances, and layout template from active web content
      */
-    public static function getLayoutData($activeWebContent)
+    public static function getLayoutData($activeWebContent, ?Facility $facility = null)
     {
         $sections = [];
         $sectionVariances = [];
@@ -51,7 +160,10 @@ class FacilityDataHelper
             }
         }
 
-        $layoutTemplate = $activeWebContent ? $activeWebContent->layout_template : 'default-template';
+        $layoutTemplate = self::resolveLayoutTemplate(
+            $activeWebContent?->layout_template,
+            $facility,
+        );
 
         return [
             'sections' => $sections,

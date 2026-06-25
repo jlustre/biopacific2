@@ -1,7 +1,7 @@
 <section id="book" class="relative isolate overflow-hidden">
     {{-- Hero background with dark overlay and brand glows --}}
     <div class="absolute inset-0 -z-10">
-        <img src="{{ asset('images/book-a-tour3.png') }}" alt="Tour {{ $facility['name'] ?? 'our community' }}"
+        <img src="{{ asset('images/book-a-tour3.jpg') }}" alt="Tour {{ $facility['name'] ?? 'our community' }}"
             class="h-[90vh] w-full object-cover object-[right_top] md:object-top">
         <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/25 to-transparent"></div>
         <div class="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-20"

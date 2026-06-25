@@ -12,7 +12,7 @@
         <div class="flex flex-col md:flex-row gap-8 items-stretch">
             <!-- Left: Illustration -->
             <div class="hidden md:flex md:w-1/2 flex-col items-center">
-                <img src="/images/tour-illustration.png" alt="Book a Tour"
+                <img src="/images/tour-illustration.jpg" alt="Book a Tour"
                     class="w-full h-auto rounded-3xl shadow-2xl border-4 border-white/60 bg-white/30 backdrop-blur-lg object-cover">
                 <div class="mt-6 w-full bg-white/80 rounded-2xl shadow p-4 border border-blue-100">
                     <h3 class="text-base font-semibold text-blue-900 mb-2 text-center">What to Expect on Your Tour</h3>

@@ -1,11 +1,4 @@
-@php
-use App\Models\Service;
-if (isset($facility) && $facility) {
-$services = $facility->services()->where('is_active', 1)->orderBy('order')->get();
-} else {
-$services = Service::where('is_active', 1)->orderBy('order')->get();
-}
-@endphp
+@include('partials.services._resolve-services')
 
 <section id="services" class="py-16 bg-gradient-to-tr from-pink-100 via-blue-50 to-indigo-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

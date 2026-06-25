@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Models\WebmasterContact;
+use App\Support\FacilityShutdown;
 
 class WebmasterController extends Controller
 {
@@ -14,6 +14,10 @@ class WebmasterController extends Controller
     {
         // Load the facility data
         $facilityModel = \App\Models\Facility::where('slug', $facility)->firstOrFail();
+
+        if ($response = FacilityShutdown::responseFor($facilityModel)) {
+            return $response;
+        }
         
         // Get colors using the same helper as other controllers
         $colors = \App\Helpers\FacilityDataHelper::getColors($facilityModel);
@@ -65,6 +69,12 @@ class WebmasterController extends Controller
 
     public function submit(Request $request, $facility = null)
     {
+        if ($facility) {
+            $facilityModel = \App\Models\Facility::where('slug', $facility)->first();
+            if ($facilityModel && ($response = FacilityShutdown::responseFor($facilityModel))) {
+                return $response;
+            }
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:100',
