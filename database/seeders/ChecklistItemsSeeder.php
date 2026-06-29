@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ChecklistItemsSeeder extends Seeder
 {
@@ -21,7 +22,17 @@ class ChecklistItemsSeeder extends Seeder
         /** @var list<array<string, mixed>> $items */
         $items = require $path;
 
+        // MySQL rejects TRUNCATE when uploads/upload_types FK-reference checklist_items.
+        Schema::disableForeignKeyConstraints();
+
+        DB::table('uploads')->update(['checklist_item_id' => null]);
+        DB::table('upload_types')->update([
+            'checklist_item_id' => null,
+            'checklist_section' => null,
+        ]);
         DB::table('checklist_items')->truncate();
+
+        Schema::enableForeignKeyConstraints();
 
         $now = Carbon::now();
         $order = 1;
