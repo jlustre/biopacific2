@@ -53,7 +53,7 @@ use Illuminate\Support\Facades\Auth;
             </div>
             <a href="{{ route('settings.appearance') }}"
                 class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Settings</a>
-            @if(auth()->user() && auth()->user()->hasRole('admin'))
+            @if(auth()->user() && auth()->user()->hasRole(['admin', 'super-admin']))
             <a href="{{ route('dashboard.index') }}"
                 class="block px-4 py-2 text-teal-700 hover:bg-gray-100 font-semibold">User Dashboard</a>
             <a href="{{ route('admin.dashboard.index') }}"

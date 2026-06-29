@@ -65,6 +65,7 @@ final class Permissions
 
     public const USE_IMPORT_MAPPING_PRESETS = 'use import mapping presets';
     public const CREATE_IMPORT_MAPPING_PRESETS = 'create import mapping presets';
+    public const CREATE_REGISTRATION_INVITATIONS = 'create registration invitations';
 
     /**
      * @return array<int, string>
@@ -126,6 +127,7 @@ final class Permissions
             self::EXPORT_DATA,
             self::USE_IMPORT_MAPPING_PRESETS,
             self::CREATE_IMPORT_MAPPING_PRESETS,
+            self::CREATE_REGISTRATION_INVITATIONS,
         ];
     }
 

@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\Facility;
 use App\Models\User;
+use App\Support\SelectedFacility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -59,8 +60,7 @@ class TrainingManagementService
             ->when($filters['department_id'], function ($q, $departmentId) {
                 $q->whereHas('currentAssignment.position', fn ($pq) => $pq->where('department_id', $departmentId));
             })
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderedByName()
             ->get();
 
         $checklistsByNum = BPEmpChecklist::query()
@@ -123,7 +123,7 @@ class TrainingManagementService
             'filters' => $filters,
             'generated_at' => now(),
             'employees_list_url' => route('admin.facility.employees', ['facility' => $facility->slug ?? $facility->id]),
-            'checklist_items_url' => route('admin.checklist-items.index'),
+            'checklist_items_url' => route('admin.upload-types.index', ['tab' => 'items']),
         ];
     }
 
@@ -188,7 +188,7 @@ class TrainingManagementService
             return str_contains($haystack, $search);
         }));
 
-        usort($filtered, fn ($a, $b) => ($b['issue_count'] ?? 0) <=> ($a['issue_count'] ?? 0));
+        usort($filtered, fn (array $a, array $b) => BPEmployee::compareByNameFields($a, $b));
 
         return $filtered;
     }
@@ -283,24 +283,30 @@ class TrainingManagementService
             return [];
         }
 
+        $employeesByNum = BPEmployee::query()
+            ->whereIn('employee_num', $employeeNums)
+            ->with('currentAssignment.position')
+            ->get()
+            ->keyBy('employee_num');
+
         return EmployeeCompetencyAssessment::query()
             ->with(['period'])
             ->whereIn('employee_num', $employeeNums)
             ->whereNull('employee_signed_at')
             ->whereIn('status', ['submitted', 'completed'])
-            ->orderByDesc('updated_at')
-            ->limit(8)
             ->get()
-            ->map(function (EmployeeCompetencyAssessment $assessment) {
-                $employee = BPEmployee::query()
-                    ->where('employee_num', $assessment->employee_num)
-                    ->with('currentAssignment.position')
-                    ->first();
+            ->map(function (EmployeeCompetencyAssessment $assessment) use ($employeesByNum) {
+                $employee = $employeesByNum->get($assessment->employee_num);
 
                 return [
                     'id' => $assessment->id,
                     'employee_num' => $assessment->employee_num,
-                    'employee_name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')) ?: $assessment->employee_num,
+                    'employee_name' => $employee instanceof BPEmployee
+                        ? $employee->formalName()
+                        : (string) $assessment->employee_num,
+                    'last_name' => (string) ($employee?->last_name ?? ''),
+                    'first_name' => (string) ($employee?->first_name ?? ''),
+                    'middle_name' => (string) ($employee?->middle_name ?? ''),
                     'position' => $employee?->currentAssignment?->position?->title ?? '—',
                     'period' => $this->formatAssessmentPeriod($assessment),
                     'status' => $assessment->status,
@@ -308,6 +314,8 @@ class TrainingManagementService
                     'manage_url' => route('admin.employees.edit', $employee?->id ?? $assessment->employee_num) . '?tab=competency',
                 ];
             })
+            ->sort(fn (array $a, array $b) => BPEmployee::compareByNameFields($a, $b))
+            ->values()
             ->all();
     }
 
@@ -316,8 +324,15 @@ class TrainingManagementService
         if ($request->filled('facility_id')) {
             $facility = Facility::find((int) $request->facility_id);
             if ($facility && $this->userCanAccessFacility($user, $facility)) {
+                SelectedFacility::remember($facility);
+
                 return $facility;
             }
+        }
+
+        $sessionFacility = SelectedFacility::model($request);
+        if ($sessionFacility && $this->userCanAccessFacility($user, $sessionFacility)) {
+            return $sessionFacility;
         }
 
         if ($user->facility_id) {

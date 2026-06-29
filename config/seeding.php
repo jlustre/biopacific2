@@ -23,4 +23,13 @@ return [
         FILTER_VALIDATE_BOOLEAN
     ),
 
+    /*
+    | When true, PositionDocumentRequirementsSeeder overwrites existing mappings
+    | for all positions defined in position_document_requirements.php.
+    */
+    'position_document_requirements_force' => filter_var(
+        env('SEED_POSITION_DOCUMENT_REQUIREMENTS_FORCE', false),
+        FILTER_VALIDATE_BOOLEAN
+    ),
+
 ];

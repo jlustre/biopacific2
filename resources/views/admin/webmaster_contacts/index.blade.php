@@ -2,10 +2,28 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto py-8">
-    <h1 class="text-2xl font-bold mb-6">Webmaster Contact Submissions</h1>
+    <h1 class="text-2xl font-bold mb-2">Contact Webmaster Issues</h1>
+    <p class="mb-6 text-sm text-slate-600">Issues and enhancement requests from facility websites and the member portal.</p>
     <div class="bg-white rounded-xl shadow p-6">
         <!-- Filter Form -->
         <form method="GET" class="mb-6 flex flex-wrap gap-3 items-end">
+            <div>
+                <label for="category" class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                <select name="category" id="category" class="rounded border-slate-300 text-xs py-1 px-2">
+                    <option value="">All</option>
+                    @foreach($categoryOptions as $value => $label)
+                    <option value="{{ $value }}" @if(request('category')===$value) selected @endif>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label for="source" class="block text-xs font-semibold text-slate-600 mb-1">Source</label>
+                <select name="source" id="source" class="rounded border-slate-300 text-xs py-1 px-2">
+                    <option value="">All</option>
+                    <option value="public_website" @if(request('source')==='public_website') selected @endif>Facility website</option>
+                    <option value="member_portal" @if(request('source')==='member_portal') selected @endif>Member portal</option>
+                </select>
+            </div>
             <div>
                 <label for="status" class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
                 <select name="status" id="status" class="rounded border-slate-300 text-xs py-1 px-2">
@@ -50,6 +68,8 @@
             <thead>
                 <tr>
                     <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">Date</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">Category</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">Source</th>
                     <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">Facility</th>
                     <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">Name</th>
                     <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">Subject</th>
@@ -63,6 +83,12 @@
                 @forelse($contacts as $contact)
                 <tr>
                     <td class="px-3 py-2 text-xs text-slate-500">{{ $contact->created_at->format('Y-m-d H:i') }}</td>
+                    <td class="px-3 py-2 text-xs">
+                        <span class="inline-block rounded px-2 py-1 text-[11px] font-semibold {{ $contact->isEnhancement() ? 'bg-violet-100 text-violet-800' : 'bg-sky-100 text-sky-800' }}">
+                            {{ $contact->categoryLabel() }}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-xs text-slate-600">{{ $contact->sourceLabel() }}</td>
                     <td class="px-3 py-2 text-xs text-slate-500">
                         @if($contact->facility)
                         <a href="{{ route('facility.public', $contact->facility->slug) }}"

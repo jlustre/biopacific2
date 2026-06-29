@@ -9,6 +9,11 @@ use Illuminate\Support\Collection;
 
 class DocumentComplianceService
 {
+    public function __construct(
+        protected EmployeeDocumentRequirementsService $requirements
+    ) {
+    }
+
     /**
      * @return array{position_id:int|null, position_title:string|null, department_id:int|null, items:Collection<int, array<string,mixed>>, summary:array<string,int>}
      */
@@ -33,22 +38,7 @@ class DocumentComplianceService
             ];
         }
 
-        $requiredTypes = $position->requiredUploadTypes()
-            ->wherePivot('is_required', true)
-            ->when($departmentId, function ($query) use ($departmentId) {
-                $query->where(function ($scope) use ($departmentId) {
-                    $scope->whereNull('department_ids')
-                        ->orWhereJsonLength('department_ids', 0)
-                        ->orWhereJsonContains('department_ids', $departmentId);
-                });
-            }, function ($query) {
-                $query->where(function ($scope) {
-                    $scope->whereNull('department_ids')
-                        ->orWhereJsonLength('department_ids', 0);
-                });
-            })
-            ->orderBy('name')
-            ->get();
+        $requiredTypes = $this->requirements->requiredGeneralUploadTypesForPosition($position, $departmentId);
 
         $uploadsByType = Upload::query()
             ->where('employee_num', $employee->employee_num)
@@ -63,7 +53,11 @@ class DocumentComplianceService
             $uploads = $uploadsByType->get($type->id, collect());
             $latestUpload = $uploads->first();
 
-            $validUpload = $uploads->first(function ($upload) use ($today) {
+            $validApprovedUpload = $uploads->first(function ($upload) use ($today) {
+                if ($upload->verification_status !== Upload::VERIFICATION_APPROVED) {
+                    return false;
+                }
+
                 if ($upload->expires_at === null) {
                     return true;
                 }
@@ -72,16 +66,22 @@ class DocumentComplianceService
             });
 
             $status = 'missing';
-            if ($validUpload) {
+            if ($validApprovedUpload) {
                 $status = 'complete';
-            } elseif ($uploads->isNotEmpty()) {
+            } elseif ($uploads->contains(fn ($upload) => $upload->verification_status === Upload::VERIFICATION_PENDING)) {
+                $status = 'pending_review';
+            } elseif ($uploads->contains(fn ($upload) => $upload->verification_status === Upload::VERIFICATION_APPROVED)) {
                 $status = 'expired';
+            } elseif ($uploads->isNotEmpty()) {
+                $status = 'missing';
             }
 
             $daysToExpiry = null;
-            if ($validUpload && $validUpload->expires_at) {
-                $daysToExpiry = $today->diffInDays(Carbon::parse($validUpload->expires_at)->startOfDay(), false);
+            if ($validApprovedUpload && $validApprovedUpload->expires_at) {
+                $daysToExpiry = $today->diffInDays(Carbon::parse($validApprovedUpload->expires_at)->startOfDay(), false);
             }
+
+            $referenceUpload = $validApprovedUpload ?? $latestUpload;
 
             return [
                 'upload_type_id' => (int) $type->id,
@@ -91,8 +91,8 @@ class DocumentComplianceService
                 'is_license_or_certification' => (bool) ($type->is_license_or_certification ?? false),
                 'status' => $status,
                 'latest_uploaded_at' => optional($latestUpload?->uploaded_at)->toDateString(),
-                'latest_expires_at' => optional($latestUpload?->expires_at)->toDateString(),
-                'valid_upload_id' => $validUpload?->id,
+                'latest_expires_at' => optional($referenceUpload?->expires_at)->toDateString(),
+                'valid_upload_id' => $validApprovedUpload?->id,
                 'days_to_expiry' => $daysToExpiry,
             ];
         })->values();
@@ -106,7 +106,8 @@ class DocumentComplianceService
                 'total' => $items->count(),
                 'complete' => $items->where('status', 'complete')->count(),
                 'expired' => $items->where('status', 'expired')->count(),
-                'missing' => $items->where('status', 'missing')->count(),
+                'missing' => $items->whereIn('status', ['missing', 'pending_review'])->count(),
+                'pending_review' => $items->where('status', 'pending_review')->count(),
             ],
         ];
     }

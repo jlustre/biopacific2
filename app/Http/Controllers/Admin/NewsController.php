@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\News;
+use App\Support\SelectedFacility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -74,7 +75,9 @@ class NewsController extends Controller
     {
         $scopedFacilityId = $this->scopedFacilityId($request);
         $canFilterFacilities = $scopedFacilityId === null;
-        $filterFacilityId = $request->filled('facility_id') ? (int) $request->facility_id : null;
+        $filterFacilityId = $request->filled('facility_id')
+            ? (int) $request->facility_id
+            : SelectedFacility::id($request);
 
         $query = News::with(['facilities', 'facility'])
             ->orderByDesc('published_at')

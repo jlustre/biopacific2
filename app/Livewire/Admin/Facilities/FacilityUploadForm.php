@@ -29,7 +29,7 @@ class FacilityUploadForm extends Component
     public function mount($facilityId = null)
     {
         $this->facilities = Facility::orderBy('name')->get();
-        $this->uploadTypes = UploadType::orderBy('name')->get();
+        $this->uploadTypes = UploadType::query()->orderedForDisplay()->get();
         $this->facility_id = $facilityId;
         $this->updateEmployees();
     }
@@ -61,7 +61,7 @@ class FacilityUploadForm extends Component
             $this->employees = BPEmployee::whereHas('assignments', function($q) {
                     $q->where('facility_id', $this->facility_id);
                 })
-                ->orderBy('last_name')
+                ->orderedByName()
                 ->get();
         } else {
             $this->employees = collect();

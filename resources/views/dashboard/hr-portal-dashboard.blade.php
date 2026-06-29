@@ -17,7 +17,7 @@
             <label for="facility_id" class="block text-sm font-semibold mb-1">Select Facility:</label>
             <select name="facility_id" id="facility_id" class="form-select border-teal-300 rounded w-full max-w-xs">
                 @foreach($facilities as $facility)
-                    <option value="{{ $facility->id }}" {{ request('facility_id', $userFacility ? $userFacility->id : null) == $facility->id ? 'selected' : '' }}>
+                    <option value="{{ $facility->id }}" {{ request('facility_id', session('facility_id', $userFacility ? $userFacility->id : null)) == $facility->id ? 'selected' : '' }}>
                         {{ $facility->name }}
                     </option>
                 @endforeach

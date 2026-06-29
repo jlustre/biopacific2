@@ -67,31 +67,17 @@
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2">Required Documents</label>
-                <p class="text-xs text-gray-500 mb-3">Select the upload types required for this position. Completion in employee Documents tab is auto-calculated from uploaded unexpired files.</p>
-                <div class="max-h-64 overflow-y-auto rounded-lg border border-gray-200 p-3 space-y-2 bg-gray-50">
-                    @forelse($uploadTypes as $uploadType)
-                        <label class="flex items-start gap-3 p-2 rounded hover:bg-white">
-                            <input
-                                type="checkbox"
-                                name="required_upload_type_ids[]"
-                                value="{{ $uploadType->id }}"
-                                class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                {{ in_array($uploadType->id, old('required_upload_type_ids', [])) ? 'checked' : '' }}
-                            >
-                            <span class="text-sm text-gray-800">
-                                <span class="font-medium">{{ $uploadType->name }}</span>
-                                @if($uploadType->requires_expiry)
-                                    <span class="ml-1 inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800">Expiry required</span>
-                                @endif
-                                @if($uploadType->description)
-                                    <span class="block text-xs text-gray-500 mt-0.5">{{ $uploadType->description }}</span>
-                                @endif
-                            </span>
-                        </label>
-                    @empty
-                        <p class="text-sm text-gray-500">No upload types available. Create upload types first.</p>
-                    @endforelse
+                <label class="block text-sm font-semibold text-gray-900 mb-2">Required Documents (by position)</label>
+                <p class="text-xs text-gray-500 mb-2">Choose document types required for this position. After selecting a department, only document types available for that department are shown.</p>
+                <p class="text-xs text-gray-500 mb-3">
+                    PART A–D checklist documents are managed under
+                    <a href="{{ route('admin.upload-types.index', ['tab' => 'items']) }}" class="font-semibold text-blue-600 hover:text-blue-800">Documents Management → Employee file items</a>.
+                </p>
+                @php
+                    $selectedRequiredIds = old('required_upload_type_ids', []);
+                @endphp
+                <div id="position-required-documents" class="max-h-64 overflow-y-auto rounded-lg border border-gray-200 p-3 space-y-2 bg-gray-50">
+                    <p id="position-required-documents-placeholder" class="text-sm text-gray-500">Select a department to load available document types.</p>
                 </div>
                 @error('required_upload_type_ids')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -115,4 +101,79 @@
         </form>
     </div>
 </div>
+
+<script>
+    (function () {
+        const container = document.getElementById('position-required-documents');
+        const placeholder = document.getElementById('position-required-documents-placeholder');
+        const departmentSelect = document.getElementById('department_id');
+        const uploadTypesUrl = @json(route('admin.positions.upload-types-by-department'));
+        const selectedIds = @json(array_map('intval', old('required_upload_type_ids', [])));
+
+        function renderUploadTypes(types) {
+            if (!container) return;
+            container.querySelectorAll('label[data-upload-type]').forEach((node) => node.remove());
+
+            if (!types.length) {
+                if (placeholder) {
+                    placeholder.textContent = 'No document types available for this department.';
+                    placeholder.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (placeholder) {
+                placeholder.classList.add('hidden');
+            }
+
+            types.forEach((type) => {
+                const label = document.createElement('label');
+                label.className = 'flex items-start gap-3 p-2 rounded hover:bg-white';
+                label.dataset.uploadType = String(type.id);
+
+                const checked = selectedIds.includes(type.id) ? 'checked' : '';
+                const expiryBadge = type.requires_expiry
+                    ? '<span class="ml-1 inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800">Expiry required</span>'
+                    : '';
+                const description = type.description
+                    ? `<span class="block text-xs text-gray-500 mt-0.5">${type.description}</span>`
+                    : '';
+
+                label.innerHTML = `
+                    <input type="checkbox" name="required_upload_type_ids[]" value="${type.id}" class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${checked}>
+                    <span class="text-sm text-gray-800">
+                        <span class="font-medium">${type.name}</span>
+                        ${expiryBadge}
+                        ${description}
+                    </span>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        async function loadForDepartment(departmentId) {
+            if (!departmentId) {
+                container.querySelectorAll('label[data-upload-type]').forEach((node) => node.remove());
+                if (placeholder) {
+                    placeholder.textContent = 'Select a department to load available document types.';
+                    placeholder.classList.remove('hidden');
+                }
+                return;
+            }
+
+            const response = await fetch(`${uploadTypesUrl}?department_id=${encodeURIComponent(departmentId)}`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            const data = await response.json();
+            renderUploadTypes(data.upload_types || []);
+        }
+
+        if (departmentSelect) {
+            departmentSelect.addEventListener('change', () => loadForDepartment(departmentSelect.value));
+            if (departmentSelect.value) {
+                loadForDepartment(departmentSelect.value);
+            }
+        }
+    })();
+</script>
 @endsection

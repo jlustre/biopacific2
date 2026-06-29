@@ -6,7 +6,7 @@
     $showPortalSearch = $showPortalSearch ?? false;
     $showPortalNotifications = $showPortalNotifications ?? true;
     $showPortalFooter = $showPortalFooter ?? false;
-    $profileComplete = $profileComplete ?? 88;
+    $profileComplete = $profileComplete ?? 0;
 
     $user = $user ?? auth()->user();
     $displayName = $displayName ?? ($user->name ?? 'Employee');
@@ -77,6 +77,8 @@
         'firstName' => $firstNameOnly,
         'initials' => $initials,
         'avatarUrl' => $avatarUrl,
+        'portalNotifications' => $portalNotifications ?? [],
+        'portalNotificationCount' => $portalNotificationCount ?? 0,
       ])
 
       <div class="flex-1">

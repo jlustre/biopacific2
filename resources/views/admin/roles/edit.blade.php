@@ -21,6 +21,18 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto">
+    @if(session('success'))
+    <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
+    </div>
+    @endif
+
     <form action="{{ route('admin.roles.update', $role) }}" method="POST" class="space-y-6">
         @csrf
         @method('PUT')
@@ -131,12 +143,12 @@
         </div>
 
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 class="text-lg font-medium text-gray-900">Update Role</h3>
-                    <p class="text-sm text-gray-600">Save changes to this role</p>
+                    <p class="text-sm text-gray-600">Save changes to this role in the database.</p>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex flex-wrap gap-3">
                     <a href="{{ route('admin.roles.index') }}"
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
                         Cancel
@@ -146,8 +158,28 @@
                     </button>
                 </div>
             </div>
+
+            <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <h4 class="text-sm font-semibold text-amber-900">Persist for fresh installs</h4>
+                <p class="mt-1 text-sm text-amber-800">
+                    Export all roles from the database into
+                    <code class="text-xs">database/seeders/data/role_permissions.json</code>
+                    so <code class="text-xs">migrate:fresh --seed</code> restores your permission setup.
+                </p>
+                <label class="mt-3 inline-flex items-center gap-2 text-sm text-amber-900">
+                    <input type="checkbox" name="update_seeder" value="1"
+                        class="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                        {{ old('update_seeder') ? 'checked' : '' }}>
+                    Also update seeder when saving this role
+                </label>
+            </div>
         </div>
     </form>
+
+    @include('admin.partials.role-permissions-seeder-sync', [
+        'class' => 'mt-6',
+        'description' => 'Save role changes above first, then export the current database roles to the seeder JSON file.',
+    ])
 </div>
 
 <script>

@@ -8,13 +8,19 @@ use App\Models\BPEmpChecklist;
 use App\Models\ChecklistItem;
 use App\Models\Facility;
 use App\Models\Upload;
+use App\Models\UploadType;
 use App\Models\EmployeeAssessmentPeriod;
 use App\Models\EmployeeChecklist;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeePerformanceAssessment;
 use App\Models\JobApplication;
 use App\Models\User;
+use App\Models\WebmasterContact;
+use App\Support\MemberPortalLayout;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class MemberDashboardService
@@ -481,6 +487,174 @@ class MemberDashboardService
         return $this->evaluateEmployeeChecklistCompliance($employee, $empChecklistItems);
     }
 
+    /**
+     * Lightweight portal header alerts (notifications bell + sidebar badges).
+     *
+     * @return array{
+     *     count: int,
+     *     items: list<array{title: string, message: string, tone: string, route: ?string}>,
+     *     documents_needed: int,
+     *     trainings_needs_action: int,
+     *     credentials_at_risk: int
+     * }
+     */
+    public function buildPortalAlerts(User $user, int $limit = 5): array
+    {
+        $bpEmployee = $user->resolvedBpEmployee([
+            'currentAssignment.position',
+            'currentAssignment.facility',
+            'uploads',
+        ]);
+
+        $jobApplication = $user->jobApplications()->latest()->first();
+        $hasPreEmployment = $this->hasActivePreEmployment($jobApplication);
+        $preEmploymentChecklists = $hasPreEmployment
+            ? $user->employeeChecklists()->orderBy('item_label')->get()
+            : collect();
+
+        $empChecklistItems = $bpEmployee
+            ? (optional(BPEmpChecklist::query()->where('employee_num', $bpEmployee->employee_num)->first())->items ?? [])
+            : [];
+
+        $empChecklistItems = is_array($empChecklistItems) ? $empChecklistItems : [];
+        $complianceEvaluation = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
+        $documentsNeeded = $complianceEvaluation['missing'] ?? [];
+        $signaturesNeeded = $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems);
+        $reminders = $this->buildReminders($bpEmployee, $empChecklistItems, $preEmploymentChecklists, $documentsNeeded);
+
+        $trainingsSummary = $this->buildTrainingsCenter(
+            $user,
+            $bpEmployee,
+            $empChecklistItems,
+            $preEmploymentChecklists
+        )['summary'];
+
+        $credentialCount = 0;
+        if ($bpEmployee) {
+            foreach ($this->evaluateCertificationItems($bpEmployee, $empChecklistItems) as $cert) {
+                $status = $cert['status'] ?? '';
+                if (in_array($status, ['expiring_soon', 'expiring_urgent', 'expires_today', 'expired'], true)
+                    || !in_array($status, ['valid'], true)) {
+                    $credentialCount++;
+                }
+            }
+        }
+
+        $items = [];
+
+        if (!$user->hasVerifiedEmail()) {
+            $items[] = [
+                'title' => 'Verify your email',
+                'message' => 'Confirm your email address to secure your account.',
+                'tone' => 'amber',
+                'route' => route('verification.notice'),
+            ];
+        }
+
+        foreach ($preEmploymentChecklists->where('status', 'returned') as $item) {
+            $items[] = [
+                'title' => 'Pre-employment item returned',
+                'message' => ($item->item_label ?? 'Checklist item') . ' needs corrections.',
+                'tone' => 'rose',
+                'route' => route('pre-employment.portal'),
+            ];
+        }
+
+        foreach ($signaturesNeeded as $signature) {
+            $items[] = [
+                'title' => 'Signature required: ' . ($signature['title'] ?? 'Document'),
+                'message' => (string) ($signature['description'] ?? 'Your signature is required.'),
+                'tone' => 'amber',
+                'route' => route('employment.portal'),
+            ];
+        }
+
+        foreach (array_slice($documentsNeeded, 0, 3) as $document) {
+            $items[] = [
+                'title' => $document['title'] ?? 'Document needed',
+                'message' => trim(($document['section'] ?? 'Employee file') . ' — ' . ($document['status_label'] ?? 'Action required')),
+                'tone' => 'brand',
+                'route' => route('member.documents'),
+            ];
+        }
+
+        if ($bpEmployee) {
+            foreach ($this->evaluateCertificationItems($bpEmployee, $empChecklistItems) as $cert) {
+                $status = $cert['status'] ?? '';
+                if (!in_array($status, ['expired', 'expires_today', 'expiring_urgent', 'expiring_soon'], true)) {
+                    continue;
+                }
+
+                $items[] = [
+                    'title' => ($cert['title'] ?? 'Credential') . ' — ' . ($cert['status_label'] ?? 'Attention needed'),
+                    'message' => $cert['exp_dt_formatted']
+                        ? 'Expires ' . $cert['exp_dt_formatted']
+                        : 'Review your licenses and certifications.',
+                    'tone' => in_array($status, ['expired', 'expires_today', 'expiring_urgent'], true) ? 'rose' : 'amber',
+                    'route' => route('member.certifications'),
+                ];
+            }
+        }
+
+        foreach ($reminders as $reminder) {
+            $items[] = [
+                'title' => $reminder['title'] ?? 'Reminder',
+                'message' => $reminder['message'] ?? '',
+                'tone' => match ($reminder['type'] ?? 'info') {
+                    'danger' => 'rose',
+                    'warning' => 'amber',
+                    'info' => 'brand',
+                    default => 'slate',
+                },
+                'route' => route('member.documents'),
+            ];
+        }
+
+        if (($trainingsSummary['needs_action'] ?? 0) > 0) {
+            $pendingSignatures = (int) ($trainingsSummary['pending_signature'] ?? 0);
+            $items[] = [
+                'title' => 'Training action needed',
+                'message' => $pendingSignatures > 0
+                    ? "{$pendingSignatures} training item(s) need your signature."
+                    : ($trainingsSummary['needs_action'] . ' training item(s) need attention.'),
+                'tone' => 'amber',
+                'route' => route('member.trainings'),
+            ];
+        }
+
+        if (MemberPortalLayout::userIsSystemAdmin($user)) {
+            $openWebmasterIssues = WebmasterContact::query()
+                ->where('status', '!=', 'resolved')
+                ->count();
+            $unreadWebmasterIssues = WebmasterContact::query()
+                ->where('is_read', false)
+                ->count();
+
+            if ($openWebmasterIssues > 0) {
+                $items[] = [
+                    'title' => 'Contact Webmaster issues',
+                    'message' => $openWebmasterIssues . ' open report(s) from facility websites'
+                        . ($unreadWebmasterIssues > 0 ? " ({$unreadWebmasterIssues} unread)" : '') . '.',
+                    'tone' => $unreadWebmasterIssues > 0 ? 'rose' : 'amber',
+                    'route' => route('admin.webmaster.contacts.index'),
+                ];
+            }
+        }
+
+        $uniqueItems = collect($items)
+            ->unique(fn (array $item) => ($item['title'] ?? '') . '|' . ($item['message'] ?? ''))
+            ->values()
+            ->all();
+
+        return [
+            'count' => count($uniqueItems),
+            'items' => array_slice($uniqueItems, 0, $limit),
+            'documents_needed' => count($documentsNeeded),
+            'trainings_needs_action' => (int) ($trainingsSummary['needs_action'] ?? 0),
+            'credentials_at_risk' => $credentialCount,
+        ];
+    }
+
     public function build(User $user): array
     {
         $bpEmployee = $user->resolvedBpEmployee([
@@ -504,7 +678,21 @@ class MemberDashboardService
         $complianceEvaluation = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
         $documentsNeeded = $complianceEvaluation['missing'];
         $signaturesNeeded = $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems);
-        $documentsCenter = $this->buildDocumentsCenter($user, $bpEmployee, $empChecklistItems, $complianceEvaluation);
+        $documentCompliance = $bpEmployee
+            ? app(DocumentComplianceService::class)->forEmployee($bpEmployee)
+            : [
+                'position_id' => null,
+                'position_title' => null,
+                'department_id' => null,
+                'items' => collect(),
+                'summary' => [
+                    'total' => 0,
+                    'complete' => 0,
+                    'expired' => 0,
+                    'missing' => 0,
+                ],
+            ];
+        $documentsCenter = $this->buildDocumentsCenter($user, $bpEmployee, $empChecklistItems, $documentCompliance);
         $facilityComplianceReport = $this->buildFacilityComplianceReport($user);
         $reminders = $this->buildReminders($bpEmployee, $empChecklistItems, $preEmploymentChecklists, $documentsNeeded);
         $todos = $this->buildTodos($user, $bpEmployee, $hasPreEmployment, $preEmploymentChecklists, $documentsNeeded, $signaturesNeeded, $reminders);
@@ -570,9 +758,7 @@ class MemberDashboardService
             'positionTitle' => $bpEmployee?->currentAssignment?->position?->title ?? '—',
             'facilityName' => $bpEmployee?->currentAssignment?->facility?->name ?? $user->facility?->name,
             'departmentName' => $bpEmployee?->currentAssignment?->department?->name,
-            'employeeDisplayName' => $bpEmployee
-                ? trim(($bpEmployee->first_name ?? '') . ' ' . ($bpEmployee->last_name ?? ''))
-                : $user->name,
+            'employeeDisplayName' => $bpEmployee?->formalName() ?: $user->name,
         ];
     }
 
@@ -581,7 +767,7 @@ class MemberDashboardService
      *
      * @return array{documentsCenter: array, facilityComplianceReport: array|null, stats: array<string, mixed>}
      */
-    public function buildDocumentsPage(User $user): array
+    public function buildDocumentsPage(User $user, ?Request $request = null): array
     {
         $bpEmployee = $user->resolvedBpEmployee([
             'currentAssignment.position',
@@ -609,7 +795,31 @@ class MemberDashboardService
                 ],
             ];
 
-        $documentsCenter = $this->buildDocumentsCenter($user, $bpEmployee, $empChecklistItems, $documentCompliance);
+        $documentsCenter = $this->buildDocumentsCenter(
+            $user,
+            $bpEmployee,
+            $empChecklistItems,
+            $documentCompliance,
+            skipDocumentsList: true
+        );
+
+        $facility = $bpEmployee?->currentAssignment?->facility ?? $user->facility;
+        if (!$facility && $user->facility_id) {
+            $facility = Facility::find($user->facility_id);
+        }
+
+        $documentFilters = $this->documentFiltersFromRequest($request);
+        $documentsPaginator = $this->paginateEmployeeDocuments($bpEmployee, $facility, $user, $documentFilters);
+
+        $documentsCenter['documents_paginator'] = $documentsPaginator;
+        $documentsCenter['document_filters'] = $documentFilters;
+        $documentsCenter['document_type_options'] = $this->documentTypeFilterOptions($bpEmployee);
+        $documentsCenter['documents_total'] = $bpEmployee ? (int) $bpEmployee->uploads()->count() : 0;
+        $documentsCenter['documents'] = $documentsPaginator->items();
+        $documentsCenter['uploads'] = $documentsPaginator->items();
+        $documentsCenter['position_id'] = $documentCompliance['position_id'] ?? null;
+        $documentsCenter['position_title'] = $documentCompliance['position_title'] ?? null;
+
         $documentsNeeded = count($documentsCenter['compliance_missing'] ?? []);
 
         return [
@@ -1028,8 +1238,7 @@ class MemberDashboardService
         $employees = BPEmployee::query()
             ->with(['currentAssignment.position'])
             ->whereHas('currentAssignment', fn ($q) => $q->where('facility_id', $facility->id))
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderedByName()
             ->get();
 
         $checklistsByNum = BPEmpChecklist::query()
@@ -1057,7 +1266,7 @@ class MemberDashboardService
             $totalIncompleteTraining += $row['incomplete_training'];
         }
 
-        usort($rows, fn ($a, $b) => $b['issue_count'] <=> $a['issue_count']);
+        $rows = BPEmployee::sortTableRowsByName($rows);
 
         return [
             'facility' => [
@@ -1127,7 +1336,10 @@ class MemberDashboardService
 
         return [
             'employee_num' => $employee->employee_num,
-            'name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
+            'name' => $employee->formalName(),
+            'last_name' => (string) ($employee->last_name ?? ''),
+            'first_name' => (string) ($employee->first_name ?? ''),
+            'middle_name' => (string) ($employee->middle_name ?? ''),
             'position' => $employee->currentAssignment?->position?->title ?? '—',
             'department' => $employee->currentAssignment?->position?->department?->name ?? '—',
             'incomplete_orientation' => $incompleteOrientation,
@@ -1367,13 +1579,29 @@ class MemberDashboardService
         array $empChecklistItems,
         ?Facility $facility
     ): array {
+        $documentCompliance = $bpEmployee
+            ? app(DocumentComplianceService::class)->forEmployee($bpEmployee)
+            : null;
+
         $items = $bpEmployee
-            ? $this->evaluateCertificationItems($bpEmployee, $empChecklistItems)
+            ? $this->evaluateCertificationItems($bpEmployee, $empChecklistItems, $documentCompliance)
             : [];
 
-        $uploads = $this->mapEmployeeUploads($bpEmployee, $facility, $user);
-        $expiringUploads = array_values(array_filter($uploads, function ($row) {
-            return !empty($row['expires_at']) && !empty($row['is_license_or_certification']);
+        $relevantUploadTypeIds = collect($items)
+            ->pluck('upload_type_id')
+            ->filter(fn ($id) => (int) $id > 0)
+            ->flip()
+            ->all();
+
+        $uploads = $this->mapEmployeeDocuments($bpEmployee, $facility, $user);
+        $expiringUploads = array_values(array_filter($uploads, function ($row) use ($relevantUploadTypeIds) {
+            if (empty($row['expires_at'])) {
+                return false;
+            }
+
+            $uploadTypeId = (int) ($row['upload_type_id'] ?? 0);
+
+            return $uploadTypeId > 0 && isset($relevantUploadTypeIds[$uploadTypeId]);
         }));
 
         $summary = [
@@ -1395,65 +1623,102 @@ class MemberDashboardService
 
         return [
             'items' => $items,
+            'expiring_documents' => $expiringUploads,
             'expiring_uploads' => $expiringUploads,
             'summary' => $summary,
             'has_employee_record' => (bool) $bpEmployee,
+            'position_id' => $documentCompliance['position_id'] ?? null,
+            'position_title' => $documentCompliance['position_title'] ?? null,
         ];
     }
 
     /**
      * @param  array<string, mixed>  $empChecklistItems
+     * @param  array<string, mixed>|null  $documentCompliance
      * @return list<array<string, mixed>>
      */
-    protected function evaluateCertificationItems(BPEmployee $employee, array $empChecklistItems): array
-    {
-        $compliance = app(DocumentComplianceService::class)->forEmployee($employee);
-        $applicableItems = collect($compliance['items'] ?? [])
+    protected function evaluateCertificationItems(
+        BPEmployee $employee,
+        array $empChecklistItems,
+        ?array $documentCompliance = null
+    ): array {
+        $documentCompliance ??= app(DocumentComplianceService::class)->forEmployee($employee);
+
+        $positionId = $employee->currentAssignment?->position_id
+            ?? $employee->currentAssignment?->position?->id;
+
+        $applicableItems = collect($documentCompliance['items'] ?? [])
             ->filter(fn ($item) => !empty($item['is_license_or_certification']))
             ->values();
 
         $today = Carbon::today();
         $rows = [];
+        $seenUploadTypeIds = [];
+        $seenChecklistItemIds = [];
 
         foreach ($applicableItems as $item) {
-            $status = (string) ($item['status'] ?? 'missing');
-            $latestExpiry = $this->parseDate($item['latest_expires_at'] ?? null);
-            $daysUntil = isset($item['days_to_expiry']) ? (int) $item['days_to_expiry'] : null;
-
-            if ($status === 'complete') {
-                if (($item['requires_expiry'] ?? false) && $daysUntil !== null) {
-                    if ($daysUntil < 0) {
-                        $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                    } elseif ($daysUntil === 0) {
-                        $statusMeta = $this->certificationStatusRow('expires_today', 'Expires today', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                    } elseif ($daysUntil <= 30) {
-                        $statusMeta = $this->certificationStatusRow('expiring_urgent', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                    } elseif ($daysUntil <= 60) {
-                        $statusMeta = $this->certificationStatusRow('expiring_soon', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                    } else {
-                        $statusMeta = $this->certificationStatusRow('valid', 'Valid', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                    }
-                } else {
-                    $statusMeta = $this->certificationStatusRow('valid', 'On file', null, null);
-                }
-            } elseif ($status === 'expired') {
-                $expiredDays = $latestExpiry ? (int) $today->diffInDays($latestExpiry, false) : null;
-                $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $expiredDays, $latestExpiry?->format('M j, Y'));
-            } else {
-                $statusMeta = $this->certificationStatusRow('not_on_file', 'Not on file', null, null);
+            $uploadTypeId = (int) ($item['upload_type_id'] ?? 0);
+            if ($uploadTypeId > 0) {
+                $seenUploadTypeIds[$uploadTypeId] = true;
             }
 
-            $rows[] = array_merge([
-                'id' => 'cert-upload-type-' . (int) ($item['upload_type_id'] ?? 0),
-                'upload_type_id' => (int) ($item['upload_type_id'] ?? 0),
-                'title' => (string) ($item['name'] ?? '—'),
-                'section' => 'Required upload type',
-                'required' => true,
-                'doc_type' => 'Upload Type',
-                'on_file' => ($item['status'] ?? '') !== 'missing',
-                'verified' => ($item['status'] ?? '') === 'complete',
-                'is_license_or_certification' => true,
-            ], $statusMeta);
+            $rows[] = array_merge(
+                $this->certificationRowFromComplianceItem($item, $today),
+                ['upload_type_id' => $uploadTypeId]
+            );
+        }
+
+        if ($positionId) {
+            $checklistItems = ChecklistItem::query()
+                ->with('docType')
+                ->applicableToPosition($positionId)
+                ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
+                ->orderBy('order')
+                ->get();
+
+            $syncedUploadTypesByChecklistId = UploadType::query()
+                ->whereIn('checklist_item_id', $checklistItems->pluck('id'))
+                ->pluck('id', 'checklist_item_id');
+
+            foreach ($checklistItems as $item) {
+                if (!$this->isLicenseOrCertificationItem($item)) {
+                    continue;
+                }
+
+                $checklistItemId = (int) $item->id;
+                $syncedUploadTypeId = (int) ($syncedUploadTypesByChecklistId[$checklistItemId] ?? 0);
+
+                if ($syncedUploadTypeId > 0 && isset($seenUploadTypeIds[$syncedUploadTypeId])) {
+                    $seenChecklistItemIds[$checklistItemId] = true;
+
+                    continue;
+                }
+
+                if (isset($seenChecklistItemIds[$checklistItemId])) {
+                    continue;
+                }
+
+                $seenChecklistItemIds[$checklistItemId] = true;
+                if ($syncedUploadTypeId > 0) {
+                    $seenUploadTypeIds[$syncedUploadTypeId] = true;
+                }
+
+                $stored = $empChecklistItems['item_' . $checklistItemId] ?? $empChecklistItems[$item->name] ?? null;
+                $statusMeta = $this->resolveCertificationStatus($item, $stored, $today);
+
+                $rows[] = array_merge([
+                    'id' => 'cert-checklist-' . $checklistItemId,
+                    'checklist_item_id' => $checklistItemId,
+                    'upload_type_id' => $syncedUploadTypeId > 0 ? $syncedUploadTypeId : null,
+                    'title' => (string) ($item->name ?? '—'),
+                    'section' => (string) ($item->section ?? 'Employee file'),
+                    'required' => true,
+                    'doc_type' => $item->docType?->name ?? 'Checklist',
+                    'on_file' => is_array($stored) && !empty($stored['on_file']),
+                    'verified' => is_array($stored) && !empty($stored['verified_dt']),
+                    'is_license_or_certification' => true,
+                ], $statusMeta);
+            }
         }
 
         usort($rows, function ($a, $b) {
@@ -1484,10 +1749,58 @@ class MemberDashboardService
         return $rows;
     }
 
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    protected function certificationRowFromComplianceItem(array $item, Carbon $today): array
+    {
+        $status = (string) ($item['status'] ?? 'missing');
+        $latestExpiry = $this->parseDate($item['latest_expires_at'] ?? null);
+        $daysUntil = isset($item['days_to_expiry']) ? (int) $item['days_to_expiry'] : null;
+
+        if ($status === 'complete') {
+            if (($item['requires_expiry'] ?? false) && $daysUntil !== null) {
+                if ($daysUntil < 0) {
+                    $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                } elseif ($daysUntil === 0) {
+                    $statusMeta = $this->certificationStatusRow('expires_today', 'Expires today', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                } elseif ($daysUntil <= 30) {
+                    $statusMeta = $this->certificationStatusRow('expiring_urgent', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                } elseif ($daysUntil <= 60) {
+                    $statusMeta = $this->certificationStatusRow('expiring_soon', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                } else {
+                    $statusMeta = $this->certificationStatusRow('valid', 'Valid', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                }
+            } else {
+                $statusMeta = $this->certificationStatusRow('valid', 'On file', null, null);
+            }
+        } elseif ($status === 'expired') {
+            $expiredDays = $latestExpiry ? (int) $today->diffInDays($latestExpiry, false) : null;
+            $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $expiredDays, $latestExpiry?->format('M j, Y'));
+        } elseif ($status === 'pending_review') {
+            $statusMeta = $this->certificationStatusRow('not_verified', 'Pending leadership review', null, null);
+        } else {
+            $statusMeta = $this->certificationStatusRow('not_on_file', 'Not on file', null, null);
+        }
+
+        return array_merge([
+            'id' => 'cert-upload-type-' . (int) ($item['upload_type_id'] ?? 0),
+            'checklist_item_id' => null,
+            'title' => (string) ($item['name'] ?? '—'),
+            'section' => 'Required for your position',
+            'required' => true,
+            'doc_type' => 'Required document',
+            'on_file' => in_array($status, ['complete', 'pending_review', 'expired'], true),
+            'verified' => $status === 'complete',
+            'is_license_or_certification' => true,
+        ], $statusMeta);
+    }
+
     protected function isLicenseOrCertificationItem(ChecklistItem $item): bool
     {
-        if ($item->is_license_or_certification !== null) {
-            return (bool) $item->is_license_or_certification;
+        if ((bool) ($item->is_license_or_certification ?? false)) {
+            return true;
         }
 
         $haystack = strtolower(trim(($item->name ?? '') . ' ' . ($item->docType?->name ?? '')));
@@ -1641,8 +1954,7 @@ class MemberDashboardService
         $employees = BPEmployee::query()
             ->with(['currentAssignment.position'])
             ->whereHas('currentAssignment', fn ($q) => $q->where('facility_id', $facility->id))
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderedByName()
             ->get();
 
         $checklistsByNum = BPEmpChecklist::query()
@@ -1689,9 +2001,8 @@ class MemberDashboardService
             $totalExpired += $expired;
             $totalMissing += $missing;
 
-            $rows[] = [
+            $rows[] = array_merge($employee->tableNameFields(), [
                 'employee_num' => $employee->employee_num,
-                'name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
                 'position' => $employee->currentAssignment?->position?->title ?? '—',
                 'expiring_count' => $expiring,
                 'expired_count' => $expired,
@@ -1699,10 +2010,10 @@ class MemberDashboardService
                 'issue_count' => $issueCount,
                 'top_issues' => $topIssues,
                 'manage_url' => route('admin.employees.edit', $employee->id) . '?tab=checklist',
-            ];
+            ]);
         }
 
-        usort($rows, fn ($a, $b) => $b['issue_count'] <=> $a['issue_count']);
+        $rows = BPEmployee::sortTableRowsByName($rows);
 
         return [
             'facility' => [
@@ -1774,6 +2085,7 @@ class MemberDashboardService
 
         $applicableItems = ChecklistItem::query()
             ->applicableToPosition($positionId)
+            ->where('is_required', true)
             ->orderBy('order')
             ->get();
 
@@ -1858,6 +2170,101 @@ class MemberDashboardService
     }
 
     /**
+     * @param  list<array<string, mixed>>  $documentComplianceItems
+     * @return list<array<string, mixed>>
+     */
+    protected function buildEmployeeUploadTypeOptions(?BPEmployee $employee, array $documentComplianceItems): array
+    {
+        return UploadType::optionsForEmployee($employee, $documentComplianceItems);
+    }
+
+    /**
+     * Count employee documents and checklist items expiring within the given window (default 60 days).
+     *
+     * @param  iterable<int, array<string, mixed>>  $complianceItems
+     */
+    protected function countDocumentsExpiringWithinDays(
+        ?BPEmployee $employee,
+        array $empChecklistItems,
+        iterable $complianceItems,
+        int $withinDays = 60
+    ): int {
+        if (!$employee) {
+            return 0;
+        }
+
+        $today = Carbon::today();
+        $through = $today->copy()->addDays($withinDays);
+        $total = 0;
+        $countedUploadIds = [];
+
+        foreach (collect($complianceItems) as $item) {
+            $daysToExpiry = $item['days_to_expiry'] ?? null;
+            if (($item['status'] ?? '') !== 'complete' || $daysToExpiry === null) {
+                continue;
+            }
+            if ($daysToExpiry < 0 || $daysToExpiry > $withinDays) {
+                continue;
+            }
+            $total++;
+            if (!empty($item['valid_upload_id'])) {
+                $countedUploadIds[(int) $item['valid_upload_id']] = true;
+            }
+        }
+
+        $positionId = $employee->currentAssignment?->position_id
+            ?? $employee->currentAssignment?->position?->id;
+
+        if ($positionId) {
+            $checklistItems = ChecklistItem::query()
+                ->applicableToPosition($positionId)
+                ->where('isExpiring', true)
+                ->get();
+
+            foreach ($checklistItems as $item) {
+                if (UploadType::query()->where('checklist_item_id', $item->id)->exists()) {
+                    continue;
+                }
+
+                $stored = $empChecklistItems['item_' . $item->id] ?? $empChecklistItems[$item->name] ?? null;
+                if (!is_array($stored) || empty($stored['on_file']) || empty($stored['exp_dt']) || !empty($stored['exp_dt_not_required'])) {
+                    continue;
+                }
+
+                try {
+                    $expDate = Carbon::parse($stored['exp_dt'])->startOfDay();
+                } catch (\Throwable) {
+                    continue;
+                }
+
+                if ($expDate->lt($today) || $expDate->gt($through)) {
+                    continue;
+                }
+
+                $total++;
+            }
+        }
+
+        $requiredTypeIds = collect($complianceItems)->pluck('upload_type_id')->filter()->values()->all();
+        $uncountedUploadQuery = Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereNotNull('expires_at')
+            ->whereDate('expires_at', '>=', $today)
+            ->whereDate('expires_at', '<=', $through);
+
+        if ($countedUploadIds !== []) {
+            $uncountedUploadQuery->whereNotIn('id', array_keys($countedUploadIds));
+        }
+        if ($requiredTypeIds !== []) {
+            $uncountedUploadQuery->whereNotIn('upload_type_id', $requiredTypeIds);
+        }
+
+        $total += (int) $uncountedUploadQuery->count();
+
+        return $total;
+    }
+
+    /**
      * @param  array<string, mixed>  $empChecklistItems
      * @param  array<string, mixed>|null  $documentCompliance
      * @return array<string, mixed>
@@ -1866,7 +2273,8 @@ class MemberDashboardService
         User $user,
         ?BPEmployee $bpEmployee,
         array $empChecklistItems,
-        ?array $documentCompliance = null
+        ?array $documentCompliance = null,
+        bool $skipDocumentsList = false
     ): array {
         $documentCompliance ??= [
             'items' => collect(),
@@ -1879,38 +2287,69 @@ class MemberDashboardService
         ];
 
         $complianceItems = collect($documentCompliance['items'] ?? []);
-        $requiredUploadTypes = $complianceItems
-            ->map(function ($item) {
-                return [
-                    'id' => (int) ($item['upload_type_id'] ?? 0),
-                    'name' => $item['name'] ?? 'Document',
-                    'requires_expiry' => (bool) ($item['requires_expiry'] ?? false),
-                ];
-            })
-            ->filter(fn ($item) => $item['id'] > 0)
-            ->unique('id')
-            ->values()
-            ->all();
+        $checklistEvaluation = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
+        $requiredUploadTypes = $this->buildEmployeeUploadTypeOptions($bpEmployee, $complianceItems->all());
 
         $complianceMissing = $complianceItems
-            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'expired'], true))
+            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'expired', 'pending_review'], true))
             ->map(function ($item) {
                 $status = (string) ($item['status'] ?? 'missing');
+                $statusLabel = match ($status) {
+                    'expired' => 'Expired',
+                    'pending_review' => 'Pending leadership review',
+                    default => 'Not on file',
+                };
 
                 return [
                     'id' => 'upload-type-' . ($item['upload_type_id'] ?? uniqid()),
                     'upload_type_id' => $item['upload_type_id'] ?? null,
+                    'checklist_item_id' => null,
                     'title' => $item['name'] ?? 'Required document',
-                    'section' => 'Required upload type',
+                    'section' => 'Required for your position',
                     'required' => true,
                     'status' => $status,
-                    'status_label' => $status === 'expired' ? 'Expired' : 'Not on file',
-                    'priority' => $status === 'expired' ? 'medium' : 'high',
+                    'status_label' => $statusLabel,
+                    'priority' => in_array($status, ['expired', 'pending_review'], true) ? 'medium' : 'high',
                     'due_at' => null,
                 ];
             })
-            ->values()
-            ->all();
+            ->values();
+
+        foreach ($checklistEvaluation['missing'] as $item) {
+            $checklistItemId = null;
+            if (preg_match('/^doc(?:-exp)?-(\d+)$/', (string) ($item['id'] ?? ''), $matches)) {
+                $checklistItemId = (int) $matches[1];
+            }
+
+            $uploadTypeId = $checklistItemId
+                ? UploadType::query()->where('checklist_item_id', $checklistItemId)->value('id')
+                : null;
+
+            $complianceMissing->push([
+                'id' => $item['id'] ?? ('checklist-' . ($checklistItemId ?? uniqid())),
+                'upload_type_id' => $uploadTypeId,
+                'checklist_item_id' => $checklistItemId,
+                'title' => $item['title'] ?? 'Checklist document',
+                'section' => $item['section'] ?? 'Employee checklist',
+                'required' => true,
+                'status' => $item['status'] ?? 'not_on_file',
+                'status_label' => $item['status_label'] ?? 'Needs attention',
+                'priority' => $item['priority'] ?? 'high',
+                'due_at' => $item['due_at'] ?? null,
+            ]);
+        }
+
+        $complianceMissing = $complianceMissing->values()->all();
+
+        $requiredNotOnFileCount = collect($complianceMissing)
+            ->filter(fn ($item) => in_array($item['status'] ?? '', ['missing', 'not_on_file'], true))
+            ->count();
+
+        $expiringIn60DaysCount = $this->countDocumentsExpiringWithinDays(
+            $bpEmployee,
+            $empChecklistItems,
+            $complianceItems
+        );
 
         $complianceComplete = $complianceItems
             ->filter(fn ($item) => ($item['status'] ?? '') === 'complete')
@@ -1918,10 +2357,10 @@ class MemberDashboardService
                 return [
                     'id' => 'upload-type-ok-' . ($item['upload_type_id'] ?? uniqid()),
                     'title' => $item['name'] ?? 'Required document',
-                    'section' => 'Required upload type',
+                    'section' => 'Required for your position',
                     'required' => true,
                     'status' => 'complete',
-                    'status_label' => 'On file',
+                    'status_label' => 'Approved',
                 ];
             })
             ->values()
@@ -1930,9 +2369,13 @@ class MemberDashboardService
         $summary = $documentCompliance['summary'] ?? [];
         $totalRequired = (int) ($summary['total'] ?? count($complianceItems));
         $completeRequired = (int) ($summary['complete'] ?? count($complianceComplete));
-        $verifiedPercent = $totalRequired > 0
-            ? (int) round(($completeRequired / $totalRequired) * 100)
-            : null;
+        $checklistTotal = (int) ($checklistEvaluation['total_applicable'] ?? 0);
+        $checklistVerified = (int) ($checklistEvaluation['verified_count'] ?? 0);
+        $combinedTotal = $totalRequired + $checklistTotal;
+        $combinedComplete = $completeRequired + $checklistVerified;
+        $verifiedPercent = $combinedTotal > 0
+            ? (int) round(($combinedComplete / $combinedTotal) * 100)
+            : ($checklistEvaluation['verified_percent'] ?? null);
 
         $facility = $bpEmployee?->currentAssignment?->facility ?? $user->facility;
 
@@ -1940,14 +2383,22 @@ class MemberDashboardService
             $facility = Facility::find($user->facility_id);
         }
 
+        $documentsList = $skipDocumentsList
+            ? []
+            : $this->mapEmployeeDocuments($bpEmployee, $facility, $user);
+
         return [
-            'uploads' => $this->mapEmployeeUploads($bpEmployee, $facility, $user),
+            'uploads' => $documentsList,
+            'documents' => $documentsList,
             'compliance_missing' => $complianceMissing,
             'compliance_complete' => $complianceComplete,
+            'required_not_on_file_count' => $requiredNotOnFileCount,
+            'expiring_in_60_days_count' => $expiringIn60DaysCount,
             'required_upload_types' => $requiredUploadTypes,
             'signatures' => $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems),
             'verified_percent' => $verifiedPercent,
             'has_employee_record' => (bool) $bpEmployee,
+            'submission_reason_options' => \App\Support\UploadSubmissionReason::options(),
         ];
     }
 
@@ -1979,8 +2430,7 @@ class MemberDashboardService
         $employees = BPEmployee::query()
             ->with(['currentAssignment.position'])
             ->whereHas('currentAssignment', fn ($q) => $q->where('facility_id', $facility->id))
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderedByName()
             ->get();
 
         $checklistsByNum = BPEmpChecklist::query()
@@ -2009,18 +2459,17 @@ class MemberDashboardService
                 $compliancePercents[] = $evaluation['verified_percent'];
             }
 
-            $rows[] = [
+            $rows[] = array_merge($employee->tableNameFields(), [
                 'employee_num' => $employee->employee_num,
-                'name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
                 'position' => $employee->currentAssignment?->position?->title ?? '—',
                 'missing_count' => $missingCount,
                 'top_missing' => array_slice(array_column($missing, 'title'), 0, 3),
                 'verified_percent' => $evaluation['verified_percent'],
                 'manage_url' => route('admin.employees.edit', $employee->id) . '?tab=checklist',
-            ];
+            ]);
         }
 
-        usort($rows, fn ($a, $b) => $b['missing_count'] <=> $a['missing_count']);
+        $rows = BPEmployee::sortTableRowsByName($rows);
 
         $avgCompliance = count($compliancePercents) > 0
             ? (int) round(array_sum($compliancePercents) / count($compliancePercents))
@@ -2046,59 +2495,252 @@ class MemberDashboardService
     /**
      * @return list<array<string, mixed>>
      */
-    protected function mapEmployeeUploads(?BPEmployee $employee, ?Facility $facility, User $user): array
+    protected function mapEmployeeDocuments(?BPEmployee $employee, ?Facility $facility, User $user): array
     {
         if (!$employee) {
             return [];
         }
 
+        return $employee->uploads()
+            ->with(['uploadType', 'checklistItem'])
+            ->orderByDesc('uploaded_at')
+            ->get()
+            ->map(fn (Upload $upload) => $this->formatUploadRow($upload, $employee, $facility, $user))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array{search?: string, type?: string, expiry?: string, sort?: string, per_page?: int}  $filters
+     */
+    public function paginateEmployeeDocuments(
+        ?BPEmployee $employee,
+        ?Facility $facility,
+        User $user,
+        array $filters = []
+    ): LengthAwarePaginator {
+        $filters = array_merge($this->documentFiltersFromRequest(null), $filters);
+
+        if (!$employee) {
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $filters['per_page'], 1, [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]);
+        }
+
+        $query = $this->employeeDocumentsQuery($employee, $filters);
+
+        return $query
+            ->paginate($filters['per_page'])
+            ->withQueryString()
+            ->through(fn (Upload $upload) => $this->formatUploadRow($upload, $employee, $facility, $user));
+    }
+
+    /**
+     * @param  array{search?: string, type?: string, expiry?: string, sort?: string}  $filters
+     */
+    protected function employeeDocumentsQuery(BPEmployee $employee, array $filters): HasMany
+    {
+        $today = Carbon::today()->toDateString();
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        $query = $employee->uploads()
+            ->with(['uploadType', 'checklistItem']);
+
+        if ($search !== '') {
+            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+            $query->where(function ($scope) use ($like) {
+                $scope->where('original_filename', 'like', $like)
+                    ->orWhere('comments', 'like', $like)
+                    ->orWhereHas('uploadType', fn ($typeQuery) => $typeQuery->where('name', 'like', $like))
+                    ->orWhereHas('checklistItem', fn ($itemQuery) => $itemQuery->where('name', 'like', $like));
+            });
+        }
+
+        $type = (string) ($filters['type'] ?? '');
+        if ($type !== '') {
+            if (str_starts_with($type, 'checklist-')) {
+                $query->where('checklist_item_id', (int) substr($type, strlen('checklist-')));
+            } else {
+                $query->where('upload_type_id', (int) $type);
+            }
+        }
+
+        match ((string) ($filters['expiry'] ?? '')) {
+            'valid' => $query->where(function ($scope) use ($today) {
+                $scope->whereNull('expires_at')->orWhereDate('expires_at', '>=', $today);
+            }),
+            'expired' => $query->whereNotNull('expires_at')->whereDate('expires_at', '<', $today),
+            'none' => $query->whereNull('expires_at'),
+            'expiring' => $query->whereNotNull('expires_at')
+                ->whereDate('expires_at', '>=', $today)
+                ->whereDate('expires_at', '<=', Carbon::today()->addDays(30)->toDateString()),
+            default => null,
+        };
+
+        match ((string) ($filters['sort'] ?? 'uploaded_desc')) {
+            'uploaded_asc' => $query->orderBy('uploaded_at')->orderBy('id'),
+            'name_asc' => $query->orderBy('original_filename')->orderByDesc('uploaded_at'),
+            'name_desc' => $query->orderByDesc('original_filename')->orderByDesc('uploaded_at'),
+            'expires_asc' => $query->orderByRaw('expires_at IS NULL')->orderBy('expires_at')->orderByDesc('uploaded_at'),
+            'expires_desc' => $query->orderByRaw('expires_at IS NULL DESC')->orderByDesc('expires_at')->orderByDesc('uploaded_at'),
+            default => $query->orderByDesc('uploaded_at')->orderByDesc('id'),
+        };
+
+        return $query;
+    }
+
+    /**
+     * @return array{search: string, type: string, expiry: string, sort: string, per_page: int}
+     */
+    protected function documentFiltersFromRequest(?Request $request): array
+    {
+        $allowedSorts = [
+            'uploaded_desc',
+            'uploaded_asc',
+            'name_asc',
+            'name_desc',
+            'expires_asc',
+            'expires_desc',
+        ];
+
+        $allowedExpiry = ['', 'valid', 'expired', 'none', 'expiring'];
+        $sort = (string) ($request?->query('sort') ?? 'uploaded_desc');
+        $expiry = (string) ($request?->query('expiry') ?? '');
+
+        return [
+            'search' => trim((string) ($request?->query('q') ?? '')),
+            'type' => (string) ($request?->query('type') ?? ''),
+            'expiry' => in_array($expiry, $allowedExpiry, true) ? $expiry : '',
+            'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'uploaded_desc',
+            'per_page' => min(50, max(5, (int) ($request?->query('per_page') ?? 10))),
+        ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    protected function documentTypeFilterOptions(?BPEmployee $employee): array
+    {
+        if (!$employee) {
+            return [];
+        }
+
+        return Upload::query()
+            ->where('employee_num', $employee->employee_num)
+            ->with(['uploadType:id,name', 'checklistItem:id,name'])
+            ->get()
+            ->map(function (Upload $upload) {
+                if ($upload->upload_type_id) {
+                    return [
+                        'value' => (string) $upload->upload_type_id,
+                        'label' => $upload->checklistItem?->name
+                            ?? $upload->uploadType?->name
+                            ?? 'Document',
+                    ];
+                }
+
+                if ($upload->checklist_item_id) {
+                    return [
+                        'value' => 'checklist-' . $upload->checklist_item_id,
+                        'label' => $upload->checklistItem?->name ?? 'Checklist document',
+                    ];
+                }
+
+                return null;
+            })
+            ->filter()
+            ->unique('value')
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function formatUploadRow(
+        Upload $upload,
+        BPEmployee $employee,
+        ?Facility $facility,
+        User $user
+    ): array {
         $canUseAdminUploadRoutes = $facility
             && method_exists($user, 'canManageFacility')
             && $user->canManageFacility($facility->id);
 
         $facilityKey = $facility ? ($facility->slug ?? $facility->id) : null;
+        $uploadedAt = $this->parseDate($upload->uploaded_at);
+        $expiresAt = $this->parseDate($upload->expires_at);
+        $expiryStatus = 'none';
 
-        return $employee->uploads()
-            ->with('uploadType')
-            ->orderByDesc('uploaded_at')
-            ->get()
-            ->map(function (Upload $upload) use ($canUseAdminUploadRoutes, $facilityKey, $employee) {
-                $uploadedAt = $this->parseDate($upload->uploaded_at);
-                $expiresAt = $this->parseDate($upload->expires_at);
+        if ($expiresAt) {
+            $expiryStatus = $expiresAt->copy()->startOfDay()->lt(Carbon::today()) ? 'expired' : 'valid';
+            if ($expiryStatus === 'valid' && $expiresAt->copy()->startOfDay()->lte(Carbon::today()->addDays(30))) {
+                $expiryStatus = 'expiring';
+            }
+        }
 
-                $row = [
-                    'id' => $upload->id,
-                    'upload_type_id' => $upload->upload_type_id,
-                    'name' => $upload->original_filename ?: basename((string) $upload->file_path),
-                    'type' => $upload->uploadType?->name ?? 'Document',
-                    'is_license_or_certification' => (bool) ($upload->uploadType?->is_license_or_certification ?? false),
-                    'uploaded_at' => $uploadedAt?->format('M j, Y'),
-                    'expires_at' => $expiresAt?->format('M j, Y'),
-                    'view_url' => null,
-                    'download_url' => null,
-                    'edit_url' => null,
-                ];
+        $needTracking = (bool) (
+            $upload->uploadType?->requires_expiry
+            || $upload->checklistItem?->isExpiring
+        );
 
-                if ($canUseAdminUploadRoutes && $facilityKey) {
-                    $row['view_url'] = route('admin.facility.uploads.view', [
-                        'facility' => $facilityKey,
-                        'upload' => $upload->id,
-                    ]);
-                    $row['download_url'] = route('admin.facility.uploads.download', [
-                        'facility' => $facilityKey,
-                        'upload' => $upload->id,
-                    ]);
-                    $row['edit_url'] = $this->buildAdminEmployeeEditUrl($employee->id, 'documents');
-                } else {
-                    $row['view_url'] = route('employment.documents.view', ['document' => $upload->id]);
-                    $row['download_url'] = route('employment.documents.download', ['document' => $upload->id]);
-                    $row['edit_url'] = route('employment.portal', ['tab' => 'documents']) . '#upload-table';
-                }
+        $row = [
+            'id' => $upload->id,
+            'upload_type_id' => $upload->upload_type_id,
+            'name' => $upload->original_filename ?: basename((string) $upload->file_path),
+            'type' => $upload->checklistItem?->name
+                ?? $upload->uploadType?->name
+                ?? 'Document',
+            'is_license_or_certification' => (bool) ($upload->uploadType?->is_license_or_certification ?? false),
+            'verification_status' => $upload->verification_status,
+            'verification_status_label' => $upload->verificationStatusLabel() ?? 'Not submitted',
+            'verification_badge_class' => match ($upload->verification_status) {
+                Upload::VERIFICATION_APPROVED => 'bg-emerald-50 text-emerald-700',
+                Upload::VERIFICATION_PENDING => 'bg-amber-50 text-amber-700',
+                Upload::VERIFICATION_REJECTED => 'bg-rose-50 text-rose-700',
+                default => 'bg-slate-100 text-slate-600',
+            },
+            'verification_notes' => $upload->verification_notes,
+            'can_submit_for_review' => $upload->isOwnedBy($user) && $upload->canSubmitForVerification(),
+            'is_owned_by_user' => $upload->isOwnedBy($user),
+            'notify_preview_url' => null,
+            'notify_send_url' => null,
+            'uploaded_at' => $uploadedAt?->format('M j, Y'),
+            'uploaded_at_sort' => $uploadedAt?->toDateString(),
+            'expires_at' => $expiresAt?->format('M j, Y'),
+            'expiration_date' => $expiresAt?->format('M j, Y'),
+            'expires_at_sort' => $expiresAt?->toDateString(),
+            'expiry_status' => $expiryStatus,
+            'need_tracking' => $needTracking,
+            'need_tracking_label' => $needTracking ? 'Yes' : 'No',
+            'view_url' => null,
+            'download_url' => null,
+            'edit_url' => null,
+        ];
 
-                return $row;
-            })
-            ->values()
-            ->all();
+        if ($canUseAdminUploadRoutes && $facilityKey) {
+            $row['view_url'] = route('admin.facility.uploads.view', [
+                'facility' => $facilityKey,
+                'upload' => $upload->id,
+            ]);
+            $row['download_url'] = route('admin.facility.uploads.download', [
+                'facility' => $facilityKey,
+                'upload' => $upload->id,
+            ]);
+            $row['edit_url'] = $this->buildAdminEmployeeEditUrl($employee->id, 'documents');
+        } else {
+            $row['view_url'] = route('employment.documents.view', ['document' => $upload->id]);
+            $row['download_url'] = route('employment.documents.download', ['document' => $upload->id]);
+            $row['edit_url'] = route('employment.portal', ['tab' => 'documents']) . '#upload-table';
+            if ($upload->isOwnedBy($user)) {
+                $row['notify_preview_url'] = route('employment.documents.notify.preview', ['document' => $upload->id]);
+                $row['notify_send_url'] = route('employment.documents.notify', ['document' => $upload->id]);
+            }
+        }
+
+        return $row;
     }
 
     /**
@@ -2243,7 +2885,7 @@ class MemberDashboardService
             $reminders[] = [
                 'id' => 'rem-docs-summary',
                 'title' => 'Employee file documents',
-                'message' => count($documentsNeeded) . ' checklist item(s) need attention.',
+                'message' => count($documentsNeeded) . ' employee file item(s) need attention.',
                 'type' => 'info',
                 'date' => $today->toDateString(),
                 'icon' => 'fa-folder-open',

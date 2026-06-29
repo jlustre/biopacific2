@@ -21,9 +21,11 @@ class PostRegistrationMailService
         }
     }
 
+    /**
+     * Send the branded welcome email, which already includes the verification link.
+     */
     public function sendWelcomeAndVerification(User $user, ?RegistrationCode $registrationCode = null): void
     {
         $this->sendWelcome($user, $registrationCode);
-        $this->sendVerification($user);
     }
 }

@@ -3,13 +3,15 @@
     $facilityReport = $facilityCertificationsReport ?? null;
     $showFacilityTab = ($isFacilityCertificationsAdmin ?? false) && !empty($facilityReport);
     $items = $certificationsCenter['items'] ?? [];
-    $expiringUploads = $certificationsCenter['expiring_uploads'] ?? [];
+    $expiringUploads = $certificationsCenter['expiring_documents'] ?? $certificationsCenter['expiring_uploads'] ?? [];
     $summary = $certificationsCenter['summary'] ?? ($stats ?? []);
     $hasEmployeeRecord = $certificationsCenter['has_employee_record'] ?? false;
+    $positionTitle = $certificationsCenter['position_title'] ?? null;
     $employmentPortalUrl = \Illuminate\Support\Facades\Route::has('employment.portal') ? route('employment.portal') : '#';
     $documentsUploadUrl = \Illuminate\Support\Facades\Route::has('member.documents')
         ? route('member.documents')
         : $employmentPortalUrl;
+    $documentsPageUrl = $documentsUploadUrl;
 @endphp
 
 <section id="certifications" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="{ tab: 'mine', facilityFilter: '' }">
@@ -21,7 +23,18 @@
                     Certifications Center
                 </div>
                 <h2 class="mt-3 text-lg font-bold text-slate-950 sm:text-xl">Licenses & certifications</h2>
-                <p class="mt-1 text-sm text-slate-500">Expiring credentials from your employee file checklist</p>
+                <p class="mt-1 text-sm text-slate-500">
+                    @if($positionTitle)
+                        Licenses and credentials required for <span class="font-semibold text-slate-700">{{ $positionTitle }}</span>
+                    @else
+                        Licenses and credentials for your position
+                    @endif
+                    <span class="block mt-1 text-xs text-slate-500">
+                        {{ config('documents.labels.certifications_subset_note') }}
+                        <a href="{{ $documentsPageUrl }}" class="font-semibold text-brand-600 hover:text-brand-700">View all position documents</a>
+                        — uploads are reviewed by your facility DSD, DON, or administrator.
+                    </span>
+                </p>
             </div>
             @if($hasEmployeeRecord)
                 <a href="{{ $employmentPortalUrl }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
@@ -87,8 +100,8 @@
                     <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-100 text-2xl text-teal-700">
                         <i class="fa-solid fa-award"></i>
                     </div>
-                    <h3 class="mt-4 text-lg font-bold text-slate-950">No expiring certifications for your position</h3>
-                    <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">When licenses or credentials apply to your role, they will appear here with renewal dates from your employee file.</p>
+                    <h3 class="mt-4 text-lg font-bold text-slate-950">No licenses or certifications for your position</h3>
+                    <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">When licenses or credentials apply to your role, they will appear here with status and renewal dates from your employee file.</p>
                 </div>
             @else
                 <div class="mb-8 overflow-x-auto rounded-2xl border border-slate-200">

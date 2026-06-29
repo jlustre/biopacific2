@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\PostRegistrationMailService;
 use App\Support\RegistrationCodeService;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,8 +74,6 @@ class RegisteredUserController extends Controller
         $registrationCodeService->linkRegisteredUser($codeRecord, $user);
 
         app(PostRegistrationMailService::class)->sendWelcome($user, $codeRecord);
-
-        event(new Registered($user));
 
         Auth::login($user);
 

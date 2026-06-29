@@ -5,11 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Position;
 use App\Models\Department;
-use App\Models\UploadType;
+use App\Services\EmployeeDocumentRequirementsService;
+use App\Services\PositionDocumentRequirementsSeedService;
 use Illuminate\Http\Request;
 
 class PositionController extends Controller
 {
+    public function __construct(
+        protected EmployeeDocumentRequirementsService $documentRequirements
+    ) {
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -25,7 +31,11 @@ class PositionController extends Controller
             $request->merge(['department' => $request->input('department', $nursingDepartmentId)]);
         }
 
-        $query = Position::with(['department', 'reportsToPosition']);
+        $query = Position::with(['department', 'reportsToPosition'])
+            ->withCount(['requiredUploadTypes as required_documents_count' => function ($relation) {
+                $relation->wherePivot('is_required', true)
+                    ->whereNull('upload_types.checklist_item_id');
+            }]);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -55,7 +65,7 @@ class PositionController extends Controller
         $user = request()->user();
         $departments = $this->availableDepartmentsForUser($user);
         $reportingPositions = Position::orderBy('title')->get();
-        $uploadTypes = UploadType::orderBy('name')->get();
+        $uploadTypes = $this->documentRequirements->generalUploadTypesForDepartment(null);
 
         return view('admin.positions.create', compact('departments', 'reportingPositions', 'uploadTypes'));
     }
@@ -74,21 +84,12 @@ class PositionController extends Controller
             'required_upload_type_ids.*' => 'integer|exists:upload_types,id',
         ]);
 
-        $requiredUploadTypeIds = collect($validated['required_upload_type_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values();
+        $requiredUploadTypeIds = collect($validated['required_upload_type_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values()->all();
         unset($validated['required_upload_type_ids']);
 
         $position = Position::create($validated);
 
-        $allowedUploadTypeIds = $this->availableUploadTypesForDepartment((int) $position->department_id)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id);
-
-        $position->requiredUploadTypes()->sync(
-            $requiredUploadTypeIds
-                ->intersect($allowedUploadTypeIds)
-                ->mapWithKeys(fn ($id) => [$id => ['is_required' => true]])
-                ->all()
-        );
+        $this->documentRequirements->syncPositionRequirements($position, $requiredUploadTypeIds);
 
         return redirect()->route('admin.positions.index')->with('success', 'Position created successfully.');
     }
@@ -98,8 +99,13 @@ class PositionController extends Controller
      */
     public function show(Position $position)
     {
-        $position->load(['department', 'reportsToPosition']);
-        return view('admin.positions.show', compact('position'));
+        $position->load(['department', 'reportsToPosition', 'requiredUploadTypes' => function ($query) {
+            $query->wherePivot('is_required', true)->whereNull('upload_types.checklist_item_id');
+        }]);
+
+        $requiredDocuments = $this->documentRequirements->requiredGeneralTypesSummaryForPosition($position);
+
+        return view('admin.positions.show', compact('position', 'requiredDocuments'));
     }
 
     /**
@@ -112,13 +118,15 @@ class PositionController extends Controller
         $reportingPositions = Position::where('id', '!=', $position->id)
             ->orderBy('title')
             ->get();
-        $uploadTypes = $this->availableUploadTypesForDepartment((int) $position->department_id);
+        $uploadTypes = $this->documentRequirements->generalUploadTypesForDepartment((int) $position->department_id);
         $copyTargetPositions = Position::with('department')
             ->where('id', '!=', $position->id)
             ->orderBy('title')
             ->get();
 
-        $position->load(['requiredUploadTypes']);
+        $position->load(['requiredUploadTypes' => function ($query) {
+            $query->wherePivot('is_required', true)->whereNull('upload_types.checklist_item_id');
+        }]);
 
         return view('admin.positions.edit', compact('position', 'departments', 'reportingPositions', 'uploadTypes', 'copyTargetPositions'));
     }
@@ -137,21 +145,12 @@ class PositionController extends Controller
             'required_upload_type_ids.*' => 'integer|exists:upload_types,id',
         ]);
 
-        $requiredUploadTypeIds = collect($validated['required_upload_type_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values();
+        $requiredUploadTypeIds = collect($validated['required_upload_type_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values()->all();
         unset($validated['required_upload_type_ids']);
 
         $position->update($validated);
 
-        $allowedUploadTypeIds = $this->availableUploadTypesForDepartment((int) $position->department_id)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id);
-
-        $position->requiredUploadTypes()->sync(
-            $requiredUploadTypeIds
-                ->intersect($allowedUploadTypeIds)
-                ->mapWithKeys(fn ($id) => [$id => ['is_required' => true]])
-                ->all()
-        );
+        $this->documentRequirements->syncPositionRequirements($position, $requiredUploadTypeIds);
 
         return redirect()->route('admin.positions.index')->with('success', 'Position updated successfully.');
     }
@@ -163,46 +162,61 @@ class PositionController extends Controller
             'target_position_ids.*' => 'integer|exists:positions,id|different:' . $position->id,
         ]);
 
-        $sourceRequiredUploadTypeIds = $position->requiredUploadTypes()
-            ->wherePivot('is_required', true)
-            ->pluck('upload_types.id')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
-
         $targets = Position::query()
             ->whereIn('id', $validated['target_position_ids'])
             ->where('id', '!=', $position->id)
             ->get();
 
-        foreach ($targets as $target) {
-            $allowedUploadTypeIds = $this->availableUploadTypesForDepartment((int) $target->department_id)
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id);
-
-            $payload = $sourceRequiredUploadTypeIds
-                ->intersect($allowedUploadTypeIds)
-                ->mapWithKeys(fn ($id) => [$id => ['is_required' => true]])
-                ->all();
-
-            $target->requiredUploadTypes()->sync($payload);
-        }
+        $count = $this->documentRequirements->copyRequirementsToPositions($position, $targets);
 
         return redirect()
             ->route('admin.positions.edit', $position)
-            ->with('success', 'Required documents copied to ' . $targets->count() . ' position(s).');
+            ->with('success', 'Required documents copied to ' . $count . ' position(s).');
     }
 
-    private function availableUploadTypesForDepartment(int $departmentId)
+    public function uploadTypesForDepartment(Request $request)
     {
-        return UploadType::query()
-            ->where(function ($query) use ($departmentId) {
-                $query->whereNull('department_ids')
-                    ->orWhereJsonLength('department_ids', 0)
-                    ->orWhereJsonContains('department_ids', $departmentId);
-            })
-            ->orderBy('name')
-            ->get();
+        $validated = $request->validate([
+            'department_id' => 'nullable|integer|exists:departments,id',
+        ]);
+
+        $departmentId = isset($validated['department_id']) ? (int) $validated['department_id'] : null;
+
+        $types = $this->documentRequirements->generalUploadTypesForDepartment($departmentId)
+            ->map(fn ($type) => [
+                'id' => (int) $type->id,
+                'name' => $type->name,
+                'description' => $type->description,
+                'requires_expiry' => (bool) $type->requires_expiry,
+                'department_ids' => $type->department_ids ?? [],
+            ])
+            ->values();
+
+        return response()->json(['upload_types' => $types]);
+    }
+
+    public function seedDocumentRequirements(Request $request, PositionDocumentRequirementsSeedService $seedService)
+    {
+        if (!$request->user()?->hasRole(['admin', 'super-admin', 'rdhr'])) {
+            abort(403);
+        }
+
+        $force = $request->boolean('force');
+        $result = $seedService->seed(onlyWhenEmpty: ! $force, includeUnmappedPositions: true);
+
+        $message = sprintf(
+            'Default document requirements applied to %d position(s). %d skipped (already configured).',
+            $result['positions_processed'],
+            $result['positions_skipped']
+        );
+
+        if (! empty($result['types_missing'])) {
+            $message .= ' Some document types were not found — run Documents Management seeder first.';
+        }
+
+        return redirect()
+            ->route('admin.positions.index')
+            ->with('success', $message);
     }
 
     private function availableDepartmentsForUser($user)

@@ -111,19 +111,13 @@ class FacilityDashboardService
 
     protected function authorizeFacilityAccess(User $user, Facility $facility): void
     {
-        if ($user->hasRole(['admin', 'super-admin', 'rdhr'])) {
-            return;
+        if (! $this->roleDashboard->canAccessFacilityDashboard($user)) {
+            abort(403, 'Unauthorized: Facility dashboard access is limited to leadership roles.');
         }
 
-        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor', 'don'])) {
-            if ((int) $user->facility_id !== (int) $facility->id) {
-                abort(403, 'Unauthorized: You do not have access to this facility.');
-            }
-
-            return;
+        if (! $this->roleDashboard->userCanAccessFacility($user, $facility)) {
+            abort(403, 'Unauthorized: You do not have access to this facility.');
         }
-
-        abort(403, 'Unauthorized access to this facility.');
     }
 
     /**
@@ -139,41 +133,7 @@ class FacilityDashboardService
      */
     protected function resolveScope(User $user, Facility $facility): array
     {
-        $isDonDashboard = $user->hasRole('don')
-            && ! $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']);
-
-        $donDepartmentId = null;
-        $donDepartmentName = null;
-        $excludeEmployeeNum = null;
-
-        if ($isDonDashboard) {
-            $donEmployee = $user->resolvedBpEmployee(['currentAssignment.department']);
-            $donDepartmentId = $donEmployee?->currentAssignment?->dept_id;
-            $donDepartmentName = $donEmployee?->currentAssignment?->department?->name;
-            $excludeEmployeeNum = $donEmployee?->employee_num;
-        }
-
-        if ($isDonDashboard && $donDepartmentId && filled($donDepartmentName)) {
-            return [
-                'type' => 'department',
-                'label' => $donDepartmentName,
-                'intro' => "Department view for {$donDepartmentName} at {$facility->name}.",
-                'department_id' => (int) $donDepartmentId,
-                'department_name' => $donDepartmentName,
-                'is_don' => true,
-                'exclude_employee_num' => $excludeEmployeeNum,
-            ];
-        }
-
-        return [
-            'type' => 'facility',
-            'label' => $facility->name,
-            'intro' => "Facility-wide overview for {$facility->name} — staff, compliance, and public site content.",
-            'department_id' => null,
-            'department_name' => null,
-            'is_don' => false,
-            'exclude_employee_num' => null,
-        ];
+        return $this->roleDashboard->resolveFacilityDashboardScope($user, $facility);
     }
 
     /**
@@ -515,7 +475,7 @@ class FacilityDashboardService
         $actions = [
             ['title' => 'Staff directory', 'subtitle' => 'Full employee roster', 'route' => $employeesBase, 'icon' => 'fa-users'],
             ['title' => 'Hiring', 'subtitle' => 'Applicants & onboarding', 'route' => route('admin.facility.hiring', ['facility' => $facilityKey]), 'icon' => 'fa-user-plus'],
-            ['title' => 'Documents', 'subtitle' => 'Credentials & uploads', 'route' => route('admin.facility.documents', ['facility' => $facilityKey]), 'icon' => 'fa-file-alt'],
+            ['title' => 'Documents', 'subtitle' => 'Credentials & compliance files', 'route' => route('admin.facility.documents', ['facility' => $facilityKey]), 'icon' => 'fa-file-alt'],
             ['title' => 'Reports', 'subtitle' => 'Export & compliance', 'route' => route('admin.facility.reports', ['facility' => $facilityKey]), 'icon' => 'fa-chart-bar'],
         ];
 
@@ -550,18 +510,15 @@ class FacilityDashboardService
                     ?? $employee->currentAssignment?->position?->department?->name;
                 $departmentLabel = filled($department) ? (string) $department : 'Unassigned';
 
-                $name = trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')) ?: $employee->employee_num;
-
-                return [
+                return array_merge($employee->tableNameFields(), [
                     'id' => $employee->id,
                     'employee_num' => $employee->employee_num,
-                    'name' => $name,
                     'position' => $employee->currentAssignment?->position?->title ?? '—',
                     'department' => $departmentLabel,
                     'email' => $employee->email ?: $employee->user?->email,
                     'phone' => $employee->phone?->phone_number,
                     'edit_url' => route('admin.employees.edit', $employee->id),
-                ];
+                ]);
             });
 
         return $members
@@ -604,8 +561,7 @@ class FacilityDashboardService
                     $query->where('dept_id', $scope['department_id']);
                 }
             })
-            ->orderBy('last_name')
-            ->orderBy('first_name');
+            ->orderedByName();
     }
 
     /**
@@ -615,7 +571,11 @@ class FacilityDashboardService
      */
     public function facilitiesForUser(User $user): Collection
     {
-        if ($user->hasRole(['admin', 'super-admin', 'rdhr'])) {
+        if (! $this->roleDashboard->canAccessFacilityDashboard($user)) {
+            return collect();
+        }
+
+        if ($this->roleDashboard->organizationOverviewStatsForUser($user) !== null) {
             return Facility::query()->orderBy('name')->get(['id', 'name', 'slug']);
         }
 
@@ -625,6 +585,9 @@ class FacilityDashboardService
             return $facility ? collect([$facility]) : collect();
         }
 
-        return collect();
+        $bpEmployee = $user->resolvedBpEmployee(['currentAssignment.facility']);
+        $facility = $bpEmployee?->currentAssignment?->facility;
+
+        return $facility ? collect([$facility]) : collect();
     }
 }

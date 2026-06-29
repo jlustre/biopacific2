@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\RegistrationCode;
 use App\Support\PostRegistrationMailService;
 use App\Support\RegistrationCodeService;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
@@ -107,8 +106,6 @@ class Register extends Component
         $registrationCodeService->linkRegisteredUser($codeRecord, $user);
 
         app(PostRegistrationMailService::class)->sendWelcome($user, $codeRecord);
-
-        event(new Registered($user));
 
         Auth::login($user);
 

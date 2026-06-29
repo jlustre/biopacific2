@@ -6,10 +6,17 @@
         <h1 class="text-2xl font-bold text-gray-900">Role Management</h1>
         <p class="text-gray-600">Manage system roles and their permissions</p>
     </div>
-    <a href="{{ route('admin.roles.create') }}"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
-        <i class="fas fa-plus mr-2"></i> Create Role
-    </a>
+    <div class="flex flex-wrap items-center gap-3">
+        @include('admin.partials.role-permissions-seeder-sync', ['compact' => true])
+        <a href="{{ route('admin.position-portal-roles.index') }}"
+            class="inline-flex items-center justify-center whitespace-nowrap bg-white text-gray-700 px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold">
+            <i class="fas fa-user-tag mr-2"></i> Position Portal Roles
+        </a>
+        <a href="{{ route('admin.roles.create') }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
+            <i class="fas fa-plus mr-2"></i> Create Role
+        </a>
+    </div>
 </div>
 @endsection
 

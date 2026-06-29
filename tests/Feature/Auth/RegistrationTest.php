@@ -5,7 +5,6 @@ namespace Tests\Feature\Auth;
 use App\Livewire\Auth\Register;
 use App\Mail\WelcomeRegistrationMail;
 use App\Models\RegistrationCode;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -56,7 +55,8 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($registrationCode->fresh()->used_at);
         $this->assertNull(auth()->user()->email_verified_at);
         Mail::assertSent(WelcomeRegistrationMail::class);
-        Notification::assertSentTo(auth()->user(), VerifyEmail::class);
+        Mail::assertSentCount(1);
+        Notification::assertNothingSent();
     }
 
     public function test_registration_is_rejected_without_valid_code(): void

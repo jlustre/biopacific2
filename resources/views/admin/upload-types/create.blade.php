@@ -4,7 +4,7 @@
 <div class="space-y-6">
     <div>
         <h1 class="text-2xl font-black text-slate-900">New Document Type</h1>
-        <p class="text-sm text-slate-500">Create a document type used for uploads and compliance rules.</p>
+        <p class="text-sm text-slate-500">Create a document type used for employee files and compliance rules.</p>
     </div>
 
     @if($errors->any())

@@ -61,8 +61,8 @@ document.addEventListener('alpine:init', () => {
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h1 class="text-xl font-black text-slate-900 sm:text-2xl">Facilities Websites</h1>
-                <p class="mt-1 text-sm text-slate-600">Browse facility websites, contact details, and leadership rosters.</p>
+                <h1 class="text-xl font-black text-slate-900 sm:text-2xl">Bio-Pacific Websites</h1>
+                <p class="mt-1 text-sm text-slate-600">Browse facility public sites, contact details, and leadership rosters.</p>
             </div>
             <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">{{ $facilities->count() }} facilities</span>
         </div>
@@ -96,9 +96,9 @@ document.addEventListener('alpine:init', () => {
                         <td class="px-4 py-3">
                             @if(filled($facility['website_url']))
                             <button type="button"
-                                    onclick="window.dispatchEvent(new CustomEvent('open-facility-website', { detail: { url: @js($facility['website_url']), label: @js($facility['website_label'] ?? $facility['domain']) } }))"
+                                    onclick="window.dispatchEvent(new CustomEvent('open-facility-website', { detail: { url: @js($facility['website_url']), label: @js($facility['domain'] ?? $facility['website_label']) } }))"
                                     class="font-semibold text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-900">
-                                {{ $facility['website_label'] ?? $facility['domain'] }}
+                                {{ $facility['domain'] ?? $facility['website_label'] }}
                             </button>
                             @else
                             <span class="text-slate-400">—</span>
@@ -193,9 +193,9 @@ document.addEventListener('alpine:init', () => {
                             </p>
                             <p class="mt-1 text-sm" x-show="detail.facility.website_url">
                                 <button type="button"
-                                        x-on:click.stop="openWebsite(detail.facility.website_url, detail.facility.website_label || detail.facility.domain)"
+                                        x-on:click.stop="openWebsite(detail.facility.website_url, detail.facility.domain || detail.facility.website_label)"
                                         class="font-semibold text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-900"
-                                        x-text="detail.facility.website_label || detail.facility.domain"></button>
+                                        x-text="detail.facility.domain || detail.facility.website_label"></button>
                             </p>
                         </div>
                     </div>

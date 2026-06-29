@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
 use App\Support\FacilityShutdown;
+use App\Support\SelectedFacility;
 use App\Models\Testimonial;
 use App\Models\Faq;
 use App\Models\Service;
@@ -66,33 +67,62 @@ class DashboardController extends Controller
 
     public function facilityDashboard(?Facility $facility = null)
     {
+        if (! $facility) {
+            $sessionFacility = SelectedFacility::model();
+            if ($sessionFacility) {
+                return redirect()->route('member.facility.dashboard', ['facility' => $sessionFacility->getRouteKey()]);
+            }
+        }
+
         return $this->renderFacilityPortalPage($facility, 'operations', 'facility-dashboard', 'Facility Dashboard');
     }
 
     public function hrManagementHub(?Facility $facility = null)
     {
+        if (! $facility) {
+            $sessionFacility = SelectedFacility::model();
+            if ($sessionFacility) {
+                return redirect()->route('user.hr-portal', ['facility' => $sessionFacility->getRouteKey()]);
+            }
+        }
+
         return $this->renderFacilityPortalPage($facility, 'hr_hub', 'hr-portal', 'HR Management');
     }
 
     protected function renderFacilityPortalPage(?Facility $facility, string $profile, string $portalActive, string $pageTitlePrefix)
     {
         $user = Auth::user();
+        $roleDashboard = app(\App\Services\RoleMemberDashboardService::class);
+
+        if (! $roleDashboard->canAccessFacilityDashboard($user)) {
+            abort(403, 'Unauthorized: Facility dashboard access is limited to leadership roles.');
+        }
+
         $service = app(\App\Services\FacilityDashboardService::class);
         $facilities = $service->facilitiesForUser($user);
         $facilitySwitchRoute = $profile === 'hr_hub' ? 'user.hr-portal' : 'member.facility.dashboard';
 
-        if (!$facility && $facilities->count() === 1) {
+        if (! $facility) {
+            $facility = SelectedFacility::model();
+        }
+
+        if (! $facility && $facilities->count() === 1) {
             $facility = $facilities->first();
         }
 
-        if (!$facility && $user->facility_id) {
+        if (! $facility && $user->facility_id) {
             $facility = Facility::find($user->facility_id);
+        }
+
+        if ($facility) {
+            SelectedFacility::remember($facility);
         }
 
         if (!$facility) {
             return view('dashboard.member.facility-select', array_merge($this->memberPortalContext($user), [
                 'facilities' => $facilities,
                 'facilitySwitchRoute' => $facilitySwitchRoute,
+                'organizationStats' => $roleDashboard->organizationOverviewStatsForUser($user),
                 'portalActive' => $portalActive,
                 'portalTitle' => 'Select Facility | Bio Pacific',
                 'portalEyebrow' => $profile === 'hr_hub' ? 'HR Management' : 'Facility Portal',
@@ -121,30 +151,22 @@ class DashboardController extends Controller
     {
         $context = $this->memberPortalContext($user);
         $roleDashboard = app(\App\Services\RoleMemberDashboardService::class)->build($user);
-        $isLeadership = ($roleDashboard['roleDashboardMode'] ?? '') === 'leadership';
-
-        $portalEyebrow = $isLeadership
-            ? ($roleDashboard['dashboardScopeType'] === 'department' ? 'Department' : 'Facility')
-            : 'My work';
-        $portalPageTitle = $isLeadership
-            ? ($roleDashboard['dashboardScopeLabel'] ?? 'Dashboard')
-            : 'Dashboard';
 
         return view('dashboard.member.index', array_merge($context, $roleDashboard, [
             'todayLabel' => now()->format('l, F j, Y'),
             'portalActive' => 'dashboard',
-            'portalTitle' => 'Bio Pacific HR Management | Dashboard',
-            'portalEyebrow' => $portalEyebrow,
-            'portalPageTitle' => $portalPageTitle,
+            'portalTitle' => 'Bio Pacific HR Management | My Dashboard',
+            'portalEyebrow' => 'My Dashboard',
+            'portalPageTitle' => 'My Dashboard',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
         ]));
     }
 
-    public function memberDocuments()
+    public function memberDocuments(Request $request)
     {
         $user = Auth::user();
-        $documentsData = app(MemberDashboardService::class)->buildDocumentsPage($user);
+        $documentsData = app(MemberDashboardService::class)->buildDocumentsPage($user, $request);
         $isFacilityDocumentsAdmin = $user->hasRole(['facility-admin', 'facility-dsd'])
             && !empty($documentsData['facilityComplianceReport']);
 
@@ -250,51 +272,6 @@ class DashboardController extends Controller
             'profileRecognitions' => $panels->recognitions($user, $employee),
             'emergencyContacts' => $user->emergencyContacts()->get(),
         ]));
-    }
-
-    protected function calculatePersonalProfileComplete($user, $employee): int
-    {
-        $score = 0;
-
-        if (filled($user->name)) {
-            $score += 20;
-        }
-        if (filled($user->email)) {
-            $score += 20;
-        }
-        if ($user->hasVerifiedEmail()) {
-            $score += 20;
-        }
-        if ($employee?->phone?->phone_number) {
-            $score += 20;
-        }
-        if ($this->formatPersonalAddress($employee?->address)) {
-            $score += 20;
-        }
-
-        return min(100, $score);
-    }
-
-    protected function formatPersonalAddress($address): ?string
-    {
-        if (!$address) {
-            return null;
-        }
-
-        $line1 = trim((string) ($address->address1 ?? ''));
-        $line2 = trim((string) ($address->address2 ?? ''));
-        $city = trim((string) ($address->city ?? ''));
-        $state = trim((string) ($address->state ?? ''));
-        $zip = trim((string) ($address->zip ?? ''));
-
-        $cityLine = trim(implode(', ', array_filter([
-            $city,
-            trim($state . ($zip !== '' ? ' ' . $zip : '')),
-        ])));
-
-        $parts = array_filter([$line1, $line2, $cityLine]);
-
-        return $parts === [] ? null : implode(' · ', $parts);
     }
 
     public function memberPassword(Request $request)

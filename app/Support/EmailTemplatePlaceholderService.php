@@ -49,6 +49,89 @@ class EmailTemplatePlaceholderService
         ];
     }
 
+    /**
+     * @return array{0: string, 1: string}
+     */
+    public function fillAsHtml(EmailTemplate $template, array $values): array
+    {
+        [$subject, $body] = $this->fill($template, $values);
+
+        return [$subject, $this->formatBodyAsHtml($body)];
+    }
+
+    public function formatBodyAsHtml(string $body): string
+    {
+        $body = trim($body);
+
+        if ($body === '') {
+            return $this->wrapHtmlDocument('');
+        }
+
+        if (preg_match('/<html[\s>]/i', $body) || preg_match('/<body[\s>]/i', $body)) {
+            return $body;
+        }
+
+        if (preg_match('/<(p|div|table|ul|ol|h[1-6])\b/i', $body)) {
+            return $this->wrapHtmlDocument($body);
+        }
+
+        $body = str_replace(["\r\n", "\r"], "\n", $body);
+        $paragraphs = preg_split('/\n\s*\n/', $body) ?: [];
+        $htmlParagraphs = [];
+
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if ($paragraph === '') {
+                continue;
+            }
+
+            if ($this->paragraphIsLinkOnly($paragraph)) {
+                $paragraph = $this->styleCtaLink($paragraph);
+            }
+
+            $paragraph = nl2br($paragraph, false);
+            $htmlParagraphs[] = '<p style="margin: 0 0 16px;">' . $paragraph . '</p>';
+        }
+
+        return $this->wrapHtmlDocument(implode("\n", $htmlParagraphs));
+    }
+
+    private function wrapHtmlDocument(string $content): string
+    {
+        return '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Pacific</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5; margin: 0; padding: 16px;">
+' . $content . '
+</body>
+</html>';
+    }
+
+    private function paragraphIsLinkOnly(string $paragraph): bool
+    {
+        $stripped = trim(strip_tags($paragraph));
+
+        return $stripped !== '' && preg_match('/^<a\s+[^>]+>.*<\/a>$/is', trim($paragraph)) === 1;
+    }
+
+    private function styleCtaLink(string $anchorHtml): string
+    {
+        if (preg_match('/\bstyle\s*=/i', $anchorHtml)) {
+            return $anchorHtml;
+        }
+
+        return preg_replace(
+            '/<a\s+/i',
+            '<a style="display:inline-block;padding:10px 16px;background:#0d9488;color:#ffffff;text-decoration:none;border-radius:6px;" ',
+            $anchorHtml,
+            1
+        ) ?? $anchorHtml;
+    }
+
     public function fillForJobApplication(EmailTemplate $template, JobApplication $jobApplication): array
     {
         return $this->fill($template, $this->valuesForJobApplication($jobApplication));
@@ -56,12 +139,12 @@ class EmailTemplatePlaceholderService
 
     public function fillForRegistrationCode(EmailTemplate $template, RegistrationCode $registrationCode): array
     {
-        return $this->fill($template, $this->valuesForRegistrationCode($registrationCode));
+        return $this->fillAsHtml($template, $this->valuesForRegistrationCode($registrationCode));
     }
 
     public function fillForNewUser(EmailTemplate $template, User $user, ?RegistrationCode $registrationCode = null): array
     {
-        return $this->fill($template, $this->valuesForNewUser($user, $registrationCode));
+        return $this->fillAsHtml($template, $this->valuesForNewUser($user, $registrationCode));
     }
 
     public function valuesForJobApplication(JobApplication $jobApplication): array

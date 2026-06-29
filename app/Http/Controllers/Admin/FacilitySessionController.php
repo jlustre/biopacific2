@@ -1,17 +1,32 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Facility;
+use App\Support\SelectedFacility;
+use Illuminate\Http\Request;
 
 class FacilitySessionController extends Controller
 {
-    public function select($facility)
+    public function select(Request $request, $facility)
     {
-        $facilityModel = Facility::where('slug', $facility)->orWhere('id', $facility)->firstOrFail();
-        session(['facility_id' => $facilityModel->id]);
-        // Redirect to dashboard or documents page as needed
-        return redirect()->route('member.facility.dashboard', ['facility' => $facilityModel->slug ?? $facilityModel->id]);
+        $facilityModel = Facility::query()
+            ->where('slug', $facility)
+            ->orWhere('id', $facility)
+            ->firstOrFail();
+
+        if (! SelectedFacility::userCanAccessFacility($request->user(), $facilityModel)) {
+            abort(403, 'You do not have access to this facility.');
+        }
+
+        SelectedFacility::remember($facilityModel);
+
+        $redirect = $request->query('redirect');
+        if (is_string($redirect) && $redirect !== '' && str_starts_with($redirect, '/')) {
+            return redirect($redirect);
+        }
+
+        return redirect()->route('member.facility.dashboard', ['facility' => $facilityModel->getRouteKey()]);
     }
 }

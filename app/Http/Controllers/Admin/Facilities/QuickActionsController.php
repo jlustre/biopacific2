@@ -513,8 +513,8 @@ class QuickActionsController extends Controller
         // Get employees for this facility from bp_employees via assignments
         $employees = \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
             $q->where('facility_id', $facility->id);
-        })->orderBy('last_name')->get();
-        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        })->orderedByName()->get();
+        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
 
         $query = \App\Models\Upload::with(['facility','user','uploadType']);
         if ($request->facility_id) $query->where('facility_id', $request->facility_id);

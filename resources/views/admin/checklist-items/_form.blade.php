@@ -5,7 +5,7 @@
 @endphp
 
 <div>
-    <label for="name" class="block text-sm font-semibold text-gray-900 mb-2">Checklist Item Name <span class="text-red-500">*</span></label>
+    <label for="name" class="block text-sm font-semibold text-gray-900 mb-2">Item name <span class="text-red-500">*</span></label>
     <input type="text" name="name" id="name" value="{{ old('name', $checklistItem->name) }}" required
         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
     @error('name')
@@ -13,7 +13,7 @@
     @enderror
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
     <div>
         <label for="section" class="block text-sm font-semibold text-gray-900 mb-2">Section</label>
         <input type="text" name="section" id="section" value="{{ old('section', $checklistItem->section) }}" placeholder="e.g., PART E"
@@ -40,6 +40,21 @@
     </div>
 
     <div>
+        <label for="is_required" class="block text-sm font-semibold text-gray-900 mb-2">Is Required</label>
+        @php
+            $isRequired = filter_var(old('is_required', $checklistItem->is_required ?? true), FILTER_VALIDATE_BOOLEAN);
+        @endphp
+        <select name="is_required" id="is_required"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="1" {{ $isRequired ? 'selected' : '' }}>Yes — required for applicable positions</option>
+            <option value="0" {{ ! $isRequired ? 'selected' : '' }}>No — optional document</option>
+        </select>
+        @error('is_required')
+        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
         <label for="order" class="block text-sm font-semibold text-gray-900 mb-2">Display Order</label>
         <input type="number" min="1" name="order" id="order" value="{{ old('order', $checklistItem->order) }}"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -59,7 +74,7 @@
     <div class="flex items-center justify-between mb-2 gap-4">
         <div>
             <label class="block text-sm font-semibold text-gray-900">Applicable Positions</label>
-            <p class="text-sm text-gray-600 mt-1">Leave all unchecked to make this checklist item apply to everybody.</p>
+            <p class="text-sm text-gray-600 mt-1">Leave all unchecked to make this item apply to everybody.</p>
         </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 border border-gray-200 rounded-lg p-4 bg-gray-50">

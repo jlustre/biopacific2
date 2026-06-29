@@ -8,18 +8,28 @@
     </button>
     <div x-show="open" x-cloak @click.away="open = false"
         class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded shadow-lg z-50">
-        <div class="p-4 border-b font-semibold text-slate-700">Webmaster Messages</div>
+        <div class="p-4 border-b font-semibold text-slate-700">Contact Webmaster Issues</div>
         <ul class="max-h-72 overflow-y-auto divide-y divide-slate-100">
             @forelse($latestContacts as $contact)
             <li class="p-4 flex flex-col gap-1 {{ !$contact->is_read ? 'bg-blue-50' : '' }}">
                 <div class="flex justify-between items-center">
                     <span class="font-medium text-slate-800 text-sm">{{ $contact->subject }}</span>
-                    @if($contact->urgent)
-                    <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">Urgent</span>
-                    @endif
+                    <span class="flex items-center gap-1">
+                        @if($contact->isEnhancement())
+                        <span class="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Idea</span>
+                        @endif
+                        @if($contact->urgent)
+                        <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">Urgent</span>
+                        @endif
+                    </span>
                 </div>
-                <div class="text-xs text-slate-500">From: {{ $contact->name }} &bull; {{
-                    $contact->created_at->diffForHumans() }}</div>
+                <div class="text-xs text-slate-500">
+                    From: {{ $contact->name }}
+                    @if($contact->facility)
+                        &bull; {{ $contact->facility->name }}
+                    @endif
+                    &bull; {{ $contact->created_at->diffForHumans() }}
+                </div>
                 <a href="{{ route('admin.webmaster.contacts.show', $contact) }}"
                     class="text-blue-600 hover:underline text-xs mt-1">View Message</a>
             </li>

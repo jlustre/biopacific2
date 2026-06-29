@@ -3,7 +3,7 @@
         ->where('employee_num', $employee->employee_num)
         ->orderByDesc('uploaded_at')
         ->get();
-    $uploadTypes = \App\Models\UploadType::all();
+    $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
     $existingUploads = $uploads->map(function ($upload) {
         return [
             'id' => $upload->id,
@@ -82,7 +82,7 @@
                             <tr>
                                 <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Document Type</th>
                                 <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
-                                <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Latest Upload</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Latest document</th>
                                 <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Latest Expiry</th>
                                 <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Action</th>
                             </tr>
@@ -140,7 +140,7 @@
             <div class="mb-4">
                 <button type="button" class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
                     @click="openUploadModal()">
-                    <i class="fas fa-upload mr-2"></i>Upload Document
+                    <i class="fas fa-upload mr-2"></i>{{ config('documents.labels.upload_modal_title') }}
                 </button>
             </div>
 
@@ -151,7 +151,7 @@
                     <!-- Inline Edit/Upload Form -->
                     <form id="employee-upload-form" method="POST" :action="formAction" enctype="multipart/form-data" @submit.prevent="submitForm($event)" @reset.prevent="resetForm()">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-slate-900" x-text="editMode ? 'Edit Document' : 'Upload Document'"></h3>
+                        <h3 class="text-lg font-bold text-slate-900" x-text="editMode ? 'Edit document' : @js(config('documents.labels.upload_modal_title'))"></h3>
                         <button type="button" class="text-gray-500 hover:text-gray-700 text-xl" @click="resetForm()" aria-label="Close">&times;</button>
                     </div>
                     <input type="hidden" name="_token" :value="csrf">
@@ -160,7 +160,7 @@
                     </template>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block mb-1 text-xs font-semibold">Upload Type <span class="text-red-600">*</span></label>
+                            <label class="block mb-1 text-xs font-semibold">{{ config('documents.labels.type') }} <span class="text-red-600">*</span></label>
                             <select name="upload_type_id" class="form-select w-full px-2 py-1 bg-teal-50 border-teal-700 rounded border-1 focus:border-teal-800" required x-model="form.upload_type_id">
                                 <option value="">Select Type</option>
                                 <template x-for="type in uploadTypes" :key="type.id">

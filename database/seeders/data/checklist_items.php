@@ -1,0 +1,693 @@
+<?php
+
+/**
+ * Employee file document type items (PART A–D) for ChecklistItemsSeeder.
+ *
+ * Auto-generated from Documents Management → Employee file items → Update items seeder on 2026-06-29 16:28:51.
+ *
+ * @return list<array{
+ *     name: string,
+ *     section: string,
+ *     doc_type_id: int,
+ *     isExpiring: bool,
+ *     is_license_or_certification: bool,
+ *     position_ids: list<int>|null,
+ *     order: int
+ * }>
+ */
+return array (
+  0 => 
+  array (
+    'name' => 'Application Form',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 1,
+  ),
+  1 => 
+  array (
+    'name' => 'Applicant Disclosure',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 2,
+  ),
+  2 => 
+  array (
+    'name' => 'Reference Check #1',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 3,
+  ),
+  3 => 
+  array (
+    'name' => 'Reference Check #2',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 4,
+  ),
+  4 => 
+  array (
+    'name' => 'Offer Letter (if applicable)',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 5,
+  ),
+  5 => 
+  array (
+    'name' => 'Job Data: Hire / Rehire',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 6,
+  ),
+  6 => 
+  array (
+    'name' => 'Emergency Contact Information',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 7,
+  ),
+  7 => 
+  array (
+    'name' => 'Job Description',
+    'section' => 'PART A',
+    'doc_type_id' => 1,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 8,
+  ),
+  8 => 
+  array (
+    'name' => 'I - 9*',
+    'section' => 'PART A',
+    'doc_type_id' => 2,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 9,
+  ),
+  9 => 
+  array (
+    'name' => 'Social Security Card - Copy',
+    'section' => 'PART A',
+    'doc_type_id' => 2,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 10,
+  ),
+  10 => 
+  array (
+    'name' => 'Driver\'s License - Copy*',
+    'section' => 'PART A',
+    'doc_type_id' => 2,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 11,
+  ),
+  11 => 
+  array (
+    'name' => 'Green Card or Work Permit Autho. - Copy*',
+    'section' => 'PART A',
+    'doc_type_id' => 2,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 12,
+  ),
+  12 => 
+  array (
+    'name' => 'Passport - Copy*',
+    'section' => 'PART A',
+    'doc_type_id' => 2,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 13,
+  ),
+  13 => 
+  array (
+    'name' => 'Professional License - Copy*',
+    'section' => 'PART A',
+    'doc_type_id' => 2,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 14,
+  ),
+  14 => 
+  array (
+    'name' => 'CPR Card (License Nurses)*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 15,
+  ),
+  15 => 
+  array (
+    'name' => 'C.N.A. Certificate*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => 
+    array (
+      0 => 11,
+    ),
+    'order' => 16,
+  ),
+  16 => 
+  array (
+    'name' => 'Professional License*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 17,
+  ),
+  17 => 
+  array (
+    'name' => 'Background Check*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 18,
+  ),
+  18 => 
+  array (
+    'name' => 'OIG Verification*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 19,
+  ),
+  19 => 
+  array (
+    'name' => 'SAM Verification*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 20,
+  ),
+  20 => 
+  array (
+    'name' => 'Medical Exclusion/Ineligible Provider List*',
+    'section' => 'PART A',
+    'doc_type_id' => 3,
+    'isExpiring' => true,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 21,
+  ),
+  21 => 
+  array (
+    'name' => 'Abuse, Neglect and Exploitation',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 22,
+  ),
+  22 => 
+  array (
+    'name' => 'Resident Rights',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 23,
+  ),
+  23 => 
+  array (
+    'name' => 'Employee Handbook',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 24,
+  ),
+  24 => 
+  array (
+    'name' => 'Code of Conduct',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 25,
+  ),
+  25 => 
+  array (
+    'name' => 'Spoken Language',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 26,
+  ),
+  26 => 
+  array (
+    'name' => 'Missed Punch Policy',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 27,
+  ),
+  27 => 
+  array (
+    'name' => 'Rest and Meal Break Policy: Hydration Program',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 28,
+  ),
+  28 => 
+  array (
+    'name' => 'Use of ID Badge Policy: Second meal period waiver',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 29,
+  ),
+  29 => 
+  array (
+    'name' => 'Six-hour meal period waiver',
+    'section' => 'PART B',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 30,
+  ),
+  30 => 
+  array (
+    'name' => 'Facility Organizational Chart',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 31,
+  ),
+  31 => 
+  array (
+    'name' => 'Facility Department Heads\' Information',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 32,
+  ),
+  32 => 
+  array (
+    'name' => 'Facility Floor Plan',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 33,
+  ),
+  33 => 
+  array (
+    'name' => 'Facility Tour and General Orientation',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 34,
+  ),
+  34 => 
+  array (
+    'name' => 'Mariner Health Savings Plan / 401K',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 35,
+  ),
+  35 => 
+  array (
+    'name' => 'W-4',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 36,
+  ),
+  36 => 
+  array (
+    'name' => 'EDD',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 37,
+  ),
+  37 => 
+  array (
+    'name' => 'Direct Deposit Authorization (Voided Check)',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 38,
+  ),
+  38 => 
+  array (
+    'name' => 'Orientation Time Sheet',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 39,
+  ),
+  39 => 
+  array (
+    'name' => 'Medical Insurance Premium Acknowledged',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 40,
+  ),
+  40 => 
+  array (
+    'name' => 'WC - Workplace and Ergonomics Safety',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 41,
+  ),
+  41 => 
+  array (
+    'name' => 'Illness and Injury Prevention Program',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 42,
+  ),
+  42 => 
+  array (
+    'name' => 'Individual Safety Responsibility',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 43,
+  ),
+  43 => 
+  array (
+    'name' => 'Hazard Communication Training',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 44,
+  ),
+  44 => 
+  array (
+    'name' => 'Notice to Employee (Labor Code Sec 2810.5)',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 45,
+  ),
+  45 => 
+  array (
+    'name' => 'Environmental Care Questionnaire',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 46,
+  ),
+  46 => 
+  array (
+    'name' => 'Required State Notice Acknowledgement Form',
+    'section' => 'PART C',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 47,
+  ),
+  47 => 
+  array (
+    'name' => 'Accuracy, Notice of',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 48,
+  ),
+  48 => 
+  array (
+    'name' => 'Affirmative, Notice of',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 49,
+  ),
+  49 => 
+  array (
+    'name' => 'Blood Borne Pathogen',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 50,
+  ),
+  50 => 
+  array (
+    'name' => 'Confidentiality',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 51,
+  ),
+  51 => 
+  array (
+    'name' => 'Deficit Reduction Act',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 52,
+  ),
+  52 => 
+  array (
+    'name' => 'First Aid for Choking',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 53,
+  ),
+  53 => 
+  array (
+    'name' => 'Gait Belt Utilization',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 54,
+  ),
+  54 => 
+  array (
+    'name' => 'HIPAA & Compliance',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 55,
+  ),
+  55 => 
+  array (
+    'name' => 'Infection Control',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 56,
+  ),
+  56 => 
+  array (
+    'name' => 'No Solicitation, Distribution and Access',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 57,
+  ),
+  57 => 
+  array (
+    'name' => 'Private Duty',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 58,
+  ),
+  58 => 
+  array (
+    'name' => 'Pulmonary Tuberculosis',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 59,
+  ),
+  59 => 
+  array (
+    'name' => 'Substance Abuse and Testing',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 60,
+  ),
+  60 => 
+  array (
+    'name' => 'Workplace Violence Prevention',
+    'section' => 'PART D',
+    'doc_type_id' => 4,
+    'isExpiring' => false,
+    'is_required' => true,
+    'is_license_or_certification' => false,
+    'position_ids' => NULL,
+    'order' => 61,
+  ),
+);

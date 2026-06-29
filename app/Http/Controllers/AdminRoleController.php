@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\RolePermissionSeederExporter;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -120,8 +121,11 @@ class AdminRoleController extends Controller
             }
         });
 
-        return redirect()->route('admin.roles.index')
-            ->with('success', 'Role updated successfully.');
+        $sync = app(RolePermissionSeederExporter::class)->syncFromRequest($request);
+        $message = 'Role updated successfully.'.app(RolePermissionSeederExporter::class)->seederSyncMessage($sync);
+
+        return redirect()->route('admin.roles.edit', $role)
+            ->with('success', $message);
     }
 
     /**
@@ -157,5 +161,22 @@ class AdminRoleController extends Controller
         return response()->json([
             'permissions' => $role->permissions->pluck('id')->toArray()
         ]);
+    }
+
+    public function syncSeeder(RolePermissionSeederExporter $exporter)
+    {
+        $sync = $exporter->sync();
+
+        if (! empty($sync['synced'])) {
+            return redirect()->back()->with(
+                'success',
+                'Role permission seeder updated with '.$sync['count'].' role(s). Commit database/seeders/data/role_permissions.json so migrate:fresh --seed restores these permissions.'
+            );
+        }
+
+        return redirect()->back()->with(
+            'error',
+            'Seeder update failed: '.($sync['error'] ?? 'Unknown error')
+        );
     }
 }

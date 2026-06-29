@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
  * Non-transactional / reference data required for the application to function.
  *
  * Safe for production fresh installs: roles, departments, positions, checklist
- * templates, upload types, option lists, corporate facility shell, and the
+ * templates, document types, option lists, corporate facility shell, and the
  * super-admin login account.
  *
  * Does NOT seed other demo users, sample employees, marketing content, or uploads.
@@ -27,6 +27,8 @@ class StructuralSeeder extends Seeder
             ServiceSeeder::class,
             // Facilities & public-site configuration (after color_schemes and services exist)
             FacilitySeeder::class,
+            // Corporate facility must exist before web contents / service pivots reference it
+            BioPacificCorporateSeeder::class,
             WebContentsSeeder::class,
             FacilityServiceSeeder::class,
 
@@ -42,8 +44,8 @@ class StructuralSeeder extends Seeder
             BPBargainingUnitsTableSeeder::class,
             DepartmentSeeder::class,
             PositionsSeeder::class,
+            PositionPortalRoleMappingSeeder::class,
             DocTypesTableSeeder::class,
-            UploadTypesTableSeeder::class,
             OptionTypesSeeder::class,
             SelectOptionsSeeder::class,
 
@@ -51,6 +53,8 @@ class StructuralSeeder extends Seeder
             ChecklistItemsSeeder::class,
             OrientationChecklistItemsSeeder::class,
             ChecklistItemPositionBackfillSeeder::class,
+            DocumentsManagementSeeder::class,
+            PositionDocumentRequirementsSeeder::class,
             EmployeePerformanceItemsSeeder::class,
             EmployeeCompetencyItemsSeeder::class,
 
@@ -65,9 +69,6 @@ class StructuralSeeder extends Seeder
             EmailTemplatesSeeder::class,
             DefaultFaqSeeder::class,
             BaaVendorSeeder::class,
-
-            // Required corporate public-site facility (id 99, uses color_scheme_id 33)
-            BioPacificCorporateSeeder::class,
 
             // Super-admin account (production-safe; idempotent via firstOrCreate)
             SuperAdminSeeder::class,

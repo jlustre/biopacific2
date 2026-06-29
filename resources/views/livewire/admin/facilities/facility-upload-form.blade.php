@@ -43,12 +43,12 @@
             <select id="employee-select" wire:model="employee_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="">-- Select Employee --</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->employee_num }}">{{ $employee->last_name }}, {{ $employee->first_name }} @if($employee->employee_num) [{{ $employee->employee_num }}]@endif</option>
+                    <option value="{{ $employee->employee_num }}">{{ $employee->formalName() }} @if($employee->employee_num) [{{ $employee->employee_num }}]@endif</option>
                 @endforeach
             </select>
         </div>
         <div class="col-span-1">
-            <label class="block mb-1 text-xs font-semibold">Upload Type <span class="text-red-600">*</span></label>
+            <label class="block mb-1 text-xs font-semibold">{{ config('documents.labels.type') }} <span class="text-red-600">*</span></label>
             <select wire:model="upload_type_id" x-ref="uploadType" @change="updateExpiry()" @input="updateExpiry()" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="" hidden selected>Select Type</option>
                 @foreach($uploadTypes as $type)

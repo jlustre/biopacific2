@@ -10,12 +10,7 @@
         'admin' => config('member-portal.admin_sidebar_nav', []),
         default => [],
     };
-    $dashboardNav = match ($portalNav) {
-        'facility' => config('member-portal.facility_dashboard_nav', []),
-        'corporate' => config('member-portal.corporate_dashboard_nav', []),
-        'employee' => \App\Support\MemberPortalLayout::employeeDashboardNavItems(auth()->user()),
-        default => [],
-    };
+    $dashboardNav = \App\Support\MemberPortalLayout::dashboardNavItemsForUser($currentUser);
     $portalSubtitle = $portalSubtitle ?? match ($portalNav) {
         'admin' => 'Admin Portal',
     'corporate' => 'Corporate Management',
@@ -67,7 +62,9 @@
       @else
         @foreach($navItems as $item)
           @php
-              $href = isset($item['route']) ? route($item['route']) : ($item['href'] ?? '#');
+              $href = isset($item['route'])
+                  ? \App\Support\MemberPortalLayout::routeWithSelectedFacility($item['route'])
+                  : ($item['href'] ?? '#');
               if (!empty($item['fragment'])) {
                   $href .= '#' . ltrim($item['fragment'], '#');
               }
@@ -135,11 +132,11 @@
             </div>
           </div>
           <div class="mt-4 grid gap-2">
-            <a href="mailto:hr@biopacific.com" class="member-portal-help-action member-portal-help-action-primary">
+            <a href="{{ route('member.help.hr') }}" class="member-portal-help-action member-portal-help-action-primary">
               <i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>
               <span>Email HR</span>
             </a>
-            <a href="mailto:hr@biopacific.com?subject=Support%20Request" class="member-portal-help-action member-portal-help-action-secondary">
+            <a href="{{ route('member.help.support') }}" class="member-portal-help-action member-portal-help-action-secondary">
               <i class="fa-solid fa-ticket text-xs" aria-hidden="true"></i>
               <span>Submit support request</span>
             </a>

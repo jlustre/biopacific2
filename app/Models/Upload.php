@@ -70,6 +70,7 @@ class Upload extends Model
         'employee_num',
         'user_id',
         'upload_type_id',
+        'checklist_item_id',
         'file_path',
         'original_filename',
         'file_size',
@@ -129,6 +130,11 @@ class Upload extends Model
     public function uploadType()
     {
         return $this->belongsTo(UploadType::class);
+    }
+
+    public function checklistItem()
+    {
+        return $this->belongsTo(ChecklistItem::class);
     }
 
     public function verifiedBy()

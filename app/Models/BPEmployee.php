@@ -123,6 +123,74 @@ class BPEmployee extends Model
         return null;
     }
 
+    /**
+     * Roster-style name: "Last, First Middle".
+     */
+    public function formalName(): string
+    {
+        $last = trim((string) ($this->last_name ?? ''));
+        $first = trim((string) ($this->first_name ?? ''));
+        $middle = trim((string) ($this->middle_name ?? ''));
+        $given = trim($first . ($middle !== '' ? ' ' . $middle : ''));
+
+        if ($last !== '' && $given !== '') {
+            return "{$last}, {$given}";
+        }
+
+        $fallback = trim(implode(' ', array_filter([$first, $middle, $last], fn (string $part) => $part !== '')));
+
+        return $fallback !== '' ? $fallback : (string) ($this->employee_num ?? '');
+    }
+
+    /**
+     * @param  array{last_name?: string, first_name?: string, middle_name?: string}  $a
+     * @param  array{last_name?: string, first_name?: string, middle_name?: string}  $b
+     */
+    public static function compareByNameFields(array $a, array $b): int
+    {
+        foreach (['last_name', 'first_name', 'middle_name'] as $field) {
+            $cmp = strnatcasecmp((string) ($a[$field] ?? ''), (string) ($b[$field] ?? ''));
+
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * @return array{name: string, last_name: string, first_name: string, middle_name: string}
+     */
+    public function tableNameFields(): array
+    {
+        return [
+            'name' => $this->formalName(),
+            'last_name' => (string) ($this->last_name ?? ''),
+            'first_name' => (string) ($this->first_name ?? ''),
+            'middle_name' => (string) ($this->middle_name ?? ''),
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    public static function sortTableRowsByName(array $rows): array
+    {
+        usort($rows, fn (array $a, array $b) => self::compareByNameFields($a, $b));
+
+        return array_values($rows);
+    }
+
+    public function scopeOrderedByName($query)
+    {
+        return $query
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->orderBy('middle_name');
+    }
+
     public function getCurrentFacilityAttribute()
     {
         $assignment = $this->current_assignment;

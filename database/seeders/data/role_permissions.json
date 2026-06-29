@@ -1,0 +1,157 @@
+[
+    {
+        "name": "super-admin",
+        "all_permissions": true
+    },
+    {
+        "name": "admin",
+        "all_permissions": true
+    },
+    {
+        "name": "rdhr",
+        "permissions": [
+            "access admin panel",
+            "access hr portal",
+            "create registration invitations",
+            "edit employee core tabs",
+            "edit positions",
+            "use import mapping presets",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view positions",
+            "view reports",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "facility-admin",
+        "permissions": [
+            "access admin panel",
+            "access hr portal",
+            "create content",
+            "create facilities",
+            "create registration invitations",
+            "create users",
+            "edit content",
+            "edit employee core tabs",
+            "edit facilities",
+            "edit positions",
+            "edit users",
+            "export data",
+            "manage facility settings",
+            "manage faqs",
+            "manage galleries",
+            "manage inquiries",
+            "manage job applications",
+            "manage news",
+            "manage services",
+            "manage testimonials",
+            "manage tour requests",
+            "publish content",
+            "use import mapping presets",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view facility analytics",
+            "view positions",
+            "view reports",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "facility-dsd",
+        "permissions": [
+            "access admin panel",
+            "access hr portal",
+            "create registration invitations",
+            "edit employee core tabs",
+            "edit positions",
+            "use import mapping presets",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view positions",
+            "view reports",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "don",
+        "permissions": [
+            "access admin panel",
+            "access hr portal",
+            "create registration invitations",
+            "edit positions",
+            "use import mapping presets",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view positions",
+            "view reports",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "ssd",
+        "permissions": [
+            "access admin panel",
+            "create registration invitations",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view reports",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "activities-director",
+        "permissions": [
+            "access admin panel",
+            "create registration invitations",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "facility-editor",
+        "permissions": [
+            "access admin panel",
+            "create content",
+            "edit content",
+            "edit facilities",
+            "manage faqs",
+            "manage galleries",
+            "manage inquiries",
+            "manage news",
+            "manage services",
+            "manage testimonials",
+            "manage tour requests",
+            "use import mapping presets",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view user profiles",
+            "view users"
+        ]
+    },
+    {
+        "name": "regular-user",
+        "permissions": [
+            "access admin panel",
+            "view communications",
+            "view content",
+            "view facilities",
+            "view user profiles",
+            "view users"
+        ]
+    }
+]

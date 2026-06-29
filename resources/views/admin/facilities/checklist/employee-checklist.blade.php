@@ -443,7 +443,7 @@
 </div>
 
 
-<!-- Modal for Verify Checklist Item -->
+<!-- Modal for Verify Document Type Item -->
 @include('admin.facilities.checklist.employee-checklist-modal-ae')
 @include('admin.facilities.checklist.employee-checklist-modal-f')
 @include('admin.facilities.checklist.employee-assessment-period-modals') 

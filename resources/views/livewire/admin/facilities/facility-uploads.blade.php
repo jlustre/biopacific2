@@ -19,7 +19,7 @@
             <select wire:model="employee_id" class="form-select w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600">
                 <option value="">-- Select Employee --</option>
                 @foreach($employees as $employee)
-                    <option value="{{ $employee->employee_num }}">{{ $employee->last_name }}, {{ $employee->first_name }}</option>
+                    <option value="{{ $employee->employee_num }}">{{ $employee->formalName() }}</option>
                 @endforeach
             </select>
         </div>

@@ -54,6 +54,33 @@
                 </div>
             </div>
         </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Required Documents</h2>
+            <p class="text-sm text-gray-600 mb-4">General document types required for employees assigned to this position. Other positions may have a different set.</p>
+            @if(count($requiredDocuments ?? []) > 0)
+                <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                    @foreach($requiredDocuments as $document)
+                        <li class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                            <span class="font-medium text-gray-900">{{ $document['name'] }}</span>
+                            <span class="flex flex-wrap gap-2">
+                                @if($document['requires_expiry'])
+                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-800">Expiry tracked</span>
+                                @endif
+                                @if($document['is_license_or_certification'])
+                                    <span class="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-sky-800">License / cert</span>
+                                @endif
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-sm text-gray-500 italic">No required documents configured for this position yet.</p>
+            @endif
+            <p class="mt-4 text-xs text-gray-500">
+                Employee-file document requirements are managed under Documents Management → Employee file items.
+            </p>
+        </div>
     </div>
 
     <!-- Sidebar Information -->

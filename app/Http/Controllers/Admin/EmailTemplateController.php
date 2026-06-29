@@ -76,6 +76,8 @@ class EmailTemplateController extends Controller
 
         [$filledSubject, $filledBody] = $this->fillTemplate($emailTemplate, $jobApplication);
 
+        $filledBody = app(EmailTemplatePlaceholderService::class)->formatBodyAsHtml($filledBody);
+
         Mail::html($filledBody, function ($message) use ($validated, $filledSubject) {
             $message->to($validated['reply_to'])
                 ->subject($filledSubject);

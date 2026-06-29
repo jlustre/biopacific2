@@ -156,7 +156,7 @@ class UploadController extends Controller {
         }
 
         $upload->save();
-        return redirect()->route('admin.facility.documents', ['facility' => $facility])->with('success', 'Upload updated successfully.');
+        return redirect()->route('admin.facility.documents', ['facility' => $facility])->with('success', config('documents.messages.updated'));
     }
 
     public function index(Request $request, $facility, $editUploadId = null)
@@ -166,7 +166,7 @@ class UploadController extends Controller {
         if ($request->search) $query->where('original_filename', 'like', '%'.$request->search.'%');
         $uploads = $query->latest()->paginate(15);
         $facilities = Facility::orderBy('name')->get();
-        $uploadTypes = UploadType::orderBy('name')->get();
+        $uploadTypes = UploadType::query()->orderedForDisplay()->get();
         $editUpload = null;
         if ($editUploadId) {
             $editUpload = Upload::find($editUploadId);
@@ -215,7 +215,7 @@ class UploadController extends Controller {
                 'effective_start_date' => $request->effective_start_date,
                 'comments' => $request->comments,
             ]);
-        return redirect()->back()->with('success', 'File uploaded successfully.');
+        return redirect()->back()->with('success', config('documents.messages.created'));
     }
 
     public function download($facility, $upload)
@@ -251,10 +251,10 @@ class UploadController extends Controller {
         // Always resolve the model manually to avoid property access on string
         $upload = Upload::find($upload);
         if (!$upload) {
-            return redirect()->back()->with('error', 'Upload not found.');
+            return redirect()->back()->with('error', config('documents.messages.not_found'));
         }
         $upload->delete();
-        return redirect()->back()->with('success', 'File deleted successfully.');
+        return redirect()->back()->with('success', config('documents.messages.deleted'));
     }
 
     public function edit($facility, $upload)

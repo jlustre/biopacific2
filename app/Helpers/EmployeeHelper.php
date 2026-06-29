@@ -20,19 +20,17 @@ class EmployeeHelper {
             $q->where('facility_id', $facilityId);
         })
         ->with(['assignments', 'address', 'phone'])
-        ->orderBy('last_name')
+        ->orderedByName()
         ->get();
 
-        return $employees->map(function($employee) {
-            return [
+        return $employees->map(function (BPEmployee $employee) {
+            return array_merge($employee->tableNameFields(), [
                 'id' => $employee->id,
                 'employee_num' => $employee->employee_num,
-                'first_name' => $employee->first_name,
-                'last_name' => $employee->last_name,
                 'assignments' => $employee->assignments,
                 'address' => $employee->address,
                 'phone' => $employee->phone,
-            ];
+            ]);
         })->toArray();
     }
 

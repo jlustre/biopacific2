@@ -7,6 +7,26 @@
     $firstName = $firstName ?? 'Employee';
     $initials = $initials ?? 'E';
     $avatarUrl = $avatarUrl ?? null;
+    $portalNotifications = $portalNotifications ?? [];
+    $portalNotificationCount = (int) ($portalNotificationCount ?? count($portalNotifications));
+    $notificationToneClass = fn (string $tone) => match ($tone) {
+        'rose' => 'bg-rose-50',
+        'amber' => 'bg-amber-50',
+        'brand' => 'bg-brand-50',
+        default => 'bg-slate-50',
+    };
+    $notificationTitleClass = fn (string $tone) => match ($tone) {
+        'rose' => 'text-rose-800',
+        'amber' => 'text-amber-800',
+        'brand' => 'text-brand-800',
+        default => 'text-slate-800',
+    };
+    $notificationMessageClass = fn (string $tone) => match ($tone) {
+        'rose' => 'text-rose-600',
+        'amber' => 'text-amber-600',
+        'brand' => 'text-brand-600',
+        default => 'text-slate-600',
+    };
 @endphp
 
 <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -52,28 +72,40 @@
           class="relative rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm hover:bg-slate-50"
           aria-label="Notifications">
           🔔
-          <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">5</span>
+          @if($portalNotificationCount > 0)
+          <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+            {{ $portalNotificationCount > 9 ? '9+' : $portalNotificationCount }}
+          </span>
+          @endif
         </button>
         <div x-show="notifyOpen" x-cloak x-transition @click.outside="notifyOpen = false"
           class="absolute right-0 mt-3 w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-soft z-50">
           <div class="mb-3 flex items-center justify-between">
             <p class="font-bold text-slate-950">Notifications</p>
-            <a href="#" class="text-xs font-semibold text-brand-600">View all</a>
+            <a href="{{ route('dashboard.index') }}" class="text-xs font-semibold text-brand-600">Open dashboard</a>
           </div>
+          @if(count($portalNotifications) === 0)
+          <p class="rounded-2xl bg-slate-50 p-3 text-sm text-slate-600">You’re caught up. New reminders will appear here when something needs your attention.</p>
+          @else
           <div class="space-y-3 text-sm">
-            <div class="rounded-2xl bg-rose-50 p-3">
-              <p class="font-semibold text-rose-800">CPR expires in 21 days</p>
-              <p class="text-xs text-rose-600">Upload renewal certificate.</p>
+            @foreach($portalNotifications as $notification)
+            @php
+                $tone = $notification['tone'] ?? 'slate';
+            @endphp
+            @if(!empty($notification['route']))
+            <a href="{{ $notification['route'] }}" class="block rounded-2xl p-3 {{ $notificationToneClass($tone) }} hover:opacity-90">
+              <p class="font-semibold {{ $notificationTitleClass($tone) }}">{{ $notification['title'] }}</p>
+              <p class="text-xs {{ $notificationMessageClass($tone) }}">{{ $notification['message'] }}</p>
+            </a>
+            @else
+            <div class="rounded-2xl p-3 {{ $notificationToneClass($tone) }}">
+              <p class="font-semibold {{ $notificationTitleClass($tone) }}">{{ $notification['title'] }}</p>
+              <p class="text-xs {{ $notificationMessageClass($tone) }}">{{ $notification['message'] }}</p>
             </div>
-            <div class="rounded-2xl bg-amber-50 p-3">
-              <p class="font-semibold text-amber-800">Policy acknowledgement due</p>
-              <p class="text-xs text-amber-600">Employee handbook update.</p>
-            </div>
-            <div class="rounded-2xl bg-brand-50 p-3">
-              <p class="font-semibold text-brand-800">New schedule posted</p>
-              <p class="text-xs text-brand-600">May 20 - May 26.</p>
-            </div>
+            @endif
+            @endforeach
           </div>
+          @endif
         </div>
       </div>
       @endif

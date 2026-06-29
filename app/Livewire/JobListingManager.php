@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Locked;
 use Illuminate\Support\Facades\Auth;
+use App\Support\SelectedFacility;
 
 class JobListingManager extends Component
 {
@@ -64,13 +65,12 @@ class JobListingManager extends Component
         $requestFacilityId = request()->query('facility_id');
         if ($requestFacilityId) {
             $this->facilityId = $requestFacilityId;
-            session(['facility_id' => $this->facilityId]);
-        } elseif (!$facility) {
-            $facilityId = session('facility_id');
-            $this->facilityId = $facilityId;
+            SelectedFacility::remember((int) $requestFacilityId);
+        } elseif (! $facility) {
+            $this->facilityId = SelectedFacility::id();
         } else {
             $this->facilityId = is_object($facility) ? $facility->id : $facility;
-            session(['facility_id' => $this->facilityId]);
+            SelectedFacility::remember((int) $this->facilityId);
         }
         $this->posted_at = date('Y-m-d');
         

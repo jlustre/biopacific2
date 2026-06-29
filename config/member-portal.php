@@ -51,6 +51,58 @@ return [
 
     'facility_manager_roles' => ['facility-admin', 'facility-dsd', 'facility-ssd', 'don'],
 
+    /**
+     * Portal roles assigned to department leadership (not facility-wide admin/dsd).
+     *
+     * @var list<string>
+     */
+    'department_head_portal_roles' => ['don', 'ssd', 'activities-director'],
+
+    /**
+     * Leadership roster keys treated as department heads for registration invites.
+     * Excludes facility-wide administrator, dsd, and staffer roles.
+     *
+     * @var list<string>
+     */
+    'department_head_leadership_keys' => [
+        'don',
+        'ssd',
+        'msd',
+        'activities',
+        'dietary',
+        'maintenance',
+        'business_office',
+        'housekeeping',
+        'rehab',
+        'marketing',
+        'admissions',
+    ],
+
+    /**
+     * Optional position title => portal role overrides applied on employee self-registration.
+     * Most mappings are derived from facility-dashboard.leadership_roles automatically.
+     *
+     * @var array<string, string>
+     */
+    'position_registration_roles' => [
+        // 'Receptionist' => 'facility-editor',
+    ],
+
+    /**
+     * Portal roles available when mapping positions for employee self-registration.
+     *
+     * @var list<string>
+     */
+    'position_registration_assignable_roles' => [
+        'facility-admin',
+        'facility-dsd',
+        'don',
+        'ssd',
+        'activities-director',
+        'facility-editor',
+        'regular-user',
+    ],
+
     'facility_manager_global_route_patterns' => [
         'admin.dashboard.index',
         'member.facility.dashboard',
@@ -74,6 +126,7 @@ return [
         'admin.roles.*',
         'admin.permissions.*',
         'admin.role-assignments.*',
+        'admin.position-portal-roles.*',
         'admin.positions.*',
         'admin.departments.*',
         'admin.arbitration-templates.*',
@@ -106,8 +159,6 @@ return [
                 'admin.facilities.show',
                 'admin.facilities.store',
                 'admin.facilities.destroy',
-                'admin.facilities.leadership*',
-                'admin.facility.leadership*',
             ],
             'icon' => '🏢',
             'label' => 'Facilities',
@@ -120,7 +171,6 @@ return [
             'label' => 'Facility Leadership',
         ],
         ['id' => 'users', 'route' => 'admin.users.index', 'route_is' => 'admin.users.*', 'icon' => '👥', 'label' => 'Users'],
-        ['id' => 'roles', 'route' => 'admin.roles.index', 'route_is' => ['admin.roles.*', 'admin.permissions.*', 'admin.role-assignments.*'], 'icon' => '🛡️', 'label' => 'Roles & Permissions'],
         ['id' => 'settings', 'route' => 'admin.settings.index', 'route_is' => 'admin.settings.*', 'icon' => '🔧', 'label' => 'System Settings'],
         ['id' => 'hr-portal', 'route' => 'user.hr-portal', 'route_is' => ['hr-portal.*', 'user.hr-portal', 'admin.hr-portal.*', 'admin.facility.employees*', 'admin.facility.hiring*', 'admin.facility.job_openings*', 'admin.facility.documents*', 'admin.facility.reports*'], 'icon' => '👥', 'label' => 'Employee Management'],
         ['id' => 'reports', 'route' => 'admin.reports.index', 'route_is' => ['admin.reports.*', 'admin.scheduled-reports.*'], 'icon' => '📊', 'label' => 'Reports'],
@@ -136,6 +186,10 @@ return [
         'member.documents.*',
         'member.certifications',
         'member.certifications.*',
+        'member.feedback',
+        'member.feedback.*',
+        'member.help',
+        'member.help.*',
     ],
 
     'personal_portal_documents_route_patterns' => [
@@ -144,6 +198,12 @@ return [
     ],
 
     'personal_portal_nav' => [
+        [
+            'id' => 'feedback',
+            'route' => 'member.feedback.index',
+            'route_is' => ['member.feedback', 'member.feedback.*'],
+            'label' => 'Report Issue or Idea',
+        ],
         [
             'id' => 'profile',
             'route' => 'settings.profile',
@@ -161,7 +221,6 @@ return [
             'route' => 'member.documents',
             'route_is' => ['member.documents', 'member.documents.*'],
             'label' => 'My Documents',
-            'badge' => 3,
             'badge_class' => 'bg-amber-400 text-slate-900',
             'children' => [
                 [
@@ -176,18 +235,19 @@ return [
 
     'corporate_dashboard_nav' => [
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'My Dashboard'],
-        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Facilities Websites'],
+        ['id' => 'facility-dashboard', 'route' => 'member.facility.dashboard', 'route_is' => ['member.facility.dashboard', 'admin.facility.dashboard'], 'icon' => '🏢', 'label' => 'Facility Dashboard'],
+        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Bio-Pacific Websites'],
     ],
 
     'facility_dashboard_nav' => [
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '📊', 'label' => 'My Dashboard'],
-        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Facilities Websites'],
         ['id' => 'facility-dashboard', 'route' => 'member.facility.dashboard', 'route_is' => ['member.facility.dashboard', 'admin.facility.dashboard'], 'icon' => '🏢', 'label' => 'Facility Dashboard'],
+        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Bio-Pacific Websites'],
     ],
 
     'employee_dashboard_nav' => [
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'My Dashboard'],
-        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Facilities Websites'],
+        ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => 'member.facilities.websites', 'icon' => '🌐', 'label' => 'Bio-Pacific Websites'],
         ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News & Events'],
         ['id' => 'pre-employment', 'route' => 'pre-employment.portal', 'route_is' => 'pre-employment.*', 'icon' => '📋', 'label' => 'Pre-Employment'],
         ['id' => 'employment', 'route' => 'employment.portal', 'route_is' => 'employment.*', 'icon' => '💼', 'label' => 'My Employment'],
@@ -209,10 +269,11 @@ return [
         'admin.roles.*' => 'Roles',
         'admin.permissions.*' => 'Permissions',
         'admin.role-assignments.*' => 'Role Assignments',
+        'admin.position-portal-roles.*' => 'Position Portal Roles',
         'admin.positions.*' => 'Positions',
         'admin.departments.*' => 'Departments',
         'admin.arbitration-templates.*' => 'Arbitration Templates',
-        'admin.checklist-items.*' => 'Checklist Items',
+        'admin.checklist-items.*' => 'Documents Management',
         'admin.baa-registry.*' => 'BAA Vendor Registry',
         'admin.hipaa-checklist.*' => 'HIPAA Checklist',
         'admin.security.*' => 'Security Monitoring',
@@ -249,13 +310,14 @@ return [
         'admin.roles.*' => 'roles',
         'admin.permissions.*' => 'roles',
         'admin.role-assignments.*' => 'roles',
+        'admin.position-portal-roles.*' => 'roles',
         'admin.positions.*' => 'positions',
         'admin.departments.*' => 'roles',
-        'admin.arbitration-templates.*' => 'settings',
-        'admin.checklist-items.*' => 'settings',
-        'admin.import-mapping-presets.*' => 'settings',
-        'admin.import-logs.*' => 'settings',
-        'admin.upload-types.*' => 'settings',
+        'admin.arbitration-templates.*' => 'admin-arbitration-templates',
+        'admin.checklist-items.*' => 'admin-upload-types',
+        'admin.import-mapping-presets.*' => 'admin-import-mapping-presets',
+        'admin.import-logs.*' => 'admin-import-logs',
+        'admin.upload-types.*' => 'admin-upload-types',
         'admin.baa-registry.*' => 'admin-baa',
         'admin.hipaa-checklist.*' => 'admin-hipaa',
         'admin.security.*' => 'admin-security',
@@ -274,6 +336,14 @@ return [
         'member.documents.*' => 'documents',
         'member.certifications' => 'certifications',
         'member.certifications.*' => 'certifications',
+        'member.feedback' => 'feedback',
+        'member.feedback.*' => 'feedback',
+        'member.help' => 'help',
+        'member.help.*' => 'help',
+        'member.help.hr' => 'help-hr',
+        'member.help.hr.*' => 'help-hr',
+        'member.help.support' => 'help-support',
+        'member.help.support.*' => 'help-support',
         'admin.positions.*' => 'facility-positions-management',
         'admin.reports.*' => 'reports',
         'admin.scheduled-reports.*' => 'reports',
@@ -295,6 +365,14 @@ return [
         'member.documents.*' => 'documents',
         'member.certifications' => 'certifications',
         'member.certifications.*' => 'certifications',
+        'member.feedback' => 'feedback',
+        'member.feedback.*' => 'feedback',
+        'member.help' => 'help',
+        'member.help.*' => 'help',
+        'member.help.hr' => 'help-hr',
+        'member.help.hr.*' => 'help-hr',
+        'member.help.support' => 'help-support',
+        'member.help.support.*' => 'help-support',
     ],
 
     'facility_active_map' => [
@@ -351,6 +429,8 @@ return [
         'admin.blogs.*',
         'admin.tour-requests.*',
         'admin.inquiries.*',
+        'admin.webmaster.contacts.*',
+        'admin.portal-help-requests.*',
         'admin.job-applications.*',
         'admin.email-recipients.*',
         'admin.email-templates.*',
@@ -380,6 +460,8 @@ return [
     'facility_management_comm_route_patterns' => [
         'admin.tour-requests.*',
         'admin.inquiries.*',
+        'admin.webmaster.contacts.*',
+        'admin.portal-help-requests.*',
         'admin.job-applications.*',
         'admin.email-recipients.*',
         'admin.email-templates.*',
@@ -397,6 +479,7 @@ return [
         'admin.facility.employees*' => 'Employees',
         'admin.employees.*' => 'Employee',
         'admin.facility.documents*' => 'Documents',
+        'admin.facility.uploads*' => 'Documents',
         'admin.facility.reports*' => 'Reports',
         'admin.reports.*' => 'Reports Management',
         'admin.scheduled-reports.*' => 'Scheduled Reports',
@@ -411,6 +494,8 @@ return [
         'admin.services.*' => 'Services',
         'admin.tour-requests.*' => 'Tour Requests',
         'admin.inquiries.*' => 'General Inquiries',
+        'admin.webmaster.contacts.*' => 'Webmaster Issues',
+        'admin.portal-help-requests.*' => 'Portal Help Requests',
         'admin.job-applications.*' => 'Job Applications',
         'admin.email-recipients.*' => 'Email Recipients',
         'admin.email-templates.*' => 'Email Templates',
@@ -442,6 +527,8 @@ return [
         'admin.services.*' => 'facility-services',
         'admin.tour-requests.*' => 'facility-tour-requests',
         'admin.inquiries.*' => 'facility-inquiries',
+        'admin.webmaster.contacts.*' => 'facility-webmaster-issues',
+        'admin.portal-help-requests.*' => 'facility-portal-help-requests',
         'admin.job-applications.*' => 'facility-job-applications',
         'admin.email-recipients.*' => 'facility-email-recipients',
         'admin.email-templates.*' => 'facility-email-templates',

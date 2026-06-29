@@ -28,7 +28,6 @@ class DemoDataSeeder extends Seeder
             FacilityNewsSeeder::class,
 
             // Careers demo postings
-            JobDescriptionsTableSeeder::class,
             JobOpeningSeeder::class,
 
             // Facility contact routing (demo emails)

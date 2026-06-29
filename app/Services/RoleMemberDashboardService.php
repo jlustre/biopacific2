@@ -6,10 +6,12 @@ use App\Models\BPEmployee;
 use App\Models\BPEmpChecklist;
 use App\Models\BPEmpCredential;
 use App\Models\ChecklistItem;
+use App\Models\Department;
 use App\Models\EmployeeAssessmentPeriod;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeePerformanceAssessment;
 use App\Models\Facility;
+use App\Models\Position;
 use App\Models\User;
 use App\Support\AssessmentWorkflowStatus;
 use Carbon\Carbon;
@@ -28,6 +30,7 @@ class RoleMemberDashboardService
     {
         $bpEmployee = $user->resolvedBpEmployee([
             'currentAssignment.position.department',
+            'currentAssignment.department',
             'currentAssignment.facility',
         ]);
 
@@ -35,11 +38,102 @@ class RoleMemberDashboardService
         $persona = $this->resolvePersona($user, $positionTitle);
         $personaLabel = $this->personaLabel($persona, $user);
 
-        if ($this->usesLeadershipDashboard($persona, $user)) {
-            return $this->buildLeadershipDashboard($user, $bpEmployee, $persona, $personaLabel);
+        return $this->buildStaffDashboard($user, $bpEmployee, $persona, $personaLabel);
+    }
+
+    public function canAccessFacilityDashboard(User $user): bool
+    {
+        $bpEmployee = $user->resolvedBpEmployee(['currentAssignment.position']);
+        $persona = $this->resolvePersona($user, $bpEmployee?->currentAssignment?->position?->title);
+
+        return $this->usesLeadershipDashboard($persona, $user);
+    }
+
+    public function userCanAccessFacility(User $user, Facility $facility): bool
+    {
+        if (! $this->canAccessFacilityDashboard($user)) {
+            return false;
         }
 
-        return $this->buildStaffDashboard($user, $bpEmployee, $persona, $personaLabel);
+        $bpEmployee = $user->resolvedBpEmployee(['currentAssignment.facility']);
+        $persona = $this->resolvePersona($user, $bpEmployee?->currentAssignment?->position?->title);
+
+        if ($this->hasOrganizationWideScope($user, $persona)) {
+            return true;
+        }
+
+        $userFacilityId = (int) ($user->facility_id
+            ?? $bpEmployee?->currentAssignment?->facility_id
+            ?? 0);
+
+        return $userFacilityId > 0 && $userFacilityId === (int) $facility->id;
+    }
+
+    /**
+     * Scope for the Facility Dashboard (facility-wide or department within a facility).
+     *
+     * @return array{
+     *     type: string,
+     *     label: string,
+     *     intro: string,
+     *     department_id: ?int,
+     *     department_name: ?string,
+     *     is_don: bool,
+     *     exclude_employee_num: ?string
+     * }
+     */
+    public function resolveFacilityDashboardScope(User $user, Facility $facility): array
+    {
+        $bpEmployee = $user->resolvedBpEmployee([
+            'currentAssignment.position.department',
+            'currentAssignment.department',
+            'currentAssignment.facility',
+        ]);
+        $persona = $this->resolvePersona($user, $bpEmployee?->currentAssignment?->position?->title);
+        $scope = $this->resolveScope($user, $bpEmployee, $persona);
+
+        $facilityWide = in_array($persona, ['facility-admin', 'facility-dsd'], true)
+            || $this->memberDashboard->userHasRole($user, ['facility-admin', 'facility-dsd']);
+
+        $departmentId = $scope['department_id'] ?? null;
+        $departmentName = $scope['department_name'] ?? null;
+        $isDon = $persona === 'don'
+            && ! $this->memberDashboard->userHasRole($user, ['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']);
+
+        if (! $facilityWide && $departmentId && filled($departmentName)) {
+            return [
+                'type' => 'department',
+                'label' => $departmentName,
+                'intro' => "Department view for {$departmentName} at {$facility->name}.",
+                'department_id' => (int) $departmentId,
+                'department_name' => $departmentName,
+                'is_don' => $isDon,
+                'exclude_employee_num' => $bpEmployee?->employee_num,
+            ];
+        }
+
+        return [
+            'type' => 'facility',
+            'label' => $facility->name,
+            'intro' => "Facility-wide overview for {$facility->name} — staff, compliance, and public site content.",
+            'department_id' => null,
+            'department_name' => null,
+            'is_don' => false,
+            'exclude_employee_num' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function organizationOverviewStatsForUser(User $user): ?array
+    {
+        $bpEmployee = $user->resolvedBpEmployee(['currentAssignment.position']);
+        $persona = $this->resolvePersona($user, $bpEmployee?->currentAssignment?->position?->title);
+
+        return $this->hasOrganizationWideScope($user, $persona)
+            ? $this->buildOrganizationOverviewStats()
+            : null;
     }
 
     /**
@@ -52,13 +146,17 @@ class RoleMemberDashboardService
         string $personaLabel
     ): array {
         $scope = $this->resolveScope($user, $bpEmployee, $persona);
-        $excludeSelf = $scope['type'] === 'facility' ? null : $bpEmployee?->employee_num;
+        $excludeSelf = in_array($scope['type'], ['department', 'organization'], true)
+            ? $bpEmployee?->employee_num
+            : null;
         $team = $this->loadTeamEmployees($scope['facility'], $scope['department_id'], $excludeSelf);
         $teamScopeLabel = $this->teamScopeLabel($scope);
-        $operations = $this->summarizeTeamOperations($team, $teamScopeLabel);
+        $operations = $this->summarizeTeamOperations($team, $teamScopeLabel, $scope);
         $expiringDocuments = $this->buildExpiringDocumentsPanel($team);
         $assessmentsDue = $this->buildAssessmentsDuePanel($team);
-        $personalKpis = $this->buildPersonalKpis($user);
+        $memberPayload = $this->memberDashboard->build($user);
+        $personalKpis = $this->buildPersonalKpis($user, $memberPayload['stats'] ?? null);
+        $teamKpis = $this->buildTeamKpis($operations, $scope);
 
         $trainingRoute = \Illuminate\Support\Facades\Route::has('admin.training-management.index')
             ? route('admin.training-management.index', array_filter([
@@ -77,14 +175,17 @@ class RoleMemberDashboardService
             'dashboardIntro' => $scope['intro'],
             'dashboardKpis' => $personalKpis,
             'dashboardPersonalKpis' => $personalKpis,
-            'dashboardTeamKpis' => $operations['kpis'],
+            'dashboardTeamKpis' => $teamKpis,
+            'dashboardOrganizationStats' => $scope['type'] === 'organization'
+                ? $this->buildOrganizationOverviewStats()
+                : null,
             'dashboardPersonalStatsTitle' => 'My stats',
             'dashboardTeamStatsTitle' => $this->teamStatsTitle($scope),
             'dashboardTeamStatsDescription' => $this->teamStatsDescription($scope),
             'dashboardActionQueue' => $operations['action_queue'],
             'dashboardAwareness' => $operations['awareness'],
             'dashboardQuickActions' => $this->leadershipQuickActions($persona, $trainingRoute),
-            'dashboardTeamCount' => $operations['kpis'][0]['value'] ?? 0,
+            'dashboardTeamCount' => $team->count(),
             'dashboardDepartmentId' => $scope['department_id'],
             'dashboardFacilityId' => $scope['facility']?->id,
             'dashboardExpiringDocuments' => $expiringDocuments['items'],
@@ -125,7 +226,16 @@ class RoleMemberDashboardService
         ?string $excludeEmployeeNum = null
     ): array {
         $team = $this->loadTeamEmployees($facility, $departmentId, $excludeEmployeeNum);
-        $operations = $this->summarizeTeamOperations($team, $departmentId ? 'department team' : 'facility team');
+        $scope = [
+            'type' => $departmentId ? 'department' : 'facility',
+            'facility' => $facility,
+            'department_id' => $departmentId,
+        ];
+        $operations = $this->summarizeTeamOperations(
+            $team,
+            $departmentId ? 'department team' : 'facility team',
+            $scope
+        );
         $expiring = $this->buildExpiringDocumentsPanel($team);
 
         return [
@@ -151,18 +261,23 @@ class RoleMemberDashboardService
     ): array {
         $payload = $this->memberDashboard->build($user);
         $stats = $payload['stats'] ?? [];
-        $todos = collect($payload['todos'] ?? [])->where('done', false)->take(6)->values()->all();
+        $todos = collect($payload['todos'] ?? [])
+            ->where('done', false)
+            ->take(6)
+            ->map(fn (array $task) => array_merge($task, ['route' => $task['route'] ?? $task['url'] ?? null]))
+            ->values()
+            ->all();
 
         return [
             'roleDashboardMode' => 'staff',
             'dashboardPersona' => $persona,
             'dashboardPersonaLabel' => $personaLabel,
             'dashboardScopeLabel' => $payload['facilityName'] ?? 'Your workplace',
-            'dashboardIntro' => 'Your work queue — account and personal details live under My Profile.',
+            'dashboardIntro' => 'Your personal work queue — training, documents, and credentials for your account. Facility and team views are on the Facility Dashboard.',
             'dashboardKpis' => $this->buildPersonalKpis($user, $stats),
             'dashboardActionQueue' => [],
             'dashboardMyTasks' => $todos,
-            'dashboardQuickActions' => $this->staffQuickActions($persona),
+            'dashboardQuickActions' => $this->staffQuickActions($user, $persona),
             'stats' => $stats,
         ];
     }
@@ -232,17 +347,53 @@ class RoleMemberDashboardService
 
     protected function usesLeadershipDashboard(string $persona, User $user): bool
     {
-        if (in_array($persona, ['facility-admin', 'facility-dsd', 'don', 'rdhr', 'ssd', 'activities-director', 'department-leader'], true)) {
+        if (in_array($persona, [
+            'super-admin',
+            'admin',
+            'facility-admin',
+            'facility-dsd',
+            'don',
+            'rdhr',
+            'ssd',
+            'activities-director',
+            'department-leader',
+        ], true)) {
             return true;
         }
 
-        $leaderRoles = config('member-portal.facility_manager_roles', []);
+        if ($this->hasOrganizationWideScope($user, $persona)) {
+            return true;
+        }
+
+        $leaderRoles = array_values(array_unique(array_merge(
+            config('member-portal.facility_manager_roles', []),
+            config('member-portal.department_head_portal_roles', []),
+            config('member-portal.corporate_roles', []),
+        )));
 
         return method_exists($user, 'hasRole') && $user->hasRole($leaderRoles);
     }
 
+    protected function hasOrganizationWideScope(User $user, string $persona): bool
+    {
+        if (in_array($persona, ['rdhr', 'super-admin', 'admin'], true)) {
+            return true;
+        }
+
+        return $this->memberDashboard->userHasRole($user, config('member-portal.system_admin_roles', []))
+            || $this->memberDashboard->userHasRole($user, config('member-portal.corporate_roles', []));
+    }
+
     protected function resolvePersona(User $user, ?string $positionTitle): string
     {
+        if ($this->memberDashboard->userHasRole($user, 'super-admin')) {
+            return 'super-admin';
+        }
+
+        if ($this->memberDashboard->userHasRole($user, 'admin')) {
+            return 'admin';
+        }
+
         if ($this->memberDashboard->userHasRole($user, 'facility-admin')) {
             return 'facility-admin';
         }
@@ -291,6 +442,8 @@ class RoleMemberDashboardService
         }
 
         return match ($persona) {
+            'super-admin' => 'Super Administrator',
+            'admin' => 'System Administrator',
             'facility-admin' => 'Facility Administrator',
             'facility-dsd' => 'Director of Staff Development',
             'don' => 'Director of Nursing',
@@ -308,11 +461,11 @@ class RoleMemberDashboardService
      */
     protected function resolveScope(User $user, ?BPEmployee $bpEmployee, string $persona): array
     {
-        if ($persona === 'rdhr' || $this->memberDashboard->userHasRole($user, 'rdhr')) {
+        if ($this->hasOrganizationWideScope($user, $persona)) {
             return [
                 'type' => 'organization',
-                'label' => 'All employees',
-                'intro' => 'Organization-wide dashboard - personal items for you, plus staff priorities across all facilities.',
+                'label' => 'Organization overview',
+                'intro' => 'Organization-wide dashboard — your personal items plus workforce priorities across every facility.',
                 'facility' => null,
                 'department_id' => null,
                 'department_name' => null,
@@ -327,17 +480,27 @@ class RoleMemberDashboardService
             $facility = $bpEmployee?->currentAssignment?->facility;
         }
 
-        $departmentId = $bpEmployee?->currentAssignment?->position?->department_id;
-        $departmentName = $bpEmployee?->currentAssignment?->position?->department?->name;
+        $departmentId = $bpEmployee?->currentAssignment?->dept_id
+            ?? $bpEmployee?->currentAssignment?->position?->department_id;
+        $departmentName = $bpEmployee?->currentAssignment?->department?->name
+            ?? $bpEmployee?->currentAssignment?->position?->department?->name;
 
-        $facilityWide = in_array($persona, ['facility-admin', 'facility-dsd', 'rdhr'], true)
-            || $this->memberDashboard->userHasRole($user, ['facility-admin', 'facility-dsd', 'rdhr']);
+        $facilityWide = in_array($persona, ['facility-admin', 'facility-dsd'], true)
+            || $this->memberDashboard->userHasRole($user, ['facility-admin', 'facility-dsd']);
+
+        if (!$facilityWide) {
+            $fromLeadership = $this->resolveDepartmentFromLeadershipRole($user, $facility, $persona);
+            if ($fromLeadership) {
+                $departmentId = $fromLeadership['department_id'];
+                $departmentName = $fromLeadership['department_name'];
+            }
+        }
 
         if (!$facilityWide && $departmentId && filled($departmentName)) {
             return [
                 'type' => 'department',
                 'label' => $departmentName,
-                'intro' => "Department dashboard for {$departmentName} — staff items that need your attention.",
+                'intro' => "Department dashboard for {$departmentName} — bird's-eye view of staff training, documents, and credentials in your area.",
                 'facility' => $facility,
                 'department_id' => (int) $departmentId,
                 'department_name' => $departmentName,
@@ -349,11 +512,137 @@ class RoleMemberDashboardService
         return [
             'type' => 'facility',
             'label' => $facilityLabel,
-            'intro' => "Facility-wide dashboard — priorities and staff actions for {$facilityLabel}.",
+            'intro' => "Facility-wide dashboard — priorities and staff actions across {$facilityLabel}.",
             'facility' => $facility,
             'department_id' => null,
             'department_name' => null,
         ];
+    }
+
+    /**
+     * @return array{department_id: int, department_name: string}|null
+     */
+    protected function resolveDepartmentFromLeadershipRole(User $user, ?Facility $facility, string $persona): ?array
+    {
+        if (!$facility) {
+            return null;
+        }
+
+        $leadershipKey = match ($persona) {
+            'don' => 'don',
+            'ssd' => 'ssd',
+            'activities-director' => 'activities',
+            'department-leader' => $this->detectLeadershipKeyForUser($user),
+            default => $this->detectLeadershipKeyForUser($user),
+        };
+
+        if (!$leadershipKey) {
+            return null;
+        }
+
+        $roleDef = collect(config('facility-dashboard.leadership_roles', []))
+            ->firstWhere('key', $leadershipKey);
+
+        $titles = $roleDef['position_titles'] ?? [];
+        if ($titles === []) {
+            return null;
+        }
+
+        $departmentId = Position::query()
+            ->whereIn('title', $titles)
+            ->whereNotNull('department_id')
+            ->value('department_id');
+
+        if (!$departmentId) {
+            return null;
+        }
+
+        $department = Department::query()->find($departmentId);
+        if (!$department) {
+            return null;
+        }
+
+        return [
+            'department_id' => (int) $department->id,
+            'department_name' => (string) $department->name,
+        ];
+    }
+
+    protected function detectLeadershipKeyForUser(User $user): ?string
+    {
+        $roleToKey = [
+            'don' => 'don',
+            'ssd' => 'ssd',
+            'facility-ssd' => 'ssd',
+            'activities-director' => 'activities',
+        ];
+
+        foreach ($roleToKey as $role => $key) {
+            if ($this->memberDashboard->userHasRole($user, $role)) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{
+     *     facilities_total: int,
+     *     facilities_active: int,
+     *     states_covered: int,
+     *     employees_total: int
+     * }
+     */
+    protected function buildOrganizationOverviewStats(): array
+    {
+        $activeFacilities = Facility::query()->where('is_active', true);
+
+        return [
+            'facilities_total' => Facility::query()->count(),
+            'facilities_active' => (clone $activeFacilities)->count(),
+            'states_covered' => (clone $activeFacilities)->whereNotNull('state')->distinct()->count('state'),
+            'employees_total' => BPEmployee::query()->whereHas('currentAssignment')->count(),
+        ];
+    }
+
+    /**
+     * @param  array{kpis: list<array<string, mixed>>, document_gaps: int}  $operations
+     * @param  array{type: string, label: string, intro: string, facility: ?Facility, department_id: ?int, department_name: ?string}  $scope
+     * @return list<array<string, mixed>>
+     */
+    protected function buildTeamKpis(array $operations, array $scope): array
+    {
+        $kpis = $operations['kpis'] ?? [];
+        $documentGaps = (int) ($operations['document_gaps'] ?? 0);
+        $documentsRoute = \Illuminate\Support\Facades\Route::has('admin.training-management.index')
+            ? route('member.documents')
+            : route('member.documents');
+
+        if ($scope['type'] === 'organization') {
+            $stats = $this->buildOrganizationOverviewStats();
+            array_unshift($kpis, [
+                'label' => 'Active facilities',
+                'value' => $stats['facilities_active'],
+                'hint' => $stats['states_covered'] . ' state(s) · ' . $stats['facilities_total'] . ' total',
+                'tone' => 'teal',
+                'icon' => 'fa-building',
+                'route' => \Illuminate\Support\Facades\Route::has('admin.facilities.index')
+                    ? route('admin.facilities.index')
+                    : route('user.hr-portal'),
+            ]);
+        }
+
+        $kpis[] = [
+            'label' => 'Document gaps',
+            'value' => $documentGaps,
+            'hint' => 'Missing or incomplete file items',
+            'tone' => 'brand',
+            'icon' => 'fa-folder-open',
+            'route' => $documentsRoute,
+        ];
+
+        return $kpis;
     }
 
     /**
@@ -374,8 +663,8 @@ class RoleMemberDashboardService
     protected function teamStatsTitle(array $scope): string
     {
         return match ($scope['type']) {
-            'organization' => 'All employee stats',
-            'department' => 'Team stats',
+            'organization' => 'Organization workforce stats',
+            'department' => 'Department stats',
             default => 'Facility employee stats',
         };
     }
@@ -386,7 +675,7 @@ class RoleMemberDashboardService
     protected function teamStatsDescription(array $scope): string
     {
         return match ($scope['type']) {
-            'organization' => 'Counts and risk indicators across every facility.',
+            'organization' => 'Live counts across every facility — staffing, training, credentials, and file compliance.',
             'department' => 'Counts and risk indicators for employees in your department.',
             default => 'Counts and risk indicators for employees under your facility.',
         };
@@ -408,21 +697,21 @@ class RoleMemberDashboardService
                 $q->whereHas('currentAssignment.position', fn ($pq) => $pq->where('department_id', $departmentId));
             })
             ->when($excludeEmployeeNum, fn ($q, $num) => $q->where('employee_num', '!=', $num))
-            ->orderBy('last_name')
-            ->orderBy('first_name');
+            ->orderedByName();
 
         return $query->get();
     }
 
     /**
      * @param  Collection<int, BPEmployee>  $team
-     * @return array{kpis: list<array<string, mixed>>, action_queue: list<array<string, mixed>>, awareness: list<array<string, mixed>>}
+     * @param  array{type?: string, facility?: ?Facility, department_id?: ?int}|null  $scope
+     * @return array{kpis: list<array<string, mixed>>, action_queue: list<array<string, mixed>>, awareness: list<array<string, mixed>>, document_gaps: int}
      */
-    protected function summarizeTeamOperations(Collection $team, string $scopeLabel = 'your team'): array
+    protected function summarizeTeamOperations(Collection $team, string $scopeLabel = 'your team', ?array $scope = null): array
     {
         if ($team->isEmpty()) {
             return [
-                'kpis' => $this->emptyKpis($scopeLabel),
+                'kpis' => $this->emptyKpis($scopeLabel, $scope),
                 'action_queue' => [],
                 'awareness' => [
                     [
@@ -431,6 +720,7 @@ class RoleMemberDashboardService
                         'message' => 'No staff records are assigned to this scope yet.',
                     ],
                 ],
+                'document_gaps' => 0,
             ];
         }
 
@@ -488,7 +778,10 @@ class RoleMemberDashboardService
 
             $actionQueue[] = [
                 'employee_num' => $employee->employee_num,
-                'name' => $training['name'],
+                'name' => $employee->formalName(),
+                'last_name' => (string) ($employee->last_name ?? ''),
+                'first_name' => (string) ($employee->first_name ?? ''),
+                'middle_name' => (string) ($employee->middle_name ?? ''),
                 'position' => $training['position'],
                 'department' => $training['department'],
                 'status' => $training['status'],
@@ -504,11 +797,7 @@ class RoleMemberDashboardService
             ];
         }
 
-        usort($actionQueue, function (array $a, array $b) {
-            $order = ['high' => 0, 'medium' => 1, 'low' => 2];
-
-            return ($order[$a['priority']] ?? 9) <=> ($order[$b['priority']] ?? 9);
-        });
+        usort($actionQueue, fn (array $a, array $b) => $this->compareEmployeeNameSort($a, $b));
 
         $actionQueue = array_slice($actionQueue, 0, 10);
 
@@ -569,13 +858,15 @@ class RoleMemberDashboardService
                     'message' => 'No staff in this scope currently flagged for follow-up.',
                 ] : null,
             ])),
+            'document_gaps' => $documentGaps,
         ];
     }
 
     /**
+     * @param  array{type?: string}|null  $scope
      * @return list<array<string, mixed>>
      */
-    protected function emptyKpis(string $scopeLabel = 'this scope'): array
+    protected function emptyKpis(string $scopeLabel = 'this scope', ?array $scope = null): array
     {
         return [
             ['label' => 'Team size', 'value' => 0, 'hint' => 'Active in ' . $scopeLabel, 'tone' => 'teal', 'icon' => 'fa-users', 'route' => route('user.hr-portal')],
@@ -590,6 +881,39 @@ class RoleMemberDashboardService
      */
     protected function leadershipQuickActions(string $persona, string $trainingRoute): array
     {
+        if (in_array($persona, ['super-admin', 'admin'], true)) {
+            return [
+                [
+                    'title' => 'Manage facilities',
+                    'subtitle' => 'Sites, settings, and facility records',
+                    'route' => \Illuminate\Support\Facades\Route::has('admin.facilities.index')
+                        ? route('admin.facilities.index')
+                        : route('user.hr-portal'),
+                    'icon' => 'fa-building',
+                ],
+                [
+                    'title' => 'HR Management',
+                    'subtitle' => 'Organization-wide roster and workflows',
+                    'route' => route('user.hr-portal'),
+                    'icon' => 'fa-building-user',
+                ],
+                [
+                    'title' => 'Training Management',
+                    'subtitle' => 'Organization training & competency queue',
+                    'route' => $trainingRoute,
+                    'icon' => 'fa-list-check',
+                ],
+                [
+                    'title' => 'Role management',
+                    'subtitle' => 'Permissions and portal access',
+                    'route' => \Illuminate\Support\Facades\Route::has('admin.roles.index')
+                        ? route('admin.roles.index')
+                        : route('user.hr-portal'),
+                    'icon' => 'fa-user-shield',
+                ],
+            ];
+        }
+
         $actions = [
             [
                 'title' => 'HR Management',
@@ -623,13 +947,24 @@ class RoleMemberDashboardService
     /**
      * @return list<array<string, string>>
      */
-    protected function staffQuickActions(string $persona): array
+    protected function staffQuickActions(User $user, string $persona): array
     {
-        return [
-            ['title' => 'My documents', 'subtitle' => 'Uploads & checklist', 'route' => route('member.documents'), 'icon' => 'fa-file-lines'],
+        $actions = [
+            ['title' => 'My documents', 'subtitle' => 'Documents & checklist', 'route' => route('member.documents'), 'icon' => 'fa-file-lines'],
             ['title' => 'My trainings', 'subtitle' => 'Required completion', 'route' => route('member.trainings'), 'icon' => 'fa-graduation-cap'],
             ['title' => 'My profile', 'subtitle' => 'Contact & account', 'route' => route('settings.profile'), 'icon' => 'fa-user'],
         ];
+
+        if ($this->canAccessFacilityDashboard($user) && \Illuminate\Support\Facades\Route::has('member.facility.dashboard')) {
+            array_unshift($actions, [
+                'title' => 'Facility Dashboard',
+                'subtitle' => 'Team & facility overview',
+                'route' => route('member.facility.dashboard'),
+                'icon' => 'fa-building',
+            ]);
+        }
+
+        return $actions;
     }
 
     /**
@@ -661,7 +996,7 @@ class RoleMemberDashboardService
             ->groupBy('employee_num');
 
         foreach ($team as $employee) {
-            $employeeName = trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')) ?: $employee->employee_num;
+            $employeeName = $employee->formalName();
             $position = $employee->currentAssignment?->position?->title ?? '—';
             $manageUrl = $this->memberDashboard->buildAdminEmployeeEditUrl($employee->id, 'documents');
 
@@ -692,7 +1027,7 @@ class RoleMemberDashboardService
                     'employee_name' => $employeeName,
                     'position' => $position,
                     'document' => (string) ($item['name'] ?? 'Document'),
-                    'source' => 'Required upload',
+                    'source' => 'Required document',
                     'expires_on' => $expiryDate?->format('M j, Y') ?? '—',
                     'expires_on_sort' => $expiryDate?->toDateString() ?? '9999-12-31',
                     'manage_url' => $manageUrl,
@@ -762,7 +1097,7 @@ class RoleMemberDashboardService
                     'employee_name' => $employeeName,
                     'position' => $position,
                     'document' => (string) ($cert['title'] ?? 'License / certification'),
-                    'source' => 'License or certification (upload)',
+                    'source' => 'License or certification',
                     'expires_on' => $expiryLabel,
                     'expires_on_sort' => $expirySort,
                     'manage_url' => $this->memberDashboard->buildAdminEmployeeEditUrl($employee->id, 'documents'),
@@ -853,9 +1188,9 @@ class RoleMemberDashboardService
         foreach ($periodsDueSoon as $period) {
             $key = $period->employee_num . '|' . $period->id;
             $employee = $period->employee;
-            $employeeName = $employee
-                ? trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''))
-                : $period->employee_num;
+            $employeeName = $employee instanceof BPEmployee
+                ? $employee->formalName()
+                : (string) $period->employee_num;
             $position = $employee?->currentAssignment?->position?->title ?? '—';
             $dueDate = $period->date_to ? Carbon::parse($period->date_to)->startOfDay() : null;
             $daysUntil = $dueDate ? (int) $today->diffInDays($dueDate, false) : null;
@@ -1019,5 +1354,14 @@ class RoleMemberDashboardService
         }
 
         return 'bg-teal-100 text-teal-900';
+    }
+
+    /**
+     * @param  array{last_name?: string, first_name?: string, middle_name?: string}  $a
+     * @param  array{last_name?: string, first_name?: string, middle_name?: string}  $b
+     */
+    protected function compareEmployeeNameSort(array $a, array $b): int
+    {
+        return BPEmployee::compareByNameFields($a, $b);
     }
 }

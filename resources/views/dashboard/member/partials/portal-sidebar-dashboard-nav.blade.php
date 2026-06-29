@@ -8,7 +8,9 @@
 
 @foreach($items as $item)
     @php
-        $href = isset($item['route']) ? route($item['route']) : ($item['href'] ?? '#');
+        $href = isset($item['route'])
+            ? \App\Support\MemberPortalLayout::routeWithSelectedFacility($item['route'])
+            : ($item['href'] ?? '#');
         if (!empty($item['fragment'])) {
             $href .= '#' . ltrim($item['fragment'], '#');
         }

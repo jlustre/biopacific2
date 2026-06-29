@@ -16,12 +16,14 @@ class ChecklistItem extends Model
         'position_ids',
         'order',
         'isExpiring',
+        'is_required',
         'is_license_or_certification',
     ];
 
     protected $casts = [
         'position_ids' => 'array',
         'isExpiring' => 'boolean',
+        'is_required' => 'boolean',
         'is_license_or_certification' => 'boolean',
     ];
 
@@ -40,5 +42,10 @@ class ChecklistItem extends Model
     public function docType()
     {
         return $this->belongsTo(DocType::class, 'doc_type_id');
+    }
+
+    public function uploadType()
+    {
+        return $this->hasOne(UploadType::class);
     }
 }

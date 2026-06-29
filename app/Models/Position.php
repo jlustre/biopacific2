@@ -51,6 +51,11 @@ class Position extends Model
         return $this->belongsTo(self::class, 'reports_to_position_id');
     }
 
+    public function portalRoleMapping()
+    {
+        return $this->hasOne(PositionPortalRoleMapping::class);
+    }
+
     public function directReports()
     {
         return $this->hasMany(self::class, 'reports_to_position_id');

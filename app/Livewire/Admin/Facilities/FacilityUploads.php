@@ -29,7 +29,7 @@ class FacilityUploads extends Component
     public function mount()
     {
         $this->facilities = Facility::orderBy('name')->get();
-        $this->uploadTypes = UploadType::orderBy('name')->get();
+        $this->uploadTypes = UploadType::query()->orderedForDisplay()->get();
         $this->employees = collect();
     }
 
@@ -38,7 +38,7 @@ class FacilityUploads extends Component
         $this->employee_id = '';
         $this->employees = $value ? BPEmployee::whereHas('assignments', function($q) use ($value) {
             $q->where('facility_id', $value);
-        })->orderBy('last_name')->get() : collect();
+        })->orderedByName()->get() : collect();
     }
 
     public function submit()
@@ -67,7 +67,7 @@ class FacilityUploads extends Component
         $this->reset(['employee_id','upload_type_id','file','effective_start_date','effective_end_date','expires_at','comments']);
         $this->employees = $this->facility_id ? BPEmployee::whereHas('assignments', function($q) {
             $q->where('facility_id', $this->facility_id);
-        })->orderBy('last_name')->get() : collect();
+        })->orderedByName()->get() : collect();
     }
 
     public function render()

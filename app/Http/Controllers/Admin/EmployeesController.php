@@ -26,6 +26,7 @@ use App\Mail\EmployeeRegistrationInviteMail;
 use App\Mail\EmployeeDocumentSubmissionMail;
 use App\Mail\FacilityUploadNotificationMail;
 use App\Support\MemberPortalLayout;
+use App\Support\SelectedFacility;
 use App\Support\UploadNotificationContext;
 use App\Support\UploadSubmissionReason;
 use Illuminate\Support\Facades\Mail;
@@ -182,6 +183,11 @@ class EmployeesController extends Controller
             return (int) $request->facility;
         }
 
+        $sessionFacilityId = SelectedFacility::id($request);
+        if ($sessionFacilityId) {
+            return $sessionFacilityId;
+        }
+
         return null;
     }
 
@@ -306,10 +312,10 @@ class EmployeesController extends Controller
      */
     public function uploadDocument(Request $request, $employee_num)
     {
-        // Validate file and description
         $uploadTypeId = $request->input('upload_type_id');
-        $uploadType = \App\Models\UploadType::find($uploadTypeId);
-        $requiresExpiry = $uploadType && $uploadType->requires_expiry;
+        $uploadType = $uploadTypeId ? \App\Models\UploadType::with('checklistItem')->find($uploadTypeId) : null;
+        $checklistItem = $uploadType?->checklistItem;
+        $requiresExpiry = (bool) ($uploadType?->requires_expiry);
 
         $rules = [
             'upload_type_id' => 'required|exists:upload_types,id',
@@ -324,12 +330,18 @@ class EmployeesController extends Controller
         }
         $rules['effective_start_date'] = 'nullable|date';
 
+        $employee = $this->employeeFromRouteKey($employee_num, ['currentAssignment']);
+        $isSelfService = $this->isEmployeeSelfServiceRequest($request, $employee);
+
+        if ($isSelfService) {
+            $rules['submission_reason'] = 'required|string|in:' . implode(',', UploadSubmissionReason::keys());
+        }
+
         $validated = $request->validate($rules, [
             'expires_at.after_or_equal' => 'The expiration date must be on or after the Effective Start Date.',
+            'submission_reason.required' => 'Please select why you are uploading this document.',
         ]);
 
-
-        $employee = $this->employeeFromRouteKey($employee_num, ['currentAssignment']);
         $this->authorizeEmployeeFacilityAccess($request, $employee);
         $facilityId = $employee->currentAssignment?->facility_id;
         if (!$facilityId) {
@@ -338,14 +350,36 @@ class EmployeesController extends Controller
             ])->withInput();
         }
 
+        if ($checklistItem) {
+            $positionId = $employee->currentAssignment?->position_id
+                ?? $employee->currentAssignment?->position?->id;
+
+            $isApplicable = \App\Models\ChecklistItem::query()
+                ->whereKey($checklistItem->id)
+                ->applicableToPosition($positionId)
+                ->whereIn('section', \App\Services\ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
+                ->exists();
+
+            if (!$isApplicable) {
+                return $this->redirectToEmployeeEdit($employee->id, 'documents', [
+                    'error' => 'The selected document type does not apply to this employee\'s position.',
+                ])->withInput();
+            }
+        } elseif ($uploadType && !app(\App\Services\EmployeeDocumentRequirementsService::class)->canUploadTypeForEmployee(Auth::user(), $employee, $uploadType)) {
+            return $this->redirectToEmployeeEdit($employee->id, 'documents', [
+                'error' => 'The selected document type is not required for this employee\'s position.',
+            ])->withInput();
+        }
+
         $file = $request->file('document');
         $path = Upload::storeEmployeeFile($file, $employee->employee_num);
 
-        Upload::create([
+        $uploadAttributes = [
             'facility_id' => $facilityId,
             'employee_num' => $employee->employee_num,
             'user_id' => Auth::id(),
             'upload_type_id' => $uploadTypeId,
+            'checklist_item_id' => $checklistItem?->id,
             'original_filename' => $file->getClientOriginalName(),
             'file_path' => $path,
             'file_size' => $file->getSize(),
@@ -353,10 +387,54 @@ class EmployeesController extends Controller
             'comments' => $validated['comments'] ?? ($validated['description'] ?? null),
             'effective_start_date' => $validated['effective_start_date'] ?? null,
             'expires_at' => $validated['expires_at'] ?? null,
-        ]);
+        ];
+
+        $reviewer = Auth::user();
+        if ($isSelfService) {
+            $uploadAttributes['submission_reason'] = $validated['submission_reason'];
+            $uploadAttributes['verification_status'] = Upload::VERIFICATION_PENDING;
+            $uploadAttributes['submitted_for_review_at'] = now();
+        } elseif ($reviewer && $reviewer->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don'])) {
+            $uploadAttributes['verification_status'] = Upload::VERIFICATION_APPROVED;
+            $uploadAttributes['verified_by_user_id'] = $reviewer->id;
+            $uploadAttributes['verified_at'] = now();
+        }
+
+        $upload = Upload::create($uploadAttributes);
+
+        if ($isSelfService) {
+            try {
+                $this->notifyLeadershipOfDocumentSubmission($upload, $employee);
+            } catch (\Throwable $e) {
+                Log::error('Employee document submission notification failed', [
+                    'upload_id' => $upload->id,
+                    'employee_id' => $employee->id,
+                    'exception' => $e,
+                ]);
+            }
+        }
+
+        if ($checklistItem) {
+            \App\Support\EmployeeChecklistDocuments::markOnFile(
+                $employee,
+                $checklistItem,
+                isset($validated['expires_at']) ? (string) $validated['expires_at'] : null
+            );
+
+            if ($upload->verification_status === Upload::VERIFICATION_APPROVED) {
+                \App\Support\EmployeeChecklistDocuments::markVerified(
+                    $employee,
+                    $checklistItem,
+                    now()->toDateString(),
+                    isset($validated['expires_at']) ? (string) $validated['expires_at'] : null
+                );
+            }
+        }
 
         return $this->redirectToEmployeeEdit($employee->id, 'documents', [
-            'success' => 'Document uploaded successfully.',
+            'success' => $isSelfService
+                ? 'Document uploaded and submitted for review by your facility DSD, DON, or administrator.'
+                : config('documents.messages.created'),
         ]);
     }
 
@@ -483,7 +561,7 @@ class EmployeesController extends Controller
             ->firstOrFail();
         $this->authorizeUploadModification($upload);
         // You may want to pass upload types or other data as needed
-        $uploadTypes = \App\Models\UploadType::all();
+        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
         return view('admin.facilities.employee.edit_document', compact('employee', 'upload', 'uploadTypes'));
     }
 
@@ -627,33 +705,25 @@ class EmployeesController extends Controller
         ]);
 
         $upload = $context['upload']->fresh(['uploadType', 'employee']);
-        $facility = $context['facility'];
-        $emails = $context['emails'];
         $submittedBy = Auth::user();
 
         try {
-            $mail = new EmployeeDocumentSubmissionMail(
+            $this->notifyLeadershipOfDocumentSubmission(
                 $upload,
                 $employee,
-                $facility,
-                $submittedBy,
                 $submissionReason,
+                $submittedBy,
                 $customSubject !== '' ? $customSubject : null,
                 $customMessage !== '' ? $customMessage : null,
             );
 
-            foreach ($emails as $email) {
-                Mail::to($email)->send($mail);
-            }
-
             return $this->redirectToEmployeeEdit($employee, 'documents', [
-                'success' => 'Document submitted for DSD review. Reason: ' . UploadSubmissionReason::label($submissionReason) . '.',
+                'success' => 'Document submitted for leadership review. Reason: ' . UploadSubmissionReason::label($submissionReason) . '.',
             ]);
         } catch (\Throwable $e) {
             Log::error('Employee document submission notification failed', [
                 'upload_id' => $upload->id,
                 'employee_id' => $employee->id,
-                'emails' => $emails,
                 'exception' => $e,
             ]);
 
@@ -664,6 +734,48 @@ class EmployeesController extends Controller
             return $this->redirectToEmployeeEdit($employee, 'documents', [
                 'error' => $message,
             ]);
+        }
+    }
+
+    protected function notifyLeadershipOfDocumentSubmission(
+        Upload $upload,
+        BPEmployee $employee,
+        ?string $submissionReason = null,
+        ?\App\Models\User $submittedBy = null,
+        ?string $customSubject = null,
+        ?string $customMessage = null,
+    ): void {
+        $upload->loadMissing(['employee.user', 'facility', 'uploadType']);
+        $facility = $upload->facility ?? $employee->currentAssignment?->facility;
+
+        if (! $facility) {
+            throw new \RuntimeException('No facility is linked to this upload.');
+        }
+
+        $emails = UploadNotificationContext::facilityDocumentReviewerEmails($facility);
+        if ($emails === []) {
+            throw new \RuntimeException('No DSD, DON, or administrator contact email is configured for this facility.');
+        }
+
+        $submittedBy ??= Auth::user();
+        if (! $submittedBy) {
+            throw new \RuntimeException('No submitting user is available for this notification.');
+        }
+
+        $reason = $submissionReason ?? $upload->submission_reason ?? UploadSubmissionReason::INITIAL;
+
+        $mail = new EmployeeDocumentSubmissionMail(
+            $upload,
+            $employee,
+            $facility,
+            $submittedBy,
+            $reason,
+            $customSubject,
+            $customMessage,
+        );
+
+        foreach ($emails as $email) {
+            Mail::to($email)->send($mail);
         }
     }
 
@@ -693,6 +805,18 @@ class EmployeesController extends Controller
             'verified_at' => now(),
             'verification_notes' => $validated['verification_notes'] ?? null,
         ]);
+
+        if ($upload->checklist_item_id) {
+            $checklistItem = \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
+            if ($checklistItem) {
+                \App\Support\EmployeeChecklistDocuments::markVerified(
+                    $employee,
+                    $checklistItem,
+                    now()->toDateString(),
+                    optional($upload->expires_at)->toDateString()
+                );
+            }
+        }
 
         return $this->redirectToEmployeeEdit($employee, 'documents', [
             'success' => 'Document approved.',
@@ -890,13 +1014,14 @@ class EmployeesController extends Controller
                         $query->where(function ($q) use ($search) {
                                 $q->where('first_name', 'like', "%$search%")
                                     ->orWhere('last_name', 'like', "%$search%")
+                                    ->orWhere('middle_name', 'like', "%$search%")
                                     ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%$search%"])
                                     ->orWhere('employee_num', 'like', "%$search%");
                         });
         }
 
         $perPage = $request->input('per_page', 10);
-        $employees = $query->with([
+        $employees = $query->orderedByName()->with([
             'user',
             'currentAssignment',
             'currentAssignment.facility',
@@ -2083,7 +2208,7 @@ class EmployeesController extends Controller
             ->unique()
             ->values();
 
-        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
         $requiredDocumentChecklist = [
             'position_id' => null,
             'position_title' => null,
@@ -2297,7 +2422,7 @@ class EmployeesController extends Controller
             ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
-        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
         $requiredDocumentChecklist = app(\App\Services\DocumentComplianceService::class)->forEmployee($employee);
         $assessmentPeriods = $this->loadEmployeeAssessmentPeriods($employee);
         $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodIdForEmployee($employee, $assessmentPeriods);
@@ -2335,7 +2460,7 @@ class EmployeesController extends Controller
             ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
-        $uploadTypes = \App\Models\UploadType::orderBy('name')->get();
+        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
 
 
         // --- END: Load draft competency responses for Part G ---

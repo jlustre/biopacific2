@@ -37,11 +37,11 @@
                 <i class="fas fa-users mr-2"></i> All employees
             </a>
             @endif
-            <a href="{{ $checklist_items_url ?? route('admin.checklist-items.index') }}"
+            <a href="{{ $checklist_items_url ?? route('admin.upload-types.index', ['tab' => 'items']) }}"
                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-700 transition hover:bg-gray-50">
-                <i class="fas fa-list-check mr-2"></i> Checklist items
+                <i class="fas fa-file-alt mr-2"></i> Documents Management
             </a>
-            <a href="{{ route('user.hr-portal') }}"
+            <a href="{{ \App\Support\MemberPortalLayout::hrPortalRouteForUser() }}"
                class="inline-flex items-center rounded-lg bg-teal-600 px-6 py-2 font-semibold text-white transition hover:bg-teal-700">
                 <i class="fas fa-door-open mr-2"></i> HR Management
             </a>
@@ -366,8 +366,8 @@
             <li class="flex gap-3 rounded-xl border border-white bg-white/80 p-4 shadow-sm">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700"><i class="fas fa-cog"></i></span>
                 <div>
-                    <p class="font-semibold text-gray-900">Maintain checklist configuration</p>
-                    <p class="text-sm text-gray-600">Update checklist items and position assignments when roles or regulations change.</p>
+                    <p class="font-semibold text-gray-900">Maintain document configuration</p>
+                    <p class="text-sm text-gray-600">Update employee file items and position assignments when roles or regulations change.</p>
                 </div>
             </li>
         </ul>

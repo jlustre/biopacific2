@@ -31,7 +31,9 @@ class MemberFacilitiesWebsitesController extends Controller
             ->values();
 
         $context = array_merge($this->memberPortalContext($user), [
-            'portalPageTitle' => 'Facilities Websites',
+            'portalTitle' => 'Bio-Pacific Websites | Bio Pacific',
+            'portalEyebrow' => 'Bio-Pacific Websites',
+            'portalPageTitle' => 'Bio-Pacific Websites',
             'portalActive' => 'facilities-websites',
             'facilities' => $facilities,
         ]);
@@ -136,31 +138,7 @@ class MemberFacilitiesWebsitesController extends Controller
 
     protected function websiteLabel(Facility $facility): ?string
     {
-        if ($this->shouldUseCurrentRequestHostUrls()
-            || $this->shouldUseStagingSiteUrls()
-            || $this->shouldUseConfiguredOperationalSiteUrls()) {
-            return $this->websiteUrlLabel($this->websiteUrl($facility));
-        }
-
-        if ($facility->isCorporatePublicSite()) {
-            return $this->publicDomainLabel($facility);
-        }
-
-        $domain = trim((string) ($facility->domain ?? ''));
-
-        if ($domain !== '') {
-            return $domain;
-        }
-
-        $url = $this->websiteUrl($facility);
-
-        if ($url === null) {
-            return null;
-        }
-
-        $host = parse_url($url, PHP_URL_HOST);
-
-        return is_string($host) && $host !== '' ? $host : null;
+        return $this->publicDomainLabel($facility);
     }
 
     protected function shouldUseCurrentRequestHostUrls(): bool

@@ -15,6 +15,31 @@
             class="inline-flex items-center justify-center whitespace-nowrap bg-white text-gray-700 px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold">
             <i class="fas fa-sitemap mr-2"></i> Departments Management
         </a>
+        @if(auth()->user()?->hasRole(['admin', 'super-admin', 'rdhr']))
+        <form action="{{ route('admin.positions.seed-document-requirements') }}" method="POST" class="inline"
+            onsubmit="return confirm('Apply default required documents to positions that have none configured?');">
+            @csrf
+            <button type="submit"
+                class="inline-flex items-center justify-center whitespace-nowrap bg-emerald-600 text-white px-5 py-2 rounded-lg hover:bg-emerald-700 transition font-semibold">
+                <i class="fas fa-file-medical mr-2"></i> Seed default doc requirements
+            </button>
+        </form>
+        <form action="{{ route('admin.positions.seed-document-requirements') }}" method="POST" class="inline"
+            onsubmit="return confirm('This will REPLACE required documents on all mapped positions with the default sets. Continue?');">
+            @csrf
+            <input type="hidden" name="force" value="1">
+            <button type="submit"
+                class="inline-flex items-center justify-center whitespace-nowrap bg-white text-emerald-800 px-5 py-2 rounded-lg border border-emerald-300 hover:bg-emerald-50 transition font-semibold">
+                <i class="fas fa-rotate mr-2"></i> Re-apply defaults (force)
+            </button>
+        </form>
+        @endif
+        @if(auth()->user()?->hasRole(['admin', 'super-admin']))
+        <a href="{{ route('admin.position-portal-roles.index') }}"
+            class="inline-flex items-center justify-center whitespace-nowrap bg-white text-gray-700 px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold">
+            <i class="fas fa-user-tag mr-2"></i> Position Portal Roles
+        </a>
+        @endif
         <a href="{{ route('admin.positions.create') }}"
             class="inline-flex items-center justify-center whitespace-nowrap bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
             <i class="fas fa-plus mr-2"></i> Create Position
@@ -87,6 +112,7 @@
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Title</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Department</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Reports To</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Required Docs</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-900">Description</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-900">Actions</th>
                 </tr>
@@ -104,6 +130,11 @@
                     </td>
                     <td class="px-6 py-4 text-gray-600 text-xs">
                         {{ $position->reportsToPosition->title ?? '-' }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                            {{ (int) ($position->required_documents_count ?? 0) }}
+                        </span>
                     </td>
                     <td class="px-6 py-4 text-gray-600 text-xs">
                         {{ isset($position->description) && strlen($position->description) > 0 ?
@@ -144,7 +175,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-600">
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-600">
                         <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
                         <p>No positions found</p>
                     </td>

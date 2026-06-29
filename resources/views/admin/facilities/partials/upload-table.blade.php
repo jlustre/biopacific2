@@ -69,8 +69,7 @@
     if ($isFacilityTable && $employeeFilterOptions->isEmpty() && $filterFacilityId) {
         $employeeFilterOptions = \App\Models\BPEmployee::query()
             ->whereHas('assignments', fn ($q) => $q->where('facility_id', $filterFacilityId))
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderedByName()
             ->get();
     }
 
@@ -146,10 +145,10 @@
                 <input type="text" name="search" value="{{ request('search') }}" class="w-full px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-input" placeholder="Search document file name...">
             </div>
             <div>
-                <label class="block mb-1 text-xs font-semibold">Upload Type</label>
+                <label class="block mb-1 text-xs font-semibold">{{ config('documents.labels.type') }}</label>
                 <select name="upload_type_id" x-model="selectedType" @change="updateShowExpiry()" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select">
                     <option value="">All Types</option>
-                    @foreach(App\Models\UploadType::orderBy('name')->get() as $utype)
+                    @foreach(App\Models\UploadType::query()->orderedForDisplay()->get() as $utype)
                         <option value="{{ $utype->id }}" data-requires-expiry="{{ $utype->requires_expiry ? '1' : '0' }}" @if(request('upload_type_id')==$utype->id) selected @endif>
                             {{ $utype->name }}@if($utype->requires_expiry) **@endif
                         </option>
@@ -188,7 +187,7 @@
                     <option value="">All employees</option>
                     @foreach($employeeFilterOptions as $emp)
                         <option value="{{ $emp->employee_num ?? $emp['employee_num'] }}" @if(request('employee_num') == ($emp->employee_num ?? $emp['employee_num'])) selected @endif>
-                            {{ $emp->last_name ?? $emp['last_name'] }}, {{ $emp->first_name ?? $emp['first_name'] }} ({{ $emp->employee_num ?? $emp['employee_num'] }})
+                            {{ ($emp instanceof \App\Models\BPEmployee ? $emp->formalName() : ($emp['name'] ?? '')) }} ({{ $emp->employee_num ?? $emp['employee_num'] }})
                         </option>
                     @endforeach
                 </select>
@@ -263,7 +262,7 @@
         <dl class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div>
                 <dt class="text-xs font-semibold uppercase tracking-wide text-teal-800">Employee</dt>
-                <dd class="font-medium">{{ $employee->last_name }}, {{ $employee->first_name }}</dd>
+                <dd class="font-medium">{{ $employee->formalName() }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-semibold uppercase tracking-wide text-teal-800">Employee #</dt>
@@ -421,13 +420,13 @@
                 <td class="px-3 py-2 border text-xs">{{ $upload->employee_num ?? '-' }}</td>
                 <td class="px-3 py-2 border text-xs">
                     @if($upload->employee)
-                        {{ $upload->employee->last_name }}, {{ $upload->employee->first_name }}
+                        {{ $upload->employee->formalName() }}
                     @endif
                 </td>
                 @else
                 <td class="px-3 py-2 border text-xs">
                     @if($upload->employee)
-                        <div>{{ $upload->employee->last_name }}, {{ $upload->employee->first_name }}</div>
+                        <div>{{ $upload->employee->formalName() }}</div>
                         <div class="text-gray-500 mt-0.5">{{ $upload->employee_num }}</div>
                     @else
                         {{ $upload->employee_num ?? '—' }}
@@ -557,10 +556,10 @@
                         @php
                             $notifyEmail = null;
                             if ($isSubmissionNotify) {
-                                $dsdEmails = $upload->facility
-                                    ? \App\Support\UploadNotificationContext::facilityDsdEmails($upload->facility)
+                                $reviewerEmails = $upload->facility
+                                    ? \App\Support\UploadNotificationContext::facilityDocumentReviewerEmails($upload->facility)
                                     : [];
-                                $notifyEmail = $dsdEmails !== [] ? implode(', ', $dsdEmails) : null;
+                                $notifyEmail = $reviewerEmails !== [] ? implode(', ', $reviewerEmails) : null;
                             } elseif ($upload->employee) {
                                 foreach ([$upload->employee->email, $upload->employee->user?->email] as $candidate) {
                                     $candidate = trim((string) $candidate);
@@ -582,7 +581,7 @@
                                 : route('admin.facility.uploads.notify', ['facility' => $upload->facility_id, 'upload' => $upload->id]);
                         @endphp
                         <button type="button"
-                            title="{{ $isSubmissionNotify ? ($notifyEmail ? 'Submit for DSD review (' . $notifyEmail . ')' : 'No DSD contact email on file') : ($notifyEmail ? 'Preview and send notification to ' . $notifyEmail : 'Employee has no email on file') }}"
+                            title="{{ $isSubmissionNotify ? ($notifyEmail ? 'Submit for leadership review (' . $notifyEmail . ')' : 'No DSD, DON, or administrator email on file') : ($notifyEmail ? 'Preview and send notification to ' . $notifyEmail : 'Employee has no email on file') }}"
                             class="text-teal-600 hover:text-teal-800 bg-transparent border-none p-0 m-0 disabled:opacity-40 disabled:cursor-not-allowed"
                             @disabled(!$notifyEmail)
                             data-upload-notify-mode="{{ $isSubmissionNotify ? 'submission' : 'expiry' }}"

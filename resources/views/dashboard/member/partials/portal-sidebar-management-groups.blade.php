@@ -18,9 +18,13 @@
     $subLinkClass = fn (array|string $patterns) => request()->routeIs($patterns)
         ? 'member-portal-nav-sub-active font-semibold text-white'
         : 'text-teal-100';
-    $careersUrl = ($authUser && $authUser->facility_id)
-        ? route('admin.facilities.webcontents.careers', ['facility_id' => $authUser->facility_id])
-        : route('admin.facilities.webcontents.careers');
+    $selectedFacilityId = $selectedFacilityId ?? \App\Support\SelectedFacility::id();
+    $selectedFacilityRouteKey = \App\Support\SelectedFacility::routeKey();
+    $careersUrl = $selectedFacilityId
+        ? route('admin.facilities.webcontents.careers', ['facility_id' => $selectedFacilityId])
+        : (($authUser && $authUser->facility_id)
+            ? route('admin.facilities.webcontents.careers', ['facility_id' => $authUser->facility_id])
+            : route('admin.facilities.webcontents.careers'));
     $hrPortalUrl = \App\Support\MemberPortalLayout::hrPortalRouteForUser($authUser);
 @endphp
 
@@ -52,10 +56,14 @@
         </a>
 
         @php
-            $leadershipFacility = $authUser->facility_id ? \App\Models\Facility::find($authUser->facility_id) : null;
-            $leadershipHref = ($leadershipFacility && !$authUser->hasRole(['admin', 'super-admin', 'rdhr']))
+            $leadershipFacility = $selectedFacilityId
+                ? \App\Models\Facility::find($selectedFacilityId)
+                : ($authUser->facility_id ? \App\Models\Facility::find($authUser->facility_id) : null);
+            $leadershipHref = ($leadershipFacility && ! $authUser->hasRole(['admin', 'super-admin', 'rdhr']))
                 ? route('admin.facility.leadership.edit', ['facility' => $leadershipFacility->getRouteKey()])
-                : route('admin.facilities.leadership.index');
+                : ($selectedFacilityRouteKey
+                    ? route('admin.facility.leadership.edit', ['facility' => $selectedFacilityRouteKey])
+                    : route('admin.facilities.leadership.index'));
         @endphp
         @if($showAllOpsLinks || (in_array($portalNav, ['facility', 'corporate'], true) && \Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && ($authUser->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || $authUser->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL))))
         <a href="{{ $leadershipHref }}"

@@ -6,38 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\ChecklistItem;
 use App\Models\DocType;
 use App\Models\Position;
+use App\Services\ChecklistItemsSeederExporter;
+use App\Services\ChecklistUploadTypeSyncService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ChecklistItemController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): RedirectResponse
     {
-        $query = ChecklistItem::with('docType');
-
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('section')) {
-            $query->where('section', $request->section);
-        }
-
-        if ($request->filled('doc_type_id')) {
-            $query->where('doc_type_id', $request->doc_type_id);
-        }
-
-        $checklistItems = $query->orderBy('section')
-            ->orderBy('order')
-            ->orderBy('name')
-            ->paginate(20)
-            ->appends($request->query());
-
-        $docTypes = DocType::query()->orderBy('name')->get();
-        $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
-        $positionsById = $positions->keyBy('position_id');
-        $sections = ChecklistItem::query()->select('section')->distinct()->whereNotNull('section')->orderBy('section')->pluck('section');
-
-        return view('admin.checklist-items.index', compact('checklistItems', 'docTypes', 'positions', 'positionsById', 'sections'));
+        return redirect()->route('admin.upload-types.index', array_merge(
+            $request->only(['search', 'section', 'doc_type_id', 'page']),
+            ['tab' => 'items']
+        ));
     }
 
     public function bulkUpdatePositions(Request $request)
@@ -55,7 +36,8 @@ class ChecklistItemController extends Controller
         $positionIds = array_values(array_unique(array_map('intval', $validated['position_ids'] ?? [])));
 
         if (!$applyToEveryone && count($positionIds) === 0) {
-            return back()->with('error', 'Select at least one position or choose "Apply to everybody".');
+            return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
+                ->with('error', 'Select at least one position or choose "Apply to everybody".');
         }
 
         ChecklistItem::query()
@@ -64,7 +46,8 @@ class ChecklistItemController extends Controller
                 'position_ids' => $applyToEveryone ? null : $positionIds,
             ]);
 
-        return back()->with('success', 'Checklist item positions updated successfully.');
+        return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
+            ->with('success', 'Employee file item positions updated successfully.');
     }
 
     public function create()
@@ -73,6 +56,7 @@ class ChecklistItemController extends Controller
         $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
         $checklistItem = new ChecklistItem([
             'isExpiring' => false,
+            'is_required' => true,
             'position_ids' => null,
         ]);
 
@@ -83,9 +67,10 @@ class ChecklistItemController extends Controller
     {
         $validated = $this->validateChecklistItem($request);
 
-        ChecklistItem::create($validated);
+        $checklistItem = ChecklistItem::create($validated);
+        app(ChecklistUploadTypeSyncService::class)->syncChecklistItem($checklistItem);
 
-        return redirect()->route('admin.checklist-items.index')->with('success', 'Checklist item created successfully.');
+        return redirect()->route('admin.upload-types.index', ['tab' => 'items'])->with('success', 'Employee file item created successfully.');
     }
 
     public function edit(ChecklistItem $checklistItem)
@@ -101,15 +86,47 @@ class ChecklistItemController extends Controller
         $validated = $this->validateChecklistItem($request);
 
         $checklistItem->update($validated);
+        app(ChecklistUploadTypeSyncService::class)->syncChecklistItem($checklistItem->fresh());
 
-        return redirect()->route('admin.checklist-items.index')->with('success', 'Checklist item updated successfully.');
+        return redirect()->route('admin.upload-types.index', ['tab' => 'items'])->with('success', 'Employee file item updated successfully.');
     }
 
     public function destroy(ChecklistItem $checklistItem)
     {
         $checklistItem->delete();
 
-        return redirect()->route('admin.checklist-items.index')->with('success', 'Checklist item deleted successfully.');
+        return redirect()->route('admin.upload-types.index', ['tab' => 'items'])->with('success', 'Employee file item deleted successfully.');
+    }
+
+    public function syncSeeder(ChecklistItemsSeederExporter $exporter): RedirectResponse
+    {
+        if (! $this->canManageSeeder()) {
+            return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
+                ->with('error', 'You do not have permission to update the employee file items seeder.');
+        }
+
+        try {
+            $result = $exporter->writeSeederFile();
+
+            return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
+                ->with(
+                    'success',
+                    'Seeder updated with ' . $result['count'] . ' employee file item(s). '
+                    . 'File: database/seeders/data/checklist_items.php. '
+                    . 'Commit it so migrate:fresh --seed restores them. '
+                    . 'PART E orientation items are managed separately.'
+                );
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
+                ->with('error', 'Failed to update seeder: ' . $e->getMessage());
+        }
+    }
+
+    protected function canManageSeeder(): bool
+    {
+        $user = auth()->user();
+
+        return $user && method_exists($user, 'hasRole') && $user->hasRole(['admin', 'super-admin']);
     }
 
     private function validateChecklistItem(Request $request): array
@@ -120,6 +137,7 @@ class ChecklistItemController extends Controller
             'doc_type_id' => ['required', 'integer', 'exists:doc_types,id'],
             'order' => ['nullable', 'integer', 'min:1'],
             'isExpiring' => ['nullable', 'boolean'],
+            'is_required' => ['required', 'boolean'],
             'position_ids' => ['nullable', 'array'],
             'position_ids.*' => ['integer', 'exists:positions,id'],
         ]);
@@ -128,6 +146,7 @@ class ChecklistItemController extends Controller
 
         $validated['position_ids'] = count($positionIds) ? $positionIds : null;
         $validated['isExpiring'] = $request->boolean('isExpiring');
+        $validated['is_required'] = $request->boolean('is_required');
 
         if (empty($validated['order'])) {
             $validated['order'] = (ChecklistItem::max('order') ?? 0) + 1;

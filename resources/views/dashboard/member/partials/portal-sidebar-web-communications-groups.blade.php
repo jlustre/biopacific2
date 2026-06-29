@@ -44,6 +44,26 @@
        class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.tour-requests.*') }}">Tour Requests</a>
     <a href="{{ route('admin.inquiries.index') }}"
        class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.inquiries.*') }}">General Inquiries</a>
+    @if(\App\Support\MemberPortalLayout::userIsSystemAdmin($authUser))
+    @php
+        $openWebmasterIssues = \App\Models\WebmasterContact::query()->where('status', '!=', 'resolved')->count();
+        $openPortalHelpRequests = \App\Models\PortalHelpRequest::query()->where('status', '!=', 'resolved')->count();
+    @endphp
+    <a href="{{ route('admin.webmaster.contacts.index') }}"
+       class="member-portal-nav-link flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.webmaster.contacts.*') }}">
+        <span>Webmaster Issues</span>
+        @if($openWebmasterIssues > 0)
+        <span class="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">{{ $openWebmasterIssues > 99 ? '99+' : $openWebmasterIssues }}</span>
+        @endif
+    </a>
+    <a href="{{ route('admin.portal-help-requests.index') }}"
+       class="member-portal-nav-link flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.portal-help-requests.*') }}">
+        <span>Portal Help Requests</span>
+        @if($openPortalHelpRequests > 0)
+        <span class="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">{{ $openPortalHelpRequests > 99 ? '99+' : $openPortalHelpRequests }}</span>
+        @endif
+    </a>
+    @endif
     <a href="{{ route('admin.job-applications.index') }}"
        class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.job-applications.*') }}">Job Applications</a>
     <a href="{{ route('admin.email-recipients.index') }}"

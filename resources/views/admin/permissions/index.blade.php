@@ -6,10 +6,13 @@
         <h1 class="text-2xl font-bold text-gray-900">Permission Management</h1>
         <p class="text-gray-600">Manage system permissions and their assignments</p>
     </div>
-    <a href="{{ route('admin.permissions.create') }}"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
-        <i class="fas fa-plus mr-2"></i> Create Permission
-    </a>
+    <div class="flex flex-wrap items-center gap-3">
+        @include('admin.partials.role-permissions-seeder-sync', ['compact' => true])
+        <a href="{{ route('admin.permissions.create') }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
+            <i class="fas fa-plus mr-2"></i> Create Permission
+        </a>
+    </div>
 </div>
 @endsection
 

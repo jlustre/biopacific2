@@ -46,8 +46,13 @@
                         <a href="{{ route($item['route']) }}"
                            class="member-portal-nav-link flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $subLinkClass($item['route_is'] ?? [$item['route']]) }}">
                             <span>{{ $item['label'] }}</span>
-                            @if(!empty($item['badge']))
-                            <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $item['badge_class'] ?? 'bg-amber-400 text-slate-900' }}">{{ $item['badge'] }}</span>
+                            @php
+                                $navBadge = ($item['id'] ?? '') === 'documents'
+                                    ? ($documentsNeededCount ?? null)
+                                    : ($item['badge'] ?? null);
+                            @endphp
+                            @if(!empty($navBadge))
+                            <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $item['badge_class'] ?? 'bg-amber-400 text-slate-900' }}">{{ $navBadge }}</span>
                             @endif
                         </a>
                         <button type="button"

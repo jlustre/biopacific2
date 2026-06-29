@@ -14,6 +14,112 @@ class FacilityLeadershipService
     /**
      * @return list<array<string, mixed>>
      */
+    public function activeRoleDefinitionsForFacility(Facility $facility): array
+    {
+        $disabled = $this->disabledRoleKeysForFacility($facility);
+
+        return array_values(array_filter(
+            $this->roleDefinitions(),
+            fn (array $role) => ! in_array($role['key'] ?? '', $disabled, true)
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function disabledRoleKeysForFacility(Facility $facility): array
+    {
+        $settings = $facility->settings ?? [];
+        $keys = $settings['leadership_disabled_roles'] ?? [];
+
+        return is_array($keys)
+            ? array_values(array_unique(array_filter($keys, fn ($key) => is_string($key) && $key !== '')))
+            : [];
+    }
+
+    public function authorizeRoleRemoval(User $user): void
+    {
+        if ($user->hasRole(['admin', 'super-admin', 'facility-dsd'])) {
+            return;
+        }
+
+        abort(403, 'You do not have permission to remove leadership roles.');
+    }
+
+    public function removeStandardRole(Facility $facility, string $roleKey): void
+    {
+        $roleDef = $this->roleDefinitionMap()[$roleKey] ?? null;
+        if (! $roleDef) {
+            abort(404);
+        }
+
+        $assignment = FacilityLeadershipAssignment::query()
+            ->where('facility_id', $facility->id)
+            ->where('role_key', $roleKey)
+            ->first();
+
+        $employeesByPosition = $this->employeesByPositionTitle($facility);
+        if ($this->roleIsInUseAtFacility($roleDef, $assignment, $employeesByPosition, $facility)) {
+            abort(422, 'This leadership role is in use at this facility and cannot be removed.');
+        }
+
+        $settings = $facility->settings ?? [];
+        $disabled = $this->disabledRoleKeysForFacility($facility);
+        if (! in_array($roleKey, $disabled, true)) {
+            $disabled[] = $roleKey;
+        }
+        $settings['leadership_disabled_roles'] = $disabled;
+        $facility->settings = $settings;
+
+        FacilityLeadershipAssignment::query()
+            ->where('facility_id', $facility->id)
+            ->where('role_key', $roleKey)
+            ->delete();
+
+        $this->syncLegacyFacilityColumn($facility, $roleDef, '');
+        $facility->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $roleDef
+     * @param  array<string, string>  $employeesByPosition
+     */
+    public function roleIsInUseAtFacility(array $roleDef, ?FacilityLeadershipAssignment $assignment, array $employeesByPosition, ?Facility $facility = null): bool
+    {
+        if ($this->roleHasEmployeeAtFacility($roleDef, $employeesByPosition)) {
+            return true;
+        }
+
+        if (trim((string) ($assignment?->name ?? '')) !== '') {
+            return true;
+        }
+
+        if ($facility !== null && trim($this->legacyFacilityColumnValue($facility, $roleDef)) !== '') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $roleDef
+     * @param  array<string, string>  $employeesByPosition
+     */
+    protected function roleHasEmployeeAtFacility(array $roleDef, array $employeesByPosition): bool
+    {
+        foreach ($roleDef['position_titles'] ?? [] as $title) {
+            $normalized = Str::lower(trim($title));
+            if (($employeesByPosition[$normalized] ?? '') !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
     public function roleDefinitions(): array
     {
         return config('facility-dashboard.leadership_roles', []);
@@ -44,16 +150,21 @@ class FacilityLeadershipService
             return;
         }
 
+        $employeesByPosition = $this->employeesByPositionTitle($facility);
+        $usedNames = [];
         $sort = 0;
-        foreach ($this->roleDefinitions() as $role) {
-            $column = $role['facility_column'] ?? null;
-            if (!$column) {
-                $sort++;
 
+        foreach ($this->roleDefinitions() as $role) {
+            $key = $role['key'] ?? '';
+            if ($key === '' || in_array($key, $this->disabledRoleKeysForFacility($facility), true)) {
                 continue;
             }
 
-            $name = trim((string) ($facility->{$column} ?? ''));
+            $name = $this->resolveNameFromEmployees($role, $employeesByPosition, $usedNames);
+            if ($name === '') {
+                $name = $this->legacyFacilityColumnValue($facility, $role);
+            }
+
             if ($name === '') {
                 $sort++;
 
@@ -62,12 +173,13 @@ class FacilityLeadershipService
 
             FacilityLeadershipAssignment::query()->create([
                 'facility_id' => $facility->id,
-                'role_key' => $role['key'],
+                'role_key' => $key,
                 'role_label' => $role['label'] ?? null,
                 'name' => $name,
                 'sort_order' => $sort,
                 'is_custom' => false,
             ]);
+            $usedNames[$this->normalizeName($name)] = true;
             $sort++;
         }
     }
@@ -88,23 +200,37 @@ class FacilityLeadershipService
             ->get()
             ->keyBy('role_key');
 
+        $employeesByPosition = $this->employeesByPositionTitle($facility);
+        $usedNames = [];
         $rows = [];
         $sort = 0;
 
-        foreach ($this->roleDefinitions() as $role) {
+        foreach ($this->activeRoleDefinitionsForFacility($facility) as $role) {
             $key = $role['key'] ?? '';
             if ($key === '') {
                 continue;
             }
 
             $assignment = $assignments->get($key);
+            $savedName = trim((string) ($assignment?->name ?? ''));
+            $name = $this->resolveNameFromEmployees($role, $employeesByPosition, $usedNames);
+
+            if ($name === '') {
+                $name = $savedName !== '' ? $savedName : $this->legacyFacilityColumnValue($facility, $role);
+            }
+
+            if ($name !== '') {
+                $usedNames[$this->normalizeName($name)] = true;
+            }
+
             $rows[] = [
                 'role_key' => $key,
                 'role_label' => $role['label'] ?? $key,
                 'abbrev' => $role['abbrev'] ?? strtoupper($key),
-                'name' => $assignment?->name ?? $this->legacyFacilityColumnValue($facility, $role),
+                'name' => $name,
                 'is_custom' => false,
                 'assignment_id' => $assignment?->id,
+                'can_delete' => ! $this->roleIsInUseAtFacility($role, $assignment, $employeesByPosition, $facility),
                 'sort_order' => $sort++,
             ];
         }
@@ -138,7 +264,7 @@ class FacilityLeadershipService
         $roleMap = $this->roleDefinitionMap();
         $sort = 0;
 
-        foreach ($this->roleDefinitions() as $role) {
+        foreach ($this->activeRoleDefinitionsForFacility($facility) as $role) {
             $key = $role['key'] ?? '';
             if ($key === '') {
                 continue;
@@ -221,7 +347,7 @@ class FacilityLeadershipService
             ->get()
             ->keyBy('role_key');
 
-        $supervisors ??= $this->supervisorsByPositionTitle($facility);
+        $supervisors ??= $this->employeesByPositionTitle($facility);
         $roleMap = $this->roleDefinitionMap();
         $usedNames = [];
         $leadership = [];
@@ -229,7 +355,7 @@ class FacilityLeadershipService
         $ordered = collect();
         $sort = 0;
 
-        foreach ($this->roleDefinitions() as $role) {
+        foreach ($this->activeRoleDefinitionsForFacility($facility) as $role) {
             $key = $role['key'] ?? '';
             if ($key === '') {
                 continue;
@@ -310,8 +436,13 @@ class FacilityLeadershipService
      * @param  array<string, string>  $supervisors
      * @param  array<string, true>  $usedNames
      */
-    protected function resolveFallbackName(Facility $facility, array $roleDef, array $supervisors, array $usedNames): string
+    protected function resolveFallbackName(Facility $facility, array $roleDef, array $employeesByPosition, array $usedNames): string
     {
+        $fromEmployees = $this->resolveNameFromEmployees($roleDef, $employeesByPosition, $usedNames);
+        if ($fromEmployees !== '') {
+            return $fromEmployees;
+        }
+
         $column = $roleDef['facility_column'] ?? null;
         if ($column) {
             $fromFacility = trim((string) ($facility->{$column} ?? ''));
@@ -320,9 +451,18 @@ class FacilityLeadershipService
             }
         }
 
+        return '';
+    }
+
+    /**
+     * @param  array<string, string>  $employeesByPosition
+     * @param  array<string, true>  $usedNames
+     */
+    protected function resolveNameFromEmployees(array $roleDef, array $employeesByPosition, array $usedNames): string
+    {
         foreach ($roleDef['position_titles'] ?? [] as $title) {
             $normalized = Str::lower(trim($title));
-            $candidate = $supervisors[$normalized] ?? '';
+            $candidate = $employeesByPosition[$normalized] ?? '';
             if ($candidate === '' || isset($usedNames[$this->normalizeName($candidate)])) {
                 continue;
             }
@@ -334,22 +474,56 @@ class FacilityLeadershipService
     }
 
     /**
-     * @param  array<string, string>  $supervisors
+     * Map normalized position titles to employee display names (current facility assignment).
+     *
+     * @return array<string, string>
+     */
+    public function employeesByPositionTitle(Facility $facility): array
+    {
+        $map = [];
+
+        BPEmployee::query()
+            ->with('currentAssignment.position')
+            ->whereHas('currentAssignment', function ($query) use ($facility) {
+                $query->where('facility_id', $facility->id);
+            })
+            ->orderedByName()
+            ->get()
+            ->each(function (BPEmployee $employee) use (&$map) {
+                $title = trim((string) ($employee->currentAssignment?->position?->title ?? ''));
+                if ($title === '') {
+                    return;
+                }
+
+                $normalizedTitle = Str::lower($title);
+                if (isset($map[$normalizedTitle])) {
+                    return;
+                }
+
+                $displayName = $this->employeeDisplayName($employee);
+                $map[$normalizedTitle] = $displayName !== '' ? $displayName : (string) $employee->employee_num;
+            });
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, string>  $employeesByPosition
      * @return list<array{rank: int, key: string, office: string, abbrev: string, name: string, vacant: bool}>
      */
-    protected function rosterFromDefinitionsOnly(Facility $facility, array $supervisors): array
+    protected function rosterFromDefinitionsOnly(Facility $facility, array $employeesByPosition): array
     {
         $usedNames = [];
         $leadership = [];
         $rank = 1;
 
-        foreach ($this->roleDefinitions() as $role) {
+        foreach ($this->activeRoleDefinitionsForFacility($facility) as $role) {
             $key = $role['key'] ?? '';
             if ($key === '') {
                 continue;
             }
 
-            $name = $this->resolveFallbackName($facility, $role, $supervisors, $usedNames);
+            $name = $this->resolveFallbackName($facility, $role, $employeesByPosition, $usedNames);
             $vacant = $name === '';
             $leadership[] = [
                 'rank' => $rank,
@@ -370,39 +544,119 @@ class FacilityLeadershipService
     }
 
     /**
-     * @return array<string, string>
+     * Options for leadership name dropdowns (current facility employees).
+     *
+     * @return Collection<int, array{value: string, label: string}>
      */
-    public function supervisorsByPositionTitle(Facility $facility): array
+    public function employeeNameOptionsForFacility(Facility $facility): Collection
     {
-        $map = [];
-
-        BPEmployee::query()
-            ->with('currentAssignment.position')
+        return BPEmployee::query()
             ->whereHas('currentAssignment', function ($query) use ($facility) {
                 $query->where('facility_id', $facility->id);
             })
-            ->whereHas('currentAssignment.position', function ($query) {
-                $query->where('supervisor_role', true);
-            })
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->orderedByName()
             ->get()
-            ->each(function (BPEmployee $employee) use (&$map) {
-                $title = trim((string) ($employee->currentAssignment?->position?->title ?? ''));
-                if ($title === '') {
-                    return;
+            ->map(function (BPEmployee $employee) {
+                $value = $this->employeeDisplayName($employee);
+                if ($value === '') {
+                    return null;
                 }
 
-                $normalizedTitle = Str::lower($title);
-                if (isset($map[$normalizedTitle])) {
-                    return;
-                }
+                return [
+                    'value' => $value,
+                    'label' => $this->employeeSelectLabel($employee),
+                ];
+            })
+            ->filter()
+            ->unique('value')
+            ->values();
+    }
 
-                $displayName = trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''));
-                $map[$normalizedTitle] = $displayName !== '' ? $displayName : (string) $employee->employee_num;
-            });
+    /**
+     * Match a stored leadership name to a dropdown option value.
+     */
+    public function resolveEmployeeOptionValue(string $storedName, Collection $options): ?string
+    {
+        $storedName = trim($storedName);
+        if ($storedName === '') {
+            return null;
+        }
 
-        return $map;
+        foreach ($options as $option) {
+            $value = (string) ($option['value'] ?? '');
+            if ($value !== '' && $this->leadershipNamesMatch($storedName, $value)) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    public function leadershipNamesMatch(string $a, string $b): bool
+    {
+        $a = trim($a);
+        $b = trim($b);
+
+        if ($a === '' || $b === '') {
+            return false;
+        }
+
+        if (strcasecmp($a, $b) === 0) {
+            return true;
+        }
+
+        $partsA = $this->personNameParts($a);
+        $partsB = $this->personNameParts($b);
+
+        return $partsA['last'] !== ''
+            && $partsA['last'] === $partsB['last']
+            && $partsA['first'] !== ''
+            && $partsB['first'] !== ''
+            && str_starts_with($partsA['first'], substr($partsB['first'], 0, 1))
+            && str_starts_with($partsB['first'], substr($partsA['first'], 0, 1));
+    }
+
+    /**
+     * @return array{first: string, last: string}
+     */
+    protected function personNameParts(string $name): array
+    {
+        $normalized = preg_replace('/([a-z])\.(?=[A-Za-z])/i', '$1. ', $name) ?? $name;
+        $tokens = preg_split('/[\s,]+/', trim($normalized), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $tokens = array_values(array_map(
+            fn (string $token) => strtolower(preg_replace('/[^a-z]/i', '', $token) ?? ''),
+            $tokens
+        ));
+        $tokens = array_values(array_filter($tokens));
+
+        if ($tokens === []) {
+            return ['first' => '', 'last' => ''];
+        }
+
+        if (count($tokens) === 1) {
+            return ['first' => $tokens[0], 'last' => ''];
+        }
+
+        $last = (string) array_pop($tokens);
+        $first = (string) ($tokens[0] ?? '');
+
+        return ['first' => $first, 'last' => $last];
+    }
+
+    protected function employeeSelectLabel(BPEmployee $employee): string
+    {
+        return $employee->formalName();
+    }
+
+    protected function employeeDisplayName(BPEmployee $employee): string
+    {
+        $parts = array_filter([
+            trim((string) $employee->first_name),
+            trim((string) $employee->middle_name),
+            trim((string) $employee->last_name),
+        ], fn (string $part) => $part !== '');
+
+        return trim(implode(' ', $parts));
     }
 
     public function authorizeFacility(User $user, Facility $facility): void

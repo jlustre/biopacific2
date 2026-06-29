@@ -51,6 +51,8 @@ class FacilityLeadershipController extends Controller
             'facility' => $facility,
             'rows' => $this->leadership->formRowsForFacility($facility),
             'roleDefinitions' => $this->leadership->roleDefinitions(),
+            'employeeOptions' => $this->leadership->employeeNameOptionsForFacility($facility),
+            'canRemoveRoles' => $user->hasRole(['admin', 'super-admin', 'facility-dsd']),
         ]);
     }
 
@@ -77,10 +79,23 @@ class FacilityLeadershipController extends Controller
             ->with('success', 'Facility leadership roster saved.');
     }
 
+    public function destroyRole(Facility $facility, string $roleKey)
+    {
+        $user = Auth::user();
+        $this->leadership->authorizeFacility($user, $facility);
+        $this->leadership->authorizeRoleRemoval($user);
+        $this->leadership->removeStandardRole($facility, $roleKey);
+
+        return redirect()
+            ->route('admin.facility.leadership.edit', ['facility' => $facility->getRouteKey()])
+            ->with('success', 'Leadership role removed for this facility.');
+    }
+
     public function destroy(Facility $facility, FacilityLeadershipAssignment $assignment)
     {
         $user = Auth::user();
         $this->leadership->authorizeFacility($user, $facility);
+        $this->leadership->authorizeRoleRemoval($user);
 
         if ((int) $assignment->facility_id !== (int) $facility->id) {
             abort(404);

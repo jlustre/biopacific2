@@ -7,6 +7,13 @@
         <div class="mb-4">
             <div class="text-xs text-slate-400 mb-1">Submitted at: {{ $contact->created_at->format('Y-m-d H:i') }}</div>
             <div class="text-xs text-slate-400 mb-1">
+                <span>Category:</span>
+                <span class="font-semibold">{{ $contact->categoryLabel() }}</span>
+                <span class="mx-2">|</span>
+                <span>Source:</span>
+                <span class="font-semibold">{{ $contact->sourceLabel() }}</span>
+            </div>
+            <div class="text-xs text-slate-400 mb-1">
                 Facility:
                 @if($contact->facility)
                 <a href="{{ route('facility.public', $contact->facility->slug) }}"
@@ -25,7 +32,12 @@
                 @endif
             </div>
             <div class="text-lg font-semibold">{{ $contact->subject }}</div>
-            <div class="text-sm text-slate-600">From: {{ $contact->name }} ({{ $contact->email }})</div>
+            <div class="text-sm text-slate-600">
+                From: {{ $contact->name }} ({{ $contact->email }})
+                @if($contact->user)
+                    <span class="text-slate-400">· Portal user #{{ $contact->user_id }}</span>
+                @endif
+            </div>
             <div class="mt-2">
                 <span
                     class="inline-block px-2 py-1 rounded text-xs font-semibold {{ $contact->urgent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500' }}">
@@ -50,6 +62,45 @@
             </div>
         </div>
         @endif
+
+        <div class="mb-6 rounded-xl border border-slate-200">
+            <div class="border-b border-slate-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-slate-900">Conversation</h2>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @forelse($contact->comments as $comment)
+                <div class="px-4 py-3 {{ $comment->isFromAdmin() ? 'bg-sky-50' : '' }}">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-sm font-semibold text-slate-800">
+                            {{ $comment->displayName() }}
+                            <span class="text-xs font-normal text-slate-500">({{ $comment->isFromAdmin() ? 'Team' : 'Member' }})</span>
+                        </p>
+                        <p class="text-xs text-slate-500">{{ $comment->created_at->format('Y-m-d H:i') }}</p>
+                    </div>
+                    <p class="mt-2 whitespace-pre-line text-sm text-slate-700">{{ $comment->body }}</p>
+                </div>
+                @empty
+                <p class="px-4 py-6 text-center text-sm text-slate-500">No comments yet.</p>
+                @endforelse
+            </div>
+            @if(!$contact->isResolved())
+            <div class="border-t border-slate-100 px-4 py-3">
+                <form method="POST" action="{{ route('admin.webmaster.contacts.comments.store', $contact) }}" class="space-y-2">
+                    @csrf
+                    <label for="body" class="block text-xs font-semibold text-slate-600">Reply to member</label>
+                    <textarea name="body" id="body" rows="3" required
+                              class="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                              placeholder="Post an update or question for the submitter.">{{ old('body') }}</textarea>
+                    <button type="submit" class="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Post reply</button>
+                </form>
+            </div>
+            @endif
+        </div>
+
+        @if(session('success'))
+        <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{{ session('success') }}</div>
+        @endif
+
         <form method="POST" action="{{ route('admin.webmaster.contacts.update', ['contact' => $contact->id]) }}"
             class="inline-block align-middle mr-2">
             @csrf

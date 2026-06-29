@@ -5,13 +5,20 @@ namespace App\Http\Controllers\Concerns;
 use App\Helpers\FacilityDataHelper;
 use App\Models\Facility;
 use App\Models\News;
+use App\Services\MemberDashboardService;
 
 trait ProvidesMemberPortalContext
 {
     protected function memberPortalContext($user): array
     {
         $employee = method_exists($user, 'resolvedBpEmployee')
-            ? $user->resolvedBpEmployee(['currentAssignment.position', 'currentAssignment.facility', 'currentAssignment.department'])
+            ? $user->resolvedBpEmployee([
+                'currentAssignment.position',
+                'currentAssignment.facility',
+                'currentAssignment.department',
+                'phone',
+                'address',
+            ])
             : null;
 
         $facility = $this->resolveMemberFacility($user, $employee);
@@ -20,6 +27,7 @@ trait ProvidesMemberPortalContext
         $firstName = $nameParts[0] ?? $displayName;
         $lastName = $nameParts[1] ?? '';
         $firstNameOnly = explode(' ', trim($displayName))[0] ?? $displayName;
+        $portalAlerts = app(MemberDashboardService::class)->buildPortalAlerts($user);
 
         return [
             'user' => $user,
@@ -38,11 +46,59 @@ trait ProvidesMemberPortalContext
                 : '—',
             'initials' => $user->initials ?? strtoupper(substr($firstNameOnly, 0, 1)),
             'avatarUrl' => $user->profileAvatarUrl(),
-            'profileComplete' => 88,
+            'profileComplete' => $this->calculatePersonalProfileComplete($user, $employee),
+            'documentsNeededCount' => (int) ($portalAlerts['documents_needed'] ?? 0),
+            'portalNotifications' => $portalAlerts['items'] ?? [],
+            'portalNotificationCount' => (int) ($portalAlerts['count'] ?? 0),
             'newsEventsCount' => $this->countMemberNewsEvents($facility),
             'userRoles' => $user->rolesForDisplay(),
             'primaryRoleLabel' => $user->primaryRoleLabel(),
         ];
+    }
+
+    protected function calculatePersonalProfileComplete($user, $employee): int
+    {
+        $score = 0;
+
+        if (filled($user->name)) {
+            $score += 20;
+        }
+        if (filled($user->email)) {
+            $score += 20;
+        }
+        if ($user->hasVerifiedEmail()) {
+            $score += 20;
+        }
+        if ($employee?->phone?->phone_number) {
+            $score += 20;
+        }
+        if ($this->formatPersonalAddress($employee?->address)) {
+            $score += 20;
+        }
+
+        return min(100, $score);
+    }
+
+    protected function formatPersonalAddress($address): ?string
+    {
+        if (!$address) {
+            return null;
+        }
+
+        $line1 = trim((string) ($address->address1 ?? ''));
+        $line2 = trim((string) ($address->address2 ?? ''));
+        $city = trim((string) ($address->city ?? ''));
+        $state = trim((string) ($address->state ?? ''));
+        $zip = trim((string) ($address->zip ?? ''));
+
+        $cityLine = trim(implode(', ', array_filter([
+            $city,
+            trim($state . ($zip !== '' ? ' ' . $zip : '')),
+        ])));
+
+        $parts = array_filter([$line1, $line2, $cityLine]);
+
+        return $parts === [] ? null : implode(' · ', $parts);
     }
 
     protected function resolveMemberFacility($user, $employee = null): ?Facility

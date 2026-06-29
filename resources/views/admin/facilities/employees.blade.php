@@ -10,6 +10,8 @@ if (! $selectedFacility && request('facility')) {
     $selectedFacility = $facilities->firstWhere('id', request('facility'));
 } elseif (! $selectedFacility && isset($facility)) {
     $selectedFacility = $facility;
+} elseif (! $selectedFacility && ($sessionFacilityId = \App\Support\SelectedFacility::id())) {
+    $selectedFacility = $facilities->firstWhere('id', $sessionFacilityId);
 } elseif (! $selectedFacility && isset($facilities) && count($facilities)) {
     $selectedFacility = $facilities[0];
 }
@@ -68,8 +70,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                 <div class="w-full sm:w-auto px-0 sm:px-0">
                     <label for="reports_to" class="block text-sm font-medium">Reports To</label>
                     <select name="reports_to" id="reports_to"
-                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
-                        onchange="this.form.submit()">
+                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1">
                         <option value="">All Supervisors</option>
                         @foreach($supervisorPositions as $supervisor)
                         <option value="{{ $supervisor->position_id }}" @if(request('reports_to')==$supervisor->position_id) selected @endif>{{ $supervisor->title }}</option>
@@ -80,8 +81,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                 <div class="w-full sm:w-auto px-0 sm:px-0">
                     <label for="facility" class="block text-sm font-medium">Facility</label>
                     <select name="facility" id="facility"
-                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
-                        onchange="this.form.submit()">
+                        class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1">
                         <option value="">All Facilities</option>
                         @foreach($facilities as $facility)
                         <option value="{{ $facility->id }}" @if(request('facility')==$facility->id) selected @endif>{{
@@ -97,8 +97,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                     @endif
                     <select name="department" id="department"
                         class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
-                        {{ !empty($isDonDepartmentScoped) ? 'disabled' : '' }}
-                        onchange="this.form.submit()">
+                        {{ !empty($isDonDepartmentScoped) ? 'disabled' : '' }}>
                         @if(empty($isDonDepartmentScoped))
                         <option value="">All Departments</option>
                         @endif
@@ -112,8 +111,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
             <div class="w-full sm:w-auto px-0 sm:px-0">
                 <label for="position" class="block text-sm font-medium">Position</label>
                 <select name="position" id="position"
-                    class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
-                    onchange="this.form.submit()">
+                    class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1">
                     <option value="">All Positions</option>
                     @foreach($positions as $position)
                     <option value="{{ $position->position_id }}" @if(request('position')==$position->position_id)
@@ -126,19 +124,24 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                 <label for="search" class="block text-sm font-medium">Search</label>
                 <input type="text" name="search" id="search" value="{{ request('search') }}"
                     class="form-input w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
-                    placeholder="Employee Name or Number..." onblur="this.form.submit()"
-                    onkeydown="if(event.key==='Enter'){this.form.submit();}">
+                    placeholder="Employee Name or Number...">
             </div>
             <div class="w-full sm:w-auto px-0 sm:px-0">
                 <label for="per_page" class="block text-sm font-medium">Page Size</label>
                 <select name="per_page" id="per_page"
-                    class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1"
-                    onchange="this.form.submit()">
+                    class="form-select w-full sm:w-auto border border-teal-300 bg-teal-50 focus:border-teal-500 focus:bg-white transition rounded-lg px-4 py-3 sm:px-2 sm:py-1">
                     @foreach([10, 20, 50, 100] as $size)
                     <option value="{{ $size }}" @if((request('per_page', $perPage ?? 10)==$size)) selected @endif>{{
                         $size }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="w-full sm:w-auto px-0 sm:px-0">
+                <span class="block text-sm font-medium text-transparent select-none" aria-hidden="true">&nbsp;</span>
+                <button type="submit"
+                    class="w-full sm:w-auto rounded-lg bg-teal-600 px-4 py-3 sm:py-2 text-sm font-semibold text-white hover:bg-teal-700 transition">
+                    Apply Filters
+                </button>
             </div>
             </form>
         </div>
@@ -163,7 +166,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                     @forelse($employees as $employee)
                     <tr class="sm:text-sm">
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->last_name }}, {{ $employee->first_name }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->formalName() }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->title ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->name ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center">
@@ -225,21 +228,3 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var facilitySelect = document.getElementById('facility');
-        var form = document.getElementById('employee-filter-form');
-        if (facilitySelect && form) {
-            var urlParams = new URLSearchParams(window.location.search);
-            var facilityVal = facilitySelect.value;
-            if (facilityVal && !urlParams.has('facility')) {
-                // Add facility param and submit
-                urlParams.set('facility', facilityVal);
-                window.location.search = urlParams.toString();
-            }
-        }
-    });
-</script>
-@endpush

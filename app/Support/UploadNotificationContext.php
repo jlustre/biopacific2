@@ -23,12 +23,14 @@ class UploadNotificationContext
     }
 
     /**
+     * Facility users who may review employee document submissions (DSD, DON, facility admin).
+     *
      * @return Collection<int, User>
      */
-    public static function facilityDsdUsers(Facility $facility): Collection
+    public static function facilityDocumentReviewerUsers(Facility $facility): Collection
     {
         return User::query()
-            ->role('facility-dsd')
+            ->role(['facility-dsd', 'don', 'facility-admin'])
             ->where(function ($query) use ($facility) {
                 $query->where('facility_id', $facility->id)
                     ->orWhereHas('facilities', fn ($facilityQuery) => $facilityQuery->where('facilities.id', $facility->id));
@@ -41,15 +43,33 @@ class UploadNotificationContext
     /**
      * @return list<string>
      */
-    public static function facilityDsdEmails(Facility $facility): array
+    public static function facilityDocumentReviewerEmails(Facility $facility): array
     {
-        return self::facilityDsdUsers($facility)
+        return self::facilityDocumentReviewerUsers($facility)
             ->pluck('email')
             ->map(fn ($email) => trim((string) $email))
             ->filter(fn (string $email) => $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL))
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public static function facilityDsdUsers(Facility $facility): Collection
+    {
+        return self::facilityDocumentReviewerUsers($facility)
+            ->filter(fn (User $user) => $user->hasRole('facility-dsd'))
+            ->values();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function facilityDsdEmails(Facility $facility): array
+    {
+        return self::facilityDocumentReviewerEmails($facility);
     }
 
     /**
@@ -106,9 +126,9 @@ class UploadNotificationContext
             abort(422, 'No facility is linked to this upload.');
         }
 
-        $emails = self::facilityDsdEmails($facility);
+        $emails = self::facilityDocumentReviewerEmails($facility);
         if ($emails === []) {
-            abort(422, 'No DSD contact email is configured for this facility. Please contact your administrator.');
+            abort(422, 'No DSD, DON, or administrator contact email is configured for this facility. Please contact your administrator.');
         }
 
         if (! $upload->canSubmitForVerification()) {

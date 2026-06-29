@@ -10,8 +10,11 @@ Route::get('/admin/facility/{facility}/employees', function ($facilityId, Reques
     $employees = BPEmployee::whereHas('assignments', function($q) use ($facilityId) {
         $q->where('facility_id', $facilityId);
     })
-    ->orderBy('last_name')
-    ->get(['employee_num as id', 'employee_num', 'first_name', 'middle_name', 'last_name']);
+    ->orderedByName()
+    ->get(['employee_num as id', 'employee_num', 'first_name', 'middle_name', 'last_name'])
+    ->map(fn (BPEmployee $employee) => array_merge($employee->only(['id', 'employee_num', 'first_name', 'middle_name', 'last_name']), [
+        'name' => $employee->formalName(),
+    ]));
     return response()->json($employees);
 })->name('admin.facility.employees.ajax');
 
@@ -20,7 +23,10 @@ Route::get('/admin/facility/{facility}/employees/all', function ($facilityId, Re
     $employees = BPEmployee::whereHas('assignments', function($q) use ($facilityId) {
         $q->where('facility_id', $facilityId);
     })
-    ->orderBy('last_name')
-    ->get(['employee_num as id', 'employee_num', 'first_name', 'middle_name', 'last_name']);
+    ->orderedByName()
+    ->get(['employee_num as id', 'employee_num', 'first_name', 'middle_name', 'last_name'])
+    ->map(fn (BPEmployee $employee) => array_merge($employee->only(['id', 'employee_num', 'first_name', 'middle_name', 'last_name']), [
+        'name' => $employee->formalName(),
+    ]));
     return response()->json($employees);
 });

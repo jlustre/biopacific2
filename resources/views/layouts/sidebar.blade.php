@@ -205,12 +205,8 @@ use Illuminate\Support\Facades\Log;
                             <i class="fas fa-briefcase mr-2 text-blue-600"></i> Positions
                         </a>
                         <a href="{{ route('admin.upload-types.index') }}"
-                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.upload-types.*') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
+                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs(['admin.upload-types.*', 'admin.checklist-items.*']) ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
                             <i class="fas fa-file-alt mr-2 text-blue-600"></i> Documents Management
-                        </a>
-                        <a href="{{ route('admin.checklist-items.index') }}"
-                            class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.checklist-items.*') ? 'bg-cyan-50 text-cyan-700 font-medium' : '' }}">
-                            <i class="fas fa-list-check mr-2 text-cyan-600"></i> Checklist Items
                         </a>
                         <a href="{{ route('admin.departments.index') }}"
                             class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.departments.*') ? 'bg-green-50 text-green-700 font-medium' : '' }}">

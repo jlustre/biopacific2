@@ -264,8 +264,8 @@ Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->grou
     Route::get('/hr-portal/{facility?}', [DashboardController::class, 'hrManagementHub'])->name('user.hr-portal');
 });
 
-// Facility Dashboard (member portal layout) — extensible facility overview
-Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->group(function () {
+// Facility Dashboard (member portal layout) — leadership roles only
+Route::middleware(['auth'])->group(function () {
     Route::get('/facility-dashboard/{facility?}', [DashboardController::class, 'facilityDashboard'])
         ->name('member.facility.dashboard');
 });
@@ -304,6 +304,7 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
     Route::get('/admin/facilities/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'index'])->name('admin.facilities.leadership.index');
     Route::get('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'edit'])->name('admin.facility.leadership.edit');
     Route::put('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'update'])->name('admin.facility.leadership.update');
+    Route::delete('/admin/facility/{facility}/leadership/role/{roleKey}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroyRole'])->name('admin.facility.leadership.role.destroy');
     Route::delete('/admin/facility/{facility}/leadership/{assignment}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroy'])->name('admin.facility.leadership.destroy');
     Route::resource('admin/facility/{facility}/uploads', UploadController::class)
         ->parameters(['uploads' => 'upload'])
@@ -426,6 +427,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::get('/roles/{role}', [AdminRoleController::class, 'show'])->name('roles.show');
     Route::get('/roles/{role}/edit', [AdminRoleController::class, 'edit'])->name('roles.edit');
     Route::put('/roles/{role}', [AdminRoleController::class, 'update'])->name('roles.update');
+    Route::post('/roles/sync-seeder', [AdminRoleController::class, 'syncSeeder'])->name('roles.sync-seeder');
     Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy'])->name('roles.destroy');
     Route::get('/roles/{role}/permissions', [AdminRoleController::class, 'getPermissions'])->name('roles.permissions');
     
@@ -455,6 +457,15 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::post('/role-assignments/quick-assign', [AdminRoleAssignmentController::class, 'quickAssign'])->name('role-assignments.quick-assign');
     Route::get('/role-assignments/statistics', [AdminRoleAssignmentController::class, 'statistics'])->name('role-assignments.statistics');
     Route::get('/role-assignments/{role}/users', [AdminRoleAssignmentController::class, 'getUsersForRole'])->name('role-assignments.users-for-role');
+
+    Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::post('/position-portal-roles/sync-defaults', [\App\Http\Controllers\Admin\PositionPortalRoleMappingController::class, 'syncDefaults'])
+            ->name('position-portal-roles.sync-defaults');
+        Route::resource('position-portal-roles', \App\Http\Controllers\Admin\PositionPortalRoleMappingController::class)
+            ->except(['show'])
+            ->parameters(['position-portal-roles' => 'mapping'])
+            ->names('position-portal-roles');
+    });
     
     // List testimonials (new route for index)
     Route::get('/facilities/web-contents/testimonials', [FacilityAdminController::class, 'testimonials'])->name('facilities.webcontents.testimonials');
@@ -502,16 +513,24 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
             ->names('positions');
         Route::post('positions/{position}/copy-requirements', [\App\Http\Controllers\Admin\PositionController::class, 'copyRequirements'])
             ->name('positions.copy-requirements');
+        Route::get('positions/upload-types-by-department', [\App\Http\Controllers\Admin\PositionController::class, 'uploadTypesForDepartment'])
+            ->name('positions.upload-types-by-department');
+        Route::post('positions/seed-document-requirements', [\App\Http\Controllers\Admin\PositionController::class, 'seedDocumentRequirements'])
+            ->name('positions.seed-document-requirements');
     });
 
-    // Documents Management (Upload Types)
+    // Documents Management (document types / UploadType model)
     Route::middleware(['role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-ssd|ssd|don'])->group(function () {
         Route::resource('upload-types', \App\Http\Controllers\Admin\UploadTypeController::class)
-            ->except(['show', 'destroy'])
+            ->except(['destroy'])
             ->names('upload-types');
     });
 
     Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::post('upload-types/sync-seeder', [\App\Http\Controllers\Admin\UploadTypeController::class, 'syncSeeder'])
+            ->name('upload-types.sync-seeder');
+        Route::post('upload-types/run-seeder', [\App\Http\Controllers\Admin\UploadTypeController::class, 'runSeeder'])
+            ->name('upload-types.run-seeder');
         Route::delete('upload-types/{upload_type}', [\App\Http\Controllers\Admin\UploadTypeController::class, 'destroy'])
             ->name('upload-types.destroy');
     });
@@ -522,6 +541,11 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::resource('checklist-items', \App\Http\Controllers\Admin\ChecklistItemController::class)
         ->except(['show'])
         ->names('checklist-items');
+
+    Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::post('checklist-items/sync-seeder', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'syncSeeder'])
+            ->name('checklist-items.sync-seeder');
+    });
 
     // Departments Management CRUD
     Route::resource('departments', \App\Http\Controllers\Admin\DepartmentController::class)->names('departments');
@@ -657,6 +681,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/documents', [DashboardController::class, 'memberDocuments'])->name('member.documents');
     Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
     Route::get('/dashboard/trainings', [DashboardController::class, 'memberTrainings'])->name('member.trainings');
+    Route::get('/dashboard/feedback', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'index'])->name('member.feedback.index');
+    Route::get('/dashboard/feedback/create', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'create'])->name('member.feedback.create');
+    Route::post('/dashboard/feedback', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'store'])->name('member.feedback.store');
+    Route::get('/dashboard/feedback/{submission}', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'show'])->name('member.feedback.show');
+    Route::get('/dashboard/feedback/{submission}/edit', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'edit'])->name('member.feedback.edit');
+    Route::put('/dashboard/feedback/{submission}', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'update'])->name('member.feedback.update');
+    Route::post('/dashboard/feedback/{submission}/comments', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'storeComment'])->name('member.feedback.comments.store');
+    Route::get('/dashboard/help', [\App\Http\Controllers\MemberPortalHelpController::class, 'index'])->name('member.help.index');
+    Route::get('/dashboard/help/hr', [\App\Http\Controllers\MemberPortalHelpController::class, 'hrForm'])->name('member.help.hr');
+    Route::post('/dashboard/help/hr', [\App\Http\Controllers\MemberPortalHelpController::class, 'storeHr'])->name('member.help.hr.store');
+    Route::get('/dashboard/help/support', [\App\Http\Controllers\MemberPortalHelpController::class, 'supportForm'])->name('member.help.support');
+    Route::post('/dashboard/help/support', [\App\Http\Controllers\MemberPortalHelpController::class, 'storeSupport'])->name('member.help.support.store');
+    Route::get('/dashboard/help/{helpRequest}', [\App\Http\Controllers\MemberPortalHelpController::class, 'show'])->name('member.help.show');
+    Route::get('/dashboard/help/{helpRequest}/confirmation', [\App\Http\Controllers\MemberPortalHelpController::class, 'confirmation'])->name('member.help.confirmation');
     Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
     Route::get('/dashboard/facilities-websites', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'index'])->name('member.facilities.websites');
     Route::get('/dashboard/facilities-websites/{facility}', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'show'])->name('member.facilities.websites.show');
@@ -721,6 +759,8 @@ Route::post('/admin/{any}/livewire/update', [HandleRequests::class, 'handleUpdat
 
 // Register admin webmaster contacts routes
 require __DIR__.'/admin_webmaster_contacts.php';
+// Register admin portal help request routes
+require __DIR__.'/admin_portal_help_requests.php';
 // Register admin incident contacts routes
 require __DIR__.'/admin_incident_contacts.php';
 
@@ -771,8 +811,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/mfa', [AdminMfaController::class, 'verifyMfa'])->name('admin.mfa.verify');
     });
     
-// MFA setup routes for admin (web guard)
-Route::middleware(['auth', 'role:admin'])->group(function () {
+// MFA setup routes (all authenticated users — portal and admin)
+Route::middleware(['auth'])->group(function () {
     Route::get('/admin/mfa/setup', [App\Http\Controllers\Auth\AdminMfaSetupController::class, 'showSetupForm'])->name('admin.mfa.setup.form');
     Route::post('/admin/mfa/setup', [App\Http\Controllers\Auth\AdminMfaSetupController::class, 'storeSetup'])->name('admin.mfa.setup.store');
 });

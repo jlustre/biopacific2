@@ -3,11 +3,60 @@
 namespace App\Support;
 
 use App\Services\MemberPortalContextResolver;
+use App\Services\RoleMemberDashboardService;
 use App\Support\Rbac\Permissions;
 use Illuminate\Http\Request;
 
 class MemberPortalLayout
 {
+    public static function userCanAccessFacilityDashboard($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return $user && app(RoleMemberDashboardService::class)->canAccessFacilityDashboard($user);
+    }
+
+    /**
+     * Dashboard sidebar links for the current user (filters Facility Dashboard to leadership).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function dashboardNavItemsForUser($user = null): array
+    {
+        $user = $user ?? auth()->user();
+        $navMode = self::sidebarModeForCurrentRequest();
+
+        $items = match ($navMode) {
+            'facility' => config('member-portal.facility_dashboard_nav', []),
+            'corporate' => config('member-portal.corporate_dashboard_nav', []),
+            'employee' => self::employeeDashboardNavItems($user),
+            default => [],
+        };
+
+        $canFacilityDashboard = self::userCanAccessFacilityDashboard($user);
+        $hasFacilityLink = collect($items)->contains(fn (array $item) => ($item['id'] ?? '') === 'facility-dashboard');
+
+        if ($canFacilityDashboard && ! $hasFacilityLink) {
+            $facilityItem = [
+                'id' => 'facility-dashboard',
+                'route' => 'member.facility.dashboard',
+                'route_is' => ['member.facility.dashboard', 'admin.facility.dashboard'],
+                'icon' => '🏢',
+                'label' => 'Facility Dashboard',
+            ];
+            array_splice($items, 1, 0, [$facilityItem]);
+        }
+
+        if (! $canFacilityDashboard) {
+            $items = collect($items)
+                ->filter(fn (array $item) => ($item['id'] ?? '') !== 'facility-dashboard')
+                ->values()
+                ->all();
+        }
+
+        return $items;
+    }
+
     public static function systemAdminRoles(): array
     {
         return config('member-portal.system_admin_roles', ['admin', 'super-admin']);
@@ -47,7 +96,29 @@ class MemberPortalLayout
 
     public static function hrPortalRouteForUser($user = null): string
     {
+        $routeKey = SelectedFacility::routeKey();
+
+        if ($routeKey) {
+            return route('user.hr-portal', ['facility' => $routeKey]);
+        }
+
         return route('user.hr-portal');
+    }
+
+    public static function facilityDashboardRouteForUser($user = null): string
+    {
+        $routeKey = SelectedFacility::routeKey();
+
+        if ($routeKey) {
+            return route('member.facility.dashboard', ['facility' => $routeKey]);
+        }
+
+        return route('member.facility.dashboard');
+    }
+
+    public static function routeWithSelectedFacility(string $name, array $parameters = [], bool $absolute = true): string
+    {
+        return SelectedFacility::route($name, $parameters, $absolute);
     }
 
     public static function facilityManagerRoles(): array
@@ -164,12 +235,35 @@ class MemberPortalLayout
 
         $resolver = new MemberPortalContextResolver();
 
-        return array_merge($resolver->forUser($user), self::pageMeta());
+        return array_merge($resolver->forUser($user), self::pageMeta(), [
+            'selectedFacility' => SelectedFacility::model(),
+            'selectedFacilityId' => SelectedFacility::id(),
+            'selectedFacilityName' => SelectedFacility::name(),
+            'canChooseFacility' => SelectedFacility::userCanChooseFacility($user),
+        ]);
     }
 
     public static function pageMeta(): array
     {
         $routeName = request()->route()?->getName() ?? '';
+
+        if (request()->routeIs('member.facilities.websites*')) {
+            $title = 'Bio-Pacific Websites';
+
+            return [
+                'portalNav' => self::navModeForCurrentRequest(),
+                'portalActive' => self::activeIdForRoute($routeName),
+                'portalTitle' => $title . ' | Bio Pacific',
+                'portalEyebrow' => $title,
+                'portalPageTitle' => $title,
+                'portalSubtitle' => self::navModeForCurrentRequest() === 'employee'
+                    ? 'HR Employee Portal'
+                    : (self::navModeForCurrentRequest() === 'corporate' ? 'Corporate Management' : 'Facility Portal'),
+                'showPortalSearch' => false,
+                'showPortalNotifications' => true,
+                'showPortalFooter' => false,
+            ];
+        }
 
         if (self::isPersonalPortalRoute()) {
             $pageTitle = self::personalPortalPageTitle() ?? 'Personal';

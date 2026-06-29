@@ -32,7 +32,7 @@ class FacilityEmployeeSelect extends Component
             $this->employees = BPEmployee::whereHas('assignments', function($q) {
                 $q->where('facility_id', $this->facility_id);
             })
-            ->orderBy('last_name')
+            ->orderedByName()
             ->get();
         } else {
             $this->employees = collect();

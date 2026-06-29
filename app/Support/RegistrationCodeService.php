@@ -6,6 +6,7 @@ use App\Models\BPEmployee;
 use App\Models\JobApplication;
 use App\Models\RegistrationCode;
 use App\Models\User;
+use App\Support\Rbac\Permissions as RbacPermissions;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -23,13 +24,54 @@ class RegistrationCodeService
             return false;
         }
 
-        return $actor->hasRole([
-            User::superAdminRoleName(),
-            'admin',
-            'rdhr',
-            'facility-admin',
-            'facility-dsd',
-        ]);
+        if ($actor->can(RbacPermissions::CREATE_REGISTRATION_INVITATIONS)) {
+            return true;
+        }
+
+        return $this->actorHoldsDepartmentHeadPosition($actor);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function departmentHeadPositionTitles(): array
+    {
+        $keys = config('member-portal.department_head_leadership_keys', []);
+        $titles = [];
+
+        foreach (config('facility-dashboard.leadership_roles', []) as $roleDefinition) {
+            $key = $roleDefinition['key'] ?? '';
+            if ($key === '' || ! in_array($key, $keys, true)) {
+                continue;
+            }
+
+            foreach ($roleDefinition['position_titles'] ?? [] as $positionTitle) {
+                $normalized = Str::lower(trim((string) $positionTitle));
+                if ($normalized !== '') {
+                    $titles[] = $normalized;
+                }
+            }
+        }
+
+        return array_values(array_unique($titles));
+    }
+
+    public function actorHoldsDepartmentHeadPosition(User $actor): bool
+    {
+        $employee = method_exists($actor, 'resolvedBpEmployee') ? $actor->resolvedBpEmployee() : null;
+
+        if (! $employee) {
+            return false;
+        }
+
+        $employee->loadMissing('currentAssignment.position');
+        $title = Str::lower(trim((string) ($employee->currentAssignment?->position?->title ?? '')));
+
+        if ($title === '') {
+            return false;
+        }
+
+        return in_array($title, $this->departmentHeadPositionTitles(), true);
     }
 
     public function employeeHasPortalUser(BPEmployee $employee): bool
@@ -189,7 +231,10 @@ class RegistrationCodeService
     public function linkRegisteredUser(RegistrationCode $code, User $user): void
     {
         if ($code->isEmployeeCode() && filled($code->employee_num)) {
-            $employee = BPEmployee::query()->where('employee_num', $code->employee_num)->first();
+            $employee = BPEmployee::query()
+                ->where('employee_num', $code->employee_num)
+                ->with('currentAssignment.position')
+                ->first();
 
             if ($employee) {
                 $payload = [
@@ -203,7 +248,9 @@ class RegistrationCodeService
                 $employee->fill($payload)->save();
             }
 
-            if (! $user->hasRole('regular-user') && \Spatie\Permission\Models\Role::query()->where('name', 'regular-user')->exists()) {
+            if ($employee) {
+                app(EmployeePortalRoleService::class)->assignRegistrationRole($user, $employee);
+            } elseif (! $user->hasRole('regular-user') && \Spatie\Permission\Models\Role::query()->where('name', 'regular-user')->exists()) {
                 $user->assignRole('regular-user');
             }
 

@@ -52,12 +52,19 @@ trait HandlesEmployeeEditRedirects
             : BPEmployee::with('currentAssignment')->findOrFail($employee);
 
         if (request()->routeIs('employment.*')) {
-            $params = array_filter([
-                'tab' => $tab,
-                'facility' => request('facility') ?? $employeeModel->currentAssignment?->facility_id,
-            ], fn ($value) => $value !== null && $value !== '');
+            if (
+                request()->input('redirect_to') === 'member.documents'
+                && \Illuminate\Support\Facades\Route::has('member.documents')
+            ) {
+                $redirect = redirect()->route('member.documents');
+            } else {
+                $params = array_filter([
+                    'tab' => $tab,
+                    'facility' => request('facility') ?? $employeeModel->currentAssignment?->facility_id,
+                ], fn ($value) => $value !== null && $value !== '');
 
-            $redirect = redirect()->route('employment.portal', $params);
+                $redirect = redirect()->route('employment.portal', $params);
+            }
         } else {
             $redirect = redirect()->route('admin.employees.edit', $employeeModel->id);
 
