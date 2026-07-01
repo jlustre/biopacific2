@@ -700,6 +700,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/facilities-websites/{facility}', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'show'])->name('member.facilities.websites.show');
     Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');
     Route::patch('settings/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('settings.profile.update');
+    Route::get('settings/profile/avatar/image', [\App\Http\Controllers\MemberProfileAvatarController::class, 'show'])->name('settings.profile.avatar.show');
     Route::post('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'update'])->name('settings.profile.avatar.update');
     Route::delete('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'destroy'])->name('settings.profile.avatar.destroy');
     Route::post('settings/profile/emergency-contacts', [\App\Http\Controllers\MemberEmergencyContactController::class, 'store'])->name('settings.profile.emergency-contacts.store');

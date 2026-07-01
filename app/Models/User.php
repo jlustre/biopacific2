@@ -106,7 +106,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
         $version = $disk->lastModified($path) ?: ($this->updated_at?->timestamp ?? time());
 
-        return asset('storage/' . $path) . '?v=' . $version;
+        return url('settings/profile/avatar/image') . '?v=' . $version;
     }
 
     public function getAvatarUrlAttribute(): ?string
@@ -116,11 +116,24 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function storeAvatar(UploadedFile $file): void
     {
-        $this->deleteStoredAvatar();
+        $oldPath = $this->normalizedAvatarPath();
+        $disk = Storage::disk('public');
 
         $path = str_replace('\\', '/', $file->store($this->profileAvatarDirectory(), 'public'));
 
-        $this->forceFill(['avatar_path' => $path])->save();
+        try {
+            $this->forceFill(['avatar_path' => $path])->save();
+        } catch (\Throwable $exception) {
+            if ($disk->exists($path)) {
+                $disk->delete($path);
+            }
+
+            throw $exception;
+        }
+
+        if ($oldPath !== null && $oldPath !== $path && $disk->exists($oldPath)) {
+            $disk->delete($oldPath);
+        }
 
         $this->pruneStaleProfileAvatars($path);
     }
