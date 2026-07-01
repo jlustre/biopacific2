@@ -27,6 +27,15 @@
   startEdit() {
     this.section = 'account';
     this.editing = true;
+    window.location.hash = 'account';
+    this.$nextTick(() => {
+      if (this.$refs.accountPanel) {
+        this.$refs.accountPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (this.$refs.accountNameInput) {
+        this.$refs.accountNameInput.focus();
+      }
+    });
   },
   cancelEdit() {
     this.editing = false;
@@ -253,7 +262,7 @@
   </div>
 
   {{-- Account --}}
-  <div x-show="section === 'account'" x-cloak class="mt-4">
+  <div x-show="section === 'account'" x-cloak class="mt-4" x-ref="accountPanel">
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -277,7 +286,7 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block sm:col-span-2">
             <span class="text-xs font-bold uppercase tracking-wide text-slate-500">Full name</span>
-            <input name="name" value="{{ old('name', $user->name) }}" required :disabled="!editing"
+                 <input name="name" value="{{ old('name', $user->name) }}" required :disabled="!editing" x-ref="accountNameInput"
                    class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-teal-400 focus:bg-white focus:ring-4 focus:ring-teal-500/15 disabled:cursor-default disabled:opacity-70"/>
             @error('name')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
           </label>

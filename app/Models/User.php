@@ -98,7 +98,13 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         $path = str_replace('\\', '/', ltrim($this->avatar_path, '/'));
-        $version = $this->updated_at?->timestamp ?? time();
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($path)) {
+            return null;
+        }
+
+        $version = $disk->lastModified($path) ?: ($this->updated_at?->timestamp ?? time());
 
         return asset('storage/' . $path) . '?v=' . $version;
     }
