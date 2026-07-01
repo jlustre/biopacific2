@@ -123,24 +123,24 @@
               Quick Links
             </div>
             <ul class="space-y-3">
-              <li><a href="{{ route('privacy.policy', $facility['slug']) }}"
+              <li><a href="{{ facility_public_route('privacy.policy', $facility['slug'] ?? null) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Privacy Policy
                 </a>
               </li>
-              <li><a href="{{ route('terms.service', $facility['slug']) }}"
+              <li><a href="{{ facility_public_route('terms.service', $facility['slug'] ?? null) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Terms of Service
                 </a></li>
-              <li><a href="{{ route('notice.privacy.practices', $facility['slug']) }}"
+              <li><a href="{{ facility_public_route('notice.privacy.practices', $facility['slug'] ?? null) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Notice of Privacy Practices
                 </a>
               </li>
-              <li><a href="{{ route('accessibility', $facility['slug']) }}"
+              <li><a href="{{ facility_public_route('accessibility', $facility['slug'] ?? null) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Accessibility
@@ -162,32 +162,32 @@
         <!-- Footer Links -->
         <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm px-4">
           @if(!empty($facility['slug']))
-          <a href="{{ route('privacy.policy', $facility['slug']) }}"
+          <a href="{{ facility_public_route('privacy.policy', $facility['slug']) }}"
             class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
           @else
           <a href="#privacy" class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
           @endif
           @if(!empty($facility['slug']))
-          <a href="{{ route('notice.privacy.practices', $facility['slug']) }}"
+          <a href="{{ facility_public_route('notice.privacy.practices', $facility['slug']) }}"
             class="text-slate-400 hover:text-primary transition-colors">Notice of Privacy Practices</a>
           @else
           <a href="#notice-privacy-practices" class="text-slate-400 hover:text-primary transition-colors">Notice of
             Privacy Practices</a>
           @endif
           @if(!empty($facility['slug']))
-          <a href="{{ route('terms.service', $facility['slug']) }}"
+          <a href="{{ facility_public_route('terms.service', $facility['slug']) }}"
             class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
           @else
           <a href="#terms" class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
           @endif
           @if(!empty($facility['slug']))
-          <a href="{{ route('accessibility', $facility['slug']) }}"
+          <a href="{{ facility_public_route('accessibility', $facility['slug']) }}"
             class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
           @else
           <a href="#accessibility" class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
           @endif
           @if(!empty($facility['slug']))
-          <a href="{{ route('webmaster.contact.show', $facility['slug']) }}"
+          <a href="{{ facility_public_route('webmaster.contact.show', $facility['slug']) }}"
             class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
           @elseif(!empty($facility['email']))
           <a href="mailto:webmaster@{{ explode('@', $facility['email'])[1] ?? 'example.com' }}"

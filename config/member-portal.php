@@ -10,10 +10,9 @@ return [
     | Operational public site (facility website links)
     |--------------------------------------------------------------------------
     |
-    | Production facility rows use short marketing domains (e.g. *hcc.com) that
-    | forward via Namecheap to www.biopacificoperational.com. Those forwards cannot
-    | target staging — set OPERATIONAL_SITE_BASE (or APP_ENV=staging/local) so the
-    | member portal links directly to staging.biopacificoperational.com/{facility-slug}.
+    | Production facility rows use short marketing domains (e.g. almadenhrc.com) that
+    | resolve directly on this application (A record + cPanel alias + SSL). Staging and
+    | local dev use slug URLs on staging.biopacificoperational.com or the current host.
     |
     */
     'operational_site_base' => env('OPERATIONAL_SITE_BASE'),
@@ -27,6 +26,24 @@ return [
         'OPERATIONAL_SITE_PRODUCTION_BASE',
         'https://www.biopacificoperational.com'
     ),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Facility custom domain routes
+    |--------------------------------------------------------------------------
+    |
+    | When a visitor uses a facility marketing domain (e.g. almadenhrc.com),
+    | named routes resolve to these paths without the operational slug prefix.
+    |
+    */
+    'facility_custom_domain_routes' => [
+        'facility.public' => '/',
+        'privacy.policy' => '/privacy-policy',
+        'notice.privacy.practices' => '/notice-of-privacy-practices',
+        'terms.service' => '/terms-of-service',
+        'accessibility' => '/accessibility',
+        'webmaster.contact.show' => '/webmaster/contact',
+    ],
 
     'demo_user_emails' => [
         'rdhr' => 'rdhr@biopacific.com',

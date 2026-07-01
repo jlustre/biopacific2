@@ -171,7 +171,7 @@
 
               @if(!empty($activeSections) && in_array('about', $activeSections))
               <li>
-                <a href="{{ url('/' . $facility['slug'] . '#about') }}"
+                <a href="{{ facility_public_url('', $facility['slug'] ?? null, 'about') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   About Us
@@ -180,7 +180,7 @@
               @endif
               @if(!empty($activeSections) && in_array('book', $activeSections))
               <li>
-                <a href="{{ url('/' . $facility['slug'] . '#book') }}"
+                <a href="{{ facility_public_url('', $facility['slug'] ?? null, 'book') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Book A Tour
@@ -189,7 +189,7 @@
               @endif
               @if(!empty($activeSections) && in_array('services', $activeSections))
               <li>
-                <a href="{{ url('/'.$facility['slug'] . '#services') }}"
+                <a href="{{ facility_public_url('', $facility['slug'] ?? null, 'services') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Care & Services
@@ -198,7 +198,7 @@
               @endif
               @if(!empty($activeSections) && in_array('careers', $activeSections))
               <li>
-                <a href="{{ url('/' . $facility['slug'] . '#careers') }}"
+                <a href="{{ facility_public_url('', $facility['slug'] ?? null, 'careers') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Career Opportunities
@@ -207,7 +207,7 @@
               @endif
               @if(!empty($activeSections) && in_array('contact', $activeSections))
               <li>
-                <a href="{{ url('/' . $facility['slug'] . '#contact') }}"
+                <a href="{{ facility_public_url('', $facility['slug'] ?? null, 'contact') }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Contact & Location
@@ -220,7 +220,7 @@
                 $facility['slug'] = 'default-slug';
                 }
                 @endphp
-                <a href="{{ url($facility['slug'] . '/webmaster/contact') }}"
+                <a href="{{ facility_public_route('webmaster.contact.show', $facility['slug'] ?? null) }}"
                   class="group flex items-center gap-2 text-slate-300 hover:text-primary transition-all duration-200">
                   <span class="w-1 h-1 bg-slate-500 rounded-full group-hover:bg-primary transition-colors"></span>
                   Contact Webmaster
@@ -245,15 +245,15 @@
       </div>
       <!-- Footer Links -->
       <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm px-4">
-        <a href="{{ url($facility['slug'] .'/privacy-policy') }}"
+        <a href="{{ facility_public_route('privacy.policy', $facility['slug'] ?? null) }}"
           class="text-slate-400 hover:text-primary transition-colors">Privacy Policy</a>
-        <a href="{{ url($facility['slug'] .'/webmaster/contact') }}"
+        <a href="{{ facility_public_route('webmaster.contact.show', $facility['slug'] ?? null) }}"
           class="text-slate-400 hover:text-primary transition-colors">Contact Webmaster</a>
-        <a href="{{ url($facility['slug'] .'/notice-of-privacy-practices') }}"
+        <a href="{{ facility_public_route('notice.privacy.practices', $facility['slug'] ?? null) }}"
           class="text-slate-400 hover:text-primary transition-colors">Notice of Privacy Practices</a>
-        <a href="{{ url($facility['slug'] .'/terms-of-service') }}"
+        <a href="{{ facility_public_route('terms.service', $facility['slug'] ?? null) }}"
           class="text-slate-400 hover:text-primary transition-colors">Terms of Service</a>
-        <a href="{{ url($facility['slug'] .'/accessibility') }}"
+        <a href="{{ facility_public_route('accessibility', $facility['slug'] ?? null) }}"
           class="text-slate-400 hover:text-primary transition-colors">Accessibility</a>
       </div>
     </div>

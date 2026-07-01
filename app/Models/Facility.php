@@ -259,9 +259,7 @@ class Facility extends Model
   // Multi-tenant methods
   public static function findByDomain($domain)
   {
-    return static::where('domain', $domain)
-                ->where('is_active', true)
-                ->first();
+    return \App\Support\FacilityCustomDomain::findByHost((string) $domain);
   }
 
   public function getLayoutConfig($section = null)

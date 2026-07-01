@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('dashboard.index'));
         $middleware->redirectGuestsTo(fn () => route('login'));
 
+        $middleware->prepend(\App\Http\Middleware\ResolveFacilityCustomDomain::class);
+
         $middleware->alias([
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

@@ -17,7 +17,7 @@ $facilitySlug = $facility->slug;
 $facilitySlug = 'facility'; // fallback
 }
 
-$linkPrefix = $isLegalPage ? "/{$facilitySlug}" : '';
+$linkPrefix = \App\Support\FacilityCustomDomain::legalPageLinkPrefix($facilitySlug);
 @endphp
 <div style="width: 100%;">
   <div class="mx-auto max-w-7xl pr-4 sm:pr-6 lg:pr-8 flex items-center justify-between w-full">

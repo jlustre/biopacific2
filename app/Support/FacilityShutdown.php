@@ -78,6 +78,10 @@ class FacilityShutdown
 
     public static function resolveFromRequest(Request $request): ?Facility
     {
+        if ($facility = \App\Support\FacilityCustomDomain::currentFacility()) {
+            return $facility;
+        }
+
         $routeFacility = $request->route('facility');
 
         if ($routeFacility instanceof Facility) {

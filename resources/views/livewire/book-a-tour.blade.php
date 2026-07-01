@@ -134,7 +134,7 @@
                         medical information.</strong></span>
             </label>
             @error('consent') <span class="text-red-600 text-sm" wire:ignore.self>{{ $message }}</span> @enderror
-            <p>See our <a href="{{ url($facility['slug'] . '/notice-of-privacy-practices') }}"
+            <p>See our <a href="{{ facility_public_route('notice.privacy.practices', $facility['slug'] ?? null) }}"
                     class="underline text-primary" target="_blank" rel="noopener noreferrer">Notice of
                     Privacy Practices</a>.</p>
         </div>

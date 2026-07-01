@@ -259,8 +259,8 @@ class MemberFacilitiesWebsitesController extends Controller
             return $raw;
         }
 
-        // Marketing domains (e.g. *hcc.com) use Namecheap HTTP URL forwards — HTTPS often does not respond.
-        return 'http://' . ltrim($raw, '/');
+        // Facility marketing domains (e.g. almadenhrc.com) point at this app via DNS; default to HTTPS.
+        return 'https://' . ltrim($raw, '/');
     }
 
     protected function publicDomainLabel(Facility $facility): ?string
