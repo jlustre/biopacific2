@@ -20,6 +20,7 @@ class BPDepartmentsTableSeeder extends Seeder
             [ 'dept_code' => 'ENV', 'dept_name' => 'Environmental Services', 'description' => 'Housekeeping and laundry.', 'created_at' => now(), 'updated_at' => now() ],
             [ 'dept_code' => 'MAINT', 'dept_name' => 'Maintenance', 'description' => 'Facility maintenance and repairs.', 'created_at' => now(), 'updated_at' => now() ],
             [ 'dept_code' => 'IT', 'dept_name' => 'Information Technology', 'description' => 'IT infrastructure and support.', 'created_at' => now(), 'updated_at' => now() ],
+            [ 'dept_code' => 'EXEC', 'dept_name' => 'Executive Leadership', 'description' => 'Executive office and corporate leadership.', 'created_at' => now(), 'updated_at' => now() ],
             [ 'dept_code' => 'FIN', 'dept_name' => 'Finance', 'description' => 'Budgeting and financial planning.', 'created_at' => now(), 'updated_at' => now() ],
             [ 'dept_code' => 'QA', 'dept_name' => 'Quality Assurance', 'description' => 'Regulatory compliance and quality improvement.', 'created_at' => now(), 'updated_at' => now() ],
             [ 'dept_code' => 'ADMIT', 'dept_name' => 'Admissions', 'description' => 'Resident intake and census management.', 'created_at' => now(), 'updated_at' => now() ],

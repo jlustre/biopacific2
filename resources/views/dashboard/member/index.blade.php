@@ -54,7 +54,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-100 px-4 py-2.5">
                     <h2 class="text-sm font-black text-slate-900">My tasks</h2>
-                    <p class="text-[11px] text-slate-500">Your compliance work — profile and contact info are under My Profile</p>
+                    <p class="text-[11px] text-slate-500">Urgent profile, document uploads, certifications, and checklist items for your role</p>
                 </div>
                 @if(count($myTasks) === 0)
                 <p class="px-4 py-6 text-center text-sm text-slate-500">You’re caught up. Check back when HR assigns new items.</p>
@@ -69,8 +69,17 @@
                             <p class="text-xs text-slate-500">{{ $task['description'] }}</p>
                             @endif
                         </div>
-                        @if(!empty($task['route']))
-                        <a href="{{ $task['route'] }}" class="shrink-0 text-xs font-bold text-teal-700 hover:text-teal-900">Open</a>
+                        @if(!empty($task['route']) || ($task['action'] ?? '') === 'submit')
+                        @if(($task['action'] ?? '') === 'submit')
+                        <form method="POST" action="{{ route('settings.profile.submit-hr-review') }}" class="shrink-0">
+                            @csrf
+                            <button type="submit" class="text-xs font-bold text-teal-700 hover:text-teal-900">Submit</button>
+                        </form>
+                        @elseif(!empty($task['route']))
+                        <a href="{{ $task['route'] }}" class="shrink-0 text-xs font-bold text-teal-700 hover:text-teal-900">
+                            {{ ($task['action'] ?? '') === 'upload' ? 'Upload' : 'Open' }}
+                        </a>
+                        @endif
                         @endif
                     </li>
                     @endforeach

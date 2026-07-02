@@ -64,6 +64,16 @@ return [
         ['key' => 'admissions', 'label' => 'Admissions Coordinator', 'abbrev' => 'Admissions', 'source' => 'position', 'position_titles' => ['Admissions Coordinator']],
     ],
 
+    /**
+     * Corporate facility leadership roster (bio-pacific-corporate and other corporate sites).
+     *
+     * @var list<array{key: string, label: string, abbrev: string, source: string, facility_column?: string, position_titles?: list<string>}>
+     */
+    'corporate_leadership_roles' => [
+        ['key' => 'president', 'label' => 'President', 'abbrev' => 'President', 'source' => 'facility', 'facility_column' => 'administrator', 'position_titles' => ['President']],
+        ['key' => 'it_director', 'label' => 'IT Director', 'abbrev' => 'IT Director', 'source' => 'position', 'position_titles' => ['IT Director']],
+    ],
+
     'expiring_window_days' => 60,
     'assessments_due_window_days' => 30,
     'staff_directory_limit' => 200,

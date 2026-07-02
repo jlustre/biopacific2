@@ -60,6 +60,13 @@ return [
             'report' => false,
         ],
 
+        'backup_external' => [
+            'driver' => 'local',
+            'root' => env('BACKUP_EXTERNAL_PATH', storage_path('app/backups-external')),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

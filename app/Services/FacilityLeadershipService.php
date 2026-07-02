@@ -19,9 +19,23 @@ class FacilityLeadershipService
         $disabled = $this->disabledRoleKeysForFacility($facility);
 
         return array_values(array_filter(
-            $this->roleDefinitions(),
+            $this->roleDefinitionsForFacility($facility),
             fn (array $role) => ! in_array($role['key'] ?? '', $disabled, true)
         ));
+    }
+
+    /**
+     * Leadership role definitions for a facility (corporate vs. nursing home).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function roleDefinitionsForFacility(Facility $facility): array
+    {
+        if ($facility->isCorporatePublicSite()) {
+            return config('facility-dashboard.corporate_leadership_roles', []);
+        }
+
+        return config('facility-dashboard.leadership_roles', []);
     }
 
     /**
@@ -48,7 +62,7 @@ class FacilityLeadershipService
 
     public function removeStandardRole(Facility $facility, string $roleKey): void
     {
-        $roleDef = $this->roleDefinitionMap()[$roleKey] ?? null;
+        $roleDef = $this->roleDefinitionMapForFacility($facility)[$roleKey] ?? null;
         if (! $roleDef) {
             abort(404);
         }
@@ -128,6 +142,22 @@ class FacilityLeadershipService
     /**
      * @return array<string, array<string, mixed>>
      */
+    public function roleDefinitionMapForFacility(Facility $facility): array
+    {
+        $map = [];
+        foreach ($this->roleDefinitionsForFacility($facility) as $role) {
+            $key = $role['key'] ?? '';
+            if ($key !== '') {
+                $map[$key] = $role;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
     public function roleDefinitionMap(): array
     {
         $map = [];
@@ -154,7 +184,7 @@ class FacilityLeadershipService
         $usedNames = [];
         $sort = 0;
 
-        foreach ($this->roleDefinitions() as $role) {
+        foreach ($this->roleDefinitionsForFacility($facility) as $role) {
             $key = $role['key'] ?? '';
             if ($key === '' || in_array($key, $this->disabledRoleKeysForFacility($facility), true)) {
                 continue;
@@ -261,7 +291,7 @@ class FacilityLeadershipService
         $customRoles = $validated['custom_roles'] ?? [];
         $deleteCustomIds = $validated['delete_custom_ids'] ?? [];
 
-        $roleMap = $this->roleDefinitionMap();
+        $roleMap = $this->roleDefinitionMapForFacility($facility);
         $sort = 0;
 
         foreach ($this->activeRoleDefinitionsForFacility($facility) as $role) {
@@ -348,7 +378,7 @@ class FacilityLeadershipService
             ->keyBy('role_key');
 
         $supervisors ??= $this->employeesByPositionTitle($facility);
-        $roleMap = $this->roleDefinitionMap();
+        $roleMap = $this->roleDefinitionMapForFacility($facility);
         $usedNames = [];
         $leadership = [];
         $rank = 1;
@@ -418,7 +448,7 @@ class FacilityLeadershipService
      */
     protected function virtualAssignmentsFromDefinitions(Facility $facility): Collection
     {
-        return collect($this->roleDefinitions())->map(function (array $role, int $index) use ($facility) {
+        return collect($this->roleDefinitionsForFacility($facility))->map(function (array $role, int $index) use ($facility) {
             $key = $role['key'] ?? '';
 
             return new FacilityLeadershipAssignment([

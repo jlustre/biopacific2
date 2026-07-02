@@ -35,8 +35,12 @@
         <p class="text-xs font-bold uppercase tracking-wide text-amber-900/70">Select a facility</p>
         <ul class="mt-3 divide-y divide-amber-100 rounded-xl border border-amber-100 bg-white shadow-sm">
         @foreach($facilities as $f)
+        @php
+            $facilityRouteKey = $f->slug ?? $f->id;
+            $facilityDestination = route($facilitySwitchRoute ?? 'member.facility.dashboard', ['facility' => $facilityRouteKey], false);
+        @endphp
         <li>
-            <a href="{{ route($facilitySwitchRoute ?? 'member.facility.dashboard', ['facility' => $f->slug ?? $f->id]) }}"
+            <a href="{{ route('member.select-facility', ['facility' => $facilityRouteKey, 'redirect' => $facilityDestination]) }}"
                class="flex items-center justify-between px-4 py-3 text-sm font-semibold text-teal-700 hover:bg-amber-50/80">
                 <span>{{ $f->name }}</span>
                 <span class="text-teal-500">→</span>

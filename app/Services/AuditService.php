@@ -1,11 +1,13 @@
 <?php
-<?php
 
 namespace App\Services;
 
 use App\Models\AuditLog;
-use Illuminate\Http\Request;
+use App\Models\Facility;
+use App\Models\User;
+use App\Support\SelectedFacility;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class AuditService
 {
@@ -19,10 +21,47 @@ class AuditService
             'ip_address' => $request?->ip(),
             'user_agent' => $request?->userAgent(),
             'url' => $request?->fullUrl(),
-            'severity' => 'low'
+            'severity' => 'low',
         ], $data);
 
+        if (Schema::hasColumn('audit_logs', 'facility_id') && ! array_key_exists('facility_id', $auditData)) {
+            $auditData['facility_id'] = self::resolveFacilityId();
+        }
+
         return AuditLog::create($auditData);
+    }
+
+    protected static function resolveFacilityId(): ?int
+    {
+        if ($id = SelectedFacility::id()) {
+            return $id;
+        }
+
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            return self::defaultFacilityId();
+        }
+
+        if ($user->facility_id) {
+            return (int) $user->facility_id;
+        }
+
+        if (method_exists($user, 'resolvedBpEmployee')) {
+            $employee = $user->resolvedBpEmployee(['currentAssignment.facility']);
+            $facilityId = $employee?->currentAssignment?->facility_id;
+            if ($facilityId) {
+                return (int) $facilityId;
+            }
+        }
+
+        return self::defaultFacilityId();
+    }
+
+    protected static function defaultFacilityId(): ?int
+    {
+        $id = Facility::query()->orderBy('id')->value('id');
+
+        return $id ? (int) $id : null;
     }
 
     public static function logModelEvent($model, string $action, array $oldValues = [], array $newValues = []): AuditLog

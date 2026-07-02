@@ -64,6 +64,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'profile_submitted_at' => 'datetime',
+            'profile_confirmed_at' => 'datetime',
         ];
     }
 
@@ -343,14 +345,14 @@ class User extends Authenticatable implements MustVerifyEmail
             : BPEmployee::query()->with($with);
 
         if (static::bpEmployeesTableHasUserId()) {
-            $byUserId = $makeQuery()->where('user_id', $this->id)->first();
+            $byUserId = $makeQuery()->where('user_id', $this->id)->orderByDesc('updated_at')->first();
             if ($byUserId) {
                 return $byUserId;
             }
         }
 
         if (filled($this->email)) {
-            return $makeQuery()->where('email', $this->email)->first();
+            return $makeQuery()->where('email', $this->email)->orderByDesc('updated_at')->first();
         }
 
         return null;

@@ -13,8 +13,8 @@
 @endphp
 
 <button type="button" @click="webOpen = !webOpen"
-        class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $webSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">
-    <span class="flex items-center gap-2"><span>🌐</span><span>Web Contents</span></span>
+        class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 {{ $webSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">
+    <span class="flex items-center gap-3"><span>🌐</span><span>Web Contents</span></span>
     <span class="text-xs" x-text="webOpen ? '▲' : '▼'"></span>
 </button>
 <div x-show="webOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">
@@ -35,8 +35,8 @@
 </div>
 
 <button type="button" @click="commOpen = !commOpen"
-        class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm {{ $commSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">
-    <span class="flex items-center gap-2"><span>💬</span><span>Communications</span></span>
+        class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 {{ $commSectionOpen ? 'bg-white/10 text-white' : 'text-teal-100 hover:bg-white/10 hover:text-white' }}">
+    <span class="flex items-center gap-3"><span>💬</span><span>Communications</span></span>
     <span class="text-xs" x-text="commOpen ? '▲' : '▼'"></span>
 </button>
 <div x-show="commOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">

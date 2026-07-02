@@ -264,6 +264,14 @@ use Illuminate\Support\Facades\Log;
                     </div>
                 </div>
 
+                <!-- Backup & Restore -->
+                @if(\App\Support\MemberPortalLayout::userIsSystemAdmin($user))
+                <a href="{{ route('admin.backups.index') }}"
+                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.backups.*') ? 'bg-gray-100 font-bold' : '' }}">
+                    <i class="fas fa-database mr-2"></i> Backup & Restore
+                </a>
+                @endif
+
                 <!-- Security Monitoring -->
                 <a href="{{ route('admin.security.dashboard') }}"
                     class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs('admin.security.*') ? 'bg-gray-100 font-bold' : '' }}">

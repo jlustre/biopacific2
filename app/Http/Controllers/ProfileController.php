@@ -39,6 +39,8 @@ class ProfileController extends Controller
             $user->sendEmailVerificationNotification();
         }
 
+        app(\App\Services\MemberProfileHrReviewService::class)->submitForHrReview($user->fresh());
+
         return Redirect::route('settings.profile')->with('status', 'profile-updated');
     }
 

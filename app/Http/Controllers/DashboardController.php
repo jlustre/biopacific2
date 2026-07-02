@@ -110,12 +110,15 @@ class DashboardController extends Controller
             $facility = $facilities->first();
         }
 
-        if (! $facility && $user->facility_id) {
+        if (! $facility && $user->facility_id && ! SelectedFacility::id()) {
             $facility = Facility::find($user->facility_id);
         }
 
         if ($facility) {
-            SelectedFacility::remember($facility);
+            $hasRouteFacility = request()->route('facility') !== null;
+            if ($hasRouteFacility || ! session()->has(SelectedFacility::SESSION_ID_KEY)) {
+                SelectedFacility::remember($facility);
+            }
         }
 
         if (!$facility) {
@@ -242,12 +245,41 @@ class DashboardController extends Controller
     public function memberProfile(Request $request)
     {
         $user = $request->user()->fresh();
-        $context = $this->memberPortalContext($user);
-        $employee = $context['employee'] ?? null;
+        $employee = method_exists($user, 'resolvedBpEmployee')
+            ? $user->resolvedBpEmployee([
+                'currentAssignment.position.reportsToPosition',
+                'currentAssignment.reportsToPosition',
+                'currentAssignment.facility',
+                'currentAssignment.department',
+                'phone',
+                'phones',
+                'address',
+            ])
+            : null;
 
         if ($employee) {
-            $employee->loadMissing(['phone', 'address']);
+            $employee->refresh();
+            $employee->loadMissing([
+                'currentAssignment.position.reportsToPosition',
+                'currentAssignment.reportsToPosition',
+                'currentAssignment.facility',
+                'currentAssignment.department',
+                'phone',
+                'phones',
+                'address',
+            ]);
         }
+
+        $portalContext = $this->memberPortalContext($user);
+
+        $context = array_merge($portalContext, [
+            'employee' => $employee,
+            'positionTitle' => $employee?->currentAssignment?->position?->title ?? 'Team Member',
+            'departmentName' => $employee?->currentAssignment?->department?->name ?? '—',
+            'reportsToName' => $this->resolveReportsToName($employee),
+            'facilityName' => $employee?->currentAssignment?->facility?->name
+                ?? ($portalContext['facility']?->name ?? '—'),
+        ]);
 
         $panels = app(PersonalProfilePanelsService::class);
 
@@ -259,18 +291,18 @@ class DashboardController extends Controller
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
             'profileComplete' => $this->calculatePersonalProfileComplete($user, $employee),
-            'personalPhone' => $employee?->phone?->phone_number,
+            'personalPhone' => $employee?->displayPhoneNumber(),
             'personalAddress' => $this->formatPersonalAddress($employee?->address),
-            'dateOfBirth' => $employee?->dob?->format('M j, Y'),
+            'dateOfBirth' => $employee?->formattedDateOfBirth(),
             'legalName' => $employee
                 ? trim(implode(' ', array_filter([$employee->first_name, $employee->middle_name, $employee->last_name])))
                 : null,
             'emailVerified' => $user->hasVerifiedEmail(),
-            'memberSince' => $user->created_at?->timezone(config('app.timezone'))->format('M j, Y'),
-            'lastUpdated' => $user->updated_at?->timezone(config('app.timezone'))->diffForHumans(),
+            'lastUpdated' => $this->formatProfileLastUpdated($user, $employee),
             'upcomingExpirations' => $panels->upcomingExpirations($user, $employee),
             'profileRecognitions' => $panels->recognitions($user, $employee),
             'emergencyContacts' => $user->emergencyContacts()->get(),
+            'profileHrAssessment' => app(\App\Services\MemberProfileHrReviewService::class)->assess($user, $employee),
         ]));
     }
 

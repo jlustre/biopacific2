@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class BPEmployee extends Model
 {
@@ -10,6 +12,37 @@ class BPEmployee extends Model
     public function phone()
     {
         return $this->hasOne(BPEmpPhone::class, 'employee_num', 'employee_num')->where('is_primary', BPEmpPhone::PRIMARY_YES);
+    }
+
+    /**
+     * Primary phone when flagged, otherwise the most recent phone on file.
+     */
+    public function displayPhoneRecord(): ?BPEmpPhone
+    {
+        if ($this->relationLoaded('phone')) {
+            $primary = $this->getRelation('phone');
+            if ($primary) {
+                return $primary;
+            }
+        } else {
+            $primary = $this->phone()->first();
+            if ($primary) {
+                return $primary;
+            }
+        }
+
+        $phones = $this->relationLoaded('phones')
+            ? $this->phones
+            : $this->phones()->orderByDesc('effdt')->orderByDesc('effseq')->get();
+
+        return $phones->first();
+    }
+
+    public function displayPhoneNumber(): ?string
+    {
+        $number = $this->displayPhoneRecord()?->phone_number;
+
+        return filled($number) ? $number : null;
     }
 
     // Relationship: Employee has one address
@@ -33,7 +66,6 @@ class BPEmployee extends Model
     protected $keyType = 'int';
 
     protected $casts = [
-        'dob' => 'date',
         'original_hire_dt' => 'date',
         'rehire_dt' => 'date',
         'badge_eff_dt' => 'date',
@@ -63,6 +95,50 @@ class BPEmployee extends Model
         'effdt_of_membership',
         'email',
     ];
+
+    protected function dob(): Attribute
+    {
+        return Attribute::make(
+            get: function (?string $value) {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                return Carbon::createFromFormat('Y-m-d', substr($value, 0, 10))->startOfDay();
+            },
+            set: function ($value) {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                if ($value instanceof \DateTimeInterface) {
+                    return $value->format('Y-m-d');
+                }
+
+                return Carbon::parse((string) $value)->toDateString();
+            },
+        );
+    }
+
+    public function formattedDateOfBirth(string $format = 'M j, Y'): ?string
+    {
+        $raw = $this->getRawOriginal('dob');
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        return Carbon::createFromFormat('Y-m-d', substr((string) $raw, 0, 10))->format($format);
+    }
+
+    public function dateOfBirthInputValue(): string
+    {
+        $raw = $this->getRawOriginal('dob');
+        if ($raw === null || $raw === '') {
+            return '';
+        }
+
+        return substr((string) $raw, 0, 10);
+    }
 
     // Relationship: Employee has one phone (primary)
     // Relationship: Employee has many uploads

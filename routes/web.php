@@ -86,7 +86,7 @@ Route::get('/admin/employees/{employee}/documents/{upload}', function ($employee
 // Employee Document View Route
 Route::get('/admin/employees/{employee}/documents/{upload}/view', [\App\Http\Controllers\Admin\EmployeesController::class, 'viewDocument'])->name('admin.employees.documents.view');
 
-// Facility session selection route
+// Facility session selection routes
 Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->get('/admin/hr-portal/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('admin.hr-portal.select-facility');
 
 // Employee Document Delete Route
@@ -101,6 +101,13 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.employees.documents.approve');
     Route::post('/admin/employees/{employee}/documents/{upload}/reject', [\App\Http\Controllers\Admin\EmployeesController::class, 'rejectDocument'])
         ->name('admin.employees.documents.reject');
+});
+
+
+// Backup & Restore Management (admin / super-admin only)
+Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/backups')->name('admin.backups.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('index');
+    Route::get('/{backup}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('download');
 });
 
 
@@ -266,6 +273,7 @@ Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->grou
 
 // Facility Dashboard (member portal layout) — leadership roles only
 Route::middleware(['auth'])->group(function () {
+    Route::get('/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('member.select-facility');
     Route::get('/facility-dashboard/{facility?}', [DashboardController::class, 'facilityDashboard'])
         ->name('member.facility.dashboard');
 });
@@ -372,6 +380,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
 
     // Add resource route for employees (show, edit, update, create)
     Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update', 'create', 'store']);
+    Route::post('employees/{employee}/profile/confirm-hr', [\App\Http\Controllers\Admin\MemberProfileHrReviewController::class, 'confirm'])->name('employees.profile.confirm-hr');
     Route::get('employees/{employee}/assessment-periods/modal-data', [\App\Http\Controllers\Admin\EmployeesController::class, 'assessmentPeriodModalData'])
         ->name('employees.assessment-periods.modal-data');
     // Custom route for updating employee assignment (tabbed form)
@@ -700,6 +709,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/facilities-websites/{facility}', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'show'])->name('member.facilities.websites.show');
     Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');
     Route::patch('settings/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('settings.profile.update');
+    Route::post('settings/profile/submit-hr-review', [\App\Http\Controllers\MemberProfileHrReviewController::class, 'submit'])->name('settings.profile.submit-hr-review');
     Route::get('settings/profile/avatar/image', [\App\Http\Controllers\MemberProfileAvatarController::class, 'show'])->name('settings.profile.avatar.show');
     Route::post('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'update'])->name('settings.profile.avatar.update');
     Route::delete('settings/profile/avatar', [\App\Http\Controllers\MemberProfileAvatarController::class, 'destroy'])->name('settings.profile.avatar.destroy');

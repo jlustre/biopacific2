@@ -13,6 +13,29 @@ class SelectedFacility
 
     public const SESSION_NAME_KEY = 'facility_name';
 
+    /**
+     * Route names where visiting with a {facility} parameter counts as an explicit switch.
+     *
+     * @return list<string>
+     */
+    public static function facilitySwitchRouteNames(): array
+    {
+        return [
+            'user.hr-portal',
+            'member.facility.dashboard',
+            'admin.hr-portal.select-facility',
+            'member.select-facility',
+        ];
+    }
+
+    public static function isFacilitySwitchRequest(?Request $request = null): bool
+    {
+        $request = $request ?? request();
+        $name = $request?->route()?->getName();
+
+        return is_string($name) && in_array($name, self::facilitySwitchRouteNames(), true);
+    }
+
     public static function remember(Facility|int $facility): void
     {
         $model = $facility instanceof Facility
@@ -89,7 +112,7 @@ class SelectedFacility
     }
 
     /**
-     * Persist facility from the current request (route/query), when explicitly provided.
+     * Persist facility from the current request when the user explicitly switches facilities.
      */
     public static function captureFromRequest(?Request $request = null): ?int
     {
@@ -100,12 +123,14 @@ class SelectedFacility
             return null;
         }
 
-        $explicitId = self::explicitFacilityIdFromRequest($request);
+        if (self::isFacilitySwitchRequest($request)) {
+            $portalId = self::portalFacilityIdFromRequest($request);
 
-        if ($explicitId && self::userCanAccessFacility($user, $explicitId)) {
-            self::remember($explicitId);
+            if ($portalId && self::userCanAccessFacility($user, $portalId)) {
+                self::remember($portalId);
 
-            return $explicitId;
+                return $portalId;
+            }
         }
 
         if (! session()->has(self::SESSION_ID_KEY)) {
@@ -123,14 +148,16 @@ class SelectedFacility
         $request = $request ?? request();
         $user = $request->user();
 
-        $explicitId = self::explicitFacilityIdFromRequest($request);
-        if ($explicitId && ($user === null || self::userCanAccessFacility($user, $explicitId))) {
-            return $explicitId;
-        }
-
         $sessionId = session(self::SESSION_ID_KEY);
         if ($sessionId && ($user === null || self::userCanAccessFacility($user, (int) $sessionId))) {
             return (int) $sessionId;
+        }
+
+        if (self::isFacilitySwitchRequest($request)) {
+            $portalId = self::portalFacilityIdFromRequest($request);
+            if ($portalId && ($user === null || self::userCanAccessFacility($user, $portalId))) {
+                return $portalId;
+            }
         }
 
         $forced = self::forcedFacilityIdForUser($user);
@@ -180,29 +207,15 @@ class SelectedFacility
         return route($name, $parameters, $absolute);
     }
 
-    protected static function explicitFacilityIdFromRequest(?Request $request): ?int
+    protected static function portalFacilityIdFromRequest(?Request $request): ?int
     {
         if (! $request) {
             return null;
         }
 
         $routeFacility = $request->route('facility');
-        if ($routeFacility !== null) {
-            $routeId = self::resolveFacilityKey($routeFacility);
-            if ($routeId) {
-                return $routeId;
-            }
-        }
 
-        if ($request->filled('facility_id')) {
-            return (int) $request->input('facility_id');
-        }
-
-        if ($request->filled('facility')) {
-            return self::resolveFacilityKey($request->input('facility'));
-        }
-
-        return null;
+        return $routeFacility !== null ? self::resolveFacilityKey($routeFacility) : null;
     }
 
     protected static function resolveFacilityKey(mixed $value): ?int

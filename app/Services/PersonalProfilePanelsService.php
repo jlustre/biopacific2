@@ -71,12 +71,11 @@ class PersonalProfilePanelsService
             ]);
         }
 
-        if ($employee?->dob) {
-            $birthday = Carbon::parse($employee->dob);
+        if ($employee?->formattedDateOfBirth('F j')) {
             $items->push([
                 'icon' => '🎂',
-                'label' => 'Birthday: ' . $birthday->format('F j'),
-                'sort_key' => '0000-' . $birthday->format('m-d'),
+                'label' => 'Birthday: ' . $employee->formattedDateOfBirth('F j'),
+                'sort_key' => '0000-' . $employee->dateOfBirthInputValue(),
             ]);
         }
 

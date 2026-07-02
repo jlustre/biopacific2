@@ -127,6 +127,13 @@
         <a href="{{ route('admin.hipaa-checklist.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.hipaa-checklist.*') }}">HIPAA Checklist</a>
     </div>
 
+    @if(\Illuminate\Support\Facades\Route::has('admin.backups.index'))
+    <a href="{{ route('admin.backups.index') }}"
+       class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs('admin.backups.*')) }}">
+        <span>💾</span><span>Backup & Restore</span>
+    </a>
+    @endif
+
     <a href="{{ route('admin.security.dashboard') }}"
        class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs('admin.security.*')) }}">
         <span>🔐</span><span>Security Monitoring</span>

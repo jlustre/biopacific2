@@ -41,6 +41,8 @@ class DepartmentSeeder extends Seeder
 
         // Bio Pacific Corporate Departments
         $corporateDepartments = [
+            ['name' => 'Executive Leadership', 'type' => 'corporate', 'description' => 'Executive office and corporate leadership'],
+            ['name' => 'Information Technology', 'type' => 'corporate', 'description' => 'IT infrastructure, systems, and technical support'],
             ['name' => 'Corporate Executive Leadership', 'type' => 'corporate', 'description' => 'C-suite and senior leadership'],
             ['name' => 'Corporate Operations', 'type' => 'corporate', 'description' => 'Multi-facility operations oversight'],
             ['name' => 'Corporate Nursing', 'type' => 'corporate', 'description' => 'Clinical services oversight and support'],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\PhoneHelper;
 use Illuminate\Http\Request;
 use App\Models\BPEmpAddress;
 use App\Models\BPEmpPhone;
@@ -1122,7 +1123,17 @@ class EmployeesController extends Controller
                     \Illuminate\Validation\Rule::unique('users', 'email')->ignore($employee->user_id),
                     \Illuminate\Validation\Rule::unique('bp_employees', 'email')->ignore($employee->id),
                 ],
+                'phone_number' => 'nullable|string|max:50',
+                'phone_id' => [
+                    'nullable',
+                    'integer',
+                    \Illuminate\Validation\Rule::exists('bp_emp_phones', 'phone_id')
+                        ->where('employee_num', $employee->employee_num),
+                ],
             ]);
+            $phoneNumber = $validated['phone_number'] ?? null;
+            $phoneId = $validated['phone_id'] ?? null;
+            unset($validated['phone_number'], $validated['phone_id']);
             $user = Auth::user();
             $isRdhr = $user && method_exists($user, 'hasRole') && $user->hasRole('rdhr');
             $isAdmin = $user && method_exists($user, 'hasRole') && $user->hasRole('admin');
@@ -1134,8 +1145,11 @@ class EmployeesController extends Controller
             if (!$canUpdateSsn) {
                 unset($validated['ssn']); // Prevent masked or unauthorized SSN update
             }
-            if (isset($validated['dob']) && $validated['dob']) {
-                $validated['dob'] = date('Y-m-d', strtotime($validated['dob']));
+            if (array_key_exists('dob', $validated)) {
+                $employee->dob = filled($validated['dob'])
+                    ? \Illuminate\Support\Carbon::parse($validated['dob'])->toDateString()
+                    : null;
+                unset($validated['dob']);
             }
             $employee->fill($validated);
             $employee->marital_status_id = $validated['marital_status_id'] ?? null;
@@ -1149,6 +1163,10 @@ class EmployeesController extends Controller
             if ($employee->user && $employee->user->email !== $email) {
                 $employee->user->email = $email;
                 $employee->user->save();
+                $dirty = true;
+            }
+
+            if ($this->syncPrimaryPhoneFromPersonalForm($employee, $phoneNumber, $phoneId)) {
                 $dirty = true;
             }
 
@@ -1188,6 +1206,9 @@ class EmployeesController extends Controller
         ]);
 
         $isPrimary = $this->normalizeYnPrimary($request->input('is_primary'));
+        if (! $this->employeeHasPrimaryPhone($employeeModel->employee_num) && $isPrimary === BPEmpPhone::PRIMARY_NO) {
+            $isPrimary = BPEmpPhone::PRIMARY_YES;
+        }
         if ($isPrimary === BPEmpPhone::PRIMARY_YES) {
             BPEmpPhone::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', BPEmpPhone::PRIMARY_YES)
@@ -1244,6 +1265,9 @@ class EmployeesController extends Controller
         $phoneModel = BPEmpPhone::where('employee_num', $employeeModel->employee_num)->where('phone_id', $phone)->firstOrFail();
 
         $isPrimary = $this->normalizeYnPrimary($request->input('is_primary'));
+        if (! $this->employeeHasPrimaryPhone($employeeModel->employee_num) && $isPrimary === BPEmpPhone::PRIMARY_NO) {
+            $isPrimary = BPEmpPhone::PRIMARY_YES;
+        }
         if ($isPrimary === BPEmpPhone::PRIMARY_YES) {
             BPEmpPhone::where('employee_num', $employeeModel->employee_num)
                 ->where('is_primary', BPEmpPhone::PRIMARY_YES)
@@ -1386,6 +1410,103 @@ class EmployeesController extends Controller
         }
 
         return BPEmpPhone::PRIMARY_NO;
+    }
+
+    protected function employeeHasPrimaryPhone(string $employeeNum): bool
+    {
+        return BPEmpPhone::query()
+            ->where('employee_num', $employeeNum)
+            ->where('is_primary', BPEmpPhone::PRIMARY_YES)
+            ->exists();
+    }
+
+    protected function syncPrimaryPhoneFromPersonalForm(BPEmployee $employee, ?string $phoneNumber, mixed $phoneId): bool
+    {
+        $employeeNum = $employee->employee_num;
+        $dirty = false;
+
+        if (filled($phoneId)) {
+            $selected = BPEmpPhone::query()
+                ->where('employee_num', $employeeNum)
+                ->where('phone_id', (int) $phoneId)
+                ->first();
+
+            if ($selected) {
+                if ($selected->is_primary !== BPEmpPhone::PRIMARY_YES) {
+                    BPEmpPhone::query()
+                        ->where('employee_num', $employeeNum)
+                        ->where('is_primary', BPEmpPhone::PRIMARY_YES)
+                        ->update(['is_primary' => BPEmpPhone::PRIMARY_NO]);
+                    $selected->is_primary = BPEmpPhone::PRIMARY_YES;
+                    $dirty = true;
+                }
+
+                if (filled($phoneNumber)) {
+                    $normalizedPhone = PhoneHelper::normalizeForStorage($phoneNumber);
+                    if ($selected->phone_number !== $normalizedPhone) {
+                        $selected->phone_number = $phoneNumber;
+                        $dirty = true;
+                    }
+                }
+
+                if ($dirty) {
+                    $selected->save();
+                }
+
+                return $dirty;
+            }
+        }
+
+        if (! filled($phoneNumber)) {
+            return false;
+        }
+
+        $primary = BPEmpPhone::query()
+            ->where('employee_num', $employeeNum)
+            ->where('is_primary', BPEmpPhone::PRIMARY_YES)
+            ->first();
+
+        if (! $primary) {
+            $primary = BPEmpPhone::query()
+                ->where('employee_num', $employeeNum)
+                ->orderByDesc('effdt')
+                ->orderByDesc('effseq')
+                ->first();
+        }
+
+        if ($primary) {
+            if ($primary->is_primary !== BPEmpPhone::PRIMARY_YES) {
+                BPEmpPhone::query()
+                    ->where('employee_num', $employeeNum)
+                    ->where('is_primary', BPEmpPhone::PRIMARY_YES)
+                    ->update(['is_primary' => BPEmpPhone::PRIMARY_NO]);
+                $primary->is_primary = BPEmpPhone::PRIMARY_YES;
+                $dirty = true;
+            }
+
+            $normalizedPhone = PhoneHelper::normalizeForStorage($phoneNumber);
+            if ($primary->phone_number !== $normalizedPhone) {
+                $primary->phone_number = $phoneNumber;
+                $dirty = true;
+            }
+
+            if ($dirty) {
+                $primary->save();
+            }
+
+            return $dirty;
+        }
+
+        $phone = new BPEmpPhone();
+        $phone->employee_num = $employeeNum;
+        $phone->phone_type = 'M';
+        $phone->effdt = now()->toDateString();
+        $phone->effseq = 0;
+        $phone->phone_number = $phoneNumber;
+        $phone->is_primary = BPEmpPhone::PRIMARY_YES;
+        $phone->save();
+
+        return true;
     }
 
     /**

@@ -261,12 +261,7 @@ class RoleMemberDashboardService
     ): array {
         $payload = $this->memberDashboard->build($user);
         $stats = $payload['stats'] ?? [];
-        $todos = collect($payload['todos'] ?? [])
-            ->where('done', false)
-            ->take(6)
-            ->map(fn (array $task) => array_merge($task, ['route' => $task['route'] ?? $task['url'] ?? null]))
-            ->values()
-            ->all();
+        $todos = app(\App\Services\MemberPersonalTaskService::class)->buildStaffTasks($user, $payload);
 
         return [
             'roleDashboardMode' => 'staff',
@@ -799,7 +794,8 @@ class RoleMemberDashboardService
 
         usort($actionQueue, fn (array $a, array $b) => $this->compareEmployeeNameSort($a, $b));
 
-        $actionQueue = array_slice($actionQueue, 0, 10);
+        $profileHrQueue = app(\App\Services\MemberProfileHrReviewService::class)->pendingHrQueueItems($team);
+        $actionQueue = array_slice(array_merge($profileHrQueue, $actionQueue), 0, 10);
 
         $trainingRoute = \Illuminate\Support\Facades\Route::has('admin.training-management.index')
             ? route('admin.training-management.index')

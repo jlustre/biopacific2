@@ -17,9 +17,15 @@ class PositionsSeeder extends Seeder
         $dietaryDept = Department::query()->where('name', 'Dietary')->where('type', 'facility')->first();
         $envServicesDept = Department::query()->where('name', 'Environmental Services')->where('type', 'facility')->first();
         $maintenanceDept = Department::query()->where('name', 'Maintenance')->where('type', 'facility')->first();
+        $corporateExecutiveDept = Department::query()->where('name', 'Executive Leadership')->where('type', 'corporate')->first();
+        $corporateItDept = Department::query()->where('name', 'Information Technology')->where('type', 'corporate')->first();
 
         if (!$nursingDept || !$administrationDept || !$socialServicesDept || !$activitiesDept || !$dietaryDept || !$envServicesDept || !$maintenanceDept) {
             throw new \Exception('Required departments not found. Please run DepartmentSeeder first.');
+        }
+
+        if (!$corporateExecutiveDept || !$corporateItDept) {
+            throw new \Exception('Required corporate departments not found. Please run DepartmentSeeder first.');
         }
 
         $positions = [
@@ -76,6 +82,10 @@ class PositionsSeeder extends Seeder
             ['title' => 'Physical Therapist', 'description' => 'Provides physical therapy.', 'department_id' => $nursingDept->id, 'supervisor_role' => 0, 'reports_to_title' => 'Rehab Manager'],
             ['title' => 'Rehab Manager', 'description' => 'Manages rehabilitation services.', 'department_id' => $nursingDept->id, 'supervisor_role' => 1, 'reports_to_title' => 'Director of Nursing'],
             ['title' => 'Director of Staff Development', 'description' => 'Leads staff development and education programs.', 'department_id' => $administrationDept->id, 'supervisor_role' => 1, 'reports_to_title' => 'Administrator'],
+            // Corporate
+            ['title' => 'President', 'description' => 'Leads corporate strategy and executive operations.', 'department_id' => $corporateExecutiveDept->id, 'supervisor_role' => 1, 'reports_to_title' => null],
+            ['title' => 'IT Director', 'description' => 'Leads information technology strategy and infrastructure.', 'department_id' => $corporateItDept->id, 'supervisor_role' => 1, 'reports_to_title' => 'President'],
+            ['title' => 'Web Developer', 'description' => 'Develops and maintains web applications and digital properties.', 'department_id' => $corporateItDept->id, 'supervisor_role' => 0, 'reports_to_title' => 'IT Director'],
             ];
 
         $seededPositions = [];

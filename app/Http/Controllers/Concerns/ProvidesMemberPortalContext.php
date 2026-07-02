@@ -13,7 +13,8 @@ trait ProvidesMemberPortalContext
     {
         $employee = method_exists($user, 'resolvedBpEmployee')
             ? $user->resolvedBpEmployee([
-                'currentAssignment.position',
+                'currentAssignment.position.reportsToPosition',
+                'currentAssignment.reportsToPosition',
                 'currentAssignment.facility',
                 'currentAssignment.department',
                 'phone',
@@ -39,6 +40,7 @@ trait ProvidesMemberPortalContext
             'firstNameOnly' => $firstNameOnly,
             'positionTitle' => $employee?->currentAssignment?->position?->title ?? 'Team Member',
             'departmentName' => $employee?->currentAssignment?->department?->name ?? '—',
+            'reportsToName' => $this->resolveReportsToName($employee),
             'facilityName' => $employee?->currentAssignment?->facility?->name ?? ($facility?->name ?? '—'),
             'employeeId' => $employee?->employee_num ?? '—',
             'hireDate' => $employee?->original_hire_dt
@@ -69,7 +71,7 @@ trait ProvidesMemberPortalContext
         if ($user->hasVerifiedEmail()) {
             $score += 20;
         }
-        if ($employee?->phone?->phone_number) {
+        if ($employee?->displayPhoneNumber()) {
             $score += 20;
         }
         if ($this->formatPersonalAddress($employee?->address)) {
@@ -99,6 +101,38 @@ trait ProvidesMemberPortalContext
         $parts = array_filter([$line1, $line2, $cityLine]);
 
         return $parts === [] ? null : implode(' · ', $parts);
+    }
+
+    protected function resolveReportsToName($employee): string
+    {
+        $assignment = $employee?->currentAssignment;
+        if (! $assignment) {
+            return '—';
+        }
+
+        $fromAssignment = $assignment->reportsToPosition?->title;
+        if (filled($fromAssignment)) {
+            return $fromAssignment;
+        }
+
+        $fromPosition = $assignment->reportsToPositionTitle();
+        if (filled($fromPosition)) {
+            return $fromPosition;
+        }
+
+        return '—';
+    }
+
+    protected function formatProfileLastUpdated($user, $employee): ?string
+    {
+        $latest = collect([
+            $user->updated_at,
+            $employee?->updated_at,
+            $employee?->displayPhoneRecord()?->updated_at,
+            $employee?->address?->updated_at,
+        ])->filter()->max();
+
+        return $latest?->timezone(config('app.timezone'))->diffForHumans();
     }
 
     protected function resolveMemberFacility($user, $employee = null): ?Facility

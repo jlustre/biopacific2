@@ -88,8 +88,10 @@
             Positions Management
         </a>
         @endif
-
-        @include('dashboard.member.partials.portal-sidebar-web-communications-groups')
     </div>
+
+    @if(\App\Support\MemberPortalLayout::userCanAccessWebContentsNav($authUser))
+        @include('dashboard.member.partials.portal-sidebar-web-communications-groups')
+    @endif
 </div>
 @endif

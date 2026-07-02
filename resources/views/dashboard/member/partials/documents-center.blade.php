@@ -41,7 +41,7 @@
     </div>
 @endif
 
-<section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="memberDocumentsCenter({ uploadUrl: @js(route('employment.documents.upload')), uploadTypes: @js($requiredUploadTypes), submissionReasons: @js($submissionReasonOptions), csrf: @js(csrf_token()) })">
+<section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="memberDocumentsCenter({ uploadUrl: @js(route('employment.documents.upload')), uploadTypes: @js($requiredUploadTypes), submissionReasons: @js($submissionReasonOptions), csrf: @js(csrf_token()) })" x-init="initFromQuery()">
     <div class="border-b border-slate-200 bg-teal-50 p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -593,6 +593,12 @@
                 this.form.expires_at = '';
                 this.form.comments = '';
                 this.showUploadModal = true;
+            },
+            initFromQuery() {
+                const uploadTypeId = new URLSearchParams(window.location.search).get('upload_type_id');
+                if (uploadTypeId) {
+                    this.openUploadModal(uploadTypeId);
+                }
             },
             closeUploadModal() {
                 this.showUploadModal = false;

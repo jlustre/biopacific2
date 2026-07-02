@@ -152,7 +152,7 @@ class MemberPortalHelpController extends Controller
             'defaultFacilityId' => $this->defaultFacilityIdForUser($user),
             'prefillName' => $user->name,
             'prefillEmail' => $user->email,
-            'prefillPhone' => $employee?->phone?->phone_number,
+            'prefillPhone' => $employee?->displayPhoneNumber(),
             'prefillEmployeeNum' => $employee?->employee_num,
             'portalActive' => $isHr ? 'help-hr' : 'help-support',
             'portalTitle' => ($isHr ? 'Email HR' : 'Support Request') . ' | Bio Pacific',

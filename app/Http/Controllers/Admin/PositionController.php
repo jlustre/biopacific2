@@ -33,7 +33,7 @@ class PositionController extends Controller
 
         $query = Position::with(['department', 'reportsToPosition'])
             ->withCount(['requiredUploadTypes as required_documents_count' => function ($relation) {
-                $relation->wherePivot('is_required', true)
+                $relation->where('position_upload_type_requirements.is_required', true)
                     ->whereNull('upload_types.checklist_item_id');
             }]);
 

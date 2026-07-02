@@ -24,6 +24,9 @@
     $facilitySwitchRoute = $facilitySwitchRoute ?? 'member.facility.dashboard';
     $facilities = $facilities ?? collect();
     $canSwitchFacility = $facilities->count() > 1;
+    $dashboardProfile = $dashboardProfile ?? 'operations';
+    $isHrHub = $dashboardProfile === 'hr_hub';
+    $showFacilitySelector = $canSwitchFacility || $isHrHub;
 
     $metricToneMap = [
         'teal' => ['bg' => 'bg-teal-50', 'text' => 'text-teal-700', 'ring' => 'ring-teal-100'],
@@ -45,17 +48,31 @@
 
 @section('content')
 <section class="mx-auto max-w-7xl space-y-4 px-4 py-4 sm:px-6 lg:py-5">
-    @if($canSwitchFacility)
-    <div class="flex flex-wrap items-end gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm ring-1 ring-amber-100/80">
-        <div class="min-w-[12rem] flex-1">
-            <label for="facility-switch" class="text-[11px] font-bold uppercase tracking-wide text-amber-900/70">Facility</label>
-            <select id="facility-switch" class="mt-0.5 w-full rounded-lg border-amber-200 bg-white text-sm focus:border-amber-400 focus:ring-amber-200"
+    @if($showFacilitySelector)
+    <div class="flex flex-wrap items-center gap-4 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-amber-50 to-amber-100/90 px-5 py-4 shadow-md ring-1 ring-amber-200/80 sm:px-6 sm:py-5">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-200/70 text-amber-950 shadow-sm ring-1 ring-amber-300/60">
+            <i class="fa-solid fa-building text-xl"></i>
+        </div>
+        <div class="min-w-[14rem] flex-1">
+            <label for="facility-switch" class="text-sm font-extrabold uppercase tracking-wider text-amber-950">Select Facility</label>
+            @if($canSwitchFacility)
+            <select id="facility-switch"
+                    class="mt-2 w-full cursor-pointer rounded-xl border-2 border-amber-300 bg-white px-4 py-3 text-lg font-bold leading-tight text-slate-900 shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
                     onchange="if (this.value) window.location.href = this.value">
                 @foreach($facilities as $f)
-                <option value="{{ route($facilitySwitchRoute, ['facility' => $f->slug ?? $f->id]) }}"
+                @php
+                    $facilityRouteKey = $f->slug ?? $f->id;
+                    $facilityDestination = route($facilitySwitchRoute, ['facility' => $facilityRouteKey], false);
+                @endphp
+                <option value="{{ route('member.select-facility', ['facility' => $facilityRouteKey, 'redirect' => $facilityDestination]) }}"
                         @selected(($facility->id ?? null) === $f->id)>{{ $f->name }}</option>
                 @endforeach
             </select>
+            @else
+            <p class="mt-2 rounded-xl border-2 border-amber-300 bg-white px-4 py-3 text-lg font-bold leading-tight text-slate-900 shadow-sm">
+                {{ $facility->name ?? 'Facility' }}
+            </p>
+            @endif
         </div>
     </div>
     @endif
@@ -207,7 +224,7 @@
             @if(($sections['facility_leadership'] ?? true) && count($facilityLeadership) > 0)
             <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                 <div class="flex items-center justify-between gap-2">
-                    <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">Facility leadership</h3>
+                    <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">{{ ($facility->isCorporatePublicSite() ?? false) ? 'Corporate leadership' : 'Facility leadership' }}</h3>
                     @if(\Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && auth()->user() && (auth()->user()->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || auth()->user()->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL)))
                     <a href="{{ auth()->user()->hasRole(['admin', 'super-admin', 'rdhr']) ? route('admin.facilities.leadership.index') : route('admin.facility.leadership.edit', ['facility' => $facilityKey]) }}"
                        class="text-[10px] font-bold text-teal-700 hover:text-teal-900">Manage</a>

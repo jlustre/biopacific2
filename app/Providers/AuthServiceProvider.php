@@ -17,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         JobApplication::class => JobApplicationPolicy::class,
         \App\Models\PreEmploymentApplication::class => \App\Policies\PreEmploymentApplicationPolicy::class,
+        \App\Models\Backup::class => \App\Policies\BackupPolicy::class,
         // ... other policies ...
     ];
 

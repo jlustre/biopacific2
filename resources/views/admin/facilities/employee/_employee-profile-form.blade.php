@@ -87,7 +87,7 @@
     {{-- Date of Birth --}}
     <div class="mb-1">
         <label class="block text-sm font-medium mb-2">Date of Birth</label>
-        <input type="date" name="dob" value="{{ old('dob', isset($employee) ? $formatDateInput($employee->dob ?? null) : '') }}"
+        <input type="date" name="dob" value="{{ old('dob', isset($employee) ? $employee->dateOfBirthInputValue() : '') }}"
             class="form-input w-full rounded-lg px-2 py-1 {{ $errors->has('dob') ? 'border-red-500' : 'border border-teal-300' }}">
         @error('dob')
         <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
@@ -112,25 +112,25 @@
         @enderror
     </div>
     {{-- Phone --}}
+    @php
+        $displayPhone = isset($employee) ? $employee->displayPhoneRecord() : null;
+        $displayPhoneNumber = old('phone_number', $displayPhone?->phone_number ?? '');
+    @endphp
     <div class="mb-1">
         <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-medium mr-2">Phone Number</label>
             <button type="button" @click="showPhoneModal = true"
                 class="ml-2 px-2 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700">Manage</button>
         </div>
-        <select name="phone_id"
-            class="form-select w-full border border-teal-300 rounded-lg px-2 py-1 text-sm">
-            @if(isset($employee) && isset($employee->phones))
-                @forelse($employee->phones as $phone)
-                <option value="{{ $phone->phone_id }}" @if(strtoupper((string) $phone->is_primary) === 'Y') selected @endif>
-                    {{ ucfirst($phone->phone_type) }}: {{ $phone->phone_number }}@if(strtoupper((string) $phone->is_primary) === 'Y')
-                    (Primary)@endif
-                </option>
-                @empty
-                <option disabled selected>No phone numbers on file</option>
-                @endforelse
-            @endif
-        </select>
+        <input type="text" name="phone_number" value="{{ $displayPhoneNumber }}"
+            class="form-input w-full border border-teal-300 rounded-lg px-2 py-1 text-sm"
+            placeholder="(555) 123-4567" autocomplete="tel">
+        @if($displayPhone)
+            <input type="hidden" name="phone_id" value="{{ $displayPhone->phone_id }}">
+        @endif
+        @error('phone_number')
+        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+        @enderror
     </div>
     {{-- Email --}}
     @php

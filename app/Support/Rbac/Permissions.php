@@ -63,6 +63,9 @@ final class Permissions
     public const VIEW_REPORTS = 'view reports';
     public const EXPORT_DATA = 'export data';
 
+    public const MANAGE_BACKUPS = 'manage backups';
+    public const VIEW_BACKUPS = 'view backups';
+
     public const USE_IMPORT_MAPPING_PRESETS = 'use import mapping presets';
     public const CREATE_IMPORT_MAPPING_PRESETS = 'create import mapping presets';
     public const CREATE_REGISTRATION_INVITATIONS = 'create registration invitations';
@@ -125,6 +128,8 @@ final class Permissions
             self::MANAGE_SYSTEM_SETTINGS,
             self::VIEW_REPORTS,
             self::EXPORT_DATA,
+            self::MANAGE_BACKUPS,
+            self::VIEW_BACKUPS,
             self::USE_IMPORT_MAPPING_PRESETS,
             self::CREATE_IMPORT_MAPPING_PRESETS,
             self::CREATE_REGISTRATION_INVITATIONS,

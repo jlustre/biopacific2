@@ -50,7 +50,7 @@ class FacilityLeadershipController extends Controller
         return view('admin.facilities.leadership.edit', [
             'facility' => $facility,
             'rows' => $this->leadership->formRowsForFacility($facility),
-            'roleDefinitions' => $this->leadership->roleDefinitions(),
+            'roleDefinitions' => $this->leadership->roleDefinitionsForFacility($facility),
             'employeeOptions' => $this->leadership->employeeNameOptionsForFacility($facility),
             'canRemoveRoles' => $user->hasRole(['admin', 'super-admin', 'facility-dsd']),
         ]);

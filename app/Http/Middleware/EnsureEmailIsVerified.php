@@ -84,6 +84,7 @@ class EnsureEmailIsVerified
             'settings.profile.emergency-contacts.update',
             'settings.profile.emergency-contacts.destroy',
             'settings.profile.emergency-contacts.primary',
+            'settings.profile.submit-hr-review',
             'settings.password',
             'settings.password.update',
             'settings.appearance',

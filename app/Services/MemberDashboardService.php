@@ -701,6 +701,7 @@ class MemberDashboardService
         $quickLinks = $this->buildQuickLinks($hasPreEmployment, (bool) $bpEmployee);
 
         $certSummary = ['expiring' => 0, 'expired' => 0, 'needs_attention' => 0];
+        $certItems = [];
         if ($bpEmployee) {
             $certItems = $this->evaluateCertificationItems($bpEmployee, $empChecklistItems);
             foreach ($certItems as $cert) {
@@ -715,12 +716,13 @@ class MemberDashboardService
             }
         }
 
-        $trainingsSummary = $this->buildTrainingsCenter(
+        $trainingsCenter = $this->buildTrainingsCenter(
             $user,
             $bpEmployee,
             is_array($empChecklistItems) ? $empChecklistItems : [],
             $preEmploymentChecklists
-        )['summary'];
+        );
+        $trainingsSummary = $trainingsCenter['summary'];
 
         $pendingActions = collect($todos)->where('done', false)->count();
         $stats = [
@@ -748,6 +750,8 @@ class MemberDashboardService
             'stats' => $stats,
             'todos' => $todos,
             'documentsNeeded' => $documentsNeeded,
+            'certificationItems' => $certItems,
+            'trainingsCenter' => $trainingsCenter,
             'documentsCenter' => $documentsCenter,
             'facilityComplianceReport' => $facilityComplianceReport,
             'signaturesNeeded' => $signaturesNeeded,

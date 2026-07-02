@@ -28,6 +28,8 @@ class MemberEmergencyContactController extends Controller
 
         MemberEmergencyContact::create($data);
 
+        $this->submitProfileForHrIfReady($user);
+
         return $this->redirectToProfile();
     }
 
@@ -45,6 +47,8 @@ class MemberEmergencyContactController extends Controller
 
         $emergencyContact->update($data);
         $this->ensurePrimaryContactExists($emergencyContact->user_id);
+
+        $this->submitProfileForHrIfReady($request->user());
 
         return $this->redirectToProfile('emergency-contact-saved');
     }
@@ -76,6 +80,8 @@ class MemberEmergencyContactController extends Controller
 
         $this->clearPrimaryForUser($emergencyContact->user_id);
         $emergencyContact->update(['is_primary' => true]);
+
+        $this->submitProfileForHrIfReady($request->user());
 
         return $this->redirectToProfile('emergency-contact-primary');
     }
@@ -123,5 +129,10 @@ class MemberEmergencyContactController extends Controller
             ->first();
 
         $next?->update(['is_primary' => true]);
+    }
+
+    protected function submitProfileForHrIfReady($user): void
+    {
+        app(\App\Services\MemberProfileHrReviewService::class)->submitForHrReview($user->fresh());
     }
 }

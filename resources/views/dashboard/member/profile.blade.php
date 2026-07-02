@@ -175,6 +175,34 @@
     Primary emergency contact updated.
   </div>
   @endif
+  @php $profileHr = $profileHrAssessment ?? []; @endphp
+  @if(session('status') === 'profile-submitted-hr')
+  <div class="mt-4 flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-900">
+    <i class="fa-solid fa-paper-plane"></i> Your profile was sent to HR for confirmation.
+  </div>
+  @endif
+  @if(($profileHr['pending_hr'] ?? false))
+  <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <p class="font-bold">Awaiting HR confirmation</p>
+    <p class="mt-1 text-xs">HR will review your portal details and emergency contact, then confirm your official employee profile.</p>
+  </div>
+  @elseif(($profileHr['hr_confirmed'] ?? false))
+  <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+    <p class="font-bold">Profile confirmed by HR</p>
+    <p class="mt-1 text-xs">Your employee profile has been reviewed and confirmed.</p>
+  </div>
+  @elseif(($profileHr['ready_to_submit'] ?? false))
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+    <div>
+      <p class="font-bold">Ready for HR review</p>
+      <p class="mt-1 text-xs">Submit your profile so HR can confirm your information.</p>
+    </div>
+    <form method="POST" action="{{ route('settings.profile.submit-hr-review') }}">
+      @csrf
+      <button type="submit" class="rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700">Submit for HR confirmation</button>
+    </form>
+  </div>
+  @endif
 
   {{-- Overview --}}
   <div x-show="section === 'overview'" x-cloak class="mt-4 space-y-4">
@@ -187,9 +215,9 @@
         </p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Member since</p>
-        <p class="mt-1 text-sm font-bold text-slate-900">{{ $memberSince ?? '—' }}</p>
-        <p class="mt-1 text-xs text-slate-500">Portal account</p>
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Employee since</p>
+        <p class="mt-1 text-sm font-bold text-slate-900">{{ $hireDate ?? '—' }}</p>
+        <p class="mt-1 text-xs text-slate-500">Original hire date</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Phone</p>
@@ -198,6 +226,21 @@
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Last updated</p>
         <p class="mt-1 text-sm font-bold text-slate-900">{{ $lastUpdated ?? '—' }}</p>
+      </div>
+    </div>
+
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Position</p>
+        <p class="mt-1 text-sm font-bold text-slate-900">{{ $employee?->currentAssignment?->position?->title ?? '—' }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Department</p>
+        <p class="mt-1 text-sm font-bold text-slate-900">{{ $departmentName ?? '—' }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Reports to</p>
+        <p class="mt-1 text-sm font-bold text-slate-900">{{ $reportsToName ?? '—' }}</p>
       </div>
     </div>
 
@@ -241,8 +284,10 @@
               ['done' => filled($user->name), 'label' => 'Add your display name'],
               ['done' => filled($user->email), 'label' => 'Confirm sign-in email'],
               ['done' => $emailVerified, 'label' => 'Verify your email address'],
+              ['done' => ($profileHr['emergency_complete'] ?? false), 'label' => 'Primary emergency contact on file'],
               ['done' => filled($personalPhone), 'label' => 'Phone number on file with HR'],
               ['done' => filled($personalAddress), 'label' => 'Mailing address on file with HR'],
+              ['done' => ($profileHr['hr_confirmed'] ?? false), 'label' => 'HR confirmed your profile'],
             ];
           @endphp
           @foreach($checklist as $item)

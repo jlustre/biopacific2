@@ -324,8 +324,6 @@ class TrainingManagementService
         if ($request->filled('facility_id')) {
             $facility = Facility::find((int) $request->facility_id);
             if ($facility && $this->userCanAccessFacility($user, $facility)) {
-                SelectedFacility::remember($facility);
-
                 return $facility;
             }
         }

@@ -51,6 +51,9 @@ class PositionReportsToBackfillSeeder extends Seeder
             'Physical Therapist' => 'Rehab Manager',
             'Rehab Manager' => 'Director of Nursing',
             'Director of Staff Development' => 'Administrator',
+            'President' => null,
+            'IT Director' => 'President',
+            'Web Developer' => 'IT Director',
         ];
 
         $positionsByTitle = Position::query()->pluck('id', 'title');
