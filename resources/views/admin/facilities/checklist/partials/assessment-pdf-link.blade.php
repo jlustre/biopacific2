@@ -7,6 +7,7 @@
 <a
     href="{{ $href }}"
     data-assessment-pdf-link
+    data-no-loader
     class="{{ $class }}"
     title="{{ $title }}"
     aria-label="{{ $ariaLabel ?? $title }}"

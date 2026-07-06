@@ -26,7 +26,10 @@ class EmployeeCompetencyAssessment extends Model
         'employee_name',
         'employee_title',
         'employee_signed_at',
+        'employee_signature_path',
+        'employee_confirmation_snapshot',
         'reviewer_signed_at',
+        'reviewer_signature_path',
         'pdf_path',
         'pdf_generated_at',
         'snapshot_json',
@@ -44,6 +47,7 @@ class EmployeeCompetencyAssessment extends Model
         'pdf_generated_at' => 'datetime',
         'snapshot_json' => 'array',
         'responses' => 'array',
+        'employee_confirmation_snapshot' => 'array',
         'completed_at' => 'datetime',
     ];
 

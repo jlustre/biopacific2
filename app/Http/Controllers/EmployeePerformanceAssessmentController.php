@@ -26,6 +26,8 @@ use App\Support\PartGCompetencyScoring;
 use App\Support\PreventsSelfAssessment;
 use App\Support\AssessmentWorkflowStatus;
 use App\Services\EmployeeAssessmentPeriodService;
+use App\Services\CompetencyAssessmentPdfStorage;
+use App\Services\AssessmentConfirmationNotificationService;
 use App\Models\EmployeeAssessmentPeriod;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -352,7 +354,37 @@ class EmployeePerformanceAssessmentController extends Controller {
         $assessment->snapshot_json = $snapshot;
     }
 
-    protected function generateCompetencyAssessmentPdf(EmployeeCompetencyAssessment $assessment): string
+    public function persistCompetencyAssessmentPdf(EmployeeCompetencyAssessment $assessment): void
+    {
+        $pdfStorage = app(CompetencyAssessmentPdfStorage::class);
+        $previousPath = $assessment->pdf_path;
+        $newPath = $pdfStorage->assessmentPdfPath($assessment);
+
+        $pdfStorage->deleteSectionPdfs($assessment);
+        $this->generateCompetencyAssessmentPdf($assessment, $newPath);
+
+        if ($previousPath && $previousPath !== $newPath) {
+            $pdfStorage->deletePdfFile($previousPath);
+        }
+
+        $assessment->pdf_path = $newPath;
+        $assessment->pdf_generated_at = now();
+        $assessment->save();
+    }
+
+    public function refreshCompetencyWorkflowState(
+        EmployeeCompetencyAssessment $assessment,
+        bool $regeneratePdf = true,
+    ): void {
+        $this->syncCompetencyAssessmentSnapshot($assessment);
+        $assessment->save();
+
+        if ($regeneratePdf) {
+            $this->persistCompetencyAssessmentPdf($assessment->fresh());
+        }
+    }
+
+    protected function generateCompetencyAssessmentPdf(EmployeeCompetencyAssessment $assessment, string $filePath): string
     {
         $employee = BPEmployee::query()
             ->with('currentAssignment.facility')
@@ -365,6 +397,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             ? (float) ($summary['average_score'] ?? $assessment->average_score)
             : null;
         $overallRatingLabel = (string) ($summary['overall_rating'] ?? $assessment->overall_rating ?? 'N/A');
+        $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
 
         $pdf = Pdf::loadView('admin.facilities.checklist.pdf.employee-competency-assessment', [
             'assessment' => $assessment,
@@ -379,9 +412,22 @@ class EmployeePerformanceAssessmentController extends Controller {
             'ratedCount' => collect($snapshot['items'] ?? [])
                 ->filter(fn ($item) => is_array($item) && PartGCompetencyScoring::isValidItemRating($item['rating'] ?? null))
                 ->count(),
+            'assessmentStatusLabel' => AssessmentWorkflowStatus::label($assessment->workflowStatus()),
+            'signatureBlock' => [
+                'reviewer_name' => trim((string) ($assessment->reviewer_name ?? '')),
+                'reviewer_title' => trim((string) ($assessment->reviewer_title ?? '')),
+                'review_sign_date' => $this->formatCompetencyPdfShortDate($assessment->reviewer_signed_at ?? $assessment->review_date),
+                'employee_name' => trim((string) ($assessment->employee_name ?? '')),
+                'employee_title' => trim((string) ($assessment->employee_title ?? '')),
+                'employee_sign_date' => $this->formatCompetencyPdfShortDate($assessment->employee_signed_at),
+                'employee_comments' => trim((string) ($assessment->employee_comments ?? '')),
+                'reviewer_comments' => trim((string) ($assessment->comments ?? '')),
+                'employee_signature_image_path' => $confirmationService->signaturePublicPath($assessment->employee_signature_path),
+                'reviewer_signature_image_path' => $confirmationService->signaturePublicPath($assessment->reviewer_signature_path),
+            ],
         ])->setPaper('letter');
 
-        $filePath = 'competency-assessments/' . $assessment->employee_num . '/assessment-' . $assessment->id . '.pdf';
+        app(CompetencyAssessmentPdfStorage::class)->deletePdfFile($filePath);
         Storage::disk('public')->put($filePath, $pdf->output());
 
         return $filePath;
@@ -821,6 +867,15 @@ class EmployeePerformanceAssessmentController extends Controller {
 
         $submittedAt = now();
 
+        $existingAssessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->where('assessment_period_id', $validated['assessment_period_id'])
+            ->first();
+
+        if ($existingAssessment) {
+            app(CompetencyAssessmentPdfStorage::class)->deleteAllPdfs($existingAssessment);
+        }
+
         $assessment = EmployeeCompetencyAssessment::updateOrCreate(
             [
                 'employee_num' => $validated['employee_num'],
@@ -1014,6 +1069,15 @@ class EmployeePerformanceAssessmentController extends Controller {
         $averageScore = $ratedCount > 0 ? round($totalScore / $ratedCount, 2) : 0;
         $overallRating = PartGCompetencyScoring::overallLabelOrNa($averageScore, $ratedCount);
 
+        $existingAssessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->where('assessment_period_id', $validated['assessment_period_id'])
+            ->first();
+
+        if ($existingAssessment) {
+            app(CompetencyAssessmentPdfStorage::class)->deleteAllPdfs($existingAssessment);
+        }
+
         $assessment = EmployeeCompetencyAssessment::updateOrCreate(
             [
                 'employee_num' => $validated['employee_num'],
@@ -1171,10 +1235,9 @@ class EmployeePerformanceAssessmentController extends Controller {
         $validated = $request->validate([
             'employee_num' => 'required|string',
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
-            'employee_name' => 'required|string|max:255',
-            'employee_title' => 'nullable|string|max:255',
-            'employee_date' => 'nullable|date',
             'employee_comments' => 'nullable|string',
+            'employee_signature_data' => 'nullable|string',
+            'employee_signature_upload' => 'nullable|image|max:4096',
         ]);
 
         $employee = BPEmployee::query()
@@ -1198,19 +1261,55 @@ class EmployeePerformanceAssessmentController extends Controller {
             return response()->json(['success' => false, 'message' => 'This assessment is not waiting for employee confirmation.'], 422);
         }
 
-        $employeeDate = $validated['employee_date'] ?? now()->toDateString();
+        if (! $request->filled('employee_signature_data') && ! $request->hasFile('employee_signature_upload')) {
+            return response()->json(['success' => false, 'message' => 'Draw or upload your signature before saving acknowledgement.'], 422);
+        }
 
-        $assessment->employee_name = $validated['employee_name'];
-        $assessment->employee_title = $validated['employee_title'] ?? null;
-        $assessment->employee_signed_at = Carbon::parse($employeeDate)->startOfDay();
+        $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
+
+        try {
+            $assessment->employee_signature_path = $confirmationService->storeEmployeeSignature(
+                $assessment,
+                $request->input('employee_signature_data'),
+                $request->file('employee_signature_upload'),
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        }
+
+        $employee->loadMissing('currentAssignment.position');
+        $signedAt = now();
+
+        $assessment->employee_name = $employee->formattedFullName();
+        $assessment->employee_title = trim((string) (
+            $employee->currentAssignment?->position?->title
+            ?? $employee->position
+            ?? ''
+        ));
+        $assessment->employee_signed_at = $signedAt;
         if (array_key_exists('employee_comments', $validated)) {
             $assessment->employee_comments = $validated['employee_comments'];
         }
         $assessment->status = AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
         $this->syncCompetencyAssessmentSnapshot($assessment, [
-            'employee_date' => $employeeDate,
+            'employee_date' => $signedAt->toDateString(),
         ]);
         $assessment->save();
+
+        $assessment->refresh();
+        $confirmationService->storeEmployeeConfirmationSnapshot($assessment);
+        $assessment->save();
+
+        $this->refreshCompetencyWorkflowState($assessment);
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->first();
+
+        if ($employee) {
+            app(AssessmentConfirmationNotificationService::class)
+                ->notifyCompetencyAssessmentReadyForReviewerApproval($assessment, $employee);
+        }
 
         return response()->json([
             'success' => true,
@@ -1228,7 +1327,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             'reviewer_name' => 'required|string|max:255',
             'reviewer_title' => 'nullable|string|max:255',
-            'review_date' => 'required|date',
+            'reviewer_signature_data' => 'nullable|string',
+            'reviewer_signature_upload' => 'nullable|image|max:4096',
         ]);
 
         if ($response = $this->denyIfSelfAssessing((string) $validated['employee_num'])) {
@@ -1248,19 +1348,40 @@ class EmployeePerformanceAssessmentController extends Controller {
             return response()->json(['success' => false, 'message' => 'This assessment is not waiting for reviewer approval.'], 422);
         }
 
+        $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
+        if ($confirmationService->hasChangedSinceEmployeeConfirmation($assessment)) {
+            return response()->json(['success' => false, 'message' => 'This assessment was changed after the employee confirmed it. Resubmit it to the employee before approving.'], 422);
+        }
+
+        if (blank($assessment->employee_signature_path)) {
+            return response()->json(['success' => false, 'message' => 'Employee signature is required before this assessment can be approved.'], 422);
+        }
+
+        if (! $request->filled('reviewer_signature_data') && ! $request->hasFile('reviewer_signature_upload')) {
+            return response()->json(['success' => false, 'message' => 'Draw or upload your signature before approving this assessment.'], 422);
+        }
+
+        try {
+            $assessment->reviewer_signature_path = $confirmationService->storeReviewerSignature(
+                $assessment,
+                $request->input('reviewer_signature_data'),
+                $request->file('reviewer_signature_upload'),
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        }
+
+        $signedAt = now();
         $assessment->reviewer_name = $validated['reviewer_name'];
         $assessment->reviewer_title = $validated['reviewer_title'] ?? null;
-        $assessment->review_date = $validated['review_date'];
-        $assessment->reviewer_signed_at = Carbon::parse($validated['review_date'])->startOfDay();
+        $assessment->review_date = $signedAt->toDateString();
+        $assessment->reviewer_signed_at = $signedAt;
         $assessment->status = AssessmentWorkflowStatus::COMPLETED;
         $assessment->completed_at = now();
         $this->syncCompetencyAssessmentSnapshot($assessment);
         $assessment->save();
 
-        $assessment->pdf_path = $this->generateCompetencyAssessmentPdf($assessment);
-        $assessment->pdf_generated_at = now();
-        $this->syncCompetencyAssessmentSnapshot($assessment);
-        $assessment->save();
+        $this->persistCompetencyAssessmentPdf($assessment->fresh());
 
         return response()->json([
             'success' => true,
@@ -1283,23 +1404,34 @@ class EmployeePerformanceAssessmentController extends Controller {
 
     public function downloadPerformanceAssessmentPdf(EmployeePerformanceAssessment $assessment)
     {
-        $this->syncPerformanceAssessmentSummary($assessment);
-        $assessment->save();
-
         $items = PartFPerformancePdfItemsBuilder::build($assessment);
         if ($items === []) {
             abort(404, 'No performance assessment items found for this period.');
         }
 
-        $filePath = $this->performanceAssessmentPdfPath($assessment);
-        $this->generatePerformanceAssessmentPdf($assessment, $filePath, $items);
+        $this->persistPerformanceAssessmentPdf($assessment);
 
+        $filePath = $this->performanceAssessmentPdfPath($assessment);
         $filename = basename($filePath);
 
         return response()->file(Storage::disk('public')->path($filePath), [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
+    }
+
+    public function persistPerformanceAssessmentPdf(EmployeePerformanceAssessment $assessment): void
+    {
+        $this->syncPerformanceAssessmentSummary($assessment);
+        $assessment->save();
+
+        $items = PartFPerformancePdfItemsBuilder::build($assessment);
+        if ($items === []) {
+            return;
+        }
+
+        $filePath = $this->performanceAssessmentPdfPath($assessment);
+        $this->generatePerformanceAssessmentPdf($assessment, $filePath, $items);
     }
 
     public function downloadCompetencySectionPdf(Request $request, EmployeeCompetencyAssessment $assessment)
@@ -1314,7 +1446,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             abort(404, 'No competency items found for this section.');
         }
 
-        $filePath = $this->competencySectionPdfPath($assessment, $sectionLabel);
+        $filePath = app(CompetencyAssessmentPdfStorage::class)->sectionPdfPath($assessment, $sectionLabel);
         $this->generateCompetencySectionPdf($assessment, $sectionLabel, $filePath, $items);
 
         $filename = basename($filePath);
@@ -1368,8 +1500,10 @@ class EmployeePerformanceAssessmentController extends Controller {
             'items' => $items,
             'ratedCount' => $ratedCount,
             'totalRateableOverride' => CompetencyAssessmentHistoryBuilder::rateableItemCountForSection($sectionLabel),
+            'assessmentStatusLabel' => AssessmentWorkflowStatus::label($assessment->workflowStatus()),
         ])->setPaper('letter');
 
+        app(CompetencyAssessmentPdfStorage::class)->deletePdfFile($filePath);
         Storage::disk('public')->put($filePath, $pdf->output());
 
         return $filePath;
@@ -1432,8 +1566,12 @@ class EmployeePerformanceAssessmentController extends Controller {
                 $positionId ? (int) $positionId : null,
                 $positionTitle
             )),
-            'assessmentStatusLabel' => ! empty($assessment->finalized) ? 'Completed' : 'In Progress',
+            'assessmentStatusLabel' => \App\Support\AssessmentWorkflowStatus::label($assessment->workflowStatus()),
         ])->setPaper('letter');
+
+        if (Storage::disk('public')->exists($filePath)) {
+            Storage::disk('public')->delete($filePath);
+        }
 
         Storage::disk('public')->put($filePath, $pdf->output());
 
@@ -1489,22 +1627,52 @@ class EmployeePerformanceAssessmentController extends Controller {
         array $developmentNotes = [],
     ): array {
         $reviewerName = '';
-        if ($assessment->assessed_by) {
+        if (filled($assessment->reviewer_name)) {
+            $reviewerName = trim((string) $assessment->reviewer_name);
+        } elseif ($assessment->assessed_by) {
             $reviewerName = trim((string) (User::query()->where('id', $assessment->assessed_by)->value('name') ?? ''));
         }
+
+        $confirmationService = app(\App\Services\PerformanceAssessmentConfirmationService::class);
 
         return [
             'reviewer_comments' => trim((string) ($assessment->comments ?? '')),
             'employee_comments' => trim((string) ($developmentNotes['employee_comments'] ?? '')),
             'reviewer_name' => $reviewerName,
-            'reviewer_title' => '',
+            'reviewer_title' => $this->resolvePerformanceReviewerTitle($assessment),
             'review_sign_date' => $this->formatCompetencyPdfShortDate($assessment->review_dt),
             'employee_name' => trim(($employee = BPEmployee::query()->where('employee_num', $assessment->employee_num)->first())
                 ? trim(($employee->last_name ?? '').', '.($employee->first_name ?? ''), ', ')
                 : ''),
             'employee_title' => trim((string) ($employee?->currentAssignment?->position?->title ?? $employee?->position ?? '')),
             'employee_sign_date' => $this->formatCompetencyPdfShortDate($assessment->acknowledge_dt),
+            'employee_signature_image_path' => $confirmationService->signaturePublicPath($assessment->employee_signature_path),
         ];
+    }
+
+    protected function resolvePerformanceReviewerTitle(EmployeePerformanceAssessment $assessment): string
+    {
+        $storedTitle = trim((string) ($assessment->reviewer_title ?? ''));
+        if ($storedTitle !== '') {
+            return $storedTitle;
+        }
+
+        if (! $assessment->assessed_by) {
+            return '';
+        }
+
+        $reviewer = User::query()->find($assessment->assessed_by);
+        if (! $reviewer) {
+            return '';
+        }
+
+        $reviewerEmployee = $reviewer->resolvedBpEmployee(['currentAssignment.position']);
+
+        return trim((string) (
+            $reviewerEmployee?->currentAssignment?->position?->title
+            ?? $reviewerEmployee?->position
+            ?? ''
+        ));
     }
 
     protected function formatPerformanceHistoryPeriodLabel(EmployeeAssessmentPeriod $period): string
@@ -1517,13 +1685,6 @@ class EmployeePerformanceAssessmentController extends Controller {
         } catch (\Throwable) {
             return $period->displayDateRange();
         }
-    }
-
-    protected function competencySectionPdfPath(EmployeeCompetencyAssessment $assessment, string $sectionLabel): string
-    {
-        $sectionKey = substr(md5($sectionLabel), 0, 12);
-
-        return 'competency-assessments/'.$assessment->employee_num.'/assessment-'.$assessment->id.'/section-'.$sectionKey.'.pdf';
     }
 
     /**
@@ -2008,12 +2169,12 @@ class EmployeePerformanceAssessmentController extends Controller {
         EmployeeCompetencyAssessment $assessment,
         array $sectionComments,
     ): array {
-        $reviewDate = $sectionComments['review_date']
+        $reviewDate = optional($assessment->reviewer_signed_at)->toDateString()
             ?? optional($assessment->review_date)->toDateString()
             ?? '';
-        $employeeSignDate = $sectionComments['employee_signed_at']
-            ?? optional($assessment->employee_signed_at)->toDateString()
-            ?? '';
+        $employeeSignDate = optional($assessment->employee_signed_at)->toDateString() ?? '';
+
+        $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
 
         return [
             'reviewer_comments' => trim((string) ($sectionComments['reviewer_comments'] ?? $assessment->comments ?? '')),
@@ -2024,6 +2185,8 @@ class EmployeePerformanceAssessmentController extends Controller {
             'employee_name' => trim((string) ($assessment->employee_name ?? '')),
             'employee_title' => trim((string) ($assessment->employee_title ?? '')),
             'employee_sign_date' => $this->formatCompetencyPdfShortDate($employeeSignDate),
+            'employee_signature_image_path' => $confirmationService->signaturePublicPath($assessment->employee_signature_path),
+            'reviewer_signature_image_path' => $confirmationService->signaturePublicPath($assessment->reviewer_signature_path),
         ];
     }
 
@@ -2203,12 +2366,11 @@ class EmployeePerformanceAssessmentController extends Controller {
             $overlapQuery->where('id', '!=', $validated['id']);
         }
 
-        if ($overlapQuery->exists() && ! $request->boolean('force')) {
+        if ($overlapQuery->exists()) {
             return response()->json([
                 'success' => false,
-                'warning' => true,
-                'message' => 'This date range overlaps another assessment period for this employee. Save anyway?',
-            ], 409);
+                'message' => 'This date range overlaps an existing assessment period for this employee. Choose a different range or load the existing period.',
+            ], 422);
         }
 
         if (! empty($validated['id'])) {
@@ -2233,19 +2395,25 @@ class EmployeePerformanceAssessmentController extends Controller {
             ]);
             $period->save();
         } else {
-            $period = EmployeeAssessmentPeriod::query()->firstOrCreate(
-                [
+            $existingPeriod = EmployeeAssessmentPeriod::query()
+                ->where('employee_num', $employee->employee_num)
+                ->where('date_from', $validated['date_from'])
+                ->where('date_to', $validated['date_to'])
+                ->first();
+
+            if ($existingPeriod) {
+                $period = $existingPeriod;
+            } else {
+                $period = EmployeeAssessmentPeriod::query()->create([
                     'employee_num' => $employee->employee_num,
                     'date_from' => $validated['date_from'],
                     'date_to' => $validated['date_to'],
-                ],
-                [
                     'review_type' => $reviewType,
                     'period_year' => (int) date('Y', strtotime($validated['date_from'])),
                     'period_sequence' => 0,
                     'created_by' => Auth::id(),
-                ]
-            );
+                ]);
+            }
 
             if ($period->review_type !== $reviewType) {
                 $period->review_type = $reviewType;

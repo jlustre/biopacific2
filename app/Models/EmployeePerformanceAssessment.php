@@ -20,7 +20,11 @@ class EmployeePerformanceAssessment extends Model
         'assessment_date',
         'review_dt',
         'acknowledge_dt',
+        'employee_signature_path',
+        'employee_confirmation_snapshot',
         'assessed_by',
+        'reviewer_name',
+        'reviewer_title',
         'comments',
         'finalized',
         'status',
@@ -31,6 +35,10 @@ class EmployeePerformanceAssessment extends Model
         'total_score' => 'integer',
         'average_score' => 'decimal:2',
         'finalized' => 'boolean',
+        'employee_confirmation_snapshot' => 'array',
+        'assessment_date' => 'date',
+        'review_dt' => 'date',
+        'acknowledge_dt' => 'date',
     ];
 
     protected static function booted(): void

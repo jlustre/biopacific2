@@ -359,4 +359,22 @@ class BPEmployee extends Model
 
         return $query->where('employee_num', $routeKey)->firstOrFail();
     }
+
+    /**
+     * Display name for signatures and PDFs: Last, First Middle.
+     */
+    public function formattedFullName(): string
+    {
+        $last = trim((string) ($this->last_name ?? ''));
+        $first = trim((string) ($this->first_name ?? ''));
+        $middle = trim((string) ($this->middle_name ?? ''));
+
+        $given = trim($first.' '.$middle);
+
+        if ($last !== '' && $given !== '') {
+            return $last.', '.$given;
+        }
+
+        return trim($last.' '.$given) !== '' ? trim($last.' '.$given) : 'Employee';
+    }
 }

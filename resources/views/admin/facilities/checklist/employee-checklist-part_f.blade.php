@@ -7,6 +7,18 @@
         $partFStatusLabel = \App\Support\AssessmentWorkflowStatus::label($partFWorkflowStatus);
         $partFEmployeeCanConfirm = \App\Support\AssessmentWorkflowStatus::employeeCanConfirm($partFWorkflowStatus);
         $partFReviewerCanApprove = \App\Support\AssessmentWorkflowStatus::reviewerCanApprove($partFWorkflowStatus);
+        $partFWaitingEmployeeConfirmation = $partFWorkflowStatus === \App\Support\AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
+        $partFConfirmationService = app(\App\Services\PerformanceAssessmentConfirmationService::class);
+        $partFContentChangedSinceEmployeeConfirmation = $partFSelectedAssessment
+            && $partFReviewerCanApprove
+            && $partFConfirmationService->hasChangedSinceEmployeeConfirmation($partFSelectedAssessment);
+        $partFCanApprove = $partFReviewerCanApprove
+            && empty($evaluatorActionsDisabled)
+            && ! $partFContentChangedSinceEmployeeConfirmation
+            && filled($partFSelectedAssessment?->employee_signature_path);
+        $partFSummaryReadOnly = $partFAssessmentLocked
+            || ($partFWaitingEmployeeConfirmation && empty($evaluatorActionsDisabled))
+            || ($partFReviewerCanApprove && !empty($evaluatorActionsDisabled));
         $partFCurrentReviewerId = auth()->id();
         $partFSelectedReviewerId = optional($partFSelectedAssessment)->assessed_by;
         $partFShowStatusWarning = $partFSelectedAssessment && (
@@ -133,8 +145,9 @@
         </div>
 
         @if(!empty($employee->employee_num))
-        <form id="areasDevelopmentForm" method="POST" action="{{ route('admin.employees.areas_development.save', ['employee' => $employee->id]) }}">
+        <form id="areasDevelopmentForm" method="POST" action="{{ route('admin.employees.areas_development.save', ['employee' => $employee->id]) }}" enctype="multipart/form-data" @if($partFReviewerCanApprove && empty($evaluatorActionsDisabled)) data-partf-confirmation-snapshot='@json($partFSelectedAssessment?->employee_confirmation_snapshot)' @endif>
             <input type="hidden" name="assessment_period_id" value="{{ $selectedAssessmentPeriodId }}">
+            <input type="hidden" name="workflow_action" id="partFWorkflowAction" value="">
             @csrf
 
             @include('admin.facilities.checklist.employee-assessment-summary-form', [
@@ -143,6 +156,8 @@
                 'assessmentSummaryTitle' => 'Performance Evaluation Summary',
                 'assessmentSummaryDescription' => 'Capture the development notes and signatures for this performance assessment period.',
             ])
+
+            @include('admin.facilities.checklist.partials.part-f-employee-signature-modal')
         </form>
         @endif
 
@@ -212,7 +227,18 @@
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['total_score'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['average_score'] }}</td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['overall_rating'] }}</td>
-                            <td class="border border-slate-400 px-2 py-1.5 text-center">{{ $history['status'] }}</td>
+                            <td class="border border-slate-400 px-2 py-1.5 text-center">
+                                @php
+                                    $historyStatusKey = $history['status_key'] ?? 'draft';
+                                    $historyStatusClass = match ($historyStatusKey) {
+                                        'completed' => 'bg-emerald-100 text-emerald-900',
+                                        'for_employee_confirmation' => 'bg-sky-100 text-sky-900',
+                                        'for_reviewer_approval' => 'bg-violet-100 text-violet-900',
+                                        default => 'bg-slate-200 text-slate-800',
+                                    };
+                                @endphp
+                                <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $historyStatusClass }}">{{ $history['status'] }}</span>
+                            </td>
                             <td class="border border-slate-400 px-2 py-1.5 text-center">
                                 <div class="flex flex-wrap items-center justify-center gap-1">
                                     @if(!empty($history['can_view_pdf']) && !empty($history['performance_assessment_id']))
@@ -245,56 +271,65 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-    var form = document.getElementById('areasDevelopmentForm');
-    if (!form) return;
+            var form = document.getElementById('areasDevelopmentForm');
+            if (!form) return;
 
-    var submitBtn = form.querySelector('button[type="submit"][name="action"][value="submit"]');
-    if (!submitBtn) return;
+            var actionInput = document.getElementById('partFWorkflowAction');
+            if (!actionInput) return;
 
-    // Disable submit by default
-    submitBtn.disabled = true;
+            form.addEventListener('click', function(event) {
+                var button = event.target.closest('button[type="submit"][data-workflow-action]');
+                if (!button || !form.contains(button)) {
+                    return;
+                }
 
-    // Track if form is dirty
-    let isDirty = false;
-    let lastSavedData = new FormData(form);
+                actionInput.value = button.getAttribute('data-workflow-action') || '';
+            });
 
-    // Helper to compare form data
-    function isFormChanged() {
-        let current = new FormData(form);
-        for (let [key, value] of current.entries()) {
-            if (lastSavedData.get(key) !== value) return true;
-        }
-        for (let [key, value] of lastSavedData.entries()) {
-            if (current.get(key) !== value) return true;
-        }
-        return false;
-    }
+            form.addEventListener('submit', function(event) {
+                var submitter = event.submitter;
+                if (submitter && submitter.getAttribute('data-workflow-action')) {
+                    actionInput.value = submitter.getAttribute('data-workflow-action') || '';
+                }
 
-    // Listen for changes
-    form.addEventListener('input', function() {
-        isDirty = isFormChanged();
-        submitBtn.disabled = isDirty;
-    });
-    form.addEventListener('change', function() {
-        isDirty = isFormChanged();
-        submitBtn.disabled = isDirty;
-    });
+                if (!actionInput.value) {
+                    actionInput.value = 'save';
+                }
 
-    // On save, update lastSavedData and enable submit
-    form.addEventListener('submit', function(e) {
-        var clickedBtn = document.activeElement;
-        if (clickedBtn && clickedBtn.name === 'action' && clickedBtn.value === 'save') {
-            // Wait for backend to respond before enabling submit
-            setTimeout(function() {
-                lastSavedData = new FormData(form);
-                isDirty = false;
-                submitBtn.disabled = false;
-            }, 500); // Adjust if needed for AJAX
-        } else if (clickedBtn && clickedBtn.name === 'action' && clickedBtn.value === 'submit') {
-            // Optionally, disable submit to prevent double submit
-            submitBtn.disabled = true;
-        }
-    });
-});
+                if (submitter && submitter.hasAttribute('data-workflow-locked')) {
+                    event.preventDefault();
+                }
+            });
+
+            var approveBtn = document.getElementById('partFApproveAssessmentBtn');
+            var resubmitBtn = document.getElementById('partFResubmitForEmployeeBtn');
+            if (!approveBtn || !resubmitBtn || !form.hasAttribute('data-partf-confirmation-snapshot')) {
+                return;
+            }
+
+            function setReviewerApprovalButtons(changed) {
+                if (changed) {
+                    approveBtn.classList.add('hidden');
+                    resubmitBtn.classList.remove('hidden');
+                } else {
+                    resubmitBtn.classList.add('hidden');
+                    approveBtn.classList.remove('hidden');
+                }
+            }
+
+            function markReviewerContentChanged() {
+                setReviewerApprovalButtons(true);
+            }
+
+            form.addEventListener('input', markReviewerContentChanged);
+            form.addEventListener('change', markReviewerContentChanged);
+
+            window.addEventListener('partf-summary-updated', markReviewerContentChanged);
+            document.addEventListener('livewire:initialized', function() {
+                if (window.Livewire && typeof window.Livewire.on === 'function') {
+                    window.Livewire.on('partf-summary-updated', markReviewerContentChanged);
+                }
+            });
+        });
     </script>
 </div>

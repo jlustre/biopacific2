@@ -80,15 +80,27 @@
         }
 
         link.dataset.pdfLoading = '1';
+        link.setAttribute('aria-busy', 'true');
+        link.classList.add('pointer-events-none', 'opacity-70');
 
         // Do not use noopener — the opener must load the PDF into this tab after fetch completes.
         var pdfWindow = window.open('', '_blank');
         if (!pdfWindow) {
             delete link.dataset.pdfLoading;
+            link.removeAttribute('aria-busy');
+            link.classList.remove('pointer-events-none', 'opacity-70');
             window.location.href = url;
 
             return;
         }
+
+        var abortController = new AbortController();
+        var closeWatcher = window.setInterval(function () {
+            if (pdfWindow.closed) {
+                abortController.abort();
+                window.clearInterval(closeWatcher);
+            }
+        }, 500);
 
         writePdfViewerPage(pdfWindow, {
             title: 'Loading PDF',
@@ -101,8 +113,13 @@
             headers: {
                 Accept: 'application/pdf',
             },
+            signal: abortController.signal,
         })
             .then(function (response) {
+                if (pdfWindow.closed) {
+                    return null;
+                }
+
                 if (!isPdfResponse(response)) {
                     throw new Error('PDF request failed with status ' + response.status);
                 }
@@ -110,9 +127,21 @@
                 return response.blob();
             })
             .then(function (blob) {
+                if (!blob || pdfWindow.closed) {
+                    return;
+                }
+
                 showPdfInViewer(pdfWindow, blob);
             })
-            .catch(function () {
+            .catch(function (error) {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
+
+                if (pdfWindow.closed) {
+                    return;
+                }
+
                 writePdfViewerPage(pdfWindow, {
                     title: 'Unable to load PDF',
                     message: 'Opening the PDF directly…',
@@ -120,11 +149,20 @@
                 });
 
                 window.setTimeout(function () {
-                    pdfWindow.location.href = url;
+                    if (!pdfWindow.closed) {
+                        pdfWindow.location.href = url;
+                    }
                 }, 400);
             })
             .finally(function () {
+                window.clearInterval(closeWatcher);
                 delete link.dataset.pdfLoading;
+                link.removeAttribute('aria-busy');
+                link.classList.remove('pointer-events-none', 'opacity-70');
+
+                if (typeof window.hidePageLoader === 'function') {
+                    window.hidePageLoader();
+                }
             });
     }
 
@@ -135,6 +173,11 @@
         }
 
         event.preventDefault();
+
+        if (typeof window.hidePageLoader === 'function') {
+            window.hidePageLoader();
+        }
+
         openAssessmentPdf(link);
     }
 

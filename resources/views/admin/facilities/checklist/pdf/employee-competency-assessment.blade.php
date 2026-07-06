@@ -82,7 +82,7 @@
             Generated: {{ now()->format('m-d-y') }}
         </div>
         <div class="muted">
-            Status: {{ ucwords(str_replace('_', ' ', (string) ($assessment->status ?? 'draft'))) }}
+            Status: {{ $assessmentStatusLabel ?? \App\Support\AssessmentWorkflowStatus::label($assessment->workflowStatus()) }}
         </div>
     </div>
 
@@ -233,5 +233,59 @@
         </table>
     </div>
     @endif
+
+    @php
+        $signatureBlock = $signatureBlock ?? [];
+    @endphp
+    <div class="section">
+        <table class="summary-grid">
+            <tr>
+                <td class="field-label" colspan="2">REVIEWER COMMENTS</td>
+            </tr>
+            <tr>
+                <td colspan="2" class="field-box">{!! nl2br(e($signatureBlock['reviewer_comments'] ?? $form['comments'] ?? $assessment->comments ?? '')) !!}</td>
+            </tr>
+            <tr>
+                <td class="field-label" colspan="2">EMPLOYEE COMMENTS</td>
+            </tr>
+            <tr>
+                <td colspan="2" class="field-box">{!! nl2br(e($signatureBlock['employee_comments'] ?? $assessment->employee_comments ?? '')) !!}</td>
+            </tr>
+            <tr>
+                <td class="summary-label">REVIEWER NAME/SIGNATURE</td>
+                <td class="summary-label">REVIEWER TITLE</td>
+            </tr>
+            <tr>
+                <td>
+                    <div>{{ $signatureBlock['reviewer_name'] ?? ($form['reviewer_name'] ?? $assessment->reviewer_name ?? '') }}</div>
+                    @if(!empty($signatureBlock['reviewer_signature_image_path']))
+                    <img src="{{ $signatureBlock['reviewer_signature_image_path'] }}" alt="Reviewer signature" style="max-height: 42px; max-width: 180px; display: block; margin-top: 4px;">
+                    @endif
+                </td>
+                <td>{{ $signatureBlock['reviewer_title'] ?? ($form['reviewer_title'] ?? $assessment->reviewer_title ?? '') }}</td>
+            </tr>
+            <tr>
+                <td class="summary-label">REVIEW SIGN DATE</td>
+                <td class="summary-label">EMPLOYEE SIGN DATE</td>
+            </tr>
+            <tr>
+                <td>{{ $signatureBlock['review_sign_date'] ?? '' }}</td>
+                <td>{{ $signatureBlock['employee_sign_date'] ?? '' }}</td>
+            </tr>
+            <tr>
+                <td class="summary-label">EMPLOYEE NAME/SIGNATURE</td>
+                <td class="summary-label">EMPLOYEE TITLE</td>
+            </tr>
+            <tr>
+                <td>
+                    <div>{{ $signatureBlock['employee_name'] ?? ($form['employee_name'] ?? $assessment->employee_name ?? $employeeName) }}</div>
+                    @if(!empty($signatureBlock['employee_signature_image_path']))
+                    <img src="{{ $signatureBlock['employee_signature_image_path'] }}" alt="Employee signature" style="max-height: 42px; max-width: 180px; display: block; margin-top: 4px;">
+                    @endif
+                </td>
+                <td>{{ $signatureBlock['employee_title'] ?? ($form['employee_title'] ?? $assessment->employee_title ?? '') }}</td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>

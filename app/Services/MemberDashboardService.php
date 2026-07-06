@@ -16,6 +16,7 @@ use App\Models\EmployeePerformanceAssessment;
 use App\Models\JobApplication;
 use App\Models\User;
 use App\Models\WebmasterContact;
+use App\Support\AssessmentWorkflowStatus;
 use App\Support\MemberPortalLayout;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -678,6 +679,8 @@ class MemberDashboardService
         $complianceEvaluation = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
         $documentsNeeded = $complianceEvaluation['missing'];
         $signaturesNeeded = $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems);
+        $reviewerAssessmentTodos = $this->buildReviewerAssessmentTodos($user);
+        $employeeAssessmentTodos = $this->buildEmployeeAssessmentConfirmationTodos($bpEmployee);
         $documentCompliance = $bpEmployee
             ? app(DocumentComplianceService::class)->forEmployee($bpEmployee)
             : [
@@ -695,7 +698,7 @@ class MemberDashboardService
         $documentsCenter = $this->buildDocumentsCenter($user, $bpEmployee, $empChecklistItems, $documentCompliance);
         $facilityComplianceReport = $this->buildFacilityComplianceReport($user);
         $reminders = $this->buildReminders($bpEmployee, $empChecklistItems, $preEmploymentChecklists, $documentsNeeded);
-        $todos = $this->buildTodos($user, $bpEmployee, $hasPreEmployment, $preEmploymentChecklists, $documentsNeeded, $signaturesNeeded, $reminders);
+        $todos = $this->buildTodos($user, $bpEmployee, $hasPreEmployment, $preEmploymentChecklists, $documentsNeeded, $signaturesNeeded, $reminders, $reviewerAssessmentTodos, $employeeAssessmentTodos);
         $calendarEvents = $this->buildCalendarEvents($bpEmployee, $reminders, $preEmploymentChecklists);
         $recentActivity = $this->buildRecentActivity($user, $bpEmployee, $preEmploymentChecklists, $empChecklistItems);
         $quickLinks = $this->buildQuickLinks($hasPreEmployment, (bool) $bpEmployee);
@@ -1364,7 +1367,8 @@ class MemberDashboardService
     public function buildAdminEmployeeEditUrl(
         int|string $employeeId,
         ?string $tab = null,
-        ?string $checklistTab = null
+        ?string $checklistTab = null,
+        ?int $assessmentPeriodId = null,
     ): string {
         $url = route('admin.employees.edit', $employeeId);
         $query = [];
@@ -1375,6 +1379,10 @@ class MemberDashboardService
 
         if ($checklistTab !== null && $checklistTab !== '') {
             $query['checklist_tab'] = $checklistTab;
+        }
+
+        if ($assessmentPeriodId !== null) {
+            $query['assessment_period_id'] = $assessmentPeriodId;
         }
 
         return $query === [] ? $url : $url . '?' . http_build_query($query);
@@ -2776,51 +2784,216 @@ class MemberDashboardService
                     ];
                 }
             }
-
-            $competencyPending = EmployeeCompetencyAssessment::query()
-                ->where('employee_num', $employee->employee_num)
-                ->whereNull('employee_signed_at')
-                ->whereIn('status', ['submitted', 'completed'])
-                ->with('period')
-                ->latest('updated_at')
-                ->limit(5)
-                ->get();
-
-            foreach ($competencyPending as $assessment) {
-                $periodLabel = $this->formatPeriodLabel($assessment->period);
-                $needed[] = [
-                    'id' => 'sig-competency-' . $assessment->id,
-                    'title' => 'Competency assessment',
-                    'description' => 'Sign competency evaluation' . ($periodLabel ? " ({$periodLabel})" : '') . '.',
-                    'type' => 'competency',
-                    'priority' => 'high',
-                    'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
-                ];
-            }
-
-            $performancePending = EmployeePerformanceAssessment::query()
-                ->where('employee_num', $employee->employee_num)
-                ->where('finalized', 1)
-                ->whereNull('acknowledge_dt')
-                ->with('period')
-                ->latest('updated_at')
-                ->limit(5)
-                ->get();
-
-            foreach ($performancePending as $assessment) {
-                $periodLabel = $this->formatPeriodLabel($assessment->period);
-                $needed[] = [
-                    'id' => 'sig-performance-' . $assessment->id,
-                    'title' => 'Performance appraisal',
-                    'description' => 'Acknowledge your performance appraisal' . ($periodLabel ? " ({$periodLabel})" : '') . '.',
-                    'type' => 'performance',
-                    'priority' => 'medium',
-                    'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
-                ];
-            }
         }
 
         return $needed;
+    }
+
+    /**
+     * Dashboard tasks for employees who must confirm or re-confirm an assessment.
+     *
+     * @return list<array<string, mixed>>
+     */
+    protected function buildEmployeeAssessmentConfirmationTodos(?BPEmployee $employee): array
+    {
+        if (! $employee) {
+            return [];
+        }
+
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
+        $todos = [];
+
+        $competencyPending = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereIn('status', [
+                AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+                'for_employee_signature',
+            ])
+            ->with('period')
+            ->latest('updated_at')
+            ->limit(5)
+            ->get();
+
+        foreach ($competencyPending as $assessment) {
+            $periodLabel = $this->formatPeriodLabel($assessment->period);
+            $isResubmit = filled($assessment->submitted_at)
+                && (
+                    filled(trim((string) ($assessment->employee_comments ?? '')))
+                    || $assessment->updated_at?->gt($assessment->submitted_at)
+                );
+
+            $todos[] = $this->todoItem(
+                'confirm-competency-' . $assessment->id,
+                $isResubmit ? 'Review updated competency assessment' : 'Confirm competency assessment',
+                $isResubmit
+                    ? ('Your reviewer updated your competency assessment' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign again.')
+                    : ('Review and sign your competency assessment' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
+                'competency-confirmation',
+                'high',
+                $notificationService->buildEmployeeChecklistUrl(
+                    $employee,
+                    'partG',
+                    (int) $assessment->assessment_period_id
+                ),
+                false
+            );
+        }
+
+        $performancePending = EmployeePerformanceAssessment::query()
+            ->where('employee_num', $employee->employee_num)
+            ->whereIn('status', [
+                AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+                'for_employee_signature',
+            ])
+            ->whereNull('acknowledge_dt')
+            ->with('period')
+            ->latest('updated_at')
+            ->limit(5)
+            ->get();
+
+        foreach ($performancePending as $assessment) {
+            $periodLabel = $this->formatPeriodLabel($assessment->period);
+            $isResubmit = filled($assessment->review_dt)
+                && (
+                    filled(trim((string) ($assessment->employee_comments ?? '')))
+                    || $assessment->updated_at?->gt($assessment->review_dt)
+                );
+
+            $todos[] = $this->todoItem(
+                'confirm-performance-' . $assessment->id,
+                $isResubmit ? 'Review updated performance appraisal' : 'Confirm performance appraisal',
+                $isResubmit
+                    ? ('Your reviewer updated your performance appraisal' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign again.')
+                    : ('Review and acknowledge your performance appraisal' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
+                'performance-confirmation',
+                'high',
+                $notificationService->buildEmployeeChecklistUrl(
+                    $employee,
+                    'partF',
+                    (int) $assessment->assessment_period_id
+                ),
+                false
+            );
+        }
+
+        return $todos;
+    }
+
+    /**
+     * Tasks for reviewers who must update or approve assessments they submitted.
+     *
+     * @return list<array<string, mixed>>
+     */
+    protected function buildReviewerAssessmentTodos(User $user): array
+    {
+        $todos = [];
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
+
+        $competencyAssessments = EmployeeCompetencyAssessment::query()
+            ->where('submitted_by', $user->id)
+            ->where(function ($query) {
+                $query->whereIn('status', [
+                    AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
+                    'for_reviewer_signature',
+                ])
+                    ->orWhere(function ($nested) {
+                        $nested->where('status', AssessmentWorkflowStatus::DRAFT)
+                            ->whereNotNull('submitted_at');
+                    });
+            })
+            ->with('period')
+            ->latest('updated_at')
+            ->limit(10)
+            ->get();
+
+        $employeesByNum = BPEmployee::query()
+            ->whereIn('employee_num', $competencyAssessments->pluck('employee_num')->filter()->unique()->all())
+            ->get()
+            ->keyBy('employee_num');
+
+        foreach ($competencyAssessments as $assessment) {
+            $employee = $employeesByNum->get($assessment->employee_num);
+            if (! $employee) {
+                continue;
+            }
+
+            $periodLabel = $this->formatPeriodLabel($assessment->period);
+            $employeeLabel = $employee->formalName();
+            $isApproval = $assessment->workflowStatus() === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
+
+            $todos[] = [
+                'id' => $isApproval
+                    ? 'review-competency-approve-' . $assessment->id
+                    : 'review-competency-returned-' . $assessment->id,
+                'title' => $isApproval ? 'Approve competency assessment' : 'Update competency assessment',
+                'description' => $isApproval
+                    ? ($employeeLabel . ' signed their competency assessment' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign to complete.')
+                    : ($employeeLabel . ' sent their competency assessment back for updates' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
+                'type' => 'competency-review',
+                'priority' => 'high',
+                'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
+                'action_url' => $notificationService->buildReviewerChecklistUrl(
+                    $employee,
+                    'partG',
+                    (int) $assessment->assessment_period_id
+                ),
+            ];
+        }
+
+        $performanceAssessments = EmployeePerformanceAssessment::query()
+            ->where('assessed_by', $user->id)
+            ->where(function ($query) {
+                $query->whereIn('status', [
+                    AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
+                    'for_reviewer_signature',
+                ])
+                    ->orWhere(function ($nested) {
+                        $nested->where('status', AssessmentWorkflowStatus::DRAFT)
+                            ->whereNotNull('review_dt')
+                            ->whereNull('acknowledge_dt')
+                            ->whereNull('employee_signature_path');
+                    });
+            })
+            ->with('period')
+            ->latest('updated_at')
+            ->limit(10)
+            ->get();
+
+        $performanceEmployeesByNum = BPEmployee::query()
+            ->whereIn('employee_num', $performanceAssessments->pluck('employee_num')->filter()->unique()->all())
+            ->get()
+            ->keyBy('employee_num');
+
+        foreach ($performanceAssessments as $assessment) {
+            $employee = $performanceEmployeesByNum->get($assessment->employee_num);
+            if (! $employee) {
+                continue;
+            }
+
+            $periodLabel = $this->formatPeriodLabel($assessment->period);
+            $employeeLabel = $employee->formalName();
+            $isApproval = $assessment->workflowStatus() === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
+
+            $todos[] = [
+                'id' => $isApproval
+                    ? 'review-performance-approve-' . $assessment->id
+                    : 'review-performance-returned-' . $assessment->id,
+                'title' => $isApproval ? 'Approve performance appraisal' : 'Update performance appraisal',
+                'description' => $isApproval
+                    ? ($employeeLabel . ' acknowledged their performance appraisal' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and approve to complete.')
+                    : ($employeeLabel . ' sent their performance appraisal back for updates' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
+                'type' => 'performance-review',
+                'priority' => 'high',
+                'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
+                'action_url' => $notificationService->buildReviewerChecklistUrl(
+                    $employee,
+                    'partF',
+                    (int) $assessment->assessment_period_id
+                ),
+            ];
+        }
+
+        return $todos;
     }
 
     /**
@@ -2906,6 +3079,8 @@ class MemberDashboardService
      * @param  list<array<string, mixed>>  $documentsNeeded
      * @param  list<array<string, mixed>>  $signaturesNeeded
      * @param  list<array<string, mixed>>  $reminders
+     * @param  list<array<string, mixed>>  $reviewerAssessmentTodos
+     * @param  list<array<string, mixed>>  $employeeAssessmentTodos
      * @return list<array<string, mixed>>
      */
     protected function buildTodos(
@@ -2915,21 +3090,38 @@ class MemberDashboardService
         Collection $preEmploymentChecklists,
         array $documentsNeeded,
         array $signaturesNeeded,
-        array $reminders
+        array $reminders,
+        array $reviewerAssessmentTodos = [],
+        array $employeeAssessmentTodos = [],
     ): array {
-        $todos = [];
+        $employeeConfirmationTodos = $employeeAssessmentTodos;
+        $reviewerTodos = [];
+        $signatureTodos = [];
+        $otherTodos = [];
+
+        foreach ($reviewerAssessmentTodos as $reviewTodo) {
+            $reviewerTodos[] = $this->todoItem(
+                $reviewTodo['id'],
+                $reviewTodo['title'],
+                $reviewTodo['description'],
+                'assessment-review',
+                $reviewTodo['priority'],
+                $reviewTodo['action_url'] ?? route('employment.portal'),
+                false
+            );
+        }
 
         if (!$user->email_verified_at) {
-            $todos[] = $this->todoItem('todo-verify-email', 'Verify your email address', 'Confirm your email to secure your account.', 'account', 'high', route('verification.notice'), false);
+            $otherTodos[] = $this->todoItem('todo-verify-email', 'Verify your email address', 'Confirm your email to secure your account.', 'account', 'high', route('verification.notice'), false);
         }
 
         if (empty($user->google2fa_secret ?? null)) {
-            $todos[] = $this->todoItem('todo-mfa', 'Enable multi-factor authentication', 'Add an extra layer of security to your account.', 'security', 'medium', route('admin.mfa.setup.form'), false);
+            $otherTodos[] = $this->todoItem('todo-mfa', 'Enable multi-factor authentication', 'Add an extra layer of security to your account.', 'security', 'medium', route('admin.mfa.setup.form'), false);
         }
 
         if ($hasPreEmployment) {
             foreach ($preEmploymentChecklists->whereIn('status', ['draft', 'returned']) as $item) {
-                $todos[] = $this->todoItem(
+                $otherTodos[] = $this->todoItem(
                     'todo-pe-' . $item->id,
                     $item->item_label ?? 'Pre-employment item',
                     $item->status === 'returned' ? 'Returned — please revise and resubmit.' : 'Complete and submit this item.',
@@ -2942,19 +3134,19 @@ class MemberDashboardService
         }
 
         foreach ($signaturesNeeded as $sig) {
-            $todos[] = $this->todoItem(
+            $signatureTodos[] = $this->todoItem(
                 $sig['id'],
                 'Sign: ' . $sig['title'],
                 $sig['description'],
                 'signature',
                 $sig['priority'],
-                route('employment.portal'),
+                $sig['action_url'] ?? route('employment.portal'),
                 false
             );
         }
 
         foreach (array_slice($documentsNeeded, 0, 8) as $doc) {
-            $todos[] = $this->todoItem(
+            $otherTodos[] = $this->todoItem(
                 'todo-' . $doc['id'],
                 $doc['title'],
                 $doc['section'] . ' — ' . $doc['status_label'],
@@ -2966,12 +3158,12 @@ class MemberDashboardService
         }
 
         if ($employee && !$employee->currentAssignment) {
-            $todos[] = $this->todoItem('todo-assignment', 'Position assignment pending', 'Contact HR to confirm your current job assignment.', 'hr', 'medium', route('employment.portal'), false);
+            $otherTodos[] = $this->todoItem('todo-assignment', 'Position assignment pending', 'Contact HR to confirm your current job assignment.', 'hr', 'medium', route('employment.portal'), false);
         }
 
         foreach (array_slice($reminders, 0, 3) as $reminder) {
             if (($reminder['type'] ?? '') === 'danger') {
-                $todos[] = $this->todoItem(
+                $otherTodos[] = $this->todoItem(
                     'todo-' . $reminder['id'],
                     $reminder['title'],
                     $reminder['message'],
@@ -2983,7 +3175,7 @@ class MemberDashboardService
             }
         }
 
-        return $todos;
+        return array_merge($employeeConfirmationTodos, $reviewerTodos, $signatureTodos, $otherTodos);
     }
 
     /**

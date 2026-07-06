@@ -126,7 +126,7 @@ class CompetencyAssessmentHistoryBuilder
                         ?? optional($submission?->submitted_at)->toDateString()
                         ?? optional($submission?->updated_at)->toDateString()
                         ?? optional(optional($latestStates->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first())->assessment_date)->toDateString();
-                    $status = self::resolveSectionStatus($submission?->status, $isSubmitted);
+                    $status = self::resolveSectionStatus($submission?->workflowStatus(), $isSubmitted);
                 } else {
                     if ($tracheostomyMetrics !== null && $tracheostomyMetrics['count'] > 0) {
                         $total = $tracheostomyMetrics['total'];
@@ -153,7 +153,7 @@ class CompetencyAssessmentHistoryBuilder
                     $assessmentDate = optional($submission?->updated_at)->toDateString()
                         ?? optional(optional($latestStates->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first())->assessment_date)->toDateString()
                         ?? now()->toDateString();
-                    $status = self::resolveSectionStatus($submission?->status, $isSubmitted);
+                    $status = self::resolveSectionStatus($submission?->workflowStatus(), $isSubmitted);
                 }
 
                 $period = $assessmentPeriodLabels->get($assessmentPeriodId);
@@ -420,14 +420,16 @@ class CompetencyAssessmentHistoryBuilder
 
     protected static function resolveSectionStatus(?string $assessmentStatus, bool $isSubmitted): string
     {
-        if ($isSubmitted) {
-            return match (AssessmentWorkflowStatus::normalize((string) ($assessmentStatus ?? AssessmentWorkflowStatus::DRAFT))) {
+        $normalized = AssessmentWorkflowStatus::normalize((string) ($assessmentStatus ?? AssessmentWorkflowStatus::DRAFT));
+
+        if ($normalized !== AssessmentWorkflowStatus::DRAFT || $isSubmitted) {
+            return match ($normalized) {
                 AssessmentWorkflowStatus::COMPLETED => 'Completed',
                 AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION => 'For Employee confirmation',
                 AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL => 'For Reviewer approval',
                 AssessmentWorkflowStatus::DRAFT => 'Submitted',
                 'section_submit' => 'Submitted',
-                default => AssessmentWorkflowStatus::label((string) $assessmentStatus),
+                default => AssessmentWorkflowStatus::label($normalized),
             };
         }
 

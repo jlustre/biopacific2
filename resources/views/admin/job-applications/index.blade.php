@@ -224,13 +224,14 @@
                         <i class="fas fa-eye mr-1"></i>View
                     </a>
 
-                    @include('admin.partials.portal-registration-icon', [
-                        'canGenerateRegistrationCodes' => $canGenerateRegistrationCodes ?? false,
-                        'hasPortalUser' => ($registrationCodeService ?? app(\App\Support\RegistrationCodeService::class))->applicantHasPortalUser($application),
-                        'generateUrl' => route('admin.job-applications.registration-code.generate', $application),
-                        'pendingRegistrationCode' => ($activeRegistrationCodes ?? collect())->get($application->id),
-                        'facilityFilterId' => request('facility'),
-                    ])
+                                    @include('admin.partials.portal-registration-icon', [
+                                        'canGenerateRegistrationCodes' => $canGenerateRegistrationCodes ?? false,
+                                        'hasPortalUser' => ($registrationCodeService ?? app(\App\Support\RegistrationCodeService::class))->applicantHasPortalUser($application),
+                                        'generateUrl' => route('admin.job-applications.registration-code.generate', $application),
+                                        'pendingRegistrationCode' => ($activeRegistrationCodes ?? collect())->get($application->id),
+                                        'facilityFilterId' => request('facility'),
+                                        'hasRecipientEmail' => filled($application->email),
+                                    ])
 
                     <form action="{{ route('admin.job-applications.destroy', $application) }}" method="POST"
                         class="inline">

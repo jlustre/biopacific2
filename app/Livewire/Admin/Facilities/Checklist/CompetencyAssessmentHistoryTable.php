@@ -60,6 +60,12 @@ class CompetencyAssessmentHistoryTable extends Component
         $this->loadHistory();
     }
 
+    #[On('competency-workflow-updated')]
+    public function refreshHistoryFromWorkflow(): void
+    {
+        $this->loadHistory();
+    }
+
     public function updatingSearch(): void
     {
         $this->resetPage();

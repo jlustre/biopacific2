@@ -6,9 +6,14 @@ use App\Models\BPEmployee;
 use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeeCompetencyItem;
+use App\Models\User;
 use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGItemReviews;
+use App\Livewire\Concerns\GuardsAgainstSelfAssessment;
+use App\Services\AssessmentConfirmationNotificationService;
+use App\Services\CompetencyAssessmentConfirmationService;
+use App\Support\AssessmentWorkflowStatus;
+use App\Support\CompetencyAssessmentWorkflowReadiness;
 use App\Support\PartGCompetencyScoring;
-use App\Support\PreventsSelfAssessment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
@@ -24,6 +29,7 @@ use Livewire\Component;
  */
 class LicensedNurseEmarCompetency extends Component
 {
+    use GuardsAgainstSelfAssessment;
     use ManagesPartGItemReviews;
 
     public const SECTION = 'LICENSED NURSE eMAR COMPETENCY';
@@ -33,8 +39,6 @@ class LicensedNurseEmarCompetency extends Component
     public ?int $assessmentPeriodId = null;
 
     public bool $assessmentLocked = false;
-
-    public bool $evaluatorActionsDisabled = false;
 
     public bool $sectionExcluded = false;
 
@@ -47,7 +51,16 @@ class LicensedNurseEmarCompetency extends Component
 
     // For draft save feedback
     public ?string $draftSaveMessage = null;
-    public ?string $draftSaveType = null;
+
+    public string $draftSaveType = '';
+
+    public string $summaryComments = '';
+
+    public string $employeeComments = '';
+
+    public string $reviewSignDate = '';
+
+    public string $employeeSignDate = '';
 
     public string $employeeName = '';
 
@@ -66,29 +79,233 @@ class LicensedNurseEmarCompetency extends Component
         $this->assessmentPeriodId = $assessmentPeriodId;
         $this->assessmentLocked = $assessmentLocked;
 
-        $this->evaluatorActionsDisabled = PreventsSelfAssessment::isSelfAssessment(
-            Auth::user(),
-            $this->employeeNum
-        );
-
         $employee = BPEmployee::with('currentAssignment.position')
             ->where('employee_num', $employeeNum)
             ->first();
 
         if ($employee) {
-            $this->employeeName = trim(($employee->last_name ?? '').', '.($employee->first_name ?? ''), ', ');
+            $this->employeeName = $employee->formattedFullName();
             $this->employeeTitle = $employee->currentAssignment?->position?->title
                 ?? ($employee->position ?? '');
         }
 
         $user = Auth::user();
         $this->reviewerName = $user?->name ?? '';
-        $this->reviewerTitle = $user?->title ?? '';
+        $this->reviewerTitle = $this->resolveAuthenticatedReviewerTitle($user);
 
         $this->items = $this->buildCompetencyItems();
         $this->loadResponsesFromStorage();
+        $this->loadReviewerIdentityFromStorage();
+        $this->loadSectionCommentsFromStorage();
         $this->loadExclusionFromStorage();
         $this->normalizeResponseKeys();
+    }
+
+    #[Computed]
+    public function displayReviewSignDate(): string
+    {
+        $assessment = $this->loadAssessment();
+        if (! $assessment) {
+            return '';
+        }
+
+        $timestamp = $assessment->reviewer_signed_at ?? $assessment->review_date;
+        if (blank($timestamp)) {
+            return '';
+        }
+
+        return \Illuminate\Support\Carbon::parse($timestamp)->format('M j, Y g:i A');
+    }
+
+    #[Computed]
+    public function displayEmployeeSignDate(): string
+    {
+        $assessment = $this->loadAssessment();
+        if (! $assessment?->employee_signed_at) {
+            return '';
+        }
+
+        return $assessment->employee_signed_at->format('M j, Y g:i A');
+    }
+
+    #[Computed]
+    public function assessmentWorkflowStatus(): string
+    {
+        return $this->loadAssessment()?->workflowStatus() ?? AssessmentWorkflowStatus::DRAFT;
+    }
+
+    #[Computed]
+    public function reviewerCanApproveWorkflow(): bool
+    {
+        return AssessmentWorkflowStatus::reviewerCanApprove($this->assessmentWorkflowStatus);
+    }
+
+    #[Computed]
+    public function assessmentIsCompleted(): bool
+    {
+        return AssessmentWorkflowStatus::isCompleted($this->assessmentWorkflowStatus);
+    }
+
+    #[Computed]
+    public function contentChangedSinceEmployeeConfirmation(): bool
+    {
+        $assessment = $this->loadAssessment();
+        if (! $assessment || ! $this->reviewerCanApproveWorkflow) {
+            return false;
+        }
+
+        return app(CompetencyAssessmentConfirmationService::class)
+            ->hasChangedSinceEmployeeConfirmation($assessment);
+    }
+
+    #[Computed]
+    public function canCompleteAssessment(): bool
+    {
+        if ($this->evaluatorActionsDisabled || ! $this->reviewerCanApproveWorkflow) {
+            return false;
+        }
+
+        $assessment = $this->loadAssessment();
+        if (! $assessment || blank($assessment->employee_signature_path)) {
+            return false;
+        }
+
+        return ! $this->contentChangedSinceEmployeeConfirmation;
+    }
+
+    #[Computed]
+    public function showDraftSubmitActions(): bool
+    {
+        if ($this->evaluatorActionsDisabled || $this->assessmentLocked) {
+            return false;
+        }
+
+        if ($this->assessmentWorkflowStatus !== AssessmentWorkflowStatus::DRAFT) {
+            return false;
+        }
+
+        return ! $this->sectionIsSubmitted();
+    }
+
+    #[Computed]
+    public function summaryFieldsLocked(): bool
+    {
+        return $this->assessmentLocked
+            || $this->assessmentIsCompleted
+            || $this->reviewerCanApproveWorkflow
+            || AssessmentWorkflowStatus::employeeCanConfirm($this->assessmentWorkflowStatus);
+    }
+
+    #[Computed]
+    public function storedEmployeeName(): string
+    {
+        return trim((string) ($this->loadAssessment()?->employee_name ?? '')) ?: $this->employeeName;
+    }
+
+    #[Computed]
+    public function storedReviewerName(): string
+    {
+        return trim((string) ($this->loadAssessment()?->reviewer_name ?? '')) ?: $this->reviewerName;
+    }
+
+    #[Computed]
+    public function sectionReadyForReviewerCompletion(): bool
+    {
+        if ($this->sectionExcluded) {
+            return true;
+        }
+
+        $itemIds = $this->scorableItemIds();
+        if ($itemIds === []) {
+            return false;
+        }
+
+        foreach ($itemIds as $itemId) {
+            if (! PartGCompetencyScoring::isValidItemRating($this->responses[$itemId] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function updatedSummaryComments(): void
+    {
+        $this->persistDraftIfPossible();
+    }
+
+    public function updatedEmployeeComments(): void
+    {
+        $this->persistDraftIfPossible();
+    }
+
+    public function saveDraft(): void
+    {
+        $this->draftSaveMessage = null;
+        $this->draftSaveType = '';
+
+        if (! $this->guardPartGManualDraftSave()) {
+            return;
+        }
+
+        try {
+            $this->persistResponses('draft');
+            $this->setDraftSaveFeedback('success', 'Draft saved successfully!');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->setDraftSaveFeedback('error', 'Failed to save draft. Please try again.');
+        }
+    }
+
+    public function submitAssessment(): void
+    {
+        $this->draftSaveMessage = null;
+        $this->draftSaveType = '';
+
+        if (! $this->guardPartGSectionSubmit()) {
+            return;
+        }
+
+        if ($this->sectionIsSubmitted()) {
+            $this->setDraftSaveFeedback('error', 'This section has already been submitted.');
+
+            return;
+        }
+
+        $this->validate([
+            'responses' => 'required|array',
+        ]);
+
+        if (! $this->sectionExcluded) {
+            foreach ($this->scorableItemIds() as $itemId) {
+                $response = $this->responses[$itemId] ?? null;
+                if (! PartGCompetencyScoring::isValidItemRating($response)) {
+                    $this->addError('responses', 'Please rate all competency items before submitting.');
+
+                    return;
+                }
+            }
+        }
+
+        try {
+            $this->persistResponses('section_submit');
+
+            $workflowMessage = $this->submitCompetencyForEmployeeConfirmationIfReady();
+            $message = self::SECTION.' submitted successfully.';
+            if ($workflowMessage !== null) {
+                $message .= ' '.$workflowMessage;
+            } else {
+                $assessment = $this->loadAssessment();
+                if ($assessment && ! $this->competencyReadyForEmployeeConfirmation($assessment)) {
+                    $message .= ' Complete and submit the remaining competency sections to notify the employee.';
+                }
+            }
+
+            $this->setDraftSaveFeedback('success', $message);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->setDraftSaveFeedback('error', 'Failed to submit this section. Please try again.');
+        }
     }
 
     /**
@@ -171,7 +388,111 @@ class LicensedNurseEmarCompetency extends Component
             return;
         }
 
-        $this->persistResponses();
+        $this->persistResponses('draft');
+    }
+
+    protected function persistDraftIfPossible(): void
+    {
+        if ($this->assessmentLocked || ! $this->assessmentPeriodId || $this->evaluatorActionsDisabled) {
+            return;
+        }
+
+        $this->persistResponses('draft');
+    }
+
+    protected function guardPartGManualDraftSave(): bool
+    {
+        if ($this->assessmentLocked) {
+            $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be saved.');
+
+            return false;
+        }
+
+        if (! $this->assessmentPeriodId) {
+            $this->setDraftSaveFeedback('error', 'Please select an assessment period before saving a draft.');
+
+            return false;
+        }
+
+        if ($this->denyEvaluatorAction()) {
+            return false;
+        }
+
+        if ($this->assessmentWorkflowStatus !== AssessmentWorkflowStatus::DRAFT) {
+            $this->setDraftSaveFeedback('error', 'This assessment cannot be saved as a draft at the current workflow stage.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function guardPartGSectionSubmit(): bool
+    {
+        if ($this->assessmentLocked) {
+            $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be submitted.');
+
+            return false;
+        }
+
+        if (! $this->assessmentPeriodId) {
+            $this->setDraftSaveFeedback('error', 'Please select an assessment period before submitting this section.');
+
+            return false;
+        }
+
+        if ($this->denyEvaluatorAction()) {
+            return false;
+        }
+
+        if ($this->assessmentWorkflowStatus !== AssessmentWorkflowStatus::DRAFT) {
+            $this->setDraftSaveFeedback('error', 'This section cannot be submitted again at the current workflow stage.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function setDraftSaveFeedback(string $type, string $message): void
+    {
+        $this->draftSaveType = $type;
+        $this->draftSaveMessage = $message;
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function scorableItemIds(): array
+    {
+        return collect($this->items)
+            ->filter(fn (array $item) => ! ($item['isParent'] ?? false))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @return array{totalPoints:int|float,average:float|string,overallRating:string}
+     */
+    protected function calculateScores(): array
+    {
+        if ($this->sectionExcluded) {
+            return [
+                'totalPoints' => 0,
+                'average' => 0,
+                'overallRating' => 'Excluded',
+            ];
+        }
+
+        $metrics = $this->buildSectionSummaryMetrics();
+        $average = $metrics['average'] === '—' ? 0.0 : (float) $metrics['average'];
+
+        return [
+            'totalPoints' => $metrics['totalPoints'],
+            'average' => $average,
+            'overallRating' => $metrics['overallRating'],
+        ];
     }
 
     protected function cannotRate(): bool
@@ -427,6 +748,67 @@ class LicensedNurseEmarCompetency extends Component
         }
     }
 
+    protected function loadReviewerIdentityFromStorage(): void
+    {
+        $assessment = $this->loadAssessment();
+        if (! $assessment) {
+            return;
+        }
+
+        if (filled($assessment->reviewer_name)) {
+            $this->reviewerName = (string) $assessment->reviewer_name;
+        }
+
+        $storedTitle = trim((string) ($assessment->reviewer_title ?? ''));
+        if ($storedTitle !== '') {
+            $this->reviewerTitle = $storedTitle;
+        }
+    }
+
+    protected function loadSectionCommentsFromStorage(): void
+    {
+        $assessment = $this->loadAssessment();
+        if (! $assessment) {
+            return;
+        }
+
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $sectionComments = $snapshot['section_comments'][self::SECTION] ?? null;
+
+        if (is_array($sectionComments)) {
+            $this->summaryComments = (string) ($sectionComments['reviewer_comments'] ?? $this->summaryComments);
+            $this->employeeComments = (string) ($sectionComments['employee_comments'] ?? $this->employeeComments);
+        } else {
+            $this->summaryComments = (string) ($assessment->comments ?? $this->summaryComments);
+            $this->employeeComments = (string) ($assessment->employee_comments ?? $this->employeeComments);
+        }
+
+        $storedEmployeeName = trim((string) ($assessment->employee_name ?? ''));
+        if ($storedEmployeeName !== '') {
+            $this->employeeName = $storedEmployeeName;
+        }
+
+        $this->reviewSignDate = optional($assessment->reviewer_signed_at ?? $assessment->review_date)->format('Y-m-d') ?? '';
+        $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
+    }
+
+    public function sectionIsSubmitted(): bool
+    {
+        if (! $this->assessmentPeriodId) {
+            return false;
+        }
+
+        $assessment = $this->loadAssessment();
+        if (! $assessment) {
+            return false;
+        }
+
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $submittedLabels = $snapshot['submitted_section_labels'] ?? [];
+
+        return in_array(self::SECTION, $submittedLabels, true);
+    }
+
     protected function loadExclusionFromStorage(): void
     {
         $assessment = $this->loadAssessment();
@@ -440,6 +822,37 @@ class LicensedNurseEmarCompetency extends Component
             ->all();
 
         $this->sectionExcluded = in_array(self::SECTION, $excluded, true);
+    }
+
+    protected function resolveAuthenticatedReviewerTitle(?User $user = null): string
+    {
+        $user ??= Auth::user();
+        if (! $user instanceof User) {
+            return '';
+        }
+
+        $reviewerEmployee = $user->resolvedBpEmployee(['currentAssignment.position']);
+
+        return trim((string) (
+            $reviewerEmployee?->currentAssignment?->position?->title
+            ?? $reviewerEmployee?->position
+            ?? ''
+        ));
+    }
+
+    protected function refreshReviewerIdentityForPersist(): void
+    {
+        $user = Auth::user();
+        if ($user) {
+            if ($this->reviewerName === '') {
+                $this->reviewerName = (string) ($user->name ?? '');
+            }
+
+            $resolvedTitle = $this->resolveAuthenticatedReviewerTitle($user);
+            if ($resolvedTitle !== '') {
+                $this->reviewerTitle = $resolvedTitle;
+            }
+        }
     }
 
     protected function loadAssessment(): ?EmployeeCompetencyAssessment
@@ -476,8 +889,10 @@ class LicensedNurseEmarCompetency extends Component
      *  - upsert the EmployeeCompetencyAssessment row (responses JSON + snapshot exclusion + reviewer info)
      *  - create a new EmployeeAssessmentItemEntry for any rating that actually changed
      *  - refresh the assessment's denormalized total/average/overall columns
+     *
+     * @param  'auto'|'draft'|'section_submit'  $intent
      */
-    protected function persistResponses(): void
+    protected function persistResponses(string $intent = 'auto'): void
     {
         if (! $this->canPersist()) {
             return;
@@ -491,6 +906,8 @@ class LicensedNurseEmarCompetency extends Component
         $snapshot = is_array($row?->snapshot_json) ? $row->snapshot_json : [];
         $snapshot = $this->applyExclusionToSnapshot($snapshot);
 
+        $this->refreshReviewerIdentityForPersist();
+
         $updateData = [
             'responses' => $payload,
             'snapshot_json' => $snapshot,
@@ -499,9 +916,23 @@ class LicensedNurseEmarCompetency extends Component
             'employee_name' => $this->employeeName,
             'employee_title' => $this->employeeTitle,
             'submitted_by' => Auth::id(),
-            'status' => $this->resolveStatus($row),
-            'submitted_at' => $row?->submitted_at,
         ];
+
+        $updateData = $this->applySectionScopedFormFields($updateData, $row);
+        $updateData = $this->upsertSectionSummarySnapshot(
+            $updateData,
+            $row,
+            $intent === 'section_submit'
+        );
+
+        if ($intent === 'section_submit') {
+            $updateData = $this->withSectionSubmissionSnapshot($updateData, $row);
+        } else {
+            $updateData['status'] = $intent === 'draft'
+                ? $this->resolveAssessmentStatusForDraft($row)
+                : $this->resolveStatus($row);
+            $updateData['submitted_at'] = $row?->submitted_at;
+        }
 
         $row = EmployeeCompetencyAssessment::updateOrCreate(
             [
@@ -527,7 +958,213 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $this->syncAssessmentSummaryColumns($row);
+        $this->maybeResetCompetencyAssessmentForEmployeeReconfirmation();
         $this->dispatchPartGSummaryUpdated();
+    }
+
+    /**
+     * @param  array<string, mixed>  $updateData
+     * @return array<string, mixed>
+     */
+    protected function applySectionScopedFormFields(array $updateData, ?EmployeeCompetencyAssessment $row): array
+    {
+        $snapshot = is_array($row?->snapshot_json) ? $row->snapshot_json : [];
+        if (isset($updateData['snapshot_json']) && is_array($updateData['snapshot_json'])) {
+            $snapshot = $updateData['snapshot_json'];
+        }
+
+        $snapshot['section_comments'] ??= [];
+        $snapshot['section_comments'][self::SECTION] = [
+            'reviewer_comments' => $this->summaryComments,
+            'employee_comments' => $this->employeeComments,
+            'review_date' => optional($row?->reviewer_signed_at ?? $row?->review_date)->format('Y-m-d'),
+            'employee_signed_at' => optional($row?->employee_signed_at)->format('Y-m-d'),
+        ];
+
+        $updateData['snapshot_json'] = $snapshot;
+
+        return $updateData;
+    }
+
+    /**
+     * @param  array<string, mixed>  $updateData
+     * @return array<string, mixed>
+     */
+    protected function upsertSectionSummarySnapshot(
+        array $updateData,
+        ?EmployeeCompetencyAssessment $row,
+        bool $markSubmittedAt = false,
+    ): array {
+        $snapshot = is_array($updateData['snapshot_json'] ?? null)
+            ? $updateData['snapshot_json']
+            : (is_array($row?->snapshot_json) ? $row->snapshot_json : []);
+
+        $scores = $this->calculateScores();
+        $existing = is_array($snapshot['section_summaries'][self::SECTION] ?? null)
+            ? $snapshot['section_summaries'][self::SECTION]
+            : [];
+
+        $snapshot['section_summaries'] ??= [];
+        $snapshot['section_summaries'][self::SECTION] = array_merge($existing, [
+            'total_score' => $scores['totalPoints'],
+            'average_score' => $scores['average'],
+            'overall_rating' => $scores['overallRating'],
+            'review_date' => optional($row?->reviewer_signed_at ?? $row?->review_date)->format('Y-m-d'),
+        ]);
+
+        if ($markSubmittedAt || empty($snapshot['section_summaries'][self::SECTION]['submitted_at'])) {
+            $snapshot['section_summaries'][self::SECTION]['submitted_at'] = now()->toDateTimeString();
+        }
+
+        $updateData['snapshot_json'] = $snapshot;
+
+        return $updateData;
+    }
+
+    /**
+     * @param  array<string, mixed>  $updateData
+     * @return array<string, mixed>
+     */
+    protected function withSectionSubmissionSnapshot(array $updateData, ?EmployeeCompetencyAssessment $row): array
+    {
+        $snapshot = is_array($updateData['snapshot_json'] ?? null)
+            ? $updateData['snapshot_json']
+            : (is_array($row?->snapshot_json) ? $row->snapshot_json : []);
+
+        $updateData['snapshot_json'] = $snapshot;
+        $updateData = $this->upsertSectionSummarySnapshot($updateData, $row, true);
+        $snapshot = is_array($updateData['snapshot_json'] ?? null) ? $updateData['snapshot_json'] : [];
+
+        $submittedLabels = collect($snapshot['submitted_section_labels'] ?? [])
+            ->map(fn ($label) => trim((string) $label))
+            ->filter(fn ($label) => $label !== '')
+            ->values()
+            ->all();
+
+        if (! in_array(self::SECTION, $submittedLabels, true)) {
+            $submittedLabels[] = self::SECTION;
+        }
+
+        $snapshot['submitted_section_labels'] = array_values(array_unique($submittedLabels));
+        $updateData['snapshot_json'] = $snapshot;
+        $updateData['status'] = $this->resolveAssessmentStatusForDraft($row);
+        $updateData['submitted_at'] = $row?->submitted_at;
+
+        return $updateData;
+    }
+
+    protected function resolveAssessmentStatusForDraft(?EmployeeCompetencyAssessment $row): string
+    {
+        $status = (string) ($row?->status ?? 'draft');
+
+        if (in_array($status, [
+            AssessmentWorkflowStatus::COMPLETED,
+            AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+            AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
+        ], true)) {
+            return $status;
+        }
+
+        return 'draft';
+    }
+
+    protected function maybeResetCompetencyAssessmentForEmployeeReconfirmation(): void
+    {
+        $assessment = $this->loadAssessment();
+        if (! $assessment || $assessment->workflowStatus() !== AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL) {
+            return;
+        }
+
+        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
+        $assessment->refresh();
+
+        if (! $confirmationService->hasChangedSinceEmployeeConfirmation($assessment)) {
+            return;
+        }
+
+        $confirmationService->resetForEmployeeReconfirmation($assessment);
+        $assessment->save();
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $this->employeeNum)
+            ->first();
+
+        if ($employee) {
+            app(AssessmentConfirmationNotificationService::class)
+                ->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee);
+        }
+    }
+
+    protected function submitCompetencyForEmployeeConfirmationIfReady(): ?string
+    {
+        $assessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->first();
+
+        if (! $assessment || ! $this->competencyReadyForEmployeeConfirmation($assessment)) {
+            return null;
+        }
+
+        $currentStatus = $assessment->workflowStatus();
+
+        if (! in_array($currentStatus, [AssessmentWorkflowStatus::DRAFT, AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL], true)) {
+            return null;
+        }
+
+        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
+        $wasResubmit = $confirmationService->prepareForEmployeeConfirmation($assessment);
+
+        $assessment->submitted_at = now();
+        $assessment->submitted_by = Auth::id();
+        $this->refreshReviewerIdentityForPersist();
+
+        if ($this->reviewerName !== '') {
+            $assessment->reviewer_name = $this->reviewerName;
+        }
+
+        if ($this->reviewerTitle !== '') {
+            $assessment->reviewer_title = $this->reviewerTitle;
+        }
+
+        $assessment->save();
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $this->employeeNum)
+            ->first();
+
+        if (! $employee) {
+            return 'The competency assessment was submitted for employee confirmation, but the employee record was not found so no notification was sent.';
+        }
+
+        app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
+            ->refreshCompetencyWorkflowState($assessment, regeneratePdf: false);
+
+        $emailSent = $wasResubmit
+            ? app(AssessmentConfirmationNotificationService::class)
+                ->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee)
+            : app(AssessmentConfirmationNotificationService::class)
+                ->notifyCompetencyAssessmentSubmitted($assessment, $employee);
+
+        return $emailSent
+            ? ($wasResubmit
+                ? 'The employee has been notified by email and will see an updated task at the top of their dashboard.'
+                : 'The employee has been notified by email and will see a task on their dashboard.')
+            : 'The competency assessment was submitted for employee confirmation. No employee email is on file, so no notification was sent.';
+    }
+
+    protected function competencyReadyForEmployeeConfirmation(EmployeeCompetencyAssessment $assessment): bool
+    {
+        $employee = BPEmployee::query()
+            ->with('currentAssignment')
+            ->where('employee_num', $this->employeeNum)
+            ->first();
+
+        if (! $employee) {
+            return false;
+        }
+
+        return CompetencyAssessmentWorkflowReadiness::isReadyForEmployeeConfirmation($assessment, $employee);
     }
 
     protected function upsertItemEntry(int $itemId, string $rating): void

@@ -70,7 +70,7 @@
             <div id="partFUnsatisfactoryReasonWrapper" class="hidden rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-3 shadow-sm">
                 <label for="partFUnsatisfactoryReason" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-amber-900">Below Expectations Reason</label>
                 <p class="mb-2 text-[11px] text-amber-800">Explain why the overall performance rating is below expectations.</p>
-                <textarea name="overall_unsatisfactory_reason" id="partFUnsatisfactoryReason" class="min-h-[88px] w-full resize-y rounded-md border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200" placeholder="Required when the overall rating is below expectations." @readonly($partFAssessmentLocked)>{{ old('overall_unsatisfactory_reason', $selectedPerformanceAssessment?->comments ?? '') }}</textarea>
+                <textarea name="overall_unsatisfactory_reason" id="partFUnsatisfactoryReason" class="min-h-[88px] w-full resize-y rounded-md border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200" placeholder="Required when the overall rating is below expectations." @readonly(!empty($partFSummaryReadOnly))>{{ old('overall_unsatisfactory_reason', $selectedPerformanceAssessment?->comments ?? '') }}</textarea>
             </div>
 
             @include('admin.facilities.checklist.employee-areas-development')
@@ -82,15 +82,25 @@
                 <p class="mt-1 text-[11px] text-slate-700">The current Part F backend still uses save and final submit. This card mirrors the Part G presentation while preserving the existing submit flow.</p>
             </div>
 
+            @php
+                $partFReviewDateValue = old('review_dt', isset($reviewDt) && $reviewDt !== '' ? \Illuminate\Support\Carbon::parse($reviewDt)->format('Y-m-d') : '');
+                $partFEmployeeAckDateValue = old('employee_acknowledge_dt', isset($employeeAcknowledgeDt) && $employeeAcknowledgeDt !== '' ? \Illuminate\Support\Carbon::parse($employeeAcknowledgeDt)->format('Y-m-d') : '');
+                $partFReviewDateReadOnly = !empty($partFSummaryReadOnly) || (auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id);
+                $partFEmployeeAckDateReadOnly = !empty($partFSummaryReadOnly) || !(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id && !empty($partFEmployeeCanConfirm));
+            @endphp
+
             <div class="grid gap-3 md:grid-cols-2">
                 <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-700">
-                    Supervisor
-                    <input type="text" name="supervisor_name" class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('supervisor_name', $supervisorName ?? '') }}" @readonly($partFAssessmentLocked)>
+                    Reviewer
+                    <input type="text" name="supervisor_name" class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('supervisor_name', $supervisorName ?? '') }}" @readonly(!empty($partFSummaryReadOnly))>
                 </label>
 
                 <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-700">
                     Review Date
-                    <input type="date" name="review_dt" class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('review_dt', $reviewDt ?? '') }}" @required(!$partFAssessmentLocked) @readonly($partFAssessmentLocked || (auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id))>
+                    @if($partFReviewDateReadOnly && $partFReviewDateValue !== '')
+                    <input type="hidden" name="review_dt" value="{{ $partFReviewDateValue }}">
+                    @endif
+                    <input type="date" @if(! $partFReviewDateReadOnly) name="review_dt" @endif class="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ $partFReviewDateValue }}" @required(empty($partFSummaryReadOnly)) @readonly($partFReviewDateReadOnly)>
                 </label>
 
                 <div class="md:col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2 md:items-end md:gap-x-6 md:gap-y-3">
@@ -100,7 +110,10 @@
                     </div>
                     <div class="min-w-0">
                         <label for="partFReviewSignaturesEmployeeAckDt" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-700">Employee Acknowledge Date</label>
-                        <input id="partFReviewSignaturesEmployeeAckDt" type="date" name="employee_acknowledge_dt" class="w-full min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ old('employee_acknowledge_dt', $employeeAcknowledgeDt ?? '') }}" @readonly($partFAssessmentLocked || !(auth()->check() && isset($employee->user_id) && auth()->id() == $employee->user_id && !empty($partFEmployeeCanConfirm)))>
+                        @if($partFEmployeeAckDateReadOnly && $partFEmployeeAckDateValue !== '')
+                        <input type="hidden" name="employee_acknowledge_dt" value="{{ $partFEmployeeAckDateValue }}">
+                        @endif
+                        <input id="partFReviewSignaturesEmployeeAckDt" type="date" @if(! $partFEmployeeAckDateReadOnly) name="employee_acknowledge_dt" @endif class="w-full min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900" value="{{ $partFEmployeeAckDateValue }}" @readonly($partFEmployeeAckDateReadOnly)>
                     </div>
                 </div>
 
@@ -109,13 +122,15 @@
                     <div class="mt-1 text-sm font-semibold text-slate-900">{{ $partFStatusLabel ?? 'In Progress' }}</div>
                     <div class="mt-1">
                         @if(!empty($partFEmployeeCanConfirm))
-                        Enter your employee comments, confirm the acknowledgement date, then click <strong>Save Acknowledgement</strong>.
+                        Enter your employee comments, then click <strong>Sign &amp; Acknowledge</strong> to confirm this assessment.
+                        @elseif(!empty($partFWaitingEmployeeConfirmation) && empty($evaluatorActionsDisabled))
+                        This assessment has been submitted for <strong>employee confirmation</strong>. The submit button is disabled until the employee acknowledges it or sends it back for corrections.
                         @elseif(!empty($partFReviewerCanApprove))
-                        The employee has acknowledged this assessment. Review and click <strong>Approve Assessment</strong> to complete it.
+                        The employee has acknowledged this assessment. If you change ratings or notes, save to send it back for employee confirmation. Approve only when no further changes are needed.
                         @elseif(!empty($partFAssessmentLocked))
-                        This assessment is completed and read-only. The reviewer may reopen it, or the employee may send it back for review.
+                        This assessment is completed and read-only.
                         @else
-                        Save as Draft keeps the assessment editable. Submit Assessment sends it to the employee for confirmation.
+                        Save as Draft keeps the assessment editable. Submit for Employee Confirmation sends it to the employee for signature.
                         @endif
                     </div>
                 </div>
@@ -125,25 +140,43 @@
             <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
                 This assessment has been completed for the selected period. The notes and signature fields are shown for reference only.
             </div>
+            @if(empty($evaluatorActionsDisabled))
             <div class="flex flex-wrap justify-end gap-2">
-                @if(!empty($evaluatorActionsDisabled))
-                <button type="submit" name="action" value="send_back" class="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100">Send Back to Reviewer</button>
-                @else
-                <button type="submit" name="action" value="reopen" class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Reopen for Editing</button>
-                @endif
+                <button type="submit" data-workflow-action="reopen" class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Reopen for Editing</button>
+            </div>
+            @endif
+            @elseif(!empty($partFWaitingEmployeeConfirmation) && empty($evaluatorActionsDisabled))
+            <div class="rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-[11px] text-sky-950">
+                This performance assessment was submitted for <strong>employee signature / confirmation</strong> on
+                <strong>{{ optional($selectedPerformanceAssessment?->updated_at)->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? 'the selected review date' }}</strong>.
+                The employee will see a dashboard task and email notification. You can submit again only if the employee sends it back for corrections.
+            </div>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button type="submit" data-workflow-action="submit" class="rounded-md bg-slate-400 px-4 py-2 text-sm font-medium text-white" disabled data-workflow-locked="1" title="Already submitted for employee confirmation">Submit for Employee Confirmation</button>
             </div>
             @elseif(!empty($partFEmployeeCanConfirm) && !empty($evaluatorActionsDisabled))
             <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">
-                You may enter employee comments and save your acknowledgement. Ratings and reviewer fields cannot be changed on your own record.
+                You may enter employee comments, then sign to acknowledge this assessment. Ratings and reviewer fields cannot be changed on your own record.
             </div>
+            @if($errors->has('employee_signature'))
+            <div class="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-[11px] text-red-800">{{ $errors->first('employee_signature') }}</div>
+            @endif
             <div class="flex flex-wrap justify-end gap-2">
-                <button type="submit" name="action" value="send_back" class="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100">Send Back to Reviewer</button>
-                <button type="submit" name="action" value="acknowledge" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save Acknowledgement</button>
+                <button type="submit" data-workflow-action="send_back" class="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100">Send Back to Reviewer</button>
+                <button type="button" id="partFOpenEmployeeSignatureModal" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Sign &amp; Acknowledge</button>
             </div>
             @elseif(!empty($partFReviewerCanApprove) && empty($evaluatorActionsDisabled))
-            <div class="flex flex-wrap justify-end gap-2">
-                <button type="submit" name="action" value="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save Changes</button>
-                <button type="submit" name="action" value="approve" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Approve Assessment</button>
+            <div class="rounded-md border border-violet-300 bg-violet-50 px-3 py-2 text-[11px] text-violet-950">
+                @if(!empty($partFContentChangedSinceEmployeeConfirmation))
+                This assessment was changed after the employee confirmed it. Save or resubmit to send it back to the employee. Approval is disabled until they confirm again.
+                @else
+                The employee has acknowledged and signed this assessment. Review it, then approve when no further changes are needed.
+                @endif
+            </div>
+            <div id="partFReviewerApprovalActions" class="flex flex-wrap justify-end gap-2">
+                <button type="submit" data-workflow-action="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save Changes</button>
+                <button type="submit" data-workflow-action="submit" id="partFResubmitForEmployeeBtn" class="rounded-md border border-sky-400 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-950 hover:bg-sky-100 {{ empty($partFContentChangedSinceEmployeeConfirmation) ? 'hidden' : '' }}">Resubmit for Employee Confirmation</button>
+                <button type="submit" data-workflow-action="approve" id="partFApproveAssessmentBtn" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black {{ !empty($partFCanApprove) ? '' : 'hidden' }}">Approve Assessment</button>
             </div>
             @elseif(!empty($evaluatorActionsDisabled))
             <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">
@@ -151,8 +184,8 @@
             </div>
             @else
             <div class="flex flex-wrap justify-end gap-2">
-                <button type="submit" name="action" value="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save as Draft</button>
-                <button type="submit" name="action" value="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Submit for Employee Confirmation</button>
+                <button type="submit" data-workflow-action="save" class="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save as Draft</button>
+                <button type="submit" data-workflow-action="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Submit for Employee Confirmation</button>
             </div>
             @endif
         </div>

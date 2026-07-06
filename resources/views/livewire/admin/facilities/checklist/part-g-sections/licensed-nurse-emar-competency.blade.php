@@ -1,18 +1,12 @@
 
 <section class="mb-4 mt-6">
+    @php
+        use App\Support\AssessmentWorkflowStatus;
+    @endphp
     @include('livewire.admin.facilities.checklist.part-g-sections.partials.competency-review-modal')
 
     @php
-        $lnemarJsItems = [];
-        foreach ($items as $item) {
-            $lnemarJsItems[] = [
-                'id' => $item['id'],
-                'label' => $item['item'] ?? '',
-                'isParent' => (bool) ($item['isParent'] ?? false),
-                'indentLevel' => $item['indentLevel'] ?? 0,
-                'response' => $responses[$item['id']] ?? null,
-            ];
-        }
+        $lnemarSectionMetrics = $this->sectionSummaryMetrics;
     @endphp
 
     <script>
@@ -26,69 +20,6 @@
             }
         };
 
-        window.lnemarSummary = function() {
-            return {
-                items: @js($lnemarJsItems),
-                summary: {
-                    totalItems: 0,
-                    checkedOfTotal: '',
-                    totalPoints: 0,
-                    average: '—',
-                    overallRating: '—',
-                },
-                init() {
-                    this.updateSummary();
-                },
-                syncResponses(responses) {
-                    if (!responses || typeof responses !== 'object') {
-                        return;
-                    }
-                    this.items.forEach(item => {
-                        item.response = responses[item.id] ?? responses[String(item.id)] ?? null;
-                    });
-                    this.updateSummary();
-                },
-                setResponse(itemId, rating) {
-                    const item = this.items.find(i => i.id == itemId);
-                    if (item) {
-                        item.response = rating;
-                    }
-                    this.updateSummary();
-                },
-                updateSummary() {
-                    let total = 0, rated = 0, points = 0;
-                    this.items.forEach(item => {
-                        if (!item.isParent) {
-                            total++;
-                            if (!item.response) {
-                                return;
-                            }
-                            const score = this.responseToPoints(item.response);
-                            if (score <= 0) {
-                                return;
-                            }
-                            rated++;
-                            points += score;
-                        }
-                    });
-                    this.summary.totalItems = total;
-                    this.summary.checkedOfTotal = `${rated} of ${total} rated`;
-                    this.summary.totalPoints = points;
-                    this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
-                    this.summary.overallRating = this.getOverallRating(points, rated);
-                },
-                responseToPoints(val) {
-                    if (val === 'E') return 3;
-                    if (val === 'M' || val === 'S') return 2;
-                    if (val === 'B' || val === 'U') return 1;
-                    return 0;
-                },
-                getOverallRating(points, ratedCount) {
-                    return window.partGOverallRatingFromAverage(points, ratedCount);
-                },
-            };
-        };
-
         if (window.Alpine) {
             registerPartGAccordionStore();
         } else {
@@ -97,10 +28,7 @@
             });
         }
     </script>
-    <div
-        x-data="lnemarSummary()"
-        @lnemar-responses-updated.window="syncResponses($event.detail.responses)"
-    >
+    <div wire:key="lnemar-section-{{ md5(json_encode($responses)) }}">
         <style>
             .lnemar-row-even { background-color: #f1f5f9; }
             .lnemar-row-odd { background-color: #e2e8f0; }
@@ -171,20 +99,20 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                     <div class="rounded border border-gray-300 bg-white p-4 flex flex-col items-center">
                         <div class="text-xs font-semibold text-gray-500 mb-1">TOTAL ITEMS</div>
-                        <div class="text-2xl font-bold text-gray-700" x-text="summary.totalItems"></div>
-                        <div class="text-xs text-gray-500 mt-1" x-text="summary.checkedOfTotal"></div>
+                        <div class="text-2xl font-bold text-gray-700">{{ $lnemarSectionMetrics['totalItems'] }}</div>
+                        <div class="text-xs text-gray-500 mt-1">{{ $lnemarSectionMetrics['checkedOfTotal'] }}</div>
                     </div>
                     <div class="rounded border border-gray-300 bg-white p-4 flex flex-col items-center">
                         <div class="text-xs font-semibold text-gray-500 mb-1">TOTAL POINTS</div>
-                        <div class="text-2xl font-bold text-gray-700" x-text="summary.totalPoints"></div>
+                        <div class="text-2xl font-bold text-gray-700">{{ $lnemarSectionMetrics['totalPoints'] }}</div>
                     </div>
                     <div class="rounded border border-gray-300 bg-white p-4 flex flex-col items-center">
                         <div class="text-xs font-semibold text-gray-500 mb-1">AVERAGE</div>
-                        <div class="text-2xl font-bold text-gray-700" x-text="summary.average"></div>
+                        <div class="text-2xl font-bold text-gray-700">{{ $lnemarSectionMetrics['average'] }}</div>
                     </div>
                     <div class="rounded border border-gray-300 bg-white p-4 flex flex-col items-center">
                         <div class="text-xs font-semibold text-gray-500 mb-1">OVERALL RATING</div>
-                        <div class="text-2xl font-bold text-gray-700" x-text="summary.overallRating"></div>
+                        <div class="text-2xl font-bold text-gray-700">{{ $lnemarSectionMetrics['overallRating'] }}</div>
                     </div>
                 </div>
                 @endif
@@ -193,7 +121,7 @@
                     <label class="block text-xs font-semibold text-gray-700 mb-1">REVIEWER COMMENTS</label>
                     <textarea
                         wire:model="summaryComments"
-                        @disabled($assessmentLocked)
+                        @disabled($this->summaryFieldsLocked)
                         class="w-full rounded border border-gray-300 bg-slate-100 p-3 text-gray-700 min-h-[100px] resize-y"
                         placeholder="Enter comments here..."
                     ></textarea>
@@ -203,7 +131,7 @@
                     <label class="block text-xs font-semibold text-blue-700 mb-1">EMPLOYEE COMMENTS</label>
                     <textarea
                         wire:model="employeeComments"
-                        @disabled($assessmentLocked)
+                        @disabled($this->summaryFieldsLocked)
                         class="w-full rounded border border-blue-300 bg-blue-50 p-3 text-blue-700 min-h-[100px] resize-y"
                         placeholder="Enter employee comments here..."
                     ></textarea>
@@ -213,7 +141,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">REVIEWER NAME/SIGNATURE</label>
-                            <input type="text" class="w-full rounded border border-gray-300 bg-white p-2" value="{{ $reviewerName }}" readonly />
+                            <input type="text" class="w-full rounded border border-gray-300 bg-white p-2" value="{{ $this->storedReviewerName }}" readonly />
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">REVIEWER TITLE</label>
@@ -221,14 +149,19 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">REVIEW SIGN DATE</label>
-                            <input type="date" wire:model="reviewSignDate" @disabled($assessmentLocked) class="w-full rounded border border-gray-300 bg-white p-2" required />
-                            @error('reviewSignDate') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                            <input
+                                type="text"
+                                readonly
+                                class="w-full rounded border border-gray-300 bg-slate-100 p-2"
+                                value="{{ $this->displayReviewSignDate }}"
+                                placeholder="Recorded automatically when the reviewer signs"
+                            />
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">EMPLOYEE NAME/SIGNATURE</label>
-                            <input type="text" class="w-full rounded border border-gray-300 bg-white p-2" value="{{ $employeeName }}" readonly />
+                            <input type="text" class="w-full rounded border border-gray-300 bg-white p-2" value="{{ $this->storedEmployeeName }}" readonly />
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">EMPLOYEE TITLE</label>
@@ -236,11 +169,17 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">EMPLOYEE SIGN DATE</label>
-                            <input type="date" wire:model="employeeSignDate" @disabled($assessmentLocked) class="w-full rounded border border-gray-300 bg-white p-2" />
+                            <input
+                                type="text"
+                                readonly
+                                class="w-full rounded border border-gray-300 bg-slate-100 p-2"
+                                value="{{ $this->displayEmployeeSignDate }}"
+                                placeholder="Recorded automatically when the employee signs"
+                            />
                         </div>
                     </div>
 
-                    @if(! $assessmentLocked)
+                    @if($this->showDraftSubmitActions)
                         <div class="flex flex-col md:flex-row justify-end gap-2 mt-2">
                             <button
                                 type="button"
@@ -257,25 +196,37 @@
                                 wire:loading.attr="disabled"
                                 class="rounded border border-gray-800 bg-gray-900 px-6 py-2 font-semibold text-white hover:bg-gray-800"
                             >
-                                <span wire:loading.remove wire:target="submitAssessment">Submit Assessment</span>
+                                <span wire:loading.remove wire:target="submitAssessment">Submit Section</span>
                                 <span wire:loading wire:target="submitAssessment">Submitting...</span>
                             </button>
                         </div>
+                    @elseif($this->sectionIsSubmitted() && $this->assessmentWorkflowStatus === AssessmentWorkflowStatus::DRAFT)
+                        <p class="mt-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+                            This section has been submitted. Complete the remaining competency sections, then use <strong>Submit for Employee Confirmation</strong> in the acknowledgement block below.
+                        </p>
+                    @elseif($this->assessmentIsCompleted)
+                        <p class="mt-2 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+                            This competency assessment is completed. Names and sign dates are recorded above; signature images appear on the PDF only.
+                        </p>
+                    @endif
 
-                        @if($draftSaveMessage)
-                            <p
-                                wire:key="lnemar-draft-feedback-{{ md5($draftSaveMessage.$draftSaveType) }}"
-                                class="mt-2 block w-full rounded border px-3 py-2 text-sm font-semibold shadow-sm {{ $draftSaveType === 'success' ? 'border-green-300 bg-green-100 text-green-800' : 'border-red-300 bg-red-100 text-red-800' }}"
-                                role="status"
-                            >
-                                {{ $draftSaveMessage }}
-                            </p>
-                        @endif
+                    @if($draftSaveMessage)
+                        <p
+                            wire:key="lnemar-draft-feedback-{{ md5($draftSaveMessage.$draftSaveType) }}"
+                            class="mt-2 block w-full rounded border px-3 py-2 text-sm font-semibold shadow-sm {{ $draftSaveType === 'success' ? 'border-green-300 bg-green-100 text-green-800' : 'border-red-300 bg-red-100 text-red-800' }}"
+                            role="status"
+                        >
+                            {{ $draftSaveMessage }}
+                        </p>
                     @endif
 
                     @error('responses')
                         <span class="mt-2 block text-red-700 bg-red-100 border border-red-300 rounded px-3 py-1 text-sm">{{ $message }}</span>
                     @enderror
+
+                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-acknowledgement-host', [
+                        'acknowledgementKey' => 'ln-emar',
+                    ])
                 </div>
             </div>
         </div>

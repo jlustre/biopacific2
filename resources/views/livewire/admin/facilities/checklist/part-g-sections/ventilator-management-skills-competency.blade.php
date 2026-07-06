@@ -192,6 +192,10 @@
                     @error('responses')
                         <span class="mt-2 block text-red-700 bg-red-100 border border-red-300 rounded px-3 py-1 text-sm">{{ $message }}</span>
                     @enderror
+
+                    @include('livewire.admin.facilities.checklist.part-g-sections.partials.section-acknowledgement-host', [
+                        'acknowledgementKey' => 'ventilator',
+                    ])
                 </div>
             </div>
         </div>

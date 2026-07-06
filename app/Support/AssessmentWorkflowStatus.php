@@ -70,7 +70,7 @@ class AssessmentWorkflowStatus
 
     public static function employeeCanSendBack(?string $status): bool
     {
-        return in_array(self::normalize($status), [self::FOR_EMPLOYEE_CONFIRMATION, self::COMPLETED], true);
+        return self::normalize($status) === self::FOR_EMPLOYEE_CONFIRMATION;
     }
 
     public static function reviewerCanReopen(?string $status): bool

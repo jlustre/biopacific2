@@ -30,14 +30,21 @@
         $partGAssessmentLocked = \App\Support\AssessmentWorkflowStatus::isLocked($partGWorkflowStatus);
         $partGEmployeeCanConfirm = \App\Support\AssessmentWorkflowStatus::employeeCanConfirm($partGWorkflowStatus);
         $partGReviewerCanApprove = \App\Support\AssessmentWorkflowStatus::reviewerCanApprove($partGWorkflowStatus);
+        $partGConfirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
+        $partGContentChangedSinceEmployeeConfirmation = $selectedCompetencyAssessment
+            && $partGReviewerCanApprove
+            && $partGConfirmationService->hasChangedSinceEmployeeConfirmation($selectedCompetencyAssessment);
+        $partGCanApprove = $partGReviewerCanApprove
+            && empty($evaluatorActionsDisabled)
+            && ! $partGContentChangedSinceEmployeeConfirmation
+            && filled($selectedCompetencyAssessment?->employee_signature_path);
         $partGSubmissionStatusLabel = \App\Support\AssessmentWorkflowStatus::label($partGWorkflowStatus);
         $partGRatingsLocked = $partGAssessmentLocked
             || $partGEmployeeCanConfirm
             || ($partGReviewerCanApprove && !empty($evaluatorActionsDisabled))
             || (!empty($evaluatorActionsDisabled) && ! $partGEmployeeCanConfirm);
         $partGCompetencyEmployeeComments = $selectedCompetencyAssessment?->employee_comments ?? '';
-        $partGCompetencyEmployeeAckDate = $selectedCompetencyAssessment?->employee_signed_at?->format('Y-m-d')
-            ?? ($partGEmployeeCanConfirm ? now()->toDateString() : '');
+        $partGEmployeeFullName = $employee->formattedFullName();
         $partGDontIncludeSections = [
             'BLOOD ADMINISTRATION',
             'BLOOD GLUCOSE SYSTEM SKILLS',
@@ -237,7 +244,9 @@
         @endif
         @endif
 
-        @include('admin.facilities.checklist.part-g-competency-workflow-form')
+        @if($hasAssessmentPeriod && $partGHasCompetenciesForPosition)
+            @include('admin.facilities.checklist.partials.part-g-shared-workflow-modals')
+        @endif
 
         @livewire('admin.facilities.checklist.competency-assessment-history-table', [
             'employeeNum' => $employee->employee_num,

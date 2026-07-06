@@ -493,9 +493,7 @@
                         if (!confirm(data.message)) {
                             return null;
                         }
-                        if (data.message.includes('overlaps')) {
-                            dataPayload.force = true;
-                        } else if (data.message.includes('using this assessment period')) {
+                        if (data.message.includes('using this assessment period')) {
                             dataPayload.force_edit = true;
                         }
                         return attempt(dataPayload);

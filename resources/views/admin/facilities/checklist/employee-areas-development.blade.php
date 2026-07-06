@@ -3,7 +3,9 @@
 
     $partFWorkflowStatus = $partFSelectedAssessment?->workflowStatus() ?? AssessmentWorkflowStatus::DRAFT;
     $partFEmployeeCanConfirm = AssessmentWorkflowStatus::employeeCanConfirm($partFWorkflowStatus);
+    $partFWaitingEmployeeConfirmation = $partFWorkflowStatus === AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
     $partFAreasReadOnly = !empty($partFAssessmentLocked)
+        || $partFWaitingEmployeeConfirmation
         || (!empty($evaluatorActionsDisabled) && ! $partFEmployeeCanConfirm)
         || (AssessmentWorkflowStatus::reviewerCanApprove($partFWorkflowStatus) && !empty($evaluatorActionsDisabled));
     $partFEmployeeCanComment = auth()->check()
@@ -28,6 +30,6 @@
     <div>
         <label class="text-[11px] font-semibold uppercase tracking-wide text-slate-700">Employee Comments</label>
         <div class="mt-1 text-xs italic text-slate-600">Optional comments from the employee for this assessment period.</div>
-        <textarea name="employee_comments" class="mt-1 min-h-[88px] w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500" rows="4" @readonly($partFAreasReadOnly || !$partFEmployeeCanComment)>{{ old('employee_comments', $employeeComments ?? '') }}</textarea>
+        <textarea name="employee_comments" class="mt-1 min-h-[88px] w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500" rows="4" @readonly(!$partFEmployeeCanComment)>{{ old('employee_comments', $employeeComments ?? '') }}</textarea>
     </div>
 </div>

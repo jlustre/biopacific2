@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns;
 
-use App\Support\AssessmentWorkflowStatus;
-
 use App\Models\EmployeeCompetencyAssessment;
+use App\Models\BPEmployee;
+use App\Services\AssessmentConfirmationNotificationService;
+use App\Services\CompetencyAssessmentConfirmationService;
+use App\Support\AssessmentWorkflowStatus;
 use Illuminate\Support\Facades\Auth;
 
 trait PersistsPartGCompetencySectionResponses
@@ -91,7 +93,39 @@ trait PersistsPartGCompetencySectionResponses
         );
 
         $this->syncCompetencyItemEntriesFromResponses($payload);
+        $this->maybeResetCompetencyAssessmentForEmployeeReconfirmation();
         $this->dispatchPartGSummaryUpdated();
+    }
+
+    protected function maybeResetCompetencyAssessmentForEmployeeReconfirmation(): void
+    {
+        $assessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->first();
+
+        if (! $assessment || $assessment->workflowStatus() !== AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL) {
+            return;
+        }
+
+        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
+        $assessment->refresh();
+
+        if (! $confirmationService->hasChangedSinceEmployeeConfirmation($assessment)) {
+            return;
+        }
+
+        $confirmationService->resetForEmployeeReconfirmation($assessment);
+        $assessment->save();
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $this->employeeNum)
+            ->first();
+
+        if ($employee) {
+            app(AssessmentConfirmationNotificationService::class)
+                ->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee);
+        }
     }
 
     /**
@@ -134,8 +168,8 @@ trait PersistsPartGCompetencySectionResponses
         $snapshot['section_comments'][static::SECTION] = [
             'reviewer_comments' => $this->summaryComments,
             'employee_comments' => $this->employeeComments,
-            'review_date' => $this->reviewSignDate ?: null,
-            'employee_signed_at' => filled($this->employeeSignDate) ? $this->employeeSignDate : null,
+            'review_date' => optional($row?->reviewer_signed_at ?? $row?->review_date)->format('Y-m-d'),
+            'employee_signed_at' => optional($row?->employee_signed_at)->format('Y-m-d'),
         ];
 
         $updateData['snapshot_json'] = $snapshot;
@@ -169,7 +203,7 @@ trait PersistsPartGCompetencySectionResponses
             'total_score' => $scores['totalPoints'],
             'average_score' => $scores['average'],
             'overall_rating' => $scores['overallRating'],
-            'review_date' => $this->reviewSignDate ?: ($existing['review_date'] ?? null),
+            'review_date' => optional($row?->reviewer_signed_at ?? $row?->review_date)->format('Y-m-d'),
         ]);
 
         if ($markSubmittedAt || empty($snapshot['section_summaries'][static::SECTION]['submitted_at'])) {
@@ -240,16 +274,18 @@ trait PersistsPartGCompetencySectionResponses
         if (is_array($sectionComments)) {
             $this->summaryComments = (string) ($sectionComments['reviewer_comments'] ?? $this->summaryComments);
             $this->employeeComments = (string) ($sectionComments['employee_comments'] ?? $this->employeeComments);
-            $this->reviewSignDate = (string) ($sectionComments['review_date'] ?? $this->reviewSignDate);
-            $this->employeeSignDate = (string) ($sectionComments['employee_signed_at'] ?? $this->employeeSignDate);
-
-            return;
+        } else {
+            $this->summaryComments = (string) ($assessment->comments ?? $this->summaryComments);
+            $this->employeeComments = (string) ($assessment->employee_comments ?? $this->employeeComments);
         }
 
-        $this->summaryComments = (string) ($assessment->comments ?? $this->summaryComments);
-        $this->employeeComments = (string) ($assessment->employee_comments ?? $this->employeeComments);
-        $this->reviewSignDate = $assessment->review_date?->format('Y-m-d') ?? $this->reviewSignDate;
-        $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? $this->employeeSignDate;
+        if (property_exists($this, 'reviewSignDate')) {
+            $this->reviewSignDate = optional($assessment->reviewer_signed_at ?? $assessment->review_date)->format('Y-m-d') ?? '';
+        }
+
+        if (property_exists($this, 'employeeSignDate')) {
+            $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
+        }
     }
 
     protected function normalizeResponseKeys(): void

@@ -60,7 +60,7 @@
             return false;
         }
 
-        if (anchor.target === '_blank' || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-loader')) {
+        if (anchor.target === '_blank' || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-loader') || anchor.hasAttribute('data-assessment-pdf-link')) {
             return false;
         }
 
