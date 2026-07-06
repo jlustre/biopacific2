@@ -111,11 +111,12 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/backups')->
 });
 
 
-// Admin Reports Management (CRUD)
-Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
+// Admin Reports Management (visibility is enforced in ReportController)
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|don|facility-editor'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('index');
     Route::get('/create', [\App\Http\Controllers\Admin\ReportController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\Admin\ReportController::class, 'store'])->name('store');
+    Route::post('/sync-seeder', [\App\Http\Controllers\Admin\ReportController::class, 'syncSeeder'])->name('sync-seeder');
     Route::get('/{report}/edit', [\App\Http\Controllers\Admin\ReportController::class, 'edit'])->name('edit');
     Route::put('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('update');
     Route::delete('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'destroy'])->name('destroy');
@@ -125,10 +126,8 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/reports')->
     Route::post('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'run'])->name('run');
     // GET for downloads (PDF/CSV/JSON)
     Route::get('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'download'])->name('download');
+    Route::post('/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('validate-sql');
 });
-
-// SQL validation for report form
-Route::post('/admin/reports/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('admin.reports.validate-sql');
 
 // Scheduled Report Runs Management (Admin)
 Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd'])->prefix('admin/scheduled-report-runs')->name('admin.scheduled-report-runs.')->group(function () {
@@ -231,7 +230,7 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
     Route::get('/', [\App\Http\Controllers\Admin\TrainingManagementController::class, 'index'])->name('index');
 });
 
-Route::middleware(['auth', 'role:admin|rdhr|facility-admin|facility-dsd|don'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|don'])->prefix('admin/scheduled-reports')->name('admin.scheduled-reports.')->group(function () {
     Route::post('/templates', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'storeTemplate'])->name('templates.store');
     Route::delete('/templates/{scheduledReportTemplate}', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'destroyTemplate'])->name('templates.destroy');
         Route::get('/{scheduledReport}/history', [\App\Http\Controllers\Admin\ScheduledReportController::class, 'history'])->name('history');

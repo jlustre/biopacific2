@@ -13,7 +13,7 @@ class ScheduledReportRunController extends Controller
     {
         $user = $request->user();
 
-        if ($user && ! $user->hasRole('admin') && $user->facility_id) {
+        if ($user && ! $user->hasRole(['admin', 'super-admin']) && $user->facility_id) {
             return (int) $user->facility_id;
         }
 

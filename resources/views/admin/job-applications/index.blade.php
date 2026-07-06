@@ -156,6 +156,7 @@
                                         'generateUrl' => route('admin.job-applications.registration-code.generate', $application),
                                         'pendingRegistrationCode' => ($activeRegistrationCodes ?? collect())->get($application->id),
                                         'facilityFilterId' => request('facility'),
+                                        'hasRecipientEmail' => filled($application->email),
                                     ])
 
                                     <form action="{{ route('admin.job-applications.destroy', $application) }}"

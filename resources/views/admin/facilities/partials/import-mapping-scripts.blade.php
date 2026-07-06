@@ -898,17 +898,23 @@
                     if (!errorModal) {
                         errorModal = document.createElement('div');
                         errorModal.id = 'importErrorModal';
-                        errorModal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-60';
-                        errorModal.innerHTML = `<div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative">
-                            <h3 class="text-xl font-semibold mb-2 text-red-700">Import Failed</h3>
-                            <div class="mb-4 text-gray-700">${html}</div>
-                            <div class="flex justify-end">
-                                <button type="button" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded" onclick="document.getElementById('importErrorModal').classList.add('hidden')">OK</button>
+                        errorModal.className = 'fixed inset-0 z-[100] hidden overflow-y-auto bg-black/40';
+                        errorModal.innerHTML = `<div class="flex min-h-full items-center justify-center p-4">
+                            <div class="flex w-full max-w-2xl max-h-[90vh] flex-col rounded-xl bg-white shadow-xl">
+                            <div class="shrink-0 border-b border-gray-100 px-6 py-4">
+                                <h3 class="text-xl font-semibold text-red-700">Import Failed</h3>
                             </div>
-                        </div>`;
+                            <div class="min-h-0 flex-1 overflow-y-auto px-6 py-4 text-gray-700">${html}</div>
+                            <div class="flex shrink-0 justify-end border-t border-gray-100 px-6 py-4">
+                                <button type="button" class="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700" onclick="document.getElementById('importErrorModal').classList.add('hidden')">OK</button>
+                            </div>
+                        </div></div>`;
                         document.body.appendChild(errorModal);
                     } else {
-                        errorModal.querySelector('div.mb-4').innerHTML = html;
+                        const body = errorModal.querySelector('.min-h-0.flex-1');
+                        if (body) {
+                            body.innerHTML = html;
+                        }
                         errorModal.classList.remove('hidden');
                     }
                 }

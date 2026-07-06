@@ -6,10 +6,30 @@
         <a href="{{ route('admin.scheduled-reports.index') }}" class="px-4 py-2 bg-blue-600 text-white rounded flex items-center">
             <i class="fas fa-clock mr-2"></i> Scheduled Reports
         </a>
+        @if($canManageReports ?? false)
+        <form method="POST" action="{{ route('admin.reports.sync-seeder') }}">
+            @csrf
+            <button type="submit"
+                    class="px-4 py-2 bg-teal-600 text-white rounded flex items-center"
+                    onclick="return confirm('Update ReportSeeder with the current reports in the database?');">
+                <i class="fas fa-save mr-2"></i> Add/update seeder
+            </button>
+        </form>
         <a href="{{ route('admin.reports.create') }}" class="px-4 py-2 bg-green-600 text-white rounded flex items-center">
             <i class="fas fa-plus mr-2"></i> Create Report
         </a>
+        @endif
     </div>
+    @if(session('success'))
+    <div class="mb-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+        {{ session('success') }}
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+        {{ session('error') }}
+    </div>
+    @endif
     <form method="GET" class="mb-4 flex flex-wrap gap-2 items-end">
         <div>
             <label class="block text-xs font-semibold mb-1">Search</label>
@@ -49,11 +69,13 @@
                     <td class="px-3 py-2 border text-center">{!! $report->is_active ? '<span class=\'text-green-600\'>Yes</span>' : '<span class=\'text-red-600\'>No</span>' !!}</td>
                     <td class="px-3 py-2 border flex gap-2">
                         <button class="px-2 py-0.5 bg-blue-600 text-white rounded text-sm run-report-btn" data-id="{{ $report->id }}">Run</button>
+                        @if($canManageReports ?? false)
                         <a href="{{ route('admin.reports.edit', $report) }}" class="px-2 py-0.5 bg-yellow-500 text-white rounded text-sm">Edit</a>
                         <form action="{{ route('admin.reports.destroy', $report) }}" method="POST" onsubmit="return confirm('Delete this report?');" style="display:inline">
                             @csrf @method('DELETE')
                             <button type="submit" class="px-2 py-0.5 bg-red-600 text-white rounded text-sm">Delete</button>
                         </form>
+                        @endif
                     </td>
                 </tr>
                 @empty
@@ -82,6 +104,13 @@
                         <option value="pdf">PDF</option>
                     </select>
                 </div>
+                <div class="mt-4 hidden" id="pdf_orientation_wrap">
+                    <label class="block font-semibold mb-1">PDF Orientation</label>
+                    <select name="pdf_orientation" id="pdf_orientation_select" class="form-select w-full border border-teal-500 px-2 py-1">
+                        <option value="portrait">Portrait</option>
+                        <option value="landscape">Landscape</option>
+                    </select>
+                </div>
                 <div class="flex justify-end mt-4 gap-2">
                     <button type="button" class="px-4 py-2 bg-gray-300 rounded close-modal">Cancel</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded" id="run-btn">Run</button>
@@ -102,6 +131,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(res => res.json())
                 .then(report => {
                     document.getElementById('modal-title').textContent = report.name;
+                    const outputSelect = document.getElementById('output_format_select');
+                    const orientationWrap = document.getElementById('pdf_orientation_wrap');
+                    const orientationSelect = document.getElementById('pdf_orientation_select');
+                    if (orientationSelect) {
+                        orientationSelect.value = report.default_pdf_orientation || 'portrait';
+                    }
+                    if (outputSelect && orientationWrap) {
+                        const toggleOrientation = () => orientationWrap.classList.toggle('hidden', outputSelect.value !== 'pdf');
+                        outputSelect.onchange = toggleOrientation;
+                        toggleOrientation();
+                    }
                     let params = report.parameters || [];
                     let fields = '';
                     if (!Array.isArray(params)) {
@@ -124,9 +164,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         const formData = new FormData(document.getElementById('report-params-form'));
                         const params = {};
                         for (const [k,v] of formData.entries()) {
-                            if (k !== 'output_format') params[k]=v;
+                            if (!['output_format', 'pdf_orientation'].includes(k)) params[k]=v;
                         }
                         const output_format = formData.get('output_format') || 'table';
+                        const pdf_orientation = formData.get('pdf_orientation') || (report.default_pdf_orientation || 'portrait');
                         fetch(`/admin/reports/${report.id}/run`, {
                             method: 'POST',
                             headers: {
@@ -134,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 'Accept': 'application/json',
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({params, output_format}),
+                            body: JSON.stringify({params, output_format, pdf_orientation}),
                         })
                         .then(r=>r.json())
                         .then(data => {
@@ -143,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             const params = {};
                             // Collect params for download links
                             new FormData(document.getElementById('report-params-form')).forEach((v, k) => {
-                                if (k !== 'output_format') params[k] = v;
+                                if (!['output_format', 'pdf_orientation'].includes(k)) params[k] = v;
                             });
                             function buildQueryString(params) {
                                 let q = '';
@@ -156,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 html = '<div class="text-red-600 font-semibold">An error occurred or the server returned invalid data.</div>';
                             } else if (outputFormat === 'pdf') {
                                 // PDF: show View PDF button
-                                let query = 'download=pdf' + buildQueryString(params);
+                                let query = 'download=pdf&pdf_orientation=' + encodeURIComponent(document.getElementById('pdf_orientation_select').value || 'portrait') + buildQueryString(params);
                                 html = `<a href="/admin/reports/${report.id}/run?${query}" class="px-3 py-1 bg-red-600 text-white rounded" target="_blank">View PDF</a><div class="text-gray-600 mt-2">PDF generated. Click above to view.</div>`;
                             } else if (outputFormat === 'csv') {
                                 // CSV: show Download CSV button and CSV content

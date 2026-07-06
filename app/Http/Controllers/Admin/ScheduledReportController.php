@@ -20,7 +20,7 @@ class ScheduledReportController extends Controller
     {
         $user = $request->user();
 
-        if ($user && ! $user->hasRole('admin') && $user->facility_id) {
+        if ($user && ! $user->hasRole(['admin', 'super-admin']) && $user->facility_id) {
             return (int) $user->facility_id;
         }
 
@@ -42,7 +42,7 @@ class ScheduledReportController extends Controller
     protected function reportsForUser(Request $request)
     {
         $user = $request->user();
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = $user->hasRole(['admin', 'super-admin']);
         $isRdhr = $user->hasRole('rdhr');
         $roles = $user->getRoleNames()->toArray();
         $userFacilityIds = collect();

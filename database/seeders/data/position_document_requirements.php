@@ -19,7 +19,6 @@ return [
             'Confidentiality Agreement',
             'Criminal Record Statement (LIC 508)',
             'Direct Deposit Authorization',
-            'Driver License/ID',
             'Emergency Contact Designation',
             'Employee Handbook Acknowledgment',
             'Health Screening Declaration (Physician Statement)',

@@ -157,6 +157,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                     <tr>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">EMP_NUM</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Name</th>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Email</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Position</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Department</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
@@ -167,6 +168,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                     <tr class="sm:text-sm">
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->formalName() }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ filled($employee->email) ? $employee->email : '—' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->title ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->name ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center">
@@ -190,7 +192,7 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                     </span>
-                                @elseif($canGenerateRegistrationCodes ?? false)
+                                @elseif(($canGenerateRegistrationCodes ?? false) && filled($employee->email))
                                     <form method="POST" action="{{ route('admin.employees.registration_code.generate', $employee->id) }}" class="inline">
                                         @csrf
                                         @if(!empty($facilityFilterId))

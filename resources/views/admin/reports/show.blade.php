@@ -10,10 +10,16 @@
         {{ $report->category ? $report->category->name : '-' }}
     </div>
     <div class="mb-2 text-gray-700">{{ $report->description }}</div>
+    @if($canManageReports ?? false)
     <div class="mb-4">
         <strong>SQL Template:</strong>
         <pre class="bg-gray-100 p-2 rounded text-xs border border-teal-600 px-2 py-1">{{ $report->sql_template }}</pre>
     </div>
+    @endif
+    @php
+        $defaultPdfOrientation = str_contains($report->name, 'Expiring Licenses & Certifications') ? 'landscape' : 'portrait';
+        $selectedPdfOrientation = old('pdf_orientation', session('pdf_orientation', $defaultPdfOrientation));
+    @endphp
     <form method="POST" action="{{ route('admin.reports.run', $report->id) }}">
         @csrf
         @if(!empty($report->parameters))
@@ -38,11 +44,18 @@
             @php
                 $selectedFormat = old('output_format', session('output_format', 'table'));
             @endphp
-            <select name="output_format" class="border border-teal-600 rounded px-2 py-1 w-full">
+            <select name="output_format" id="show_output_format_select" class="border border-teal-600 rounded px-2 py-1 w-full">
                 <option value="table" @if($selectedFormat==='table') selected @endif>Table</option>
                 <option value="csv" @if($selectedFormat==='csv') selected @endif>CSV</option>
                 <option value="json" @if($selectedFormat==='json') selected @endif>JSON</option>
                 <option value="pdf" @if($selectedFormat==='pdf') selected @endif>PDF</option>
+            </select>
+        </div>
+        <div class="mb-4" id="show_pdf_orientation_wrap">
+            <label class="block mb-2 font-semibold">PDF Orientation</label>
+            <select name="pdf_orientation" id="show_pdf_orientation_select" class="border border-teal-600 rounded px-2 py-1 w-full">
+                <option value="portrait" @selected($selectedPdfOrientation === 'portrait')>Portrait</option>
+                <option value="landscape" @selected($selectedPdfOrientation === 'landscape')>Landscape</option>
             </select>
         </div>
         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Run Report</button>
@@ -107,6 +120,7 @@
                     @php
                         $params = session('last_params', []);
                         $query = 'download=pdf';
+                        $query .= '&pdf_orientation='.urlencode(session('pdf_orientation', $defaultPdfOrientation));
                         if (is_array($params) && count($params)) {
                             foreach ($params as $k => $v) {
                                 $query .= '&params['.urlencode($k).']='.urlencode($v);
@@ -147,4 +161,15 @@
         </div>
     @endif
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const outputSelect = document.getElementById('show_output_format_select');
+    const orientationWrap = document.getElementById('show_pdf_orientation_wrap');
+    if (!outputSelect || !orientationWrap) return;
+
+    const toggleOrientation = () => orientationWrap.classList.toggle('hidden', outputSelect.value !== 'pdf');
+    outputSelect.addEventListener('change', toggleOrientation);
+    toggleOrientation();
+});
+</script>
 @endsection
