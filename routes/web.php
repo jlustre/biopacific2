@@ -528,10 +528,24 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     });
 
     // Documents Management (document types / UploadType model)
-    Route::middleware(['role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-ssd|ssd|don'])->group(function () {
+    Route::middleware(['role:' . implode('|', config('member-portal.documents_management_roles', ['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']))])->group(function () {
         Route::resource('upload-types', \App\Http\Controllers\Admin\UploadTypeController::class)
             ->except(['destroy'])
             ->names('upload-types');
+        Route::post('position-document-requirements/bulk', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'bulkUpdate'])
+            ->name('position-document-requirements.bulk');
+        Route::post('position-document-requirements/apply-defaults', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'applyDefaults'])
+            ->name('position-document-requirements.apply-defaults');
+        Route::post('checklist-items/bulk-positions', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'bulkUpdatePositions'])
+            ->name('checklist-items.bulk-positions');
+        Route::resource('checklist-items', \App\Http\Controllers\Admin\ChecklistItemController::class)
+            ->except(['show'])
+            ->names('checklist-items');
+    });
+
+    Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::post('position-document-requirements/sync-seeder', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'syncSeeder'])
+            ->name('position-document-requirements.sync-seeder');
     });
 
     Route::middleware(['role:admin|super-admin'])->group(function () {
@@ -541,16 +555,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
             ->name('upload-types.run-seeder');
         Route::delete('upload-types/{upload_type}', [\App\Http\Controllers\Admin\UploadTypeController::class, 'destroy'])
             ->name('upload-types.destroy');
-    });
-
-    // Checklist Items Management CRUD
-    Route::post('checklist-items/bulk-positions', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'bulkUpdatePositions'])
-        ->name('checklist-items.bulk-positions');
-    Route::resource('checklist-items', \App\Http\Controllers\Admin\ChecklistItemController::class)
-        ->except(['show'])
-        ->names('checklist-items');
-
-    Route::middleware(['role:admin|super-admin'])->group(function () {
         Route::post('checklist-items/sync-seeder', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'syncSeeder'])
             ->name('checklist-items.sync-seeder');
     });
@@ -687,6 +691,7 @@ Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:' . con
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/dashboard/documents', [DashboardController::class, 'memberDocuments'])->name('member.documents');
+    Route::get('/dashboard/tasks', [DashboardController::class, 'memberTasks'])->name('member.tasks');
     Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
     Route::get('/dashboard/trainings', [DashboardController::class, 'memberTrainings'])->name('member.trainings');
     Route::get('/dashboard/feedback', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'index'])->name('member.feedback.index');

@@ -76,7 +76,7 @@ class TracheostomyCareCompetency extends Component
 
         $user = Auth::user();
         $this->reviewerName = $user?->name ?? '';
-        $this->reviewerTitle = $user?->title ?? '';
+        $this->reviewerTitle = $this->resolveAuthenticatedReviewerTitle($user);
 
         $this->buildSectionData();
         $this->loadDraftData();
@@ -85,7 +85,7 @@ class TracheostomyCareCompetency extends Component
 
     protected function persistDraftIfPossible(): void
     {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
+        if ($this->sectionItemReviewsLocked()) {
             return;
         }
 
@@ -106,7 +106,7 @@ class TracheostomyCareCompetency extends Component
 
     public function toggleEquipmentCheck(string $rawItem): void
     {
-        if ($this->assessmentLocked || $this->sectionExcluded) {
+        if ($this->sectionItemReviewsLocked()) {
             return;
         }
 
@@ -169,19 +169,8 @@ class TracheostomyCareCompetency extends Component
             return;
         }
 
-        $this->validate([
-            'reviewSignDate' => 'required|date',
-        ]);
-
-        if (! $this->sectionExcluded) {
-            foreach ($this->scorableItemIds() as $itemId) {
-                $response = $this->responses[$itemId] ?? null;
-                if (! PartGCompetencyScoring::numericScore($response) !== null) {
-                    $this->addError('responses', 'Please rate all competency procedure steps before submitting.');
-
-                    return;
-                }
-            }
+        if (! $this->validatePartGSectionRatingsBeforeSubmit()) {
+            return;
         }
 
         try {
@@ -309,6 +298,8 @@ class TracheostomyCareCompetency extends Component
             return;
         }
 
+        $this->refreshReviewerIdentityForPersist();
+
         $row = EmployeeCompetencyAssessment::query()
             ->where('employee_num', $this->employeeNum)
             ->where('assessment_period_id', $this->assessmentPeriodId)
@@ -356,30 +347,7 @@ class TracheostomyCareCompetency extends Component
 
     protected function calculateScores(): array
     {
-        if ($this->sectionExcluded) {
-            return $this->sectionExcludedScores();
-        }
-
-        $ratedCount = 0;
-        $points = 0;
-
-        foreach ($this->procedureCompetencyItems as $item) {
-            $response = $this->responses[$item['id']] ?? null;
-            if (! PartGCompetencyScoring::numericScore($response) !== null) {
-                continue;
-            }
-
-            $ratedCount++;
-            $points += PartGCompetencyScoring::numericScore($response) ?? 0;
-        }
-
-        $average = $ratedCount > 0 ? round($points / $ratedCount, 2) : 0;
-
-        return [
-            'totalPoints' => $points,
-            'average' => $average,
-            'overallRating' => PartGCompetencyScoring::overallLabel($average, $ratedCount),
-        ];
+        return $this->calculateScoresFromSectionItems($this->procedureCompetencyItems);
     }
 
     /**

@@ -12,12 +12,15 @@ class CompetencyAssessmentWorkflowReadiness
         EmployeeCompetencyAssessment $assessment,
         BPEmployee $employee,
     ): bool {
-        $employee->loadMissing('currentAssignment');
+        return self::missingSectionLabels($assessment, $employee) === [];
+    }
 
-        $positionId = $employee->currentAssignment?->position_id
-            ?? $employee->currentAssignment?->position?->id;
-
-        $applicableSections = EmployeeCompetencyItem::query()
+    /**
+     * @return list<string>
+     */
+    public static function applicableSectionLabels(?int $positionId): array
+    {
+        return EmployeeCompetencyItem::query()
             ->applicableToPosition($positionId ? (int) $positionId : null)
             ->distinct()
             ->orderBy('section')
@@ -27,9 +30,23 @@ class CompetencyAssessmentWorkflowReadiness
             ->unique()
             ->values()
             ->all();
+    }
 
+    /**
+     * @return list<string>
+     */
+    public static function missingSectionLabels(
+        EmployeeCompetencyAssessment $assessment,
+        BPEmployee $employee,
+    ): array {
+        $employee->loadMissing('currentAssignment');
+
+        $positionId = $employee->currentAssignment?->position_id
+            ?? $employee->currentAssignment?->position?->id;
+
+        $applicableSections = self::applicableSectionLabels($positionId ? (int) $positionId : null);
         if ($applicableSections === []) {
-            return false;
+            return [];
         }
 
         $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
@@ -40,14 +57,10 @@ class CompetencyAssessmentWorkflowReadiness
             ->map(fn ($label) => trim((string) $label))
             ->filter(fn (string $label) => $label !== '');
 
-        foreach ($applicableSections as $sectionLabel) {
-            if ($submittedSections->contains($sectionLabel) || $excludedSections->contains($sectionLabel)) {
-                continue;
-            }
-
-            return false;
-        }
-
-        return true;
+        return collect($applicableSections)
+            ->filter(fn (string $sectionLabel) => ! $submittedSections->contains($sectionLabel)
+                && ! $excludedSections->contains($sectionLabel))
+            ->values()
+            ->all();
     }
 }

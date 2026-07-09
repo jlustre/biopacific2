@@ -89,7 +89,7 @@ class CompetencyAssessmentHistoryBuilder
 
                 $latestStates = $entries
                     ->filter(fn (EmployeeAssessmentItemEntry $entry) => in_array((int) $entry->source_item_id, $sectionItemIds, true))
-                    ->groupBy('source_item_id')
+                    ->groupBy(fn (EmployeeAssessmentItemEntry $entry) => (int) $entry->source_item_id)
                     ->map(function (Collection $groupedEntries) {
                         return $groupedEntries
                             ->sortByDesc(fn (EmployeeAssessmentItemEntry $entry) => sprintf(
@@ -107,12 +107,35 @@ class CompetencyAssessmentHistoryBuilder
                 $tracheostomyMetrics = $sectionLabel === 'TRACHEOSTOMY CARE'
                     ? self::tracheostomyMetricsFromSnapshot($snapshot, $sectionItems)
                     : null;
+                $entryMetrics = self::calculateSectionMetrics(
+                    $latestStates,
+                    $draftResponses,
+                    $sectionItemIds,
+                    $useDraft && ! $isSubmitted
+                );
+
+                if (($entryMetrics['count'] ?? 0) === 0 && $useDraft) {
+                    $entryMetrics = self::calculateSectionMetrics(
+                        $latestStates,
+                        $draftResponses,
+                        $sectionItemIds,
+                        true
+                    );
+                }
 
                 if ($summary) {
                     $total = (int) ($summary['total_score'] ?? 0);
                     $average = (float) ($summary['average_score'] ?? 0);
                     $overall = (string) ($summary['overall_rating'] ?? 'N/A');
                     $count = self::countRatedItems($latestStates, $draftResponses, $sectionItemIds, $useDraft && ! $isSubmitted);
+                    $reconciled = self::reconcileSectionScoreMetrics($total, $average, $count, $entryMetrics);
+                    $total = $reconciled['total'];
+                    $average = $reconciled['average'];
+                    $count = $reconciled['count'];
+
+                    if (self::overallRatingNeedsRepair($overall) && ($count > 0 || $average > 0)) {
+                        $overall = PartGCompetencyScoring::overallLabelOrNa($average, max($count, 1));
+                    }
 
                     if ($tracheostomyMetrics !== null && $tracheostomyMetrics['count'] > $count) {
                         $count = $tracheostomyMetrics['count'];
@@ -126,7 +149,8 @@ class CompetencyAssessmentHistoryBuilder
                         ?? optional($submission?->submitted_at)->toDateString()
                         ?? optional($submission?->updated_at)->toDateString()
                         ?? optional(optional($latestStates->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first())->assessment_date)->toDateString();
-                    $status = self::resolveSectionStatus($submission?->workflowStatus(), $isSubmitted);
+                    $status = app(\App\Services\CompetencySectionWorkflowService::class)
+                        ->sectionDisplayStatusLabel($submission, $sectionLabel, $isSubmitted, $count > 0);
                 } else {
                     if ($tracheostomyMetrics !== null && $tracheostomyMetrics['count'] > 0) {
                         $total = $tracheostomyMetrics['total'];
@@ -153,11 +177,18 @@ class CompetencyAssessmentHistoryBuilder
                     $assessmentDate = optional($submission?->updated_at)->toDateString()
                         ?? optional(optional($latestStates->sortByDesc(fn ($entry) => sprintf('%s-%010d', optional($entry->assessment_date)->toDateString() ?? '', $entry->id))->first())->assessment_date)->toDateString()
                         ?? now()->toDateString();
-                    $status = self::resolveSectionStatus($submission?->workflowStatus(), $isSubmitted);
+                    $status = app(\App\Services\CompetencySectionWorkflowService::class)
+                        ->sectionDisplayStatusLabel($submission, $sectionLabel, $isSubmitted, $count > 0);
                 }
 
                 $period = $assessmentPeriodLabels->get($assessmentPeriodId);
                 $reviewerName = self::resolveReviewerName($submission, $snapshot, $latestStates, $users);
+                $totalMaxPoints = self::maxPointsForSection(
+                    $sectionLabel,
+                    $totalRateableItems,
+                    $tracheostomyMetrics,
+                    $sectionItems
+                );
 
                 $rows[] = [
                     'assessment_period_id' => $assessmentPeriodId,
@@ -173,6 +204,7 @@ class CompetencyAssessmentHistoryBuilder
                         ? ($tracheostomyMetrics['total_items'] ?? $totalRateableItems)
                         : $totalRateableItems,
                     'total_score' => $total,
+                    'total_max_points' => $totalMaxPoints,
                     'average_score' => number_format($average, 2, '.', ''),
                     'overall_rating' => $overall,
                     'status' => $status,
@@ -418,6 +450,67 @@ class CompetencyAssessmentHistoryBuilder
         return PartGCompetencyScoring::numericScore((string) $rating);
     }
 
+    protected static function overallRatingNeedsRepair(string $overall): bool
+    {
+        $trimmed = trim($overall);
+
+        return $trimmed === '' || $trimmed === '—' || $trimmed === 'N/A';
+    }
+
+    /**
+     * @param  array{total: int, average: float, overall: string, count: int}  $entryMetrics
+     * @return array{total: int, average: float, count: int}
+     */
+    protected static function reconcileSectionScoreMetrics(
+        int $snapshotTotal,
+        float $snapshotAverage,
+        int $ratedCount,
+        array $entryMetrics,
+    ): array {
+        $total = $snapshotTotal;
+        $average = $snapshotAverage;
+        $count = max($ratedCount, (int) ($entryMetrics['count'] ?? 0));
+
+        if (($entryMetrics['count'] ?? 0) > 0) {
+            if ($total === 0) {
+                $total = (int) $entryMetrics['total'];
+            }
+
+            if ($average === 0.0) {
+                $average = (float) $entryMetrics['average'];
+            }
+        } elseif ($count > 0 && $average === 0.0 && $total > 0) {
+            $average = round($total / $count, 2);
+        }
+
+        return [
+            'total' => $total,
+            'average' => $average,
+            'count' => $count,
+        ];
+    }
+
+    /**
+     * @param  array{count: int, total: int, average: float, overall: string, total_items: int}|null  $tracheostomyMetrics
+     * @param  Collection<int, EmployeeCompetencyItem>  $sectionItems
+     */
+    protected static function maxPointsForSection(
+        string $sectionLabel,
+        int $totalRateableItems,
+        ?array $tracheostomyMetrics,
+        Collection $sectionItems,
+    ): int {
+        if ($sectionLabel === 'TRACHEOSTOMY CARE') {
+            $procedureSteps = $tracheostomyMetrics !== null
+                ? (int) ($tracheostomyMetrics['total_items'] ?? 0)
+                : self::countTracheostomyProcedureSteps($sectionItems);
+
+            return PartGCompetencyScoring::maxPointsForScorableItems($procedureSteps);
+        }
+
+        return PartGCompetencyScoring::maxPointsForScorableItems($totalRateableItems);
+    }
+
     protected static function resolveSectionStatus(?string $assessmentStatus, bool $isSubmitted): string
     {
         $normalized = AssessmentWorkflowStatus::normalize((string) ($assessmentStatus ?? AssessmentWorkflowStatus::DRAFT));
@@ -427,8 +520,8 @@ class CompetencyAssessmentHistoryBuilder
                 AssessmentWorkflowStatus::COMPLETED => 'Completed',
                 AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION => 'For Employee confirmation',
                 AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL => 'For Reviewer approval',
-                AssessmentWorkflowStatus::DRAFT => 'Submitted',
-                'section_submit' => 'Submitted',
+                AssessmentWorkflowStatus::DRAFT => 'Section submitted',
+                'section_submit' => 'Section submitted',
                 default => AssessmentWorkflowStatus::label($normalized),
             };
         }

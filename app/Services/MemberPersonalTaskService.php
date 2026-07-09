@@ -32,19 +32,23 @@ class MemberPersonalTaskService
      * @param  array<string, mixed>  $dashboardPayload
      * @return list<array<string, mixed>>
      */
-    public function buildStaffTasks(User $user, array $dashboardPayload): array
+    public function buildStaffTasks(User $user, array $dashboardPayload, ?int $limit = 8): array
     {
         $employee = $dashboardPayload['bpEmployee'] ?? $user->resolvedBpEmployee();
         $profileTasks = $this->build($user);
 
         if (! $employee) {
             return $this->prioritizeTasks(
-                collect($profileTasks)->merge($this->filterApplicantTasks($dashboardPayload['todos'] ?? []))
+                collect($profileTasks)->merge($this->filterApplicantTasks($dashboardPayload['todos'] ?? [])),
+                $limit
             );
         }
 
         return $this->prioritizeTasks(
-            collect($profileTasks)->merge($this->buildEmployeeWorkTasks($dashboardPayload))
+            collect($profileTasks)
+                ->merge($this->buildEmployeeWorkTasks($dashboardPayload))
+                ->merge($this->buildAssessmentConfirmationTasks($user, $employee)),
+            $limit
         );
     }
 
@@ -386,46 +390,118 @@ class MemberPersonalTaskService
     }
 
     /**
+     * Assessment confirmation/review tasks for the signed-in user.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    protected function buildAssessmentConfirmationTasks(User $user, ?\App\Models\BPEmployee $employee): Collection
+    {
+        $dashboard = app(MemberDashboardService::class);
+
+        return collect($dashboard->pendingEmployeeAssessmentConfirmationTodos($user, $employee))
+            ->merge($dashboard->pendingReviewerAssessmentTasks($user))
+            ->map(fn (array $todo) => array_merge($todo, [
+                'route' => $todo['route'] ?? $todo['url'] ?? null,
+            ]));
+    }
+
+    /**
      * @param  Collection<int, array<string, mixed>>  $tasks
      * @return list<array<string, mixed>>
      */
-    protected function prioritizeTasks(Collection $tasks): array
+    protected function prioritizeTasks(Collection $tasks, ?int $limit = 8): array
     {
         $priorityOrder = ['high' => 0, 'medium' => 1, 'low' => 2];
         $categoryOrder = [
             'signature' => 0,
+            'competency-confirmation' => 0,
+            'performance-confirmation' => 0,
+            'assessment-review' => 0,
             'profile' => 1,
             'upload' => 2,
             'certification' => 3,
-            'reminder' => 4,
-            'document' => 5,
+            'document' => 4,
+            'reminder' => 5,
             'training' => 6,
             'security' => 7,
             'account' => 8,
         ];
 
-        return $tasks
+        $sorted = $tasks
             ->where('done', false)
             ->sortBy(fn (array $task) => [
-                $this->isSignatureOrConfirmationTask($task) ? 0 : 1,
+                $this->taskDisplayTier($task),
                 $priorityOrder[$task['priority'] ?? 'medium'] ?? 2,
                 $categoryOrder[$task['category'] ?? ''] ?? 9,
                 strtolower((string) ($task['title'] ?? '')),
             ])
-            ->unique('id')
-            ->take(8)
+            ->unique('id');
+
+        if ($limit !== null) {
+            $signatureTasks = $sorted->filter(fn (array $task) => $this->isSignatureOrConfirmationTask($task));
+            $otherTasks = $sorted->reject(fn (array $task) => $this->isSignatureOrConfirmationTask($task));
+            $otherLimit = max(0, $limit - $signatureTasks->count());
+            $sorted = $signatureTasks->concat($otherTasks->take($otherLimit));
+        }
+
+        return $sorted
             ->map(fn (array $task) => array_merge($task, ['route' => $task['route'] ?? $task['url'] ?? null]))
             ->values()
             ->all();
     }
 
+    protected function taskDisplayTier(array $task): int
+    {
+        if ($this->isSignatureOrConfirmationTask($task)) {
+            return 0;
+        }
+
+        if ($this->isRequiredFieldTask($task)) {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    protected function isRequiredFieldTask(array $task): bool
+    {
+        if (($task['action'] ?? '') === 'upload') {
+            return true;
+        }
+
+        $title = strtolower((string) ($task['title'] ?? ''));
+        if (str_starts_with($title, 'upload:')) {
+            return true;
+        }
+
+        $category = (string) ($task['category'] ?? '');
+        if (! in_array($category, ['upload', 'document', 'profile', 'certification'], true)) {
+            return false;
+        }
+
+        if ($category === 'profile' && (string) ($task['id'] ?? '') === 'todo-profile-pending-hr') {
+            return false;
+        }
+
+        return true;
+    }
+
     protected function isSignatureOrConfirmationTask(array $task): bool
     {
-        if (($task['category'] ?? '') === 'signature') {
+        if (in_array(($task['category'] ?? ''), [
+            'signature',
+            'competency-confirmation',
+            'performance-confirmation',
+            'assessment-review',
+        ], true)) {
             return true;
         }
 
         if (($task['action'] ?? '') === 'submit') {
+            return true;
+        }
+
+        if (($task['action'] ?? '') === 'sign') {
             return true;
         }
 
@@ -437,8 +513,24 @@ class MemberPersonalTaskService
             return true;
         }
 
+        if (str_starts_with((string) ($task['id'] ?? ''), 'confirm-')) {
+            return true;
+        }
+
         $title = strtolower((string) ($task['title'] ?? ''));
         if (str_starts_with($title, 'sign:')) {
+            return true;
+        }
+
+        if (str_contains($title, 'confirm competency assessment')
+            || str_contains($title, 'confirm performance appraisal')
+            || str_contains($title, 'review updated competency assessment')
+            || str_contains($title, 'review updated performance appraisal')) {
+            return true;
+        }
+
+        if (str_contains($title, 'reviewer approval')
+            || str_contains($title, 'for reviewer approval')) {
             return true;
         }
 

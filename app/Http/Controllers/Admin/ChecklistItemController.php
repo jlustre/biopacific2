@@ -29,25 +29,46 @@ class ChecklistItemController extends Controller
             'position_ids' => ['nullable', 'array'],
             'position_ids.*' => ['integer', 'exists:positions,id'],
             'apply_to_everyone' => ['nullable', 'boolean'],
+            'remove_from_everyone' => ['nullable', 'boolean'],
         ]);
 
         $checklistItemIds = array_values(array_unique(array_map('intval', $validated['checklist_item_ids'])));
         $applyToEveryone = $request->boolean('apply_to_everyone');
+        $removeFromEveryone = $request->boolean('remove_from_everyone');
         $positionIds = array_values(array_unique(array_map('intval', $validated['position_ids'] ?? [])));
 
-        if (!$applyToEveryone && count($positionIds) === 0) {
+        if ($applyToEveryone && $removeFromEveryone) {
             return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
-                ->with('error', 'Select at least one position or choose "Apply to everybody".');
+                ->with('error', 'Choose either apply to everybody or remove from everybody, not both.');
         }
+
+        if (! $applyToEveryone && ! $removeFromEveryone && count($positionIds) === 0) {
+            return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
+                ->with('error', 'Select at least one position or choose apply/remove for everybody.');
+        }
+
+        $positionIdsValue = match (true) {
+            $removeFromEveryone => [],
+            $applyToEveryone => null,
+            default => $positionIds,
+        };
 
         ChecklistItem::query()
             ->whereIn('id', $checklistItemIds)
-            ->update([
-                'position_ids' => $applyToEveryone ? null : $positionIds,
-            ]);
+            ->get()
+            ->each(function (ChecklistItem $item) use ($positionIdsValue): void {
+                $item->position_ids = $positionIdsValue;
+                $item->save();
+            });
+
+        $successMessage = match (true) {
+            $removeFromEveryone => 'Selected employee file items no longer apply to any position.',
+            $applyToEveryone => 'Selected employee file items now apply to all positions.',
+            default => 'Employee file item positions updated successfully.',
+        };
 
         return redirect()->route('admin.upload-types.index', ['tab' => 'items'])
-            ->with('success', 'Employee file item positions updated successfully.');
+            ->with('success', $successMessage);
     }
 
     public function create()

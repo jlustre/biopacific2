@@ -301,7 +301,7 @@ class RoleMemberDashboardService
                 'label' => 'My open tasks',
                 'value' => $myActions,
                 'hint' => 'Documents, training, credentials',
-                'route' => route('member.documents'),
+                'route' => route('member.tasks'),
                 'tone' => 'brand',
                 'icon' => 'fa-list-check',
             ],

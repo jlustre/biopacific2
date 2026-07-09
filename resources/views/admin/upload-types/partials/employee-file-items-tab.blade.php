@@ -61,6 +61,8 @@
                         ->filter()
                         ->map(fn ($position) => $position->title)
                         ->values();
+                    $appliesToAllPositions = $checklistItem->position_ids === null;
+                    $appliesToNoPositions = is_array($checklistItem->position_ids) && $checklistItem->position_ids === [];
                 @endphp
                 <tr>
                     <td class="px-4 py-3 text-center">
@@ -74,8 +76,10 @@
                     <td class="px-4 py-3 text-slate-600">{{ $checklistItem->section ?: '—' }}</td>
                     <td class="px-4 py-3 text-slate-600">{{ $checklistItem->docType->name ?? '—' }}</td>
                     <td class="px-4 py-3">
-                        @if ($positionLabels->isEmpty())
+                        @if ($appliesToAllPositions)
                             <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">All positions</span>
+                        @elseif ($appliesToNoPositions)
+                            <span class="rounded-full bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">No positions</span>
                         @else
                             <div class="flex flex-wrap gap-1">
                                 @foreach ($positionLabels as $label)

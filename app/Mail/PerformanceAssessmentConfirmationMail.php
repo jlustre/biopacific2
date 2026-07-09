@@ -42,6 +42,8 @@ class PerformanceAssessmentConfirmationMail extends Mailable
 
         public string $notificationPurpose = 'employee_confirmation',
 
+        public ?string $sectionLabel = null,
+
     ) {
 
     }
@@ -63,6 +65,10 @@ class PerformanceAssessmentConfirmationMail extends Mailable
         $isCompetency = $this->assessmentKind === 'competency';
 
         $assessmentLabel = $isCompetency ? 'competency assessment' : 'performance appraisal';
+
+        if ($this->sectionLabel) {
+            $assessmentLabel = $this->sectionLabel;
+        }
 
 
 
@@ -119,6 +125,8 @@ class PerformanceAssessmentConfirmationMail extends Mailable
                 'confirmationUrl' => $this->confirmationUrl,
 
                 'notificationPurpose' => $this->notificationPurpose,
+
+                'sectionLabel' => $this->sectionLabel,
 
             ]);
 

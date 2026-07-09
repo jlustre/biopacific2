@@ -5,15 +5,16 @@
     $partGAck = PartGAcknowledgementViewData::build(
         $employeeNum,
         $assessmentPeriodId,
+        sectionLabel: $sectionLabel ?? null,
     );
 @endphp
 
 @if($partGAck)
 <div class="mt-6 rounded-md border border-slate-400 bg-slate-50 p-3 shadow-sm">
     <div class="mb-4">
-        <h3 class="text-[11px] font-bold uppercase tracking-wide text-slate-900">Competency Assessment Acknowledgement</h3>
+        <h3 class="text-[11px] font-bold uppercase tracking-wide text-slate-900">Section Acknowledgement</h3>
         <p class="text-[11px] text-slate-700">
-            Current status: <strong>{{ $partGAck['statusLabel'] }}</strong>
+            <strong>{{ $partGAck['sectionLabel'] }}</strong> — status: <strong>{{ $partGAck['statusLabel'] }}</strong>
         </p>
     </div>
 
@@ -37,6 +38,7 @@
     >
         @csrf
         <input type="hidden" name="assessment_period_id" value="{{ $assessmentPeriodId }}">
+        <input type="hidden" name="section_label" value="{{ $partGAck['sectionLabel'] }}">
         <input type="hidden" name="action" id="partGWorkflowAction-{{ $acknowledgementKey }}" value="">
         <input type="hidden" name="reviewer_signature_data" id="partGReviewerSignatureData-{{ $acknowledgementKey }}" value="">
         <input type="hidden" name="employee_signature_data" id="partGEmployeeSignatureData-{{ $acknowledgementKey }}" value="">
@@ -77,14 +79,9 @@
                 @endif
 
                 @if($partGAck['assessmentLocked'])
-                <p class="text-[11px] text-amber-900">This competency assessment is completed and read-only.</p>
-                @if(! $partGAck['evaluatorActionsDisabled'])
-                <div class="flex flex-wrap justify-end gap-2">
-                    <button type="submit" data-partg-action="reopen" class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Reopen for Editing</button>
-                </div>
-                @endif
+                <p class="text-[11px] text-amber-900">This competency section is completed and read-only.</p>
                 @elseif($partGAck['employeeCanConfirm'] && $partGAck['evaluatorActionsDisabled'])
-                <p class="text-[11px] text-amber-950">Enter your comments, then sign to acknowledge this competency assessment.</p>
+                <p class="text-[11px] text-amber-950">Enter your comments, then sign to acknowledge this competency section.</p>
                 <div class="flex flex-wrap justify-end gap-2">
                     <button type="submit" data-partg-action="send_back" class="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100">Send Back to Reviewer</button>
                     <button
@@ -96,36 +93,52 @@
                 @elseif($partGAck['reviewerCanApprove'] && ! $partGAck['evaluatorActionsDisabled'])
                 <p class="text-[11px] text-violet-950">
                     @if($partGAck['contentChangedSinceEmployeeConfirmation'])
-                    This competency assessment was changed after the employee confirmed it. Use <strong>Resubmit for Employee Confirmation</strong> to send it back to the employee.
+                    This section was changed after the employee confirmed it. Use <strong>Resubmit for Employee Confirmation</strong> to send it back to the employee.
                     @else
-                    The employee has signed this competency assessment. Use <strong>Complete Assessment</strong> to add your signature and mark it completed.
+                    The employee has signed this section. Use <strong>Complete Section</strong> to add your signature and mark it completed.
                     @endif
                 </p>
                 <div class="partg-reviewer-approval-actions flex flex-wrap justify-end gap-2" data-partg-form="{{ $acknowledgementKey }}">
                     <button
                         type="submit"
                         data-partg-action="submit"
-                        class="partg-resubmit-for-employee-btn rounded-md border border-sky-400 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-950 hover:bg-sky-100 {{ $partGAck['contentChangedSinceEmployeeConfirmation'] ? '' : 'hidden' }}"
+                        class="partg-resubmit-for-employee-btn rounded-md border border-sky-400 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-950 hover:bg-sky-100 {{ $partGAck['canResubmitForEmployeeConfirmation'] ? '' : 'hidden' }}"
                     >Resubmit for Employee Confirmation</button>
                     <button
                         type="button"
                         class="partg-open-reviewer-signature-modal rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black {{ $partGAck['canApprove'] ? '' : 'hidden' }}"
                         data-partg-form="{{ $acknowledgementKey }}"
-                    >Complete Assessment</button>
+                    >Complete Section</button>
+                </div>
+                @elseif(($partGAck['returnedToReviewer'] ?? false) && $partGAck['evaluatorActionsDisabled'])
+                <p class="text-[11px] text-amber-950">This section was sent back to the reviewer for updates. Your comments are saved below and the reviewer will be notified to revise and resubmit.</p>
+                @elseif($partGAck['workflowStatus'] === AssessmentWorkflowStatus::DRAFT && ! $partGAck['evaluatorActionsDisabled'] && ($partGAck['canResubmitForEmployeeConfirmation'] ?? false))
+                <p class="text-[11px] text-slate-700">The employee sent this section back for updates. Review their comments, revise the competency, click <strong>Update</strong> to save your changes, then <strong>Resubmit for Employee Confirmation</strong> when ready.</p>
+                <div class="flex flex-wrap justify-end gap-2">
+                    <button
+                        type="button"
+                        wire:click="saveDraft"
+                        wire:loading.attr="disabled"
+                        class="rounded-md border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+                    >
+                        <span wire:loading.remove wire:target="saveDraft">Update</span>
+                        <span wire:loading wire:target="saveDraft">Updating...</span>
+                    </button>
+                    <button
+                        type="submit"
+                        data-partg-action="submit"
+                        @disabled(! $this->returnedSectionResubmitEnabled)
+                        @class([
+                            'rounded-md px-4 py-2 text-sm font-medium',
+                            'bg-slate-900 text-white hover:bg-black' => $this->returnedSectionResubmitEnabled,
+                            'cursor-not-allowed bg-slate-300 text-slate-500' => ! $this->returnedSectionResubmitEnabled,
+                        ])
+                    >Resubmit for Employee Confirmation</button>
                 </div>
                 @elseif($partGAck['workflowStatus'] === AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION && ! $partGAck['evaluatorActionsDisabled'])
-                <p class="text-[11px] text-sky-950">This competency assessment was submitted for <strong>employee signature / confirmation</strong>. The employee will see a dashboard task and email notification.</p>
-                @elseif($partGAck['workflowStatus'] === AssessmentWorkflowStatus::DRAFT && ! $partGAck['evaluatorActionsDisabled'])
-                    @if($partGAck['canSubmitForEmployeeConfirmation'])
-                <p class="text-[11px] text-slate-700">All competency sections are complete. Send the full assessment to the employee for confirmation.</p>
-                <div class="flex flex-wrap justify-end gap-2">
-                    <button type="submit" data-partg-action="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Submit for Employee Confirmation</button>
-                </div>
-                    @else
-                <p class="text-[11px] text-slate-700">Use <strong>Submit Section</strong> in each competency section above. When every required section is submitted or excluded, <strong>Submit for Employee Confirmation</strong> will appear here.</p>
-                    @endif
-                @elseif($partGAck['employeeCanConfirm'] || $partGAck['reviewerCanApprove'])
-                <p class="text-[11px] text-slate-600">This step is waiting for the employee or reviewer to complete their action.</p>
+                <p class="text-[11px] text-sky-950">This section was submitted for <strong>employee signature / confirmation</strong>. The employee will see a dashboard task and email notification.</p>
+                @elseif($partGAck['workflowStatus'] === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL && $partGAck['evaluatorActionsDisabled'])
+                <p class="text-[11px] text-slate-600">You have signed this section. It is waiting for reviewer approval and completion.</p>
                 @endif
             </div>
         </div>

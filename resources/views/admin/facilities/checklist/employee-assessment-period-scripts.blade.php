@@ -91,6 +91,7 @@
             }
             var url = new URL(window.location.href);
             url.searchParams.set('assessment_period_id', periodId);
+            url.searchParams.set('view_period', '1');
             if (periodYear) {
                 url.searchParams.set('assessment_year', periodYear);
             }
@@ -773,6 +774,15 @@
             });
 
             if (elements.yearSelect) {
+                var selectedOption = elements.periodSelect.options[elements.periodSelect.selectedIndex];
+                if (selectedOption && selectedOption.value && selectedOption.getAttribute('data-year')) {
+                    var selectedPeriodYear = selectedOption.getAttribute('data-year');
+                    elements.yearSelect.value = selectedPeriodYear;
+                    if (elements.yearHidden) {
+                        elements.yearHidden.value = selectedPeriodYear;
+                    }
+                }
+
                 filterPeriodsByYear(elements.yearSelect.value);
             }
 

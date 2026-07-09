@@ -97,8 +97,8 @@
                 <div class="flex flex-wrap justify-end gap-2">
                     <button type="submit" data-partg-action="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black">Submit for Employee Confirmation</button>
                 </div>
-                @elseif($partGEmployeeCanConfirm || $partGReviewerCanApprove)
-                <p class="text-[11px] text-slate-600">This step is waiting for the employee or reviewer to complete their action.</p>
+                @elseif($partGWorkflowStatus === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL && !empty($evaluatorActionsDisabled))
+                <p class="text-[11px] text-slate-600">You have signed this assessment. It is waiting for reviewer approval and completion.</p>
                 @endif
             </div>
         </div>

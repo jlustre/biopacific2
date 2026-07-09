@@ -6,6 +6,8 @@
  * Document type names must match general upload_types (Documents Management),
  * not checklist-synced PART A–D types.
  *
+ * Auto-generated from Documents Management → Position requirements → Update seeder on 2026-07-08 11:18:55.
+ *
  * @return array{
  *     sets: array<string, list<string>>,
  *     position_sets: array<string, list<string>>
@@ -13,120 +15,251 @@
  */
 return [
     'sets' => [
-        'all_staff' => [
-            'Abuse Reporting Acknowledgment (SOC 341)',
-            'Background Check Clearance',
-            'Confidentiality Agreement',
-            'Criminal Record Statement (LIC 508)',
-            'Direct Deposit Authorization',
-            'Emergency Contact Designation',
-            'Employee Handbook Acknowledgment',
-            'Health Screening Declaration (Physician Statement)',
-            'Hepatitis B Vaccination Record or Declination',
-            'HIPAA Training Certificate',
-            'I-9 Form',
-            'Job Description (Signed)',
-            'Physical Exam',
-            'Proof of Age (18+)',
-            'Sexual Harassment Training Certificate',
-            'Social Security Card',
-            'TB Test Result',
-            'W-4 Form',
-            'Workplace Violence Prevention Training Certificate',
+            'all_staff' => [
+                0 => 'Abuse Reporting Acknowledgment (SOC 341)',
+                1 => 'Background Check Clearance',
+                2 => 'Confidentiality Agreement',
+                3 => 'Criminal Record Statement (LIC 508)',
+                4 => 'Direct Deposit Authorization',
+                5 => 'Emergency Contact Designation',
+                6 => 'Employee Handbook Acknowledgment',
+                7 => 'Health Screening Declaration (Physician Statement)',
+                8 => 'Hepatitis B Vaccination Record or Declination',
+                9 => 'HIPAA Training Certificate',
+                10 => 'I-9 Form',
+                11 => 'Job Description (Signed)',
+                12 => 'Physical Exam',
+                13 => 'Proof of Age (18+)',
+                14 => 'Sexual Harassment Training Certificate',
+                15 => 'Social Security Card',
+                16 => 'TB Test Result',
+                17 => 'W-4 Form',
+                18 => 'Workplace Violence Prevention Training Certificate',
+            ],
+            'annual_compliance' => [
+                0 => 'Annual In-Service Training',
+                1 => 'Annual Influenza Vaccination',
+                2 => 'COVID-19 Vaccination Record',
+                3 => 'MMR & Varicella Immunity Records',
+                4 => 'LGBTI Cultural Competency Training Certificate',
+            ],
+            'custom_e77baa0c' => [
+                0 => 'Abuse Reporting Acknowledgment (SOC 341)',
+                1 => 'Annual In-Service Training',
+                2 => 'Annual Influenza Vaccination',
+                3 => 'Background Check Clearance',
+                4 => 'COVID-19 Vaccination Record',
+                5 => 'Confidentiality Agreement',
+                6 => 'Criminal Record Statement (LIC 508)',
+                7 => 'Direct Deposit Authorization',
+                8 => 'Emergency Contact Designation',
+                9 => 'Employee Handbook Acknowledgment',
+                10 => 'HIPAA Training Certificate',
+                11 => 'Health Screening Declaration (Physician Statement)',
+                12 => 'Hepatitis B Vaccination Record or Declination',
+                13 => 'I-9 Form',
+                14 => 'Job Description (Signed)',
+                15 => 'LGBTI Cultural Competency Training Certificate',
+                16 => 'MMR & Varicella Immunity Records',
+                17 => 'Physical Exam',
+                18 => 'Proof of Age (18+)',
+                19 => 'Sexual Harassment Training Certificate',
+                20 => 'Social Security Card',
+                21 => 'TB Test Result',
+                22 => 'W-4 Form',
+                23 => 'Workplace Violence Prevention Training Certificate',
+            ],
+            'custom_f1b93a93' => [
+                0 => 'Abuse Reporting Acknowledgment (SOC 341)',
+                1 => 'Annual In-Service Training',
+                2 => 'Annual Influenza Vaccination',
+                3 => 'Background Check Clearance',
+                4 => 'Confidentiality Agreement',
+                5 => 'Criminal Record Statement (LIC 508)',
+                6 => 'Direct Deposit Authorization',
+                7 => 'Emergency Contact Designation',
+                8 => 'Employee Handbook Acknowledgment',
+                9 => 'HIPAA Training Certificate',
+                10 => 'Health Screening Declaration (Physician Statement)',
+                11 => 'Hepatitis B Vaccination Record or Declination',
+                12 => 'I-9 Form',
+                13 => 'Job Description (Signed)',
+                14 => 'Physical Exam',
+                15 => 'Proof of Age (18+)',
+                16 => 'Sexual Harassment Training Certificate',
+                17 => 'Social Security Card',
+                18 => 'TB Test Result',
+                19 => 'W-4 Form',
+                20 => 'Workplace Violence Prevention Training Certificate',
+            ],
+            'leadership' => [
+                0 => 'Annual In-Service Training',
+                1 => 'Annual Influenza Vaccination',
+                2 => 'HIPAA Training Certificate',
+            ],
+            'lvn_license' => [
+                0 => 'Licensed Vocational Nurse License',
+            ],
+            'nursing_clinical' => [
+                0 => 'CPR Certification',
+                1 => 'Dementia Care Training Record',
+            ],
+            'rn_license' => [
+                0 => 'Registered Nurse License',
+            ],
         ],
 
-        'annual_compliance' => [
-            'Annual In-Service Training',
-            'Annual Influenza Vaccination',
-            'COVID-19 Vaccination Record',
-            'MMR & Varicella Immunity Records',
-            'LGBTI Cultural Competency Training Certificate',
-        ],
-
-        'nursing_clinical' => [
-            'CPR Certification',
-            'Dementia Care Training Record',
-        ],
-
-        'rn_license' => [
-            'Registered Nurse License',
-        ],
-
-        'lvn_license' => [
-            'Licensed Vocational Nurse License',
-        ],
-
-        'leadership' => [
-            'Annual In-Service Training',
-            'Annual Influenza Vaccination',
-            'HIPAA Training Certificate',
-        ],
-    ],
-
-  /*
-   * Map each position title (from PositionsSeeder) to requirement sets.
-   * Positions not listed receive only `all_staff` when the seeder runs with defaults.
-   */
+    /*
+     * Map each position title to requirement sets.
+     * Positions not listed receive only `all_staff` when the seeder runs with defaults.
+     */
     'position_sets' => [
-        // Nursing — licensed
-        'Registered Nurse' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-        'Charge Nurse' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-        'Director of Nursing' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-        'IP Nurse' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-        'Licensed Nurse' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-        'MDS Coordinator' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-        'Staff Development Coordinator' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'rn_license'],
-
-        // Nursing — LVN
-        'Licensed Vocational Nurse' => ['all_staff', 'annual_compliance', 'nursing_clinical', 'lvn_license'],
-
-        // Nursing — unlicensed direct care
-        'Certified Nursing Assistant' => ['all_staff', 'annual_compliance', 'nursing_clinical'],
-        'Nursing Assistant' => ['all_staff', 'annual_compliance', 'nursing_clinical'],
-        'Unit Clerk' => ['all_staff', 'annual_compliance'],
-
-        // Rehab (clinical-adjacent)
-        'Rehab Manager' => ['all_staff', 'annual_compliance', 'nursing_clinical'],
-        'Occupational Therapist' => ['all_staff', 'annual_compliance', 'nursing_clinical'],
-        'Physical Therapist' => ['all_staff', 'annual_compliance', 'nursing_clinical'],
-        'OT/PT Assistant' => ['all_staff', 'annual_compliance', 'nursing_clinical'],
-
-        // Administration & leadership
-        'Administrator' => ['all_staff', 'leadership'],
-        'Director of Staff Development' => ['all_staff', 'leadership', 'annual_compliance'],
-        'Business Office Manager' => ['all_staff', 'leadership'],
-        'Medical Records Director' => ['all_staff', 'leadership'],
-        'Marketing Director' => ['all_staff', 'leadership'],
-        'Food Services Director' => ['all_staff', 'leadership'],
-        'Admissions Coordinator' => ['all_staff', 'annual_compliance'],
-        'Receptionist' => ['all_staff', 'annual_compliance'],
-        'Medical Records Clerk' => ['all_staff', 'annual_compliance'],
-        'Office Staff' => ['all_staff', 'annual_compliance'],
-        'Other' => ['all_staff'],
-
-        // Social services
-        'Social Services Director' => ['all_staff', 'leadership'],
-        'Social Worker' => ['all_staff', 'annual_compliance'],
-        'Resident Liaison' => ['all_staff', 'annual_compliance'],
-        'Case Manager' => ['all_staff', 'annual_compliance'],
-
-        // Activities
-        'Activities Director' => ['all_staff', 'annual_compliance'],
-        'Activity Assistant' => ['all_staff', 'annual_compliance'],
-
-        // Dietary
-        'Dietary Manager' => ['all_staff', 'annual_compliance'],
-        'Dietary Aide' => ['all_staff', 'annual_compliance'],
-        'Cook' => ['all_staff', 'annual_compliance'],
-
-        // Environmental services
-        'Housekeeping Supervisor' => ['all_staff', 'annual_compliance'],
-        'Housekeeper' => ['all_staff', 'annual_compliance'],
-        'Janitor' => ['all_staff', 'annual_compliance'],
-        'Laundry Staff' => ['all_staff', 'annual_compliance'],
-
-        // Maintenance
-        'Maintenance Director' => ['all_staff', 'annual_compliance'],
-        'Maintenance Technician' => ['all_staff', 'annual_compliance'],
-    ],
+            'Activities Director' => [
+                0 => 'all_staff',
+                1 => 'annual_compliance',
+            ],
+            'Activity Assistant' => [
+                0 => 'all_staff',
+                1 => 'annual_compliance',
+            ],
+            'Administrator' => [
+                0 => 'custom_f1b93a93',
+            ],
+            'Admissions Coordinator' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Business Office Manager' => [
+                0 => 'custom_f1b93a93',
+            ],
+            'Case Manager' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Certified Nursing Assistant' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+            ],
+            'Charge Nurse' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Cook' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Dietary Aide' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Dietary Manager' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Director of Nursing' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Director of Staff Development' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Food Services Director' => [
+                0 => 'custom_f1b93a93',
+            ],
+            'Housekeeper' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Housekeeping Supervisor' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'IP Nurse' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Janitor' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Laundry Staff' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Licensed Nurse' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Licensed Vocational Nurse' => [
+                0 => 'custom_e77baa0c',
+                1 => 'lvn_license',
+                2 => 'nursing_clinical',
+            ],
+            'MDS Coordinator' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Maintenance Director' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Maintenance Technician' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Marketing Director' => [
+                0 => 'custom_f1b93a93',
+            ],
+            'Medical Records Clerk' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Medical Records Director' => [
+                0 => 'custom_f1b93a93',
+            ],
+            'Nursing Assistant' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+            ],
+            'OT/PT Assistant' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+            ],
+            'Occupational Therapist' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+            ],
+            'Office Staff' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Other' => [
+                0 => 'all_staff',
+            ],
+            'Physical Therapist' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+            ],
+            'Receptionist' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Registered Nurse' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Rehab Manager' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+            ],
+            'Resident Liaison' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Social Services Director' => [
+                0 => 'custom_f1b93a93',
+            ],
+            'Social Worker' => [
+                0 => 'custom_e77baa0c',
+            ],
+            'Staff Development Coordinator' => [
+                0 => 'custom_e77baa0c',
+                1 => 'nursing_clinical',
+                2 => 'rn_license',
+            ],
+            'Unit Clerk' => [
+                0 => 'custom_e77baa0c',
+            ],
+        ],
 ];

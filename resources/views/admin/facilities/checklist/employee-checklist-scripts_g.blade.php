@@ -1,4 +1,12 @@
 <script>
+    @php
+        $partGDeepLinkAccordionKey = filled(request('checklist_section'))
+            ? app(\App\Services\CompetencySectionWorkflowService::class)->accordionKeyForSectionLabel((string) request('checklist_section'))
+            : null;
+    @endphp
+    window.partGDeepLinkAccordionKey = @json($partGDeepLinkAccordionKey);
+    window.partGDeepLinkAcknowledgementKey = @json($partGDeepLinkAccordionKey);
+
     window.partGOverallRatingFromAverage = function partGOverallRatingFromAverage(points, ratedCount) {
         if (!ratedCount || ratedCount === 0) {
             return '—';
@@ -25,6 +33,7 @@
                 totalItems: 0,
                 checkedOfTotal: '',
                 totalPoints: 0,
+                pointsOfTotal: '',
                 average: '—',
                 overallRating: '—',
             },
@@ -73,6 +82,7 @@
                 this.summary.totalItems = total;
                 this.summary.checkedOfTotal = rated + ' of ' + total + ' rated';
                 this.summary.totalPoints = points;
+                this.summary.pointsOfTotal = points + ' of ' + (total * 3) + ' points';
                 this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
                 this.summary.overallRating = window.partGOverallRatingFromAverage(points, rated);
             },
@@ -95,6 +105,7 @@
                 totalItems: 0,
                 checkedOfTotal: '',
                 totalPoints: 0,
+                pointsOfTotal: '',
                 average: '—',
                 overallRating: '—',
             },
@@ -127,6 +138,7 @@
                 this.summary.totalItems = total;
                 this.summary.checkedOfTotal = rated + ' of ' + total + ' rated';
                 this.summary.totalPoints = points;
+                this.summary.pointsOfTotal = points + ' of ' + (total * 3) + ' points';
                 this.summary.average = rated > 0 ? (points / rated).toFixed(2) : '—';
                 this.summary.overallRating = window.partGOverallRatingFromAverage(points, rated);
             },
@@ -136,18 +148,94 @@
         };
     };
 
-    function registerPartGAlpineStore() {
+    window.partGAccordionPersist = {
+        storageKey: function () {
+            var employeeNum = window.currentEmployeeNum || 'unknown';
+            return 'partGOpenSection:' + String(employeeNum);
+        },
+        read: function () {
+            try {
+                return sessionStorage.getItem(this.storageKey());
+            } catch (error) {
+                return null;
+            }
+        },
+        write: function (openSection) {
+            try {
+                var key = this.storageKey();
+                if (openSection) {
+                    sessionStorage.setItem(key, openSection);
+                } else {
+                    sessionStorage.removeItem(key);
+                }
+            } catch (error) {
+                // Ignore storage failures in restricted browser modes.
+            }
+        },
+        bind: function (store) {
+            if (!store || store.__partGPersistenceBound || typeof Alpine === 'undefined' || typeof Alpine.effect !== 'function') {
+                return;
+            }
+
+            store.__partGPersistenceBound = true;
+
+            Alpine.effect(function () {
+                window.partGAccordionPersist.write(store.openSection);
+            });
+        },
+        setOpenSection: function (openSection) {
+            if (typeof Alpine === 'undefined') {
+                return;
+            }
+
+            var store = Alpine.store('partGAccordion');
+            if (!store) {
+                return;
+            }
+
+            store.openSection = openSection;
+        },
+        toggleOpenSection: function (accordionKey) {
+            if (typeof Alpine === 'undefined') {
+                return;
+            }
+
+            var store = Alpine.store('partGAccordion');
+            if (!store) {
+                return;
+            }
+
+            store.openSection = store.openSection === accordionKey ? null : accordionKey;
+        },
+    };
+
+    window.registerPartGAlpineStore = function registerPartGAlpineStore() {
         if (typeof Alpine === 'undefined') {
             return;
         }
-        if (!Alpine.store('partGAccordion')) {
-            Alpine.store('partGAccordion', { openSection: null });
+
+        var persisted = window.partGAccordionPersist.read();
+        var store = Alpine.store('partGAccordion');
+
+        if (!store) {
+            Alpine.store('partGAccordion', {
+                openSection: persisted || null,
+            });
+            store = Alpine.store('partGAccordion');
+        } else if (!store.openSection && persisted) {
+            store.openSection = persisted;
         }
+
+        window.partGAccordionPersist.bind(store);
+    };
+
+    function registerPartGAlpineStoreLocal() {
+        window.registerPartGAlpineStore();
     }
 
-    document.addEventListener('alpine:init', registerPartGAlpineStore);
+    document.addEventListener('alpine:init', registerPartGAlpineStoreLocal);
     if (window.Alpine) {
-        registerPartGAlpineStore();
+        registerPartGAlpineStoreLocal();
     }
 
     function initPartGHierarchyToggles() {
@@ -241,5 +329,34 @@
 
     runWhenDomReady(function () {
         window.updatePartGSummaryScores();
+        window.openPartGDeepLinkedSection();
     });
+
+    window.openPartGDeepLinkedSection = function openPartGDeepLinkedSection() {
+        var accordionKey = window.partGDeepLinkAccordionKey;
+        if (!accordionKey) {
+            return;
+        }
+
+        var openSection = function () {
+            if (typeof window.registerPartGAlpineStore === 'function') {
+                window.registerPartGAlpineStore();
+            }
+
+            window.partGAccordionPersist.setOpenSection(accordionKey);
+
+            var acknowledgementKey = window.partGDeepLinkAcknowledgementKey || accordionKey;
+            var workflowForm = document.getElementById('partGCompetencyWorkflowForm-' + acknowledgementKey);
+            if (workflowForm) {
+                workflowForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+
+        if (typeof Alpine !== 'undefined') {
+            openSection();
+            return;
+        }
+
+        document.addEventListener('alpine:init', openSection, { once: true });
+    };
 </script>

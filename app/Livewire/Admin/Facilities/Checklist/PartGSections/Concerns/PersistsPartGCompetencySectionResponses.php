@@ -7,10 +7,16 @@ use App\Models\BPEmployee;
 use App\Services\AssessmentConfirmationNotificationService;
 use App\Services\CompetencyAssessmentConfirmationService;
 use App\Support\AssessmentWorkflowStatus;
+use App\Support\PartGCompetencyScoring;
 use Illuminate\Support\Facades\Auth;
 
 trait PersistsPartGCompetencySectionResponses
 {
+    public function getSectionLabelProperty(): string
+    {
+        return static::SECTION;
+    }
+
     protected function setDraftSaveFeedback(string $type, string $message): void
     {
         $this->draftSaveType = $type;
@@ -19,7 +25,7 @@ trait PersistsPartGCompetencySectionResponses
 
     protected function guardPartGSectionSubmit(): bool
     {
-        if ($this->assessmentLocked) {
+        if ($this->sectionItemReviewsLocked()) {
             $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be submitted.');
 
             return false;
@@ -38,9 +44,68 @@ trait PersistsPartGCompetencySectionResponses
         return true;
     }
 
+    public function submitAssessment(): void
+    {
+        $this->draftSaveMessage = null;
+        $this->draftSaveType = '';
+
+        if (! $this->guardPartGSectionSubmit()) {
+            return;
+        }
+
+        if (! $this->validatePartGSectionRatingsBeforeSubmit()) {
+            return;
+        }
+
+        try {
+            $this->persistResponses('section_submit');
+            $this->setDraftSaveFeedback('success', static::SECTION.' submitted successfully.');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->setDraftSaveFeedback('error', 'Failed to submit this section. Please try again.');
+        }
+    }
+
+    protected function validatePartGSectionRatingsBeforeSubmit(): bool
+    {
+        $rules = [
+            'responses' => 'required|array',
+        ];
+
+        if (method_exists($this, 'reviewerSignDateRequiredOnSubmit')
+            && $this->reviewerSignDateRequiredOnSubmit()) {
+            $rules['reviewSignDate'] = 'required|date';
+        }
+
+        $this->validate($rules);
+
+        if ($this->sectionExcluded ?? false) {
+            return true;
+        }
+
+        if (! method_exists($this, 'scorableItemIds')) {
+            return true;
+        }
+
+        foreach ($this->scorableItemIds() as $itemId) {
+            $response = $this->responses[$itemId] ?? null;
+            if (! PartGCompetencyScoring::isValidItemRating($response)) {
+                $this->addError('responses', 'Please rate all competency items before submitting.');
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     protected function persistDraftIfPossible(): void
     {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId) {
+        if (! $this->assessmentPeriodId) {
+            return;
+        }
+
+        if ($this->sectionItemReviewsLocked() && $this->reviewerSummaryCommentsLocked()) {
             return;
         }
 
@@ -54,6 +119,10 @@ trait PersistsPartGCompetencySectionResponses
     {
         if ($this->abortPersistIfSelfAssessment()) {
             return;
+        }
+
+        if (method_exists($this, 'refreshReviewerIdentityForPersist')) {
+            $this->refreshReviewerIdentityForPersist();
         }
 
         $row = EmployeeCompetencyAssessment::query()
@@ -84,7 +153,7 @@ trait PersistsPartGCompetencySectionResponses
             $updateData['submitted_at'] = $row?->submitted_at;
         }
 
-        EmployeeCompetencyAssessment::updateOrCreate(
+        $row = EmployeeCompetencyAssessment::updateOrCreate(
             [
                 'employee_num' => $this->employeeNum,
                 'assessment_period_id' => $this->assessmentPeriodId,
@@ -93,38 +162,97 @@ trait PersistsPartGCompetencySectionResponses
         );
 
         $this->syncCompetencyItemEntriesFromResponses($payload);
-        $this->maybeResetCompetencyAssessmentForEmployeeReconfirmation();
+
+        if ($intent === 'section_submit') {
+            $this->finalizeIndependentSectionSubmission($row->fresh());
+        } else {
+            $this->maybeResetCompetencyAssessmentForEmployeeReconfirmation();
+
+            if ($intent === 'draft') {
+                $this->finalizeReturnedSectionDraftSave($row->fresh());
+            }
+        }
+
         $this->dispatchPartGSummaryUpdated();
     }
 
-    protected function maybeResetCompetencyAssessmentForEmployeeReconfirmation(): void
+    protected function finalizeIndependentSectionSubmission(?EmployeeCompetencyAssessment $assessment): void
     {
-        $assessment = EmployeeCompetencyAssessment::query()
-            ->where('employee_num', $this->employeeNum)
-            ->where('assessment_period_id', $this->assessmentPeriodId)
-            ->first();
-
-        if (! $assessment || $assessment->workflowStatus() !== AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL) {
+        if (! $assessment || ! defined('static::SECTION')) {
             return;
         }
 
-        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
-        $assessment->refresh();
-
-        if (! $confirmationService->hasChangedSinceEmployeeConfirmation($assessment)) {
-            return;
-        }
-
-        $confirmationService->resetForEmployeeReconfirmation($assessment);
-        $assessment->save();
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+        $wasResubmit = $sectionWorkflow->submitSectionForEmployeeConfirmation(
+            $assessment,
+            static::SECTION,
+            Auth::id(),
+        );
 
         $employee = BPEmployee::query()
             ->where('employee_num', $this->employeeNum)
             ->first();
 
-        if ($employee) {
-            app(AssessmentConfirmationNotificationService::class)
-                ->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee);
+        if (! $employee) {
+            return;
+        }
+
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
+        if ($wasResubmit) {
+            $notificationService->notifyCompetencySectionResubmittedToEmployee($assessment->fresh(), $employee, static::SECTION);
+        } else {
+            $notificationService->notifyCompetencySectionSubmittedToEmployee($assessment->fresh(), $employee, static::SECTION);
+        }
+
+        $this->regenerateCompetencySectionPdf($assessment->fresh(), static::SECTION);
+    }
+
+    protected function regenerateCompetencySectionPdf(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+    ): void {
+        try {
+            app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
+                ->persistCompetencySectionPdf($assessment, $sectionLabel);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    protected function maybeResetCompetencyAssessmentForEmployeeReconfirmation(): void
+    {
+        if (! defined('static::SECTION')) {
+            return;
+        }
+
+        $assessment = EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $this->employeeNum)
+            ->where('assessment_period_id', $this->assessmentPeriodId)
+            ->first();
+
+        if (! $assessment) {
+            return;
+        }
+
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+
+        if (! $sectionWorkflow->sectionHasChangedSinceEmployeeConfirmation($assessment, static::SECTION)) {
+            return;
+        }
+
+        $wasResubmit = $sectionWorkflow->reviewerResubmitSection($assessment, static::SECTION);
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $this->employeeNum)
+            ->first();
+
+        if (! $employee) {
+            return;
+        }
+
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
+        if ($wasResubmit) {
+            $notificationService->notifyCompetencySectionResubmittedToEmployee($assessment->fresh(), $employee, static::SECTION);
         }
     }
 
@@ -165,9 +293,17 @@ trait PersistsPartGCompetencySectionResponses
         }
 
         $snapshot['section_comments'] ??= [];
+
+        $existingComments = $row
+            ? app(\App\Services\CompetencySectionWorkflowService::class)
+                ->resolveSectionComments($row, static::SECTION)
+            : ['reviewer_comments' => '', 'employee_comments' => ''];
+
+        $employeeComments = (string) ($existingComments['employee_comments'] ?? '');
+
         $snapshot['section_comments'][static::SECTION] = [
             'reviewer_comments' => $this->summaryComments,
-            'employee_comments' => $this->employeeComments,
+            'employee_comments' => $employeeComments,
             'review_date' => optional($row?->reviewer_signed_at ?? $row?->review_date)->format('Y-m-d'),
             'employee_signed_at' => optional($row?->employee_signed_at)->format('Y-m-d'),
         ];
@@ -268,23 +404,34 @@ trait PersistsPartGCompetencySectionResponses
             return;
         }
 
-        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
-        $sectionComments = $snapshot['section_comments'][static::SECTION] ?? null;
+        $comments = app(\App\Services\CompetencySectionWorkflowService::class)
+            ->resolveSectionComments($assessment, static::SECTION);
 
-        if (is_array($sectionComments)) {
-            $this->summaryComments = (string) ($sectionComments['reviewer_comments'] ?? $this->summaryComments);
-            $this->employeeComments = (string) ($sectionComments['employee_comments'] ?? $this->employeeComments);
-        } else {
-            $this->summaryComments = (string) ($assessment->comments ?? $this->summaryComments);
-            $this->employeeComments = (string) ($assessment->employee_comments ?? $this->employeeComments);
-        }
+        $this->summaryComments = $comments['reviewer_comments'];
+        $this->employeeComments = $comments['employee_comments'];
+
+        $workflow = app(\App\Services\CompetencySectionWorkflowService::class)
+            ->sectionWorkflow($assessment, static::SECTION);
 
         if (property_exists($this, 'reviewSignDate')) {
-            $this->reviewSignDate = optional($assessment->reviewer_signed_at ?? $assessment->review_date)->format('Y-m-d') ?? '';
+            $this->reviewSignDate = $this->formatSectionSignDate($workflow['reviewer_signed_at'] ?? null);
         }
 
         if (property_exists($this, 'employeeSignDate')) {
-            $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
+            $this->employeeSignDate = $this->formatSectionSignDate($workflow['employee_signed_at'] ?? null);
+        }
+    }
+
+    protected function formatSectionSignDate(mixed $value): string
+    {
+        if (! filled($value)) {
+            return '';
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse((string) $value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return '';
         }
     }
 

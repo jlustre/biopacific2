@@ -68,6 +68,9 @@ return [
 
     'facility_manager_roles' => ['facility-admin', 'facility-dsd', 'facility-ssd', 'don'],
 
+    /** Roles that can open Documents Management (upload types, employee file items, position requirements). */
+    'documents_management_roles' => ['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don'],
+
     /**
      * Portal roles assigned to department leadership (not facility-wide admin/dsd).
      *
@@ -198,6 +201,8 @@ return [
 
     'personal_portal_route_patterns' => [
         'settings.profile',
+        'member.tasks',
+        'member.tasks.*',
         'member.trainings',
         'member.trainings.*',
         'member.documents',
@@ -233,6 +238,12 @@ return [
             'route' => 'member.trainings',
             'route_is' => ['member.trainings', 'member.trainings.*'],
             'label' => 'My Trainings',
+        ],
+        [
+            'id' => 'tasks',
+            'route' => 'member.tasks',
+            'route_is' => ['member.tasks', 'member.tasks.*'],
+            'label' => 'My Tasks',
         ],
         [
             'id' => 'documents',
@@ -303,6 +314,8 @@ return [
 
     'corporate_titles' => [
         'admin.positions.*' => 'Positions',
+        'admin.upload-types.*' => 'Documents Management',
+        'admin.checklist-items.*' => 'Documents Management',
         'admin.reports.*' => 'Reports',
         'admin.scheduled-reports.*' => 'Reports',
         'user.hr-portal' => 'HR Management',
@@ -348,6 +361,8 @@ return [
         'dashboard.index' => 'dashboard',
         'member.facilities.websites' => 'facilities-websites',
         'settings.profile' => 'profile',
+        'member.tasks' => 'tasks',
+        'member.tasks.*' => 'tasks',
         'member.trainings' => 'trainings',
         'member.trainings.*' => 'trainings',
         'member.documents' => 'documents',
@@ -367,6 +382,8 @@ return [
         'admin.scheduled-reports.*' => 'reports',
         'user.hr-portal' => 'facility-hr-portal',
         'hr-portal.*' => 'facility-hr-portal',
+        'admin.upload-types.*' => 'facility-documents-management',
+        'admin.checklist-items.*' => 'facility-documents-management',
     ],
 
     'employee_active_map' => [
@@ -377,6 +394,8 @@ return [
         'pre-employment.*' => 'pre-employment',
         'employment.*' => 'employment',
         'settings.profile' => 'profile',
+        'member.tasks' => 'tasks',
+        'member.tasks.*' => 'tasks',
         'member.trainings' => 'trainings',
         'member.trainings.*' => 'trainings',
         'member.documents' => 'documents',
@@ -401,11 +420,15 @@ return [
         'member.facilities.websites' => 'facilities-websites',
         'dashboard.index' => 'dashboard',
         'settings.profile' => 'profile',
+        'member.tasks' => 'tasks',
+        'member.tasks.*' => 'tasks',
         'member.documents' => 'documents',
         'user.hr-portal' => 'hr-portal',
         'hr-portal.*' => 'hr-portal',
         'member.trainings' => 'trainings',
         'member.certifications' => 'certifications',
+        'admin.upload-types.*' => 'facility-documents-management',
+        'admin.checklist-items.*' => 'facility-documents-management',
     ],
 
     /** @deprecated Use employee_dashboard_nav + personal_portal_nav */
@@ -439,6 +462,8 @@ return [
         'admin.facility.pre-employment*',
         'admin.facility.document.*',
         'admin.upload-types.*',
+        'admin.checklist-items.*',
+        'admin.position-document-requirements.*',
         'admin.positions.*',
         'admin.training-management.*',
     ],
@@ -503,6 +528,8 @@ return [
         'admin.email-templates.*' => 'Email Templates',
         'admin.communications.employee-email-mappings' => 'Employee Email Mappings',
         'admin.upload-types.*' => 'Documents Management',
+        'admin.checklist-items.*' => 'Documents Management',
+        'admin.position-document-requirements.*' => 'Documents Management',
         'admin.positions.*' => 'Positions Management',
         'admin.training-management.*' => 'Training Management',
     ],
@@ -536,6 +563,8 @@ return [
         'admin.email-templates.*' => 'facility-email-templates',
         'admin.communications.employee-email-mappings' => 'facility-email-mappings',
         'admin.upload-types.*' => 'facility-documents-management',
+        'admin.checklist-items.*' => 'facility-documents-management',
+        'admin.position-document-requirements.*' => 'facility-documents-management',
         'admin.positions.*' => 'facility-positions-management',
         'admin.training-management.*' => 'facility-training-management',
     ],

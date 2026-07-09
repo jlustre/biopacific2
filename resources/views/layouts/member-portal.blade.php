@@ -28,6 +28,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{{ $portalTitle }}</title>
+  <style>[x-cloak]{display:none!important}</style>
   @vite(['resources/css/app.css', 'resources/js/app.js'])
   {{-- Alpine.js loaded via Livewire or base layout; do not include multiple times --}}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -99,6 +100,8 @@
         'portalNav' => $portalNav ?? 'employee',
     ])
   @endif
+
+  @include('layouts.partials.go_to_top')
 
   @livewireScripts(['vite' => true])
   @stack('scripts')

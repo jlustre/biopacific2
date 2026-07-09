@@ -25,6 +25,9 @@
         .report-title { font-size: 13px; font-weight: bold; color: #1e293b; margin: 0; text-align: center; }
         .field-label { font-size: 9px; font-weight: bold; background: #f8fafc; padding: 4px 6px; }
         .field-box { min-height: 48px; background: #f1f5f9; padding: 8px; }
+        .signature-name-cell { vertical-align: middle; text-align: left; }
+        .signature-image-wrap { text-align: center; margin-top: 4px; }
+        .signature-image { max-height: 42px; max-width: 180px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -121,6 +124,8 @@
         @php
             $totalSnapshotItems = $items->count();
             $itemsRatedCount = $items->filter(fn ($item) => is_array($item) && PartGCompetencyScoring::isValidItemRating($item['rating'] ?? null))->count();
+            $earnedPoints = (int) ($summary['total_score'] ?? $assessment->total_score ?? 0);
+            $maxPoints = PartGCompetencyScoring::maxPointsForScorableItems($totalSnapshotItems);
         @endphp
         <table class="summary-grid" style="margin-top: 4px;">
             <tr>
@@ -131,7 +136,7 @@
             </tr>
             <tr>
                 <td>{{ $itemsRatedCount.'/'.$totalSnapshotItems }}</td>
-                <td>{{ $summary['total_score'] ?? $assessment->total_score ?? 0 }}</td>
+                <td>{{ $earnedPoints.'/'.$maxPoints }}</td>
                 <td>{{ is_numeric($averageScore) ? number_format($averageScore, 2) : ($summary['average_score'] ?? '0.00') }}</td>
                 <td>
                     @if($overallRatingCode !== '')
@@ -256,10 +261,12 @@
                 <td class="summary-label">REVIEWER TITLE</td>
             </tr>
             <tr>
-                <td>
+                <td class="signature-name-cell">
                     <div>{{ $signatureBlock['reviewer_name'] ?? ($form['reviewer_name'] ?? $assessment->reviewer_name ?? '') }}</div>
                     @if(!empty($signatureBlock['reviewer_signature_image_path']))
-                    <img src="{{ $signatureBlock['reviewer_signature_image_path'] }}" alt="Reviewer signature" style="max-height: 42px; max-width: 180px; display: block; margin-top: 4px;">
+                    <div class="signature-image-wrap">
+                        <img src="{{ $signatureBlock['reviewer_signature_image_path'] }}" alt="Reviewer signature" class="signature-image">
+                    </div>
                     @endif
                 </td>
                 <td>{{ $signatureBlock['reviewer_title'] ?? ($form['reviewer_title'] ?? $assessment->reviewer_title ?? '') }}</td>
@@ -277,10 +284,12 @@
                 <td class="summary-label">EMPLOYEE TITLE</td>
             </tr>
             <tr>
-                <td>
+                <td class="signature-name-cell">
                     <div>{{ $signatureBlock['employee_name'] ?? ($form['employee_name'] ?? $assessment->employee_name ?? $employeeName) }}</div>
                     @if(!empty($signatureBlock['employee_signature_image_path']))
-                    <img src="{{ $signatureBlock['employee_signature_image_path'] }}" alt="Employee signature" style="max-height: 42px; max-width: 180px; display: block; margin-top: 4px;">
+                    <div class="signature-image-wrap">
+                        <img src="{{ $signatureBlock['employee_signature_image_path'] }}" alt="Employee signature" class="signature-image">
+                    </div>
                     @endif
                 </td>
                 <td>{{ $signatureBlock['employee_title'] ?? ($form['employee_title'] ?? $assessment->employee_title ?? '') }}</td>

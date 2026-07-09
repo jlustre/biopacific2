@@ -285,7 +285,7 @@ class PerformanceAppraisalAreas extends Component
     {
         $item = EmployeePerformanceItem::query()->find($sourceItemId);
 
-        return $item ? Str::limit(strip_tags((string) $item->item), 255) : null;
+        return $item ? strip_tags((string) $item->item) : null;
     }
 
     protected function createItemEntry(int $sourceItemId, string $rating, string $assessmentDate, ?int $assessedBy): void

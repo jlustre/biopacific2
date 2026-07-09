@@ -42,6 +42,19 @@ class PartGCompetencyScoring
         ];
     }
 
+    /** Maximum points a single competency item can earn (E = Exceeds Expectations). */
+    public const MAX_ITEM_POINTS = 3;
+
+    public static function maxPointsForScorableItems(int $scorableItemCount): int
+    {
+        return max(0, $scorableItemCount) * self::MAX_ITEM_POINTS;
+    }
+
+    public static function pointsOfTotalLabel(int $earnedPoints, int $scorableItemCount): string
+    {
+        return $earnedPoints.' of '.self::maxPointsForScorableItems($scorableItemCount).' points';
+    }
+
     public static function itemRatingLegendText(): string
     {
         return 'E = 3 points | M = 2 points | B = 1 point';

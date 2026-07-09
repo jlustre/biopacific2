@@ -72,8 +72,10 @@
                 <label class="block text-sm font-semibold text-gray-900 mb-2">Required Documents (by position)</label>
                 <p class="text-xs text-gray-500 mb-2">Select general document types required for employees in <strong>this position only</strong>. Compliance on the member Documents page is calculated from these assignments plus the employee's on-file uploads.</p>
                 <p class="text-xs text-gray-500 mb-3">
-                    Employee file items (PART A–D) are scoped per position under
-                    <a href="{{ route('admin.upload-types.index', ['tab' => 'items']) }}" class="font-semibold text-blue-600 hover:text-blue-800">Documents Management → Employee file items</a>.
+                    For bulk assignment across many positions, use
+                    <a href="{{ route('admin.upload-types.index', ['tab' => 'requirements']) }}" class="font-semibold text-blue-600 hover:text-blue-800">Documents Management → Position requirements</a>.
+                    Employee file items (PART A–D) are on the
+                    <a href="{{ route('admin.upload-types.index', ['tab' => 'items']) }}" class="font-semibold text-blue-600 hover:text-blue-800">Employee file items</a> tab.
                 </p>
                 @php
                     $selectedRequiredIds = old('required_upload_type_ids', $position->requiredUploadTypes->pluck('id')->all());

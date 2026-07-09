@@ -8,7 +8,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-black text-slate-900">Documents Management</h1>
-            <p class="text-sm text-slate-500">Manage document types and bulk-assign employee file documents to positions.</p>
+            <p class="text-sm text-slate-500">Assign required documents to positions, manage employee file items, and maintain document types.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             @if($tab === 'types' && auth()->user()?->hasRole(['admin', 'super-admin']))
@@ -39,6 +39,16 @@
                     </button>
                 </form>
             @endif
+            @if($tab === 'requirements' && auth()->user()?->hasRole(['admin', 'super-admin']))
+                <form method="POST" action="{{ route('admin.position-document-requirements.sync-seeder') }}"
+                      onsubmit="return confirm('Export current position document requirements into database/seeders/data/position_document_requirements.php?\n\nThis overwrites that file. Commit it to git so migrate:fresh --seed restores your assignments.\n\nExisting document set presets are preserved where possible; new custom sets may be added for unique combinations.');">
+                    @csrf
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+                        <i class="fa-solid fa-database mr-2"></i> Update seeder
+                    </button>
+                </form>
+            @endif
             @if($tab === 'types')
                 <a href="{{ route('admin.upload-types.create') }}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
                     <i class="fa-solid fa-plus mr-2"></i> New document type
@@ -51,13 +61,17 @@
         </div>
     </div>
 
-    <div class="flex gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1">
+    <div class="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1">
+        <a href="{{ route('admin.upload-types.index', ['tab' => 'requirements']) }}"
+           class="flex-1 min-w-[140px] rounded-lg px-4 py-2 text-center text-sm font-semibold transition {{ $tab === 'requirements' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
+            Position requirements
+        </a>
         <a href="{{ route('admin.upload-types.index', ['tab' => 'items']) }}"
-           class="flex-1 rounded-lg px-4 py-2 text-center text-sm font-semibold transition {{ $tab === 'items' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
-            Position assignments
+           class="flex-1 min-w-[140px] rounded-lg px-4 py-2 text-center text-sm font-semibold transition {{ $tab === 'items' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
+            Employee file items
         </a>
         <a href="{{ route('admin.upload-types.index', ['tab' => 'types']) }}"
-           class="flex-1 rounded-lg px-4 py-2 text-center text-sm font-semibold transition {{ $tab === 'types' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
+           class="flex-1 min-w-[140px] rounded-lg px-4 py-2 text-center text-sm font-semibold transition {{ $tab === 'types' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
             All document types
         </a>
     </div>
@@ -69,7 +83,9 @@
         <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{{ session('error') }}</div>
     @endif
 
-    @if($tab === 'items')
+    @if($tab === 'requirements')
+        @include('admin.upload-types.partials.position-requirements-tab')
+    @elseif($tab === 'items')
         @include('admin.upload-types.partials.employee-file-items-tab')
     @else
         @php
@@ -202,6 +218,9 @@
                                 ->filter()
                                 ->map(fn ($position) => $position->title)
                                 ->values();
+                            $appliesToAllPositions = $uploadType->checklistItem?->position_ids === null;
+                            $appliesToNoPositions = is_array($uploadType->checklistItem?->position_ids)
+                                && $uploadType->checklistItem->position_ids === [];
                         @endphp
                         <tr>
                             @if($hasEmployeeFileRows)
@@ -223,8 +242,12 @@
                             @if($hasEmployeeFileRows)
                                 <td class="px-4 py-3">
                                     @if($uploadType->checklist_item_id)
-                                        @if ($positionLabels->isEmpty())
+                                        @if ($appliesToAllPositions)
                                             <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">All positions</span>
+                                        @elseif ($appliesToNoPositions)
+                                            <span class="rounded-full bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">No positions</span>
+                                        @elseif ($positionLabels->isEmpty())
+                                            <span class="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">Unmapped positions</span>
                                         @else
                                             <div class="flex flex-wrap gap-1">
                                                 @foreach ($positionLabels as $label)
@@ -233,7 +256,9 @@
                                             </div>
                                         @endif
                                     @else
-                                        <span class="text-xs text-slate-400">Set on Positions page</span>
+                                        <span class="text-xs text-slate-400">
+                                            <a href="{{ route('admin.upload-types.index', ['tab' => 'requirements']) }}" class="font-semibold text-brand-600 hover:text-brand-700">Position requirements</a>
+                                        </span>
                                     @endif
                                 </td>
                             @endif

@@ -71,6 +71,89 @@ class EmployeeAssessmentPeriodService
             ->value('id');
     }
 
+    /**
+     * Move reviewers to the current due annual period after a completed prior cycle.
+     */
+    public function shouldAdvanceToRecommendedPeriod(
+        BPEmployee $employee,
+        EmployeeAssessmentPeriod $selected,
+        ?EmployeeAssessmentPeriod $recommended,
+    ): bool {
+        if (! $recommended || (int) $selected->id === (int) $recommended->id) {
+            return false;
+        }
+
+        if (! EmployeeAssessmentPeriodCalculator::isPeriodLoadable($recommended)) {
+            return false;
+        }
+
+        if ($selected->date_from && $recommended->date_from
+            && $recommended->date_from->lte($selected->date_from)) {
+            return false;
+        }
+
+        if (! $this->competencyCompleted($employee->employee_num, (int) $selected->id)) {
+            return false;
+        }
+
+        if ($this->competencyCompleted($employee->employee_num, (int) $recommended->id)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function competencyCompleted(
+        string $employeeNum,
+        int $periodId,
+        ?EmployeeCompetencyAssessment $assessment = null,
+    ): bool {
+        $assessment ??= EmployeeCompetencyAssessment::query()
+            ->where('employee_num', $employeeNum)
+            ->where('assessment_period_id', $periodId)
+            ->first();
+
+        return $assessment && AssessmentWorkflowStatus::isCompleted($assessment->workflowStatus());
+    }
+
+    public function resolveActivePeriodIdForReview(
+        BPEmployee $employee,
+        Collection $periods,
+        ?int $requestedPeriodId,
+        ?Carbon $on = null,
+        bool $viewingHistoricalPeriod = false,
+    ): ?int {
+        $recommendedPeriodId = $this->resolveDefaultPeriodId($employee, $on);
+        $recommendedPeriod = $recommendedPeriodId
+            ? $periods->firstWhere('id', $recommendedPeriodId)
+            : null;
+
+        if (! $requestedPeriodId) {
+            return $recommendedPeriodId;
+        }
+
+        $requestedPeriod = $periods->firstWhere('id', $requestedPeriodId);
+        if (! $requestedPeriod) {
+            return $recommendedPeriodId;
+        }
+
+        if (! EmployeeAssessmentPeriodCalculator::isPeriodLoadable($requestedPeriod)) {
+            return null;
+        }
+
+        if ((string) $requestedPeriod->employee_num !== (string) $employee->employee_num) {
+            return null;
+        }
+
+        if (! $viewingHistoricalPeriod
+            && $recommendedPeriod
+            && $this->shouldAdvanceToRecommendedPeriod($employee, $requestedPeriod, $recommendedPeriod)) {
+            return (int) $recommendedPeriod->id;
+        }
+
+        return $requestedPeriodId;
+    }
+
     public function periodBelongsToEmployee(int $periodId, string $employeeNum): bool
     {
         return EmployeeAssessmentPeriod::query()

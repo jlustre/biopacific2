@@ -10,12 +10,20 @@
         : '';
     $years = collect($assessmentPeriods)->pluck('period_year')->filter()->unique()->sort()->values();
     $currentYear = date('Y');
-    $selectedYear = request('assessment_year') ?? ($years->contains($currentYear) ? $currentYear : $years->last());
+    $selectedPeriodYear = $selectedAssessmentPeriodId
+        ? optional(collect($assessmentPeriods)->firstWhere('id', $selectedAssessmentPeriodId))->period_year
+        : null;
+    $selectedYear = request('assessment_year')
+        ?? $selectedPeriodYear
+        ?? ($years->contains($currentYear) ? $currentYear : $years->last());
 @endphp
 
 <div class="assessment-period-manager h-full rounded-md border border-slate-400 bg-slate-50 p-3 shadow-sm" data-manager-id="{{ $managerId }}" data-context-label="{{ $contextLabel }}">
     @if(session('assessment_period_error'))
         <p class="mb-2 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] text-amber-900">{{ session('assessment_period_error') }}</p>
+    @endif
+    @if(session('assessment_period_notice'))
+        <p class="mb-2 rounded border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] text-sky-900">{{ session('assessment_period_notice') }}</p>
     @endif
 
     <div class="flex flex-col gap-2.5">
@@ -52,7 +60,8 @@
                             @endforeach
                         </select>
                         <input type="hidden" class="js-assessment-year-hidden" name="assessment_year" value="{{ $selectedYear }}">
-                        @foreach(request()->except(['assessment_period_id', 'assessment_year']) as $key => $value)
+                        <input type="hidden" name="view_period" value="1">
+                        @foreach(request()->except(['assessment_period_id', 'assessment_year', 'view_period']) as $key => $value)
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
                     </form>

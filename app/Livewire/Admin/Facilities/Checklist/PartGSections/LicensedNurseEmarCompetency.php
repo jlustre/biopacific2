@@ -7,12 +7,13 @@ use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\EmployeeCompetencyItem;
 use App\Models\User;
+use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ClearsPartGCompetencySectionProgress;
 use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGItemReviews;
+use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ManagesPartGSectionWorkflowUi;
+use App\Livewire\Admin\Facilities\Checklist\PartGSections\Concerns\ResolvesPartGReviewerIdentity;
 use App\Livewire\Concerns\GuardsAgainstSelfAssessment;
 use App\Services\AssessmentConfirmationNotificationService;
-use App\Services\CompetencyAssessmentConfirmationService;
 use App\Support\AssessmentWorkflowStatus;
-use App\Support\CompetencyAssessmentWorkflowReadiness;
 use App\Support\PartGCompetencyScoring;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -30,7 +31,10 @@ use Livewire\Component;
 class LicensedNurseEmarCompetency extends Component
 {
     use GuardsAgainstSelfAssessment;
+    use ClearsPartGCompetencySectionProgress;
     use ManagesPartGItemReviews;
+    use ManagesPartGSectionWorkflowUi;
+    use ResolvesPartGReviewerIdentity;
 
     public const SECTION = 'LICENSED NURSE eMAR COMPETENCY';
 
@@ -99,6 +103,7 @@ class LicensedNurseEmarCompetency extends Component
         $this->loadSectionCommentsFromStorage();
         $this->loadExclusionFromStorage();
         $this->normalizeResponseKeys();
+        $this->initializeReturnedSectionResubmitState();
     }
 
     #[Computed]
@@ -128,22 +133,15 @@ class LicensedNurseEmarCompetency extends Component
         return $assessment->employee_signed_at->format('M j, Y g:i A');
     }
 
-    #[Computed]
-    public function assessmentWorkflowStatus(): string
+    public function getSectionLabelProperty(): string
     {
-        return $this->loadAssessment()?->workflowStatus() ?? AssessmentWorkflowStatus::DRAFT;
+        return self::SECTION;
     }
 
     #[Computed]
     public function reviewerCanApproveWorkflow(): bool
     {
         return AssessmentWorkflowStatus::reviewerCanApprove($this->assessmentWorkflowStatus);
-    }
-
-    #[Computed]
-    public function assessmentIsCompleted(): bool
-    {
-        return AssessmentWorkflowStatus::isCompleted($this->assessmentWorkflowStatus);
     }
 
     #[Computed]
@@ -154,8 +152,8 @@ class LicensedNurseEmarCompetency extends Component
             return false;
         }
 
-        return app(CompetencyAssessmentConfirmationService::class)
-            ->hasChangedSinceEmployeeConfirmation($assessment);
+        return app(\App\Services\CompetencySectionWorkflowService::class)
+            ->sectionHasChangedSinceEmployeeConfirmation($assessment, self::SECTION);
     }
 
     #[Computed]
@@ -166,34 +164,16 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $assessment = $this->loadAssessment();
-        if (! $assessment || blank($assessment->employee_signature_path)) {
+        if (! $assessment) {
+            return false;
+        }
+
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+        if (blank($sectionWorkflow->sectionEmployeeSignaturePath($assessment, self::SECTION))) {
             return false;
         }
 
         return ! $this->contentChangedSinceEmployeeConfirmation;
-    }
-
-    #[Computed]
-    public function showDraftSubmitActions(): bool
-    {
-        if ($this->evaluatorActionsDisabled || $this->assessmentLocked) {
-            return false;
-        }
-
-        if ($this->assessmentWorkflowStatus !== AssessmentWorkflowStatus::DRAFT) {
-            return false;
-        }
-
-        return ! $this->sectionIsSubmitted();
-    }
-
-    #[Computed]
-    public function summaryFieldsLocked(): bool
-    {
-        return $this->assessmentLocked
-            || $this->assessmentIsCompleted
-            || $this->reviewerCanApproveWorkflow
-            || AssessmentWorkflowStatus::employeeCanConfirm($this->assessmentWorkflowStatus);
     }
 
     #[Computed]
@@ -267,9 +247,16 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         if ($this->sectionIsSubmitted()) {
-            $this->setDraftSaveFeedback('error', 'This section has already been submitted.');
+            $assessment = $this->loadAssessment();
+            $returned = $assessment
+                && app(\App\Services\CompetencySectionWorkflowService::class)
+                    ->sectionWasReturnedToReviewer($assessment, self::SECTION);
 
-            return;
+            if (! $returned && $this->assessmentWorkflowStatus !== AssessmentWorkflowStatus::DRAFT) {
+                $this->setDraftSaveFeedback('error', 'This section has already been submitted.');
+
+                return;
+            }
         }
 
         $this->validate([
@@ -290,15 +277,16 @@ class LicensedNurseEmarCompetency extends Component
         try {
             $this->persistResponses('section_submit');
 
-            $workflowMessage = $this->submitCompetencyForEmployeeConfirmationIfReady();
-            $message = self::SECTION.' submitted successfully.';
-            if ($workflowMessage !== null) {
-                $message .= ' '.$workflowMessage;
-            } else {
-                $assessment = $this->loadAssessment();
-                if ($assessment && ! $this->competencyReadyForEmployeeConfirmation($assessment)) {
-                    $message .= ' Complete and submit the remaining competency sections to notify the employee.';
-                }
+            $employee = BPEmployee::query()
+                ->where('employee_num', $this->employeeNum)
+                ->first();
+
+            $message = self::SECTION.' submitted and sent to the employee for signature.';
+            if ($employee) {
+                $email = app(AssessmentConfirmationNotificationService::class)->resolveEmployeeEmail($employee);
+                $message .= $email
+                    ? ' The employee has been notified by email and will see a task on their dashboard.'
+                    : ' No employee email is on file, so no notification was sent.';
             }
 
             $this->setDraftSaveFeedback('success', $message);
@@ -393,7 +381,11 @@ class LicensedNurseEmarCompetency extends Component
 
     protected function persistDraftIfPossible(): void
     {
-        if ($this->assessmentLocked || ! $this->assessmentPeriodId || $this->evaluatorActionsDisabled) {
+        if (! $this->assessmentPeriodId || $this->evaluatorActionsDisabled) {
+            return;
+        }
+
+        if ($this->sectionItemReviewsLocked() && $this->reviewerSummaryCommentsLocked()) {
             return;
         }
 
@@ -402,7 +394,7 @@ class LicensedNurseEmarCompetency extends Component
 
     protected function guardPartGManualDraftSave(): bool
     {
-        if ($this->assessmentLocked) {
+        if ($this->sectionItemReviewsLocked() && $this->reviewerSummaryCommentsLocked()) {
             $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be saved.');
 
             return false;
@@ -418,7 +410,7 @@ class LicensedNurseEmarCompetency extends Component
             return false;
         }
 
-        if ($this->assessmentWorkflowStatus !== AssessmentWorkflowStatus::DRAFT) {
+        if ($this->reviewerSummaryCommentsLocked()) {
             $this->setDraftSaveFeedback('error', 'This assessment cannot be saved as a draft at the current workflow stage.');
 
             return false;
@@ -429,7 +421,7 @@ class LicensedNurseEmarCompetency extends Component
 
     protected function guardPartGSectionSubmit(): bool
     {
-        if ($this->assessmentLocked) {
+        if ($this->sectionItemReviewsLocked()) {
             $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be submitted.');
 
             return false;
@@ -497,10 +489,7 @@ class LicensedNurseEmarCompetency extends Component
 
     protected function cannotRate(): bool
     {
-        return $this->assessmentLocked
-            || $this->sectionExcluded
-            || $this->evaluatorActionsDisabled
-            || ! $this->assessmentPeriodId;
+        return $this->sectionItemReviewsLocked();
     }
 
     protected function persistRating(int $itemId, string $rating): void
@@ -539,10 +528,25 @@ class LicensedNurseEmarCompetency extends Component
                 'totalPoints' => 0,
                 'average' => '0',
                 'overallRating' => 'Excluded',
+                'pointsOfTotal' => PartGCompetencyScoring::pointsOfTotalLabel(0, 0),
             ];
         }
 
         $total = 0;
+        $rated = 0;
+
+        foreach ($this->items as $item) {
+            if ($item['isParent'] ?? false) {
+                continue;
+            }
+
+            $total++;
+        }
+
+        if (! $this->itemReviewsVisibleToCurrentUser()) {
+            return $this->hiddenItemReviewsSummaryMetrics($total);
+        }
+
         $rated = 0;
         $points = 0;
 
@@ -551,7 +555,6 @@ class LicensedNurseEmarCompetency extends Component
                 continue;
             }
 
-            $total++;
             $rating = PartGCompetencyScoring::normalizeItemRating($this->responses[$item['id']] ?? null);
 
             if ($rating === null) {
@@ -572,6 +575,7 @@ class LicensedNurseEmarCompetency extends Component
             'totalPoints' => $points,
             'average' => $rated > 0 ? number_format($average, 2, '.', '') : '—',
             'overallRating' => PartGCompetencyScoring::overallLabel($average, $rated),
+            'pointsOfTotal' => PartGCompetencyScoring::pointsOfTotalLabel($points, $total),
         ];
     }
 
@@ -748,23 +752,6 @@ class LicensedNurseEmarCompetency extends Component
         }
     }
 
-    protected function loadReviewerIdentityFromStorage(): void
-    {
-        $assessment = $this->loadAssessment();
-        if (! $assessment) {
-            return;
-        }
-
-        if (filled($assessment->reviewer_name)) {
-            $this->reviewerName = (string) $assessment->reviewer_name;
-        }
-
-        $storedTitle = trim((string) ($assessment->reviewer_title ?? ''));
-        if ($storedTitle !== '') {
-            $this->reviewerTitle = $storedTitle;
-        }
-    }
-
     protected function loadSectionCommentsFromStorage(): void
     {
         $assessment = $this->loadAssessment();
@@ -772,24 +759,35 @@ class LicensedNurseEmarCompetency extends Component
             return;
         }
 
-        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
-        $sectionComments = $snapshot['section_comments'][self::SECTION] ?? null;
+        $comments = app(\App\Services\CompetencySectionWorkflowService::class)
+            ->resolveSectionComments($assessment, self::SECTION);
 
-        if (is_array($sectionComments)) {
-            $this->summaryComments = (string) ($sectionComments['reviewer_comments'] ?? $this->summaryComments);
-            $this->employeeComments = (string) ($sectionComments['employee_comments'] ?? $this->employeeComments);
-        } else {
-            $this->summaryComments = (string) ($assessment->comments ?? $this->summaryComments);
-            $this->employeeComments = (string) ($assessment->employee_comments ?? $this->employeeComments);
-        }
+        $this->summaryComments = $comments['reviewer_comments'];
+        $this->employeeComments = $comments['employee_comments'];
+
+        $workflow = app(\App\Services\CompetencySectionWorkflowService::class)
+            ->sectionWorkflow($assessment, self::SECTION);
 
         $storedEmployeeName = trim((string) ($assessment->employee_name ?? ''));
         if ($storedEmployeeName !== '') {
             $this->employeeName = $storedEmployeeName;
         }
 
-        $this->reviewSignDate = optional($assessment->reviewer_signed_at ?? $assessment->review_date)->format('Y-m-d') ?? '';
-        $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
+        $this->reviewSignDate = $this->formatSectionSignDate($workflow['reviewer_signed_at'] ?? null);
+        $this->employeeSignDate = $this->formatSectionSignDate($workflow['employee_signed_at'] ?? null);
+    }
+
+    protected function formatSectionSignDate(mixed $value): string
+    {
+        if (! filled($value)) {
+            return '';
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse((string) $value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     public function sectionIsSubmitted(): bool
@@ -824,37 +822,6 @@ class LicensedNurseEmarCompetency extends Component
         $this->sectionExcluded = in_array(self::SECTION, $excluded, true);
     }
 
-    protected function resolveAuthenticatedReviewerTitle(?User $user = null): string
-    {
-        $user ??= Auth::user();
-        if (! $user instanceof User) {
-            return '';
-        }
-
-        $reviewerEmployee = $user->resolvedBpEmployee(['currentAssignment.position']);
-
-        return trim((string) (
-            $reviewerEmployee?->currentAssignment?->position?->title
-            ?? $reviewerEmployee?->position
-            ?? ''
-        ));
-    }
-
-    protected function refreshReviewerIdentityForPersist(): void
-    {
-        $user = Auth::user();
-        if ($user) {
-            if ($this->reviewerName === '') {
-                $this->reviewerName = (string) ($user->name ?? '');
-            }
-
-            $resolvedTitle = $this->resolveAuthenticatedReviewerTitle($user);
-            if ($resolvedTitle !== '') {
-                $this->reviewerTitle = $resolvedTitle;
-            }
-        }
-    }
-
     protected function loadAssessment(): ?EmployeeCompetencyAssessment
     {
         if (! $this->assessmentPeriodId) {
@@ -869,7 +836,7 @@ class LicensedNurseEmarCompetency extends Component
 
     protected function canPersist(): bool
     {
-        if ($this->assessmentLocked) {
+        if ($this->sectionItemReviewsLocked()) {
             return false;
         }
 
@@ -958,8 +925,61 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $this->syncAssessmentSummaryColumns($row);
-        $this->maybeResetCompetencyAssessmentForEmployeeReconfirmation();
+
+        if ($intent === 'section_submit') {
+            $this->finalizeIndependentSectionSubmission($row->fresh());
+        } else {
+            $this->maybeResetCompetencyAssessmentForEmployeeReconfirmation();
+
+            if ($intent === 'draft') {
+                $this->finalizeReturnedSectionDraftSave($row->fresh());
+            }
+        }
+
         $this->dispatchPartGSummaryUpdated();
+    }
+
+    protected function finalizeIndependentSectionSubmission(?EmployeeCompetencyAssessment $assessment): void
+    {
+        if (! $assessment) {
+            return;
+        }
+
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+        $wasResubmit = $sectionWorkflow->submitSectionForEmployeeConfirmation(
+            $assessment,
+            self::SECTION,
+            Auth::id(),
+        );
+
+        $employee = BPEmployee::query()
+            ->where('employee_num', $this->employeeNum)
+            ->first();
+
+        if (! $employee) {
+            return;
+        }
+
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
+        if ($wasResubmit) {
+            $notificationService->notifyCompetencySectionResubmittedToEmployee($assessment->fresh(), $employee, self::SECTION);
+        } else {
+            $notificationService->notifyCompetencySectionSubmittedToEmployee($assessment->fresh(), $employee, self::SECTION);
+        }
+
+        $this->regenerateCompetencySectionPdf($assessment->fresh(), self::SECTION);
+    }
+
+    protected function regenerateCompetencySectionPdf(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+    ): void {
+        try {
+            app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
+                ->persistCompetencySectionPdf($assessment, $sectionLabel);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**
@@ -974,9 +994,17 @@ class LicensedNurseEmarCompetency extends Component
         }
 
         $snapshot['section_comments'] ??= [];
+
+        $existingComments = $row
+            ? app(\App\Services\CompetencySectionWorkflowService::class)
+                ->resolveSectionComments($row, self::SECTION)
+            : ['reviewer_comments' => '', 'employee_comments' => ''];
+
+        $employeeComments = (string) ($existingComments['employee_comments'] ?? '');
+
         $snapshot['section_comments'][self::SECTION] = [
             'reviewer_comments' => $this->summaryComments,
-            'employee_comments' => $this->employeeComments,
+            'employee_comments' => $employeeComments,
             'review_date' => optional($row?->reviewer_signed_at ?? $row?->review_date)->format('Y-m-d'),
             'employee_signed_at' => optional($row?->employee_signed_at)->format('Y-m-d'),
         ];
@@ -1071,100 +1099,26 @@ class LicensedNurseEmarCompetency extends Component
     protected function maybeResetCompetencyAssessmentForEmployeeReconfirmation(): void
     {
         $assessment = $this->loadAssessment();
-        if (! $assessment || $assessment->workflowStatus() !== AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL) {
+        if (! $assessment) {
             return;
         }
 
-        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
-        $assessment->refresh();
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
 
-        if (! $confirmationService->hasChangedSinceEmployeeConfirmation($assessment)) {
+        if (! $sectionWorkflow->sectionHasChangedSinceEmployeeConfirmation($assessment, self::SECTION)) {
             return;
         }
 
-        $confirmationService->resetForEmployeeReconfirmation($assessment);
-        $assessment->save();
+        $wasResubmit = $sectionWorkflow->reviewerResubmitSection($assessment, self::SECTION);
 
         $employee = BPEmployee::query()
             ->where('employee_num', $this->employeeNum)
             ->first();
 
-        if ($employee) {
+        if ($employee && $wasResubmit) {
             app(AssessmentConfirmationNotificationService::class)
-                ->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee);
+                ->notifyCompetencySectionResubmittedToEmployee($assessment->fresh(), $employee, self::SECTION);
         }
-    }
-
-    protected function submitCompetencyForEmployeeConfirmationIfReady(): ?string
-    {
-        $assessment = EmployeeCompetencyAssessment::query()
-            ->where('employee_num', $this->employeeNum)
-            ->where('assessment_period_id', $this->assessmentPeriodId)
-            ->first();
-
-        if (! $assessment || ! $this->competencyReadyForEmployeeConfirmation($assessment)) {
-            return null;
-        }
-
-        $currentStatus = $assessment->workflowStatus();
-
-        if (! in_array($currentStatus, [AssessmentWorkflowStatus::DRAFT, AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL], true)) {
-            return null;
-        }
-
-        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
-        $wasResubmit = $confirmationService->prepareForEmployeeConfirmation($assessment);
-
-        $assessment->submitted_at = now();
-        $assessment->submitted_by = Auth::id();
-        $this->refreshReviewerIdentityForPersist();
-
-        if ($this->reviewerName !== '') {
-            $assessment->reviewer_name = $this->reviewerName;
-        }
-
-        if ($this->reviewerTitle !== '') {
-            $assessment->reviewer_title = $this->reviewerTitle;
-        }
-
-        $assessment->save();
-
-        $employee = BPEmployee::query()
-            ->where('employee_num', $this->employeeNum)
-            ->first();
-
-        if (! $employee) {
-            return 'The competency assessment was submitted for employee confirmation, but the employee record was not found so no notification was sent.';
-        }
-
-        app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
-            ->refreshCompetencyWorkflowState($assessment, regeneratePdf: false);
-
-        $emailSent = $wasResubmit
-            ? app(AssessmentConfirmationNotificationService::class)
-                ->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee)
-            : app(AssessmentConfirmationNotificationService::class)
-                ->notifyCompetencyAssessmentSubmitted($assessment, $employee);
-
-        return $emailSent
-            ? ($wasResubmit
-                ? 'The employee has been notified by email and will see an updated task at the top of their dashboard.'
-                : 'The employee has been notified by email and will see a task on their dashboard.')
-            : 'The competency assessment was submitted for employee confirmation. No employee email is on file, so no notification was sent.';
-    }
-
-    protected function competencyReadyForEmployeeConfirmation(EmployeeCompetencyAssessment $assessment): bool
-    {
-        $employee = BPEmployee::query()
-            ->with('currentAssignment')
-            ->where('employee_num', $this->employeeNum)
-            ->first();
-
-        if (! $employee) {
-            return false;
-        }
-
-        return CompetencyAssessmentWorkflowReadiness::isReadyForEmployeeConfirmation($assessment, $employee);
     }
 
     protected function upsertItemEntry(int $itemId, string $rating): void
@@ -1313,7 +1267,7 @@ class LicensedNurseEmarCompetency extends Component
     {
         foreach ($this->items as $item) {
             if ((int) $item['id'] === $itemId) {
-                return Str::limit(ltrim((string) $item['item'], '-'), 255);
+                return ltrim((string) $item['item'], '-');
             }
         }
 

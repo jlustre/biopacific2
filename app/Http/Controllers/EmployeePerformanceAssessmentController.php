@@ -24,6 +24,7 @@ use App\Support\EmployeeAssessmentPeriodCalculator;
 use App\Support\PartFPerformanceScoring;
 use App\Support\PartGCompetencyScoring;
 use App\Support\PreventsSelfAssessment;
+use App\Support\AssessmentEvaluatorAuthorization;
 use App\Support\AssessmentWorkflowStatus;
 use App\Services\EmployeeAssessmentPeriodService;
 use App\Services\CompetencyAssessmentPdfStorage;
@@ -36,7 +37,7 @@ use Illuminate\Http\JsonResponse;
 class EmployeePerformanceAssessmentController extends Controller {
     protected function denyIfSelfAssessing(string $employeeNum): ?JsonResponse
     {
-        return PreventsSelfAssessment::jsonDenyIfSelf(Auth::user(), $employeeNum);
+        return AssessmentEvaluatorAuthorization::jsonDenyIfUnauthorizedEvaluator(Auth::user(), $employeeNum);
     }
 
     protected function finalizedPerformanceAssessment(string $employeeNum, int $assessmentPeriodId): ?EmployeePerformanceAssessment
@@ -1441,20 +1442,37 @@ class EmployeePerformanceAssessmentController extends Controller {
             abort(404, 'Competency section not specified.');
         }
 
+        $assessment->refresh();
+
         $items = $this->competencySectionPdfItems($assessment, $sectionLabel);
         if ($items === []) {
             abort(404, 'No competency items found for this section.');
         }
 
-        $filePath = app(CompetencyAssessmentPdfStorage::class)->sectionPdfPath($assessment, $sectionLabel);
-        $this->generateCompetencySectionPdf($assessment, $sectionLabel, $filePath, $items);
-
+        $filePath = $this->persistCompetencySectionPdf($assessment, $sectionLabel);
         $filename = basename($filePath);
 
         return response()->file(Storage::disk('public')->path($filePath), [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
         ]);
+    }
+
+    public function persistCompetencySectionPdf(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+    ): string {
+        $items = $this->competencySectionPdfItems($assessment, $sectionLabel);
+        if ($items === []) {
+            return app(CompetencyAssessmentPdfStorage::class)->sectionPdfPath($assessment, $sectionLabel);
+        }
+
+        $filePath = app(CompetencyAssessmentPdfStorage::class)->sectionPdfPath($assessment, $sectionLabel);
+        $this->generateCompetencySectionPdf($assessment, $sectionLabel, $filePath, $items);
+
+        return $filePath;
     }
 
     /**
@@ -1484,6 +1502,7 @@ class EmployeePerformanceAssessmentController extends Controller {
             : [];
 
         $ratedCount = $this->competencySectionPdfRatedCount($sectionLabel, $items, $snapshot);
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
 
         $pdf = Pdf::loadView('admin.facilities.checklist.pdf.employee-competency-section-compact', [
             'assessment' => $assessment,
@@ -1496,11 +1515,13 @@ class EmployeePerformanceAssessmentController extends Controller {
             'sectionLabel' => $sectionLabel,
             'sectionSummary' => $sectionSummary,
             'sectionComments' => $sectionComments,
-            'signatureBlock' => $this->competencySectionPdfSignatureBlock($assessment, $sectionComments),
+            'signatureBlock' => $this->competencySectionPdfSignatureBlock($assessment, $sectionComments, $sectionLabel),
             'items' => $items,
             'ratedCount' => $ratedCount,
             'totalRateableOverride' => CompetencyAssessmentHistoryBuilder::rateableItemCountForSection($sectionLabel),
-            'assessmentStatusLabel' => AssessmentWorkflowStatus::label($assessment->workflowStatus()),
+            'assessmentStatusLabel' => AssessmentWorkflowStatus::label(
+                $sectionWorkflow->sectionStatus($assessment, $sectionLabel),
+            ),
         ])->setPaper('letter');
 
         app(CompetencyAssessmentPdfStorage::class)->deletePdfFile($filePath);
@@ -2168,25 +2189,42 @@ class EmployeePerformanceAssessmentController extends Controller {
     protected function competencySectionPdfSignatureBlock(
         EmployeeCompetencyAssessment $assessment,
         array $sectionComments,
+        string $sectionLabel,
     ): array {
-        $reviewDate = optional($assessment->reviewer_signed_at)->toDateString()
-            ?? optional($assessment->review_date)->toDateString()
-            ?? '';
-        $employeeSignDate = optional($assessment->employee_signed_at)->toDateString() ?? '';
-
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+        $signatureFields = $sectionWorkflow->sectionPdfSignatureFields($assessment, $sectionLabel);
+        $workflow = $sectionWorkflow->sectionWorkflow($assessment, $sectionLabel);
         $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
+
+        $reviewDate = $signatureFields['reviewer_signed_at'] ?? '';
+        if ($reviewDate === '' && $workflow === []) {
+            $reviewDate = optional($assessment->reviewer_signed_at)->toDateTimeString()
+                ?? optional($assessment->review_date)->toDateString()
+                ?? '';
+        }
+
+        $employeeSignDate = $signatureFields['employee_signed_at'] ?? '';
 
         return [
             'reviewer_comments' => trim((string) ($sectionComments['reviewer_comments'] ?? $assessment->comments ?? '')),
-            'employee_comments' => trim((string) ($sectionComments['employee_comments'] ?? $assessment->employee_comments ?? '')),
+            'employee_comments' => trim((string) (
+                $workflow['employee_comments']
+                ?? $sectionComments['employee_comments']
+                ?? $assessment->employee_comments
+                ?? ''
+            )),
             'reviewer_name' => trim((string) ($assessment->reviewer_name ?? '')),
             'reviewer_title' => trim((string) ($assessment->reviewer_title ?? '')),
             'review_sign_date' => $this->formatCompetencyPdfShortDate($reviewDate),
             'employee_name' => trim((string) ($assessment->employee_name ?? '')),
             'employee_title' => trim((string) ($assessment->employee_title ?? '')),
             'employee_sign_date' => $this->formatCompetencyPdfShortDate($employeeSignDate),
-            'employee_signature_image_path' => $confirmationService->signaturePublicPath($assessment->employee_signature_path),
-            'reviewer_signature_image_path' => $confirmationService->signaturePublicPath($assessment->reviewer_signature_path),
+            'employee_signature_image_path' => $confirmationService->signaturePublicPath(
+                $signatureFields['employee_signature_path'],
+            ),
+            'reviewer_signature_image_path' => $confirmationService->signaturePublicPath(
+                $signatureFields['reviewer_signature_path'],
+            ),
         ];
     }
 

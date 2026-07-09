@@ -93,7 +93,7 @@ trait PersistsPartGCompetencyItemEntries
             return null;
         }
 
-        return \Illuminate\Support\Str::limit(ltrim((string) $item->item, '-'), 255);
+        return ltrim((string) $item->item, '-');
     }
 
     /**
@@ -123,6 +123,10 @@ trait PersistsPartGCompetencyItemEntries
             ->first();
 
         if ($assessment) {
+            if (method_exists($this, 'hydrateReviewerIdentityFromAssessment')) {
+                $this->hydrateReviewerIdentityFromAssessment($assessment);
+            }
+
             $decodedResponses = $this->decodeCompetencyResponses($assessment->responses ?? null);
 
             if (method_exists($this, 'hydrateItemReviewMetaFromPayload')) {
@@ -147,10 +151,12 @@ trait PersistsPartGCompetencyItemEntries
             if (method_exists($this, 'loadSectionCommentsFromAssessment')) {
                 $this->loadSectionCommentsFromAssessment($assessment);
             } else {
-                $this->summaryComments = (string) ($assessment->comments ?? '');
-                $this->employeeComments = (string) ($assessment->employee_comments ?? '');
-                $this->reviewSignDate = $assessment->review_date?->format('Y-m-d') ?? '';
-                $this->employeeSignDate = $assessment->employee_signed_at?->format('Y-m-d') ?? '';
+                $comments = app(\App\Services\CompetencySectionWorkflowService::class)
+                    ->resolveSectionComments($assessment, static::SECTION);
+                $this->summaryComments = $comments['reviewer_comments'];
+                $this->employeeComments = $comments['employee_comments'];
+                $this->reviewSignDate = '';
+                $this->employeeSignDate = '';
             }
 
             if (method_exists($this, 'loadSectionExcludedFromAssessment')) {
@@ -180,6 +186,10 @@ trait PersistsPartGCompetencyItemEntries
             if (PartGCompetencyScoring::isValidItemRating($rating)) {
                 $this->responses[$sourceItemId] = $rating;
             }
+        }
+
+        if (method_exists($this, 'initializeReturnedSectionResubmitState')) {
+            $this->initializeReturnedSectionResubmitState();
         }
     }
 
@@ -323,7 +333,7 @@ trait PersistsPartGCompetencyItemEntries
 
     public function updatedResponses(mixed $value = null, ?string $key = null): void
     {
-        if ($this->assessmentLocked || ($this->sectionExcluded ?? false)) {
+        if ($this->sectionItemReviewsLocked()) {
             return;
         }
 
@@ -356,7 +366,7 @@ trait PersistsPartGCompetencyItemEntries
 
     public function setResponse(int $itemId, string $rating): void
     {
-        if ($this->assessmentLocked || ($this->sectionExcluded ?? false)) {
+        if ($this->sectionItemReviewsLocked()) {
             return;
         }
 
@@ -417,7 +427,12 @@ trait PersistsPartGCompetencyItemEntries
             return;
         }
 
-        $this->dispatch($eventMap[$classBase], responses: $this->responses);
+        $this->dispatch(
+            $eventMap[$classBase],
+            responses: (method_exists($this, 'itemReviewsVisibleToCurrentUser') && ! $this->itemReviewsVisibleToCurrentUser())
+                ? []
+                : $this->responses,
+        );
     }
 
     /**

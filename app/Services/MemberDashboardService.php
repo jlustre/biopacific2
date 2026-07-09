@@ -17,6 +17,7 @@ use App\Models\JobApplication;
 use App\Models\User;
 use App\Models\WebmasterContact;
 use App\Support\AssessmentWorkflowStatus;
+use App\Support\CompetencyAssessmentWorkflowReadiness;
 use App\Support\MemberPortalLayout;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -680,7 +681,7 @@ class MemberDashboardService
         $documentsNeeded = $complianceEvaluation['missing'];
         $signaturesNeeded = $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems);
         $reviewerAssessmentTodos = $this->buildReviewerAssessmentTodos($user);
-        $employeeAssessmentTodos = $this->buildEmployeeAssessmentConfirmationTodos($bpEmployee);
+        $employeeAssessmentTodos = $this->buildEmployeeAssessmentConfirmationTodos($user, $bpEmployee);
         $documentCompliance = $bpEmployee
             ? app(DocumentComplianceService::class)->forEmployee($bpEmployee)
             : [
@@ -1512,6 +1513,16 @@ class MemberDashboardService
 
         if ($assessment->employee_signed_at) {
             return $this->trainingStatusRow('completed', 'Signed & complete', $today, $dueAt);
+        }
+
+        $workflowStatus = AssessmentWorkflowStatus::normalize((string) ($assessment->status ?? ''));
+
+        if ($workflowStatus === AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION) {
+            return $this->trainingStatusRow('pending_signature', 'Signature required', $today, $dueAt);
+        }
+
+        if ($workflowStatus === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL) {
+            return $this->trainingStatusRow('in_progress', 'Awaiting reviewer approval', $today, $dueAt);
         }
 
         $rawStatus = (string) ($assessment->status ?? '');
@@ -2794,53 +2805,145 @@ class MemberDashboardService
      *
      * @return list<array<string, mixed>>
      */
-    protected function buildEmployeeAssessmentConfirmationTodos(?BPEmployee $employee): array
+    public function pendingEmployeeAssessmentConfirmationTodos(User $user, ?BPEmployee $employee = null): array
     {
-        if (! $employee) {
-            return [];
-        }
+        return $this->buildEmployeeAssessmentConfirmationTodos($user, $employee);
+    }
 
-        $notificationService = app(AssessmentConfirmationNotificationService::class);
-        $todos = [];
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function pendingReviewerAssessmentTasks(User $user): array
+    {
+        $reviewerTodos = [];
 
-        $competencyPending = EmployeeCompetencyAssessment::query()
-            ->where('employee_num', $employee->employee_num)
-            ->whereIn('status', [
-                AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
-                'for_employee_signature',
-            ])
-            ->with('period')
-            ->latest('updated_at')
-            ->limit(5)
-            ->get();
-
-        foreach ($competencyPending as $assessment) {
-            $periodLabel = $this->formatPeriodLabel($assessment->period);
-            $isResubmit = filled($assessment->submitted_at)
-                && (
-                    filled(trim((string) ($assessment->employee_comments ?? '')))
-                    || $assessment->updated_at?->gt($assessment->submitted_at)
-                );
-
-            $todos[] = $this->todoItem(
-                'confirm-competency-' . $assessment->id,
-                $isResubmit ? 'Review updated competency assessment' : 'Confirm competency assessment',
-                $isResubmit
-                    ? ('Your reviewer updated your competency assessment' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign again.')
-                    : ('Review and sign your competency assessment' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
-                'competency-confirmation',
-                'high',
-                $notificationService->buildEmployeeChecklistUrl(
-                    $employee,
-                    'partG',
-                    (int) $assessment->assessment_period_id
-                ),
+        foreach ($this->buildReviewerAssessmentTodos($user) as $reviewTodo) {
+            $reviewerTodos[] = $this->todoItem(
+                $reviewTodo['id'],
+                $reviewTodo['title'],
+                $reviewTodo['description'],
+                'assessment-review',
+                $reviewTodo['priority'],
+                $reviewTodo['action_url'] ?? route('employment.portal'),
                 false
             );
         }
 
+        return $reviewerTodos;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function resolveEmployeeNumbersForUser(User $user, ?BPEmployee $employee = null): array
+    {
+        $employeeNums = [];
+
+        if ($employee && filled($employee->employee_num)) {
+            $employeeNums[] = (string) $employee->employee_num;
+        }
+
+        if (User::bpEmployeesTableHasUserId()) {
+            $employeeNums = array_merge(
+                $employeeNums,
+                BPEmployee::query()
+                    ->where('user_id', $user->id)
+                    ->pluck('employee_num')
+                    ->map(fn ($num) => (string) $num)
+                    ->all()
+            );
+        }
+
+        if (filled($user->email)) {
+            $employeeNums = array_merge(
+                $employeeNums,
+                BPEmployee::query()
+                    ->where('email', $user->email)
+                    ->pluck('employee_num')
+                    ->map(fn ($num) => (string) $num)
+                    ->all()
+            );
+        }
+
+        return array_values(array_unique(array_filter($employeeNums)));
+    }
+
+    /**
+     * Dashboard tasks for employees who must confirm or re-confirm an assessment.
+     *
+     * @return list<array<string, mixed>>
+     */
+    protected function buildEmployeeAssessmentConfirmationTodos(User $user, ?BPEmployee $employee = null): array
+    {
+        $employeeNums = $this->resolveEmployeeNumbersForUser($user, $employee);
+        if ($employeeNums === []) {
+            return [];
+        }
+
+        $employeesByNum = BPEmployee::query()
+            ->whereIn('employee_num', $employeeNums)
+            ->get()
+            ->keyBy(fn (BPEmployee $row) => (string) $row->employee_num);
+
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+
+        $competencyAssessments = EmployeeCompetencyAssessment::query()
+            ->whereIn('employee_num', $employeeNums)
+            ->with('period')
+            ->latest('updated_at')
+            ->get();
+
+        foreach ($competencyAssessments as $assessment) {
+            $sectionWorkflow->syncSubmittedSectionsWithoutWorkflow($assessment);
+        }
+
+        $competencyAssessments->each->refresh();
+
+        $todos = [];
+
+        foreach ($sectionWorkflow->pendingEmployeeConfirmationItems($competencyAssessments) as $item) {
+            $assessment = $item['assessment'];
+            $sectionLabel = $item['section'];
+
+            $assessmentEmployee = $employeesByNum->get((string) $assessment->employee_num)
+                ?? $employee
+                ?? $employeesByNum->first();
+
+            if (! $assessmentEmployee) {
+                continue;
+            }
+
+            $periodLabel = $this->formatPeriodLabel($assessment->period);
+            $sectionState = $sectionWorkflow->sectionWorkflow($assessment, $sectionLabel);
+            $isResubmit = filled($sectionState['returned_at'] ?? null)
+                || (
+                    filled($sectionState['submitted_at'] ?? null)
+                    && filled($sectionState['employee_signed_at'] ?? null)
+                );
+
+            $todos[] = array_merge($this->todoItem(
+                'confirm-competency-' . $assessment->id . '-' . md5($sectionLabel),
+                $isResubmit
+                    ? 'Sign: Review updated ' . $sectionLabel
+                    : 'Sign: Confirm ' . $sectionLabel,
+                $isResubmit
+                    ? ('Your reviewer updated ' . $sectionLabel . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign again.')
+                    : ('Review and sign ' . $sectionLabel . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
+                'competency-confirmation',
+                'high',
+                $sectionWorkflow->buildSectionChecklistUrl(
+                    $assessmentEmployee,
+                    (int) $assessment->assessment_period_id,
+                    $sectionLabel,
+                ),
+                false
+            ), ['action' => 'sign']);
+        }
+
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
+
         $performancePending = EmployeePerformanceAssessment::query()
-            ->where('employee_num', $employee->employee_num)
+            ->whereIn('employee_num', $employeeNums)
             ->whereIn('status', [
                 AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
                 'for_employee_signature',
@@ -2848,10 +2951,17 @@ class MemberDashboardService
             ->whereNull('acknowledge_dt')
             ->with('period')
             ->latest('updated_at')
-            ->limit(5)
             ->get();
 
         foreach ($performancePending as $assessment) {
+            $assessmentEmployee = $employeesByNum->get((string) $assessment->employee_num)
+                ?? $employee
+                ?? $employeesByNum->first();
+
+            if (! $assessmentEmployee) {
+                continue;
+            }
+
             $periodLabel = $this->formatPeriodLabel($assessment->period);
             $isResubmit = filled($assessment->review_dt)
                 && (
@@ -2859,24 +2969,40 @@ class MemberDashboardService
                     || $assessment->updated_at?->gt($assessment->review_dt)
                 );
 
-            $todos[] = $this->todoItem(
+            $todos[] = array_merge($this->todoItem(
                 'confirm-performance-' . $assessment->id,
-                $isResubmit ? 'Review updated performance appraisal' : 'Confirm performance appraisal',
+                $isResubmit ? 'Sign: Review updated performance appraisal' : 'Sign: Confirm performance appraisal',
                 $isResubmit
                     ? ('Your reviewer updated your performance appraisal' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign again.')
                     : ('Review and acknowledge your performance appraisal' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
                 'performance-confirmation',
                 'high',
                 $notificationService->buildEmployeeChecklistUrl(
-                    $employee,
+                    $assessmentEmployee,
                     'partF',
                     (int) $assessment->assessment_period_id
                 ),
                 false
-            );
+            ), ['action' => 'sign']);
         }
 
         return $todos;
+    }
+
+    protected function competencyAssessmentTaskLabel(EmployeeCompetencyAssessment $assessment): string
+    {
+        $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
+        $sections = collect($snapshot['submitted_section_labels'] ?? [])
+            ->map(fn ($label) => trim((string) $label))
+            ->filter(fn (string $label) => $label !== '')
+            ->unique()
+            ->values();
+
+        if ($sections->count() === 1) {
+            return $sections->first();
+        }
+
+        return 'competency assessment';
     }
 
     /**
@@ -2887,23 +3013,13 @@ class MemberDashboardService
     protected function buildReviewerAssessmentTodos(User $user): array
     {
         $todos = [];
-        $notificationService = app(AssessmentConfirmationNotificationService::class);
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
 
         $competencyAssessments = EmployeeCompetencyAssessment::query()
             ->where('submitted_by', $user->id)
-            ->where(function ($query) {
-                $query->whereIn('status', [
-                    AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
-                    'for_reviewer_signature',
-                ])
-                    ->orWhere(function ($nested) {
-                        $nested->where('status', AssessmentWorkflowStatus::DRAFT)
-                            ->whereNotNull('submitted_at');
-                    });
-            })
             ->with('period')
             ->latest('updated_at')
-            ->limit(10)
+            ->limit(20)
             ->get();
 
         $employeesByNum = BPEmployee::query()
@@ -2912,33 +3028,70 @@ class MemberDashboardService
             ->keyBy('employee_num');
 
         foreach ($competencyAssessments as $assessment) {
+            $sectionWorkflow->syncSubmittedSectionsWithoutWorkflow($assessment);
+        }
+
+        $competencyAssessments->each->refresh();
+
+        foreach ($sectionWorkflow->pendingReviewerApprovalItems($competencyAssessments, $user->id) as $item) {
+            $assessment = $item['assessment'];
+            $sectionLabel = $item['section'];
             $employee = $employeesByNum->get($assessment->employee_num);
+
             if (! $employee) {
                 continue;
             }
 
             $periodLabel = $this->formatPeriodLabel($assessment->period);
             $employeeLabel = $employee->formalName();
-            $isApproval = $assessment->workflowStatus() === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
 
             $todos[] = [
-                'id' => $isApproval
-                    ? 'review-competency-approve-' . $assessment->id
-                    : 'review-competency-returned-' . $assessment->id,
-                'title' => $isApproval ? 'Approve competency assessment' : 'Update competency assessment',
-                'description' => $isApproval
-                    ? ($employeeLabel . ' signed their competency assessment' . ($periodLabel ? " ({$periodLabel})" : '') . '. Review and sign to complete.')
-                    : ($employeeLabel . ' sent their competency assessment back for updates' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
+                'id' => 'review-competency-approve-' . $assessment->id . '-' . md5($sectionLabel),
+                'title' => 'Approve: ' . $sectionLabel,
+                'description' => $employeeLabel . ' signed ' . $sectionLabel
+                    . ($periodLabel ? " ({$periodLabel})" : '')
+                    . '. Review and sign to complete this section.',
                 'type' => 'competency-review',
                 'priority' => 'high',
                 'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
-                'action_url' => $notificationService->buildReviewerChecklistUrl(
+                'action_url' => $sectionWorkflow->buildReviewerSectionChecklistUrl(
                     $employee,
-                    'partG',
-                    (int) $assessment->assessment_period_id
+                    (int) $assessment->assessment_period_id,
+                    $sectionLabel,
                 ),
             ];
         }
+
+        foreach ($sectionWorkflow->sectionsReturnedToReviewerItems($competencyAssessments, $user->id) as $item) {
+            $assessment = $item['assessment'];
+            $sectionLabel = $item['section'];
+            $employee = $employeesByNum->get($assessment->employee_num);
+
+            if (! $employee) {
+                continue;
+            }
+
+            $periodLabel = $this->formatPeriodLabel($assessment->period);
+            $employeeLabel = $employee->formalName();
+
+            $todos[] = [
+                'id' => 'review-competency-returned-' . $assessment->id . '-' . md5($sectionLabel),
+                'title' => 'Update: ' . $sectionLabel,
+                'description' => $employeeLabel . ' sent ' . $sectionLabel . ' back for updates'
+                    . ($periodLabel ? " ({$periodLabel})" : '')
+                    . '.',
+                'type' => 'competency-review',
+                'priority' => 'high',
+                'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
+                'action_url' => $sectionWorkflow->buildReviewerSectionChecklistUrl(
+                    $employee,
+                    (int) $assessment->assessment_period_id,
+                    $sectionLabel,
+                ),
+            ];
+        }
+
+        $notificationService = app(AssessmentConfirmationNotificationService::class);
 
         $performanceAssessments = EmployeePerformanceAssessment::query()
             ->where('assessed_by', $user->id)

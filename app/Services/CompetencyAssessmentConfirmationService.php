@@ -145,6 +145,40 @@ class CompetencyAssessmentConfirmationService
         );
     }
 
+    public function storeSectionEmployeeSignature(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+        ?string $dataUrl,
+        ?UploadedFile $uploadedFile,
+        ?string $existingPath = null,
+    ): string {
+        return $this->storeSignatureImage(
+            $assessment,
+            $dataUrl,
+            $uploadedFile,
+            'employee',
+            $existingPath,
+            $this->sectionSignatureDirectory($assessment, $sectionLabel),
+        );
+    }
+
+    public function storeSectionReviewerSignature(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+        ?string $dataUrl,
+        ?UploadedFile $uploadedFile,
+        ?string $existingPath = null,
+    ): string {
+        return $this->storeSignatureImage(
+            $assessment,
+            $dataUrl,
+            $uploadedFile,
+            'reviewer',
+            $existingPath,
+            $this->sectionSignatureDirectory($assessment, $sectionLabel),
+        );
+    }
+
     public function signaturePublicPath(?string $relativePath): ?string
     {
         if (! filled($relativePath) || ! Storage::disk('public')->exists($relativePath)) {
@@ -160,8 +194,9 @@ class CompetencyAssessmentConfirmationService
         ?UploadedFile $uploadedFile,
         string $role,
         ?string $existingPath,
+        ?string $directory = null,
     ): string {
-        $directory = 'competency-assessments/'.$assessment->employee_num.'/signatures';
+        $directory ??= 'competency-assessments/'.$assessment->employee_num.'/signatures';
 
         if ($uploadedFile) {
             if (filled($existingPath)) {
@@ -194,6 +229,13 @@ class CompetencyAssessmentConfirmationService
         }
 
         throw new \InvalidArgumentException('A drawn or uploaded signature is required.');
+    }
+
+    protected function sectionSignatureDirectory(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+    ): string {
+        return 'competency-assessments/'.$assessment->employee_num.'/sections/'.Str::slug($sectionLabel).'/signatures';
     }
 
     protected function formatSnapshotDate(mixed $value): ?string

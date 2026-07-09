@@ -184,6 +184,20 @@ class DashboardController extends Controller
         ]));
     }
 
+    public function memberTasks()
+    {
+        $user = Auth::user();
+
+        return view('dashboard.member.tasks', array_merge($this->memberPortalContext($user), [
+            'portalActive' => 'tasks',
+            'portalTitle' => 'My Tasks | Bio Pacific HR Management',
+            'portalEyebrow' => 'My Tasks',
+            'portalPageTitle' => 'My Tasks',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+        ]));
+    }
+
     public function memberCertifications()
     {
         $user = Auth::user();

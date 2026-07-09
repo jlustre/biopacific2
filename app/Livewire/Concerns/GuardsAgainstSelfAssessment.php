@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Concerns;
 
+use App\Support\AssessmentEvaluatorAuthorization;
 use App\Support\PreventsSelfAssessment;
 use Illuminate\Support\Js;
 
@@ -15,8 +16,10 @@ trait GuardsAgainstSelfAssessment
             return;
         }
 
-        $this->evaluatorActionsDisabled = PreventsSelfAssessment::isSelfAssessment(
-            auth()->user(),
+        $user = auth()->user();
+
+        $this->evaluatorActionsDisabled = AssessmentEvaluatorAuthorization::isEvaluatorActionBlocked(
+            $user,
             $this->employeeNum
         );
     }
@@ -27,7 +30,7 @@ trait GuardsAgainstSelfAssessment
             return false;
         }
 
-        $message ??= PreventsSelfAssessment::DEFAULT_MESSAGE;
+        $message ??= $this->evaluatorActionDeniedMessage();
 
         $this->js('alert('.Js::from($message).')');
 
@@ -38,5 +41,17 @@ trait GuardsAgainstSelfAssessment
         }
 
         return true;
+    }
+
+    protected function evaluatorActionDeniedMessage(): string
+    {
+        if (
+            property_exists($this, 'employeeNum')
+            && PreventsSelfAssessment::isSelfAssessment(auth()->user(), $this->employeeNum)
+        ) {
+            return PreventsSelfAssessment::DEFAULT_MESSAGE;
+        }
+
+        return AssessmentEvaluatorAuthorization::UNAUTHORIZED_MESSAGE;
     }
 }

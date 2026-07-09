@@ -39,7 +39,9 @@
         .field-box { min-height: 64px; background: #f1f5f9; padding: 8px; }
         .field-box.employee { background: #eff6ff; color: #1d4ed8; }
         .signature-value { min-height: 52px; background: #fff; padding: 8px 6px 28px; vertical-align: bottom; }
-        .signature-image { max-height: 42px; max-width: 180px; display: block; }
+        .signature-value--name { vertical-align: middle; }
+        .signature-image-wrap { text-align: center; margin-top: 4px; }
+        .signature-image { max-height: 42px; max-width: 180px; display: inline-block; }
         .signature-label { font-size: 8px; font-weight: bold; background: #f8fafc; padding: 4px 6px; }
         .pdf-header { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
         .pdf-header td { vertical-align: middle; }
@@ -118,6 +120,8 @@
             : $numberedItems
                 ->filter(fn (array $item) => empty($item['is_parent']) && empty($item['is_section_comment']))
                 ->count();
+        $competencyEarnedPoints = (int) ($sectionSummary['total_score'] ?? 0);
+        $competencyMaxPoints = \App\Support\PartGCompetencyScoring::maxPointsForScorableItems($totalRateableCount);
         $performanceOverallCode = $isPerformanceAssessment
             ? ($overallRatingCode ?? \App\Support\PartFPerformanceScoring::overallRatingCode(
                 $sectionSummary['overall_rating'] ?? null,
@@ -203,7 +207,13 @@
             </tr>
             <tr>
                 <td>{{ ($ratedCount ?? 0).'/'.$totalRateableCount }}</td>
-                <td>{{ $sectionSummary['total_score'] ?? 0 }}</td>
+                <td>
+                    @if($isPerformanceAssessment)
+                    {{ $sectionSummary['total_score'] ?? 0 }}
+                    @else
+                    {{ $competencyEarnedPoints.'/'.$competencyMaxPoints }}
+                    @endif
+                </td>
                 <td>{{ is_numeric($sectionSummary['average_score'] ?? null) ? number_format((float) $sectionSummary['average_score'], 2) : ($sectionSummary['average_score'] ?? '0.00') }}</td>
                 <td>
                     @if($isPerformanceAssessment && $performanceOverallCode !== '')
@@ -389,10 +399,12 @@
                 <td class="signature-label">REVIEW SIGN DATE</td>
             </tr>
             <tr>
-                <td class="signature-value">
+                <td class="signature-value signature-value--name">
                     <div>{{ $signatureBlock['reviewer_name'] ?? '' }}</div>
                     @if(!empty($signatureBlock['reviewer_signature_image_path']))
-                    <img src="{{ $signatureBlock['reviewer_signature_image_path'] }}" alt="Reviewer signature" class="signature-image">
+                    <div class="signature-image-wrap">
+                        <img src="{{ $signatureBlock['reviewer_signature_image_path'] }}" alt="Reviewer signature" class="signature-image">
+                    </div>
                     @endif
                 </td>
                 <td class="signature-value">{{ $signatureBlock['reviewer_title'] ?? '' }}</td>
@@ -404,10 +416,12 @@
                 <td class="signature-label">EMPLOYEE SIGN DATE</td>
             </tr>
             <tr>
-                <td class="signature-value">
+                <td class="signature-value signature-value--name">
                     <div>{{ $signatureBlock['employee_name'] ?? '' }}</div>
                     @if(!empty($signatureBlock['employee_signature_image_path']))
-                    <img src="{{ $signatureBlock['employee_signature_image_path'] }}" alt="Employee signature" class="signature-image">
+                    <div class="signature-image-wrap">
+                        <img src="{{ $signatureBlock['employee_signature_image_path'] }}" alt="Employee signature" class="signature-image">
+                    </div>
                     @endif
                 </td>
                 <td class="signature-value">{{ $signatureBlock['employee_title'] ?? '' }}</td>

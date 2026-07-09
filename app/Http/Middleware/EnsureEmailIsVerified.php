@@ -71,6 +71,8 @@ class EnsureEmailIsVerified
             'hr-portal.index',
             'admin.facility.dashboard',
             'member.documents',
+            'member.tasks',
+            'member.tasks.*',
             'member.certifications',
             'member.trainings',
             'member.news-events.index',

@@ -232,6 +232,74 @@ class EmployeeDocumentRequirementsService
         $position->requiredUploadTypes()->sync($payload);
     }
 
+    /**
+     * Add document requirements without removing existing assignments.
+     *
+     * @param  list<int>  $positionIds
+     * @param  list<int>  $uploadTypeIds
+     */
+    public function addRequirementsToPositions(array $positionIds, array $uploadTypeIds): int
+    {
+        $pairs = 0;
+
+        foreach (Position::query()->whereIn('id', $positionIds)->get() as $position) {
+            $existingIds = $position->requiredUploadTypes()
+                ->pluck('upload_types.id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $merged = array_values(array_unique(array_merge($existingIds, $uploadTypeIds)));
+            $this->syncPositionRequirements($position, $merged);
+            $pairs += count($uploadTypeIds);
+        }
+
+        return $pairs;
+    }
+
+    /**
+     * Remove selected document requirements from positions.
+     *
+     * @param  list<int>  $positionIds
+     * @param  list<int>  $uploadTypeIds
+     */
+    public function removeRequirementsFromPositions(array $positionIds, array $uploadTypeIds): int
+    {
+        $removed = 0;
+        $removeIds = collect($uploadTypeIds)->map(fn ($id) => (int) $id)->unique()->values();
+
+        foreach (Position::query()->whereIn('id', $positionIds)->get() as $position) {
+            $remaining = $position->requiredUploadTypes()
+                ->pluck('upload_types.id')
+                ->map(fn ($id) => (int) $id)
+                ->diff($removeIds)
+                ->values()
+                ->all();
+
+            $this->syncPositionRequirements($position, $remaining);
+            $removed += $removeIds->count();
+        }
+
+        return $removed;
+    }
+
+    /**
+     * Replace all requirements on each position with the given document set.
+     *
+     * @param  list<int>  $positionIds
+     * @param  list<int>  $uploadTypeIds
+     */
+    public function replaceRequirementsForPositions(array $positionIds, array $uploadTypeIds): int
+    {
+        $count = 0;
+
+        foreach (Position::query()->whereIn('id', $positionIds)->get() as $position) {
+            $this->syncPositionRequirements($position, $uploadTypeIds);
+            $count++;
+        }
+
+        return $count;
+    }
+
     public function copyRequirementsToPositions(Position $source, iterable $targetPositions): int
     {
         $sourceIds = $source->requiredUploadTypes()

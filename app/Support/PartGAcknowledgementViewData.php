@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\BPEmployee;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Models\User;
-use App\Services\CompetencyAssessmentConfirmationService;
+use App\Services\CompetencySectionWorkflowService;
 use Illuminate\Support\Carbon;
 
 class PartGAcknowledgementViewData
@@ -17,8 +17,9 @@ class PartGAcknowledgementViewData
         string $employeeNum,
         ?int $assessmentPeriodId,
         ?User $user = null,
+        ?string $sectionLabel = null,
     ): ?array {
-        if (! $assessmentPeriodId) {
+        if (! $assessmentPeriodId || blank($sectionLabel)) {
             return null;
         }
 
@@ -36,36 +37,69 @@ class PartGAcknowledgementViewData
             ->first();
 
         $user ??= auth()->user();
-        $evaluatorActionsDisabled = PreventsSelfAssessment::isSelfAssessment($user, $employeeNum);
+        $evaluatorActionsDisabled = AssessmentEvaluatorAuthorization::isEvaluatorActionBlocked($user, $employeeNum);
 
-        $workflowStatus = $assessment?->workflowStatus() ?? AssessmentWorkflowStatus::DRAFT;
-        $assessmentLocked = AssessmentWorkflowStatus::isLocked($workflowStatus);
+        $sectionWorkflow = app(CompetencySectionWorkflowService::class);
+
+        if ($assessment) {
+            $sectionWorkflow->syncSubmittedSectionsWithoutWorkflow($assessment);
+            $assessment->refresh();
+        }
+
+        $workflowStatus = $assessment
+            ? $sectionWorkflow->sectionStatus($assessment, $sectionLabel)
+            : AssessmentWorkflowStatus::DRAFT;
+
+        $sectionState = $assessment
+            ? $sectionWorkflow->sectionWorkflow($assessment, $sectionLabel)
+            : [];
+
         $employeeCanConfirm = AssessmentWorkflowStatus::employeeCanConfirm($workflowStatus);
         $reviewerCanApprove = AssessmentWorkflowStatus::reviewerCanApprove($workflowStatus);
 
-        $confirmationService = app(CompetencyAssessmentConfirmationService::class);
+        $assessmentLocked = AssessmentWorkflowStatus::isCompleted($workflowStatus)
+            || (
+                $assessment
+                && AssessmentWorkflowStatus::isCompleted($assessment->workflowStatus())
+                && (
+                    $sectionWorkflow->sectionIsSubmitted($assessment, $sectionLabel)
+                    || $sectionWorkflow->sectionWorkflow($assessment, $sectionLabel) !== []
+                )
+            );
+
         $contentChangedSinceEmployeeConfirmation = $assessment
             && $reviewerCanApprove
-            && $confirmationService->hasChangedSinceEmployeeConfirmation($assessment);
+            && $sectionWorkflow->sectionHasChangedSinceEmployeeConfirmation($assessment, $sectionLabel);
+
+        $returnedToReviewer = $assessment
+            && $sectionWorkflow->sectionWasReturnedToReviewer($assessment, $sectionLabel);
+
+        $employeeSignaturePath = (string) ($sectionState['employee_signature_path'] ?? '');
 
         $canApprove = $reviewerCanApprove
             && ! $evaluatorActionsDisabled
             && ! $contentChangedSinceEmployeeConfirmation
-            && filled($assessment?->employee_signature_path);
+            && filled($employeeSignaturePath);
 
-        $readyForEmployeeConfirmation = $assessment instanceof EmployeeCompetencyAssessment
-            && self::isReadyForEmployeeConfirmation($assessment, $employee);
+        $canResubmitForEmployeeConfirmation = ($reviewerCanApprove && ! $evaluatorActionsDisabled && $contentChangedSinceEmployeeConfirmation)
+            || (
+                $workflowStatus === AssessmentWorkflowStatus::DRAFT
+                && ! $evaluatorActionsDisabled
+                && $assessment
+                && $sectionWorkflow->sectionWasReturnedToReviewer($assessment, $sectionLabel)
+            );
 
-        $canSubmitForEmployeeConfirmation = $workflowStatus === AssessmentWorkflowStatus::DRAFT
-            && ! $evaluatorActionsDisabled
-            && $readyForEmployeeConfirmation;
+        $employeeSignedAt = $sectionState['employee_signed_at'] ?? null;
+        $reviewerSignedAt = $sectionState['reviewer_signed_at'] ?? null;
 
-        $employeeSignedAt = $assessment?->employee_signed_at;
-        $reviewerSignedAt = $assessment?->reviewer_signed_at ?? $assessment?->review_date;
+        $sectionComments = $assessment
+            ? $sectionWorkflow->resolveSectionComments($assessment, $sectionLabel)
+            : ['employee_comments' => '', 'reviewer_comments' => ''];
 
         return [
             'employee' => $employee,
             'assessment' => $assessment,
+            'sectionLabel' => $sectionLabel,
             'evaluatorActionsDisabled' => $evaluatorActionsDisabled,
             'workflowStatus' => $workflowStatus,
             'assessmentLocked' => $assessmentLocked,
@@ -73,25 +107,24 @@ class PartGAcknowledgementViewData
             'reviewerCanApprove' => $reviewerCanApprove,
             'contentChangedSinceEmployeeConfirmation' => $contentChangedSinceEmployeeConfirmation,
             'canApprove' => $canApprove,
-            'readyForEmployeeConfirmation' => $readyForEmployeeConfirmation,
-            'canSubmitForEmployeeConfirmation' => $canSubmitForEmployeeConfirmation,
-            'statusLabel' => AssessmentWorkflowStatus::label($workflowStatus),
-            'employeeAckDateValue' => $employeeSignedAt
+            'canResubmitForEmployeeConfirmation' => $canResubmitForEmployeeConfirmation,
+            'returnedToReviewer' => $returnedToReviewer,
+            'statusLabel' => $assessment
+                ? $sectionWorkflow->sectionDisplayStatusLabel(
+                    $assessment,
+                    $sectionLabel,
+                    $sectionWorkflow->sectionIsSubmitted($assessment, $sectionLabel),
+                )
+                : 'Not Started',
+            'employeeAckDateValue' => filled($employeeSignedAt)
                 ? Carbon::parse($employeeSignedAt)->format('M j, Y g:i A')
                 : '',
             'reviewerSignDateValue' => filled($reviewerSignedAt)
                 ? Carbon::parse($reviewerSignedAt)->format('M j, Y g:i A')
                 : '',
-            'employeeCommentsValue' => (string) ($assessment?->employee_comments ?? ''),
+            'employeeCommentsValue' => (string) ($sectionComments['employee_comments'] ?? ''),
             'employeeFullName' => $employee->formattedFullName(),
-            'confirmationSnapshot' => $assessment?->employee_confirmation_snapshot,
+            'confirmationSnapshot' => $sectionState['employee_confirmation_snapshot'] ?? null,
         ];
-    }
-
-    public static function isReadyForEmployeeConfirmation(
-        EmployeeCompetencyAssessment $assessment,
-        BPEmployee $employee,
-    ): bool {
-        return CompetencyAssessmentWorkflowReadiness::isReadyForEmployeeConfirmation($assessment, $employee);
     }
 }

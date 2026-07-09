@@ -8,8 +8,8 @@
         if (typeof Alpine === 'undefined') {
             return;
         }
-        if (!Alpine.store('partGAccordion')) {
-            Alpine.store('partGAccordion', { openSection: null });
+        if (typeof window.registerPartGAlpineStore === 'function') {
+            window.registerPartGAlpineStore();
         }
         if (!Alpine.store('partFAccordion')) {
             Alpine.store('partFAccordion', { openSection: null });
@@ -251,7 +251,7 @@
 @php
     $initialChecklistTab = request('checklist_tab');
     if (! in_array($initialChecklistTab, ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'], true)) {
-        $initialChecklistTab = null;
+        $initialChecklistTab = filled(request('checklist_section')) ? 'partG' : null;
     }
 @endphp
 <div id="employee-checklist-root"
@@ -290,6 +290,11 @@
         if (!root) return;
         var fromUrl = new URLSearchParams(window.location.search).get('checklist_tab');
         var tab = fromUrl;
+        if (!tab || !/^part[A-G]$/.test(tab)) {
+            if (new URLSearchParams(window.location.search).get('checklist_section')) {
+                tab = 'partG';
+            }
+        }
         if (!tab || !/^part[A-G]$/.test(tab)) {
             try {
                 tab = localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab');

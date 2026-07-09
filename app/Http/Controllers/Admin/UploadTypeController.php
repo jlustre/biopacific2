@@ -11,6 +11,7 @@ use App\Models\UploadType;
 use App\Services\ChecklistUploadTypeSyncService;
 use App\Services\DocumentsManagementSeedService;
 use App\Services\DocumentsManagementSeederExporter;
+use App\Services\PositionRequirementPresetService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,20 +21,46 @@ class UploadTypeController extends Controller
 {
     public function index(Request $request): View
     {
-        $tab = $request->input('tab', 'items');
-        if (! in_array($tab, ['types', 'items'], true)) {
-            $tab = 'items';
+        $tab = $request->input('tab', 'requirements');
+        if (! in_array($tab, ['types', 'items', 'requirements'], true)) {
+            $tab = 'requirements';
         }
 
         $departments = Department::query()->orderBy('name')->get(['id', 'name']);
         $employeeFileSections = ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS;
-        $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
+        $positions = Position::query()->with('department')->where('is_active', true)->orderBy('title')->get();
         $uploadTypes = null;
         $checklistItems = null;
         $docTypes = collect();
         $itemSections = collect();
+        $documentSetCatalog = [];
+        $positionGroupCatalog = [];
+        $generalUploadTypes = collect();
+        $requirementOverview = [];
 
-        if ($tab === 'items') {
+        if ($tab === 'requirements') {
+            $presetService = app(PositionRequirementPresetService::class);
+            $documentSetCatalog = $presetService->documentSetCatalog();
+            $positionGroupCatalog = $presetService->positionGroupCatalog();
+            $departmentFilter = $request->filled('department_id') ? (int) $request->input('department_id') : null;
+            $overviewSearch = trim((string) $request->input('search', ''));
+            $generalUploadTypes = UploadType::query()
+                ->generalPositionAssignable()
+                ->when(
+                    $departmentFilter,
+                    fn ($query) => $query->where(function ($scope) use ($departmentFilter) {
+                        $scope->whereNull('department_ids')
+                            ->orWhereJsonLength('department_ids', 0)
+                            ->orWhereJsonContains('department_ids', $departmentFilter);
+                    })
+                )
+                ->orderBy('name')
+                ->get(['id', 'name', 'requires_expiry', 'is_license_or_certification', 'department_ids']);
+            $requirementOverview = $presetService->paginatePositionRequirementOverview(
+                $departmentFilter,
+                $overviewSearch !== '' ? $overviewSearch : null,
+            );
+        } elseif ($tab === 'items') {
             $itemsQuery = ChecklistItem::query()->with('docType');
 
             if ($request->filled('search')) {
@@ -108,6 +135,10 @@ class UploadTypeController extends Controller
             'docTypes',
             'positions',
             'itemSections',
+            'documentSetCatalog',
+            'positionGroupCatalog',
+            'generalUploadTypes',
+            'requirementOverview',
         ));
     }
 

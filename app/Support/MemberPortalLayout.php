@@ -89,6 +89,40 @@ class MemberPortalLayout
             && $user->hasRole(self::webContentsNavRoles());
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function documentsManagementRoles(): array
+    {
+        $configured = config('member-portal.documents_management_roles', [
+            'admin',
+            'super-admin',
+            'rdhr',
+            'facility-admin',
+            'facility-dsd',
+            'don',
+        ]);
+
+        return is_array($configured) ? array_values($configured) : [];
+    }
+
+    public static function userCanAccessDocumentsManagement($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return $user && method_exists($user, 'hasRole')
+            && $user->hasRole(self::documentsManagementRoles());
+    }
+
+    public static function documentsManagementRoutePatterns(): array
+    {
+        return [
+            'admin.upload-types.*',
+            'admin.checklist-items.*',
+            'admin.position-document-requirements.*',
+        ];
+    }
+
     public static function userHasFullNavAccess($user = null): bool
     {
         return self::userIsSystemAdmin($user);
@@ -181,6 +215,7 @@ class MemberPortalLayout
 
         $routes = array_values(array_unique(array_merge(
             self::facilityManagerRoutePatterns(),
+            self::documentsManagementRoutePatterns(),
             ['dashboard.index', 'user.dashboard', 'member.*', 'settings.*', 'admin.positions.*', 'admin.training-management.*']
         )));
 

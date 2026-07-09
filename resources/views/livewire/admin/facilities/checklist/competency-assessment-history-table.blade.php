@@ -175,7 +175,7 @@
                 <div><dt class="font-semibold text-slate-600">Review Date</dt><dd>{{ !empty($historyRow['assessment_date']) ? \Illuminate\Support\Carbon::parse($historyRow['assessment_date'])->format('m-d-y') : '—' }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Reviewer</dt><dd class="truncate">{{ $historyRow['reviewer_name'] ?: '—' }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Rated Items</dt><dd>{{ $historyRow['items_count'] }}/{{ $historyRow['total_items'] ?? $historyRow['items_count'] }}</dd></div>
-                <div><dt class="font-semibold text-slate-600">Total Points</dt><dd class="font-semibold">{{ $historyRow['total_score'] }}</dd></div>
+                <div><dt class="font-semibold text-slate-600">Total Points</dt><dd class="font-semibold">{{ $historyRow['total_score'] }}/{{ $historyRow['total_max_points'] ?? $historyRow['total_score'] }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Ave. Pts</dt><dd class="font-semibold">{{ $historyRow['average_score'] }}</dd></div>
                 <div><dt class="font-semibold text-slate-600">Overall</dt><dd class="font-semibold">{{ $historyRow['overall_rating'] }}</dd></div>
                 <div class="col-span-2"><dt class="font-semibold text-slate-600">Status</dt><dd class="font-semibold">{{ $historyRow['status'] ?? 'Draft' }}</dd></div>
@@ -256,7 +256,7 @@
                         <span class="block truncate" title="{{ $historyRow['reviewer_name'] ?: '—' }}">{{ $historyRow['reviewer_name'] ?: '—' }}</span>
                     </td>
                     <td class="border border-slate-500 px-1 py-1 text-center whitespace-nowrap">{{ $historyRow['items_count'] }}/{{ $historyRow['total_items'] ?? $historyRow['items_count'] }}</td>
-                    <td class="border border-slate-500 px-1 py-1 text-center font-semibold">{{ $historyRow['total_score'] }}</td>
+                    <td class="border border-slate-500 px-1 py-1 text-center font-semibold whitespace-nowrap">{{ $historyRow['total_score'] }}/{{ $historyRow['total_max_points'] ?? $historyRow['total_score'] }}</td>
                     <td class="border border-slate-500 px-1 py-1 text-center font-semibold">{{ $historyRow['average_score'] }}</td>
                     <td class="border border-slate-500 px-1 py-1 text-center align-top">
                         <span class="block break-words font-semibold leading-tight">{{ $historyRow['overall_rating'] }}</span>

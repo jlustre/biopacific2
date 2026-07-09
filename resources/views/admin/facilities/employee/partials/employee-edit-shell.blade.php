@@ -64,7 +64,7 @@ $assignmentPositions = \App\Models\Position::query()
         ];
     });
 
-$initialEmployeeTab = session('employeeTab') ?: request('tab');
+$initialEmployeeTab = request('tab') ?: session('employeeTab');
 if ($initialEmployeeTab === 'assignment') {
     $initialEmployeeTab = 'job-data';
 }
@@ -96,8 +96,11 @@ $employeeTabIds = ['personal', 'address', 'job-data', 'tax-data', 'documents', '
             return stored === 'assignment' ? 'job-data' : stored;
         }
         function resolveEmployeeTab() {
+            var fromUrl = new URLSearchParams(window.location.search).get('tab');
+            var normalized = normalizeEmployeeTab(fromUrl);
+            if (normalized) return normalized;
             var fromServer = @json($initialEmployeeTab);
-            var normalized = normalizeEmployeeTab(fromServer);
+            normalized = normalizeEmployeeTab(fromServer);
             if (normalized) return normalized;
             try {
                 var stored = sessionStorage.getItem('employeeTab') || localStorage.getItem('employeeTab');

@@ -11,6 +11,23 @@
 }
 @import "tailwindcss";
 
+@theme {
+    --color-primary: #047857;
+    --color-secondary: #1f2937;
+    --color-accent: #06b6d4;
+
+    --color-brand-50: #ecfdf5;
+    --color-brand-100: #d1fae5;
+    --color-brand-200: #a7f3d0;
+    --color-brand-300: #6ee7b7;
+    --color-brand-400: #34d399;
+    --color-brand-500: #10b981;
+    --color-brand-600: #047857;
+    --color-brand-700: #065f46;
+    --color-brand-800: #064e3b;
+    --color-brand-900: #022c22;
+}
+
 @import "../../vendor/livewire/flux/dist/flux.css";
 
 

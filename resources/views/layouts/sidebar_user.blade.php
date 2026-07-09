@@ -50,6 +50,13 @@
             </a>
             @endif
 
+            @if(\App\Support\MemberPortalLayout::userCanAccessDocumentsManagement(auth()->user()))
+            <a href="{{ route('admin.upload-types.index') }}"
+                class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded {{ request()->routeIs(['admin.upload-types.*', 'admin.checklist-items.*']) ? 'bg-gray-100 font-bold' : '' }}">
+                <i class="fas fa-file-alt mr-2"></i> Documents Management
+            </a>
+            @endif
+
             @if(auth()->user() && auth()->user()->hasRole(['facility-admin','facility-dsd']))
             <a href="{{ route('user.hr-portal') }}"
                 class="flex items-center px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded {{ request()->routeIs('user.hr-portal') ? 'bg-indigo-100 font-bold' : '' }}">

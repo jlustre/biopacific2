@@ -367,6 +367,140 @@ class AssessmentConfirmationNotificationService
         return true;
     }
 
+    public function notifyCompetencySectionSubmittedToEmployee(
+        EmployeeCompetencyAssessment $assessment,
+        BPEmployee $employee,
+        string $sectionLabel,
+    ): bool {
+        return $this->sendCompetencySectionEmployeeMail(
+            $assessment,
+            $employee,
+            $sectionLabel,
+            'employee_confirmation',
+        );
+    }
+
+    public function notifyCompetencySectionResubmittedToEmployee(
+        EmployeeCompetencyAssessment $assessment,
+        BPEmployee $employee,
+        string $sectionLabel,
+    ): bool {
+        return $this->sendCompetencySectionEmployeeMail(
+            $assessment,
+            $employee,
+            $sectionLabel,
+            'employee_resubmitted',
+        );
+    }
+
+    public function notifyCompetencySectionReadyForReviewerApproval(
+        EmployeeCompetencyAssessment $assessment,
+        BPEmployee $employee,
+        string $sectionLabel,
+    ): bool {
+        $email = $this->resolveReviewerEmail($assessment->submitted_by);
+
+        if ($email === null) {
+            return false;
+        }
+
+        $period = $this->resolveAssessmentPeriod($assessment);
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+
+        Mail::to($email)->send(new PerformanceAssessmentConfirmationMail(
+            $assessment,
+            $employee,
+            $sectionWorkflow->buildReviewerSectionChecklistUrl(
+                $employee,
+                (int) $assessment->assessment_period_id,
+                $sectionLabel,
+            ),
+            $this->formatPeriodLabel($period),
+            assessmentKind: 'competency',
+            facilityName: $this->resolveEmployeeFacilityName($employee),
+            notificationPurpose: 'reviewer_approval',
+            sectionLabel: $sectionLabel,
+        ));
+
+        return true;
+    }
+
+    public function notifyCompetencySectionReturnedToReviewer(
+        EmployeeCompetencyAssessment $assessment,
+        BPEmployee $employee,
+        string $sectionLabel,
+    ): bool {
+        $email = $this->resolveReviewerEmail($assessment->submitted_by);
+
+        if ($email === null) {
+            return false;
+        }
+
+        $period = $this->resolveAssessmentPeriod($assessment);
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+
+        Mail::to($email)->send(new PerformanceAssessmentConfirmationMail(
+            $assessment,
+            $employee,
+            $sectionWorkflow->buildReviewerSectionChecklistUrl(
+                $employee,
+                (int) $assessment->assessment_period_id,
+                $sectionLabel,
+            ),
+            $this->formatPeriodLabel($period),
+            assessmentKind: 'competency',
+            facilityName: $this->resolveEmployeeFacilityName($employee),
+            notificationPurpose: 'reviewer_returned',
+            sectionLabel: $sectionLabel,
+        ));
+
+        return true;
+    }
+
+    protected function sendCompetencySectionEmployeeMail(
+        EmployeeCompetencyAssessment $assessment,
+        BPEmployee $employee,
+        string $sectionLabel,
+        string $notificationPurpose,
+    ): bool {
+        $email = $this->resolveEmployeeEmail($employee);
+
+        if ($email === null) {
+            return false;
+        }
+
+        $period = $this->resolveAssessmentPeriod($assessment);
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+
+        Mail::to($email)->send(new PerformanceAssessmentConfirmationMail(
+            $assessment,
+            $employee,
+            $sectionWorkflow->buildSectionChecklistUrl(
+                $employee,
+                (int) $assessment->assessment_period_id,
+                $sectionLabel,
+            ),
+            $this->formatPeriodLabel($period),
+            assessmentKind: 'competency',
+            facilityName: $this->resolveEmployeeFacilityName($employee),
+            notificationPurpose: $notificationPurpose,
+            sectionLabel: $sectionLabel,
+        ));
+
+        return true;
+    }
+
+    protected function resolveAssessmentPeriod(EmployeeCompetencyAssessment $assessment): mixed
+    {
+        if ($assessment->relationLoaded('period')) {
+            return $assessment->period;
+        }
+
+        $assessment->loadMissing('period');
+
+        return $assessment->period;
+    }
+
     protected function resolveEmployeeFacilityName(BPEmployee $employee): string
     {
         $facilityName = config('app.name');

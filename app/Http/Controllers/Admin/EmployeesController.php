@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\SelectOption;
 use App\Models\EmployeePerformanceAssessment;
+use App\Models\EmployeeCompetencyAssessment;
 use App\Models\Optionstype;
 use App\Support\PartFPerformanceScoring;
 use App\Support\AssessmentWorkflowStatus;
@@ -54,38 +55,49 @@ class EmployeesController extends Controller
 
     protected function resolveSelectedAssessmentPeriodIdForEmployee(BPEmployee $employee, $assessmentPeriods): ?int
     {
+        $reviewDate = request('assessment_review_date') ?: request('review_date');
+        $on = $reviewDate ? \Illuminate\Support\Carbon::parse($reviewDate) : null;
+        $service = app(EmployeeAssessmentPeriodService::class);
+
+        $requested = null;
         if (request()->has('assessment_period_id')) {
             $requested = filled(request('assessment_period_id'))
                 ? (int) request('assessment_period_id')
                 : null;
-
-            if ($requested) {
-                $period = $assessmentPeriods->firstWhere('id', $requested);
-                if ($period && ! EmployeeAssessmentPeriodCalculator::isPeriodLoadable($period)) {
-                    session()->flash(
-                        'assessment_period_error',
-                        'That assessment period is outside the loadable year range and cannot be opened for assessment work.'
-                    );
-
-                    return null;
-                }
-
-                if ($period && (string) $period->employee_num !== (string) $employee->employee_num) {
-                    session()->flash('assessment_period_error', 'That assessment period does not belong to this employee.');
-
-                    return null;
-                }
-            }
-
-            return $requested;
         }
 
-        $reviewDate = request('assessment_review_date') ?: request('review_date');
+        $viewingHistoricalPeriod = request()->boolean('view_period');
 
-        return app(EmployeeAssessmentPeriodService::class)->resolveDefaultPeriodId(
+        $resolved = $service->resolveActivePeriodIdForReview(
             $employee,
-            $reviewDate ? \Illuminate\Support\Carbon::parse($reviewDate) : null
+            $assessmentPeriods,
+            $requested,
+            $on,
+            $viewingHistoricalPeriod,
         );
+
+        if ($requested && $resolved === null) {
+            $period = $assessmentPeriods->firstWhere('id', $requested);
+            if ($period && ! EmployeeAssessmentPeriodCalculator::isPeriodLoadable($period)) {
+                session()->flash(
+                    'assessment_period_error',
+                    'That assessment period is outside the loadable year range and cannot be opened for assessment work.'
+                );
+            } elseif ($period && (string) $period->employee_num !== (string) $employee->employee_num) {
+                session()->flash('assessment_period_error', 'That assessment period does not belong to this employee.');
+            }
+
+            return null;
+        }
+
+        if ($requested && $resolved && $requested !== $resolved) {
+            session()->flash(
+                'assessment_period_notice',
+                'The prior competency review period is completed. The current annual review period has been loaded so you can begin the next cycle.'
+            );
+        }
+
+        return $resolved;
     }
 
     public function assessmentPeriodModalData(Request $request, $employee)
@@ -2092,7 +2104,7 @@ class EmployeesController extends Controller
         }
 
         if (in_array($action, ['submit', 'save', 'approve'], true)) {
-            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+            \App\Support\AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $employee);
         }
 
         if (! $isSelfAssessment && in_array($action, ['submit', 'save'], true) && $currentStatus === AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION) {
@@ -2104,6 +2116,8 @@ class EmployeesController extends Controller
         }
 
         if ($action === 'reopen') {
+            \App\Support\AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $employee);
+
             if (! AssessmentWorkflowStatus::reviewerCanReopen($currentStatus)) {
                 return back()->with('error', 'Only completed assessments can be reopened for editing.');
             }
@@ -2352,13 +2366,21 @@ class EmployeesController extends Controller
     {
         $action = trim((string) $request->input('action', ''));
         $assessmentPeriodId = $request->input('assessment_period_id');
+        $sectionLabel = trim((string) $request->input('section_label', ''));
 
         if (! $assessmentPeriodId) {
             return back()->with('error', 'Assessment period is required.');
         }
 
+        if ($sectionLabel === '' && in_array($action, ['submit', 'acknowledge', 'send_back', 'approve'], true)) {
+            return back()->with('error', 'Competency section is required for this action.');
+        }
+
         $employee = $this->employeeFromRouteKey($employee_num);
         $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
+        $sectionWorkflow = app(\App\Services\CompetencySectionWorkflowService::class);
+        $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
+        $notificationService = app(\App\Services\AssessmentConfirmationNotificationService::class);
 
         $assessment = \App\Models\EmployeeCompetencyAssessment::query()
             ->where('employee_num', $employee->employee_num)
@@ -2366,7 +2388,7 @@ class EmployeesController extends Controller
             ->first();
 
         if ($action === 'submit') {
-            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+            \App\Support\AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $employee);
 
             $assessment = \App\Models\EmployeeCompetencyAssessment::query()->firstOrCreate(
                 [
@@ -2379,21 +2401,22 @@ class EmployeesController extends Controller
                 ]
             );
 
-            $currentStatus = $assessment->workflowStatus();
-
-            if (! in_array($currentStatus, [AssessmentWorkflowStatus::DRAFT, AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL], true)) {
-                return back()->with('error', 'Only in-progress competency assessments or post-employee-confirmation revisions can be submitted for employee confirmation.');
+            if (! $sectionWorkflow->sectionIsSubmitted($assessment, $sectionLabel)) {
+                return back()->with('error', 'Submit the competency section ratings before sending it to the employee.');
             }
 
-            $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
-            $wasResubmit = $confirmationService->prepareForEmployeeConfirmation($assessment);
-
-            if (! CompetencyAssessmentWorkflowReadiness::isReadyForEmployeeConfirmation($assessment, $employee)) {
-                return back()->with('error', 'Submit every required competency section (or mark it excluded) before sending the assessment to the employee.');
+            if (
+                $sectionWorkflow->sectionWasReturnedToReviewer($assessment, $sectionLabel)
+                && ! $sectionWorkflow->reviewerCanResubmitReturnedSection($assessment, $sectionLabel)
+            ) {
+                return back()->with('error', 'Save your changes with Update before resubmitting this section to the employee.');
             }
 
-            $assessment->submitted_at = now();
-            $assessment->submitted_by = auth()->id();
+            $wasResubmit = $sectionWorkflow->submitSectionForEmployeeConfirmation(
+                $assessment,
+                $sectionLabel,
+                auth()->id(),
+            );
 
             $reviewerEmployee = auth()->user()?->resolvedBpEmployee(['currentAssignment.position']);
             $reviewerTitle = trim((string) (
@@ -2409,22 +2432,19 @@ class EmployeesController extends Controller
                     ? $assessment->reviewer_name
                     : auth()->user()->name;
             }
-
             $assessment->save();
 
-            app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
-                ->refreshCompetencyWorkflowState($assessment, regeneratePdf: false);
+            $this->regenerateCompetencySectionPdf($assessment, $sectionLabel);
 
-            $notificationService = app(\App\Services\AssessmentConfirmationNotificationService::class);
             $emailSent = $wasResubmit
-                ? $notificationService->notifyCompetencyAssessmentResubmittedToEmployee($assessment, $employee)
-                : $notificationService->notifyCompetencyAssessmentSubmitted($assessment, $employee);
+                ? $notificationService->notifyCompetencySectionResubmittedToEmployee($assessment->fresh(), $employee, $sectionLabel)
+                : $notificationService->notifyCompetencySectionSubmittedToEmployee($assessment->fresh(), $employee, $sectionLabel);
 
             $message = $emailSent
                 ? ($wasResubmit
-                    ? 'Competency assessment sent back to the employee for confirmation. The employee has been notified by email and will see a task at the top of their dashboard.'
-                    : 'Competency assessment submitted for employee confirmation. The employee has been notified by email and will see a task on their dashboard.')
-                : 'Competency assessment submitted for employee confirmation. No employee email is on file, so no notification was sent.';
+                    ? "{$sectionLabel} sent back to the employee for confirmation. The employee has been notified by email and will see a task at the top of their dashboard."
+                    : "{$sectionLabel} submitted for employee confirmation. The employee has been notified by email and will see a task on their dashboard.")
+                : "{$sectionLabel} submitted for employee confirmation. No employee email is on file, so no notification was sent.";
 
             return back()->with('success', $message);
         }
@@ -2433,27 +2453,32 @@ class EmployeesController extends Controller
             return back()->with('error', 'No competency assessment found for the selected period.');
         }
 
-        $currentStatus = $assessment->workflowStatus();
+        $sectionWorkflow->syncSubmittedSectionsWithoutWorkflow($assessment);
+        $assessment->refresh();
+
+        $currentSectionStatus = $sectionWorkflow->sectionStatus($assessment, $sectionLabel);
 
         if ($isSelfAssessment) {
             if ($action === 'send_back') {
-                if (! AssessmentWorkflowStatus::employeeCanSendBack($currentStatus)) {
-                    return back()->with('error', 'This assessment cannot be sent back to the reviewer at its current status.');
+                if (! AssessmentWorkflowStatus::employeeCanSendBack($currentSectionStatus)) {
+                    return back()->with('error', 'This competency section cannot be sent back to the reviewer at its current status.');
                 }
 
-                $assessment->status = AssessmentWorkflowStatus::DRAFT;
-                $assessment->completed_at = null;
-                $assessment->save();
+                $sectionWorkflow->employeeSendBackSection(
+                    $assessment,
+                    $sectionLabel,
+                    $request->input('employee_comments'),
+                );
 
-                app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
-                    ->refreshCompetencyWorkflowState($assessment, regeneratePdf: false);
-
-                $emailSent = app(\App\Services\AssessmentConfirmationNotificationService::class)
-                    ->notifyCompetencyAssessmentReturnedToReviewer($assessment, $employee);
+                $emailSent = $notificationService->notifyCompetencySectionReturnedToReviewer(
+                    $assessment->fresh(),
+                    $employee,
+                    $sectionLabel,
+                );
 
                 $message = $emailSent
-                    ? 'Competency assessment sent back to the reviewer for updates. The reviewer has been notified by email and will see a task on their dashboard.'
-                    : 'Competency assessment sent back to the reviewer for updates. No reviewer email is on file, so no notification was sent.';
+                    ? "{$sectionLabel} sent back to the reviewer for updates. The reviewer has been notified by email and will see a task on their dashboard."
+                    : "{$sectionLabel} sent back to the reviewer for updates. No reviewer email is on file, so no notification was sent.";
 
                 return back()->with('success', $message);
             }
@@ -2462,8 +2487,8 @@ class EmployeesController extends Controller
                 return back()->with('error', 'Only employee acknowledgement actions are available on your own record.');
             }
 
-            if (! AssessmentWorkflowStatus::employeeCanConfirm($currentStatus)) {
-                return back()->with('error', 'This competency assessment is not waiting for employee confirmation.');
+            if (! AssessmentWorkflowStatus::employeeCanConfirm($currentSectionStatus)) {
+                return back()->with('error', 'This competency section is not waiting for employee confirmation.');
             }
 
             $request->validate([
@@ -2477,13 +2502,15 @@ class EmployeesController extends Controller
                     ->withInput();
             }
 
-            $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
+            $existingPath = $sectionWorkflow->sectionEmployeeSignaturePath($assessment, $sectionLabel);
 
             try {
-                $assessment->employee_signature_path = $confirmationService->storeEmployeeSignature(
+                $signaturePath = $confirmationService->storeSectionEmployeeSignature(
                     $assessment,
+                    $sectionLabel,
                     $request->input('employee_signature_data'),
                     $request->file('employee_signature_upload'),
+                    $existingPath,
                 );
             } catch (\InvalidArgumentException $exception) {
                 return back()
@@ -2491,8 +2518,12 @@ class EmployeesController extends Controller
                     ->withInput();
             }
 
-            $assessment->employee_comments = $request->input('employee_comments');
-            $assessment->employee_signed_at = now();
+            $sectionWorkflow->employeeAcknowledgeSection(
+                $assessment,
+                $sectionLabel,
+                $signaturePath,
+                $request->input('employee_comments'),
+            );
 
             $employeeRecord = $employee->loadMissing('currentAssignment.position');
             $assessment->employee_name = $employeeRecord->formattedFullName();
@@ -2501,31 +2532,28 @@ class EmployeesController extends Controller
                 ?? $employeeRecord->position
                 ?? ''
             ));
-
-            $assessment->status = AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
             $assessment->save();
 
-            $assessment->refresh();
-            $confirmationService->storeEmployeeConfirmationSnapshot($assessment);
-            $assessment->save();
+            $this->regenerateCompetencySectionPdf($assessment->fresh(), $sectionLabel);
 
-            app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
-                ->refreshCompetencyWorkflowState($assessment);
+            $emailSent = $notificationService->notifyCompetencySectionReadyForReviewerApproval(
+                $assessment->fresh(),
+                $employee,
+                $sectionLabel,
+            );
 
-            $notificationService = app(\App\Services\AssessmentConfirmationNotificationService::class);
-            $emailSent = $notificationService->notifyCompetencyAssessmentReadyForReviewerApproval($assessment, $employee);
             $message = $emailSent
-                ? 'Employee acknowledgement and signature saved. The competency assessment is now waiting for reviewer approval. The reviewer has been notified by email and will see a task on their dashboard.'
-                : 'Employee acknowledgement and signature saved. The competency assessment is now waiting for reviewer approval.';
+                ? "Employee acknowledgement and signature saved for {$sectionLabel}. The reviewer has been notified by email and will see a task on their dashboard."
+                : "Employee acknowledgement and signature saved for {$sectionLabel}. The section is now waiting for reviewer approval.";
 
             return back()->with('success', $message);
         }
 
-        if (! $isSelfAssessment && $currentStatus === AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION && $action === 'submit') {
-            return back()->with('error', 'This competency assessment has already been submitted for employee confirmation.');
-        }
-
         if ($action === 'reopen') {
+            \App\Support\AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $employee);
+
+            $currentStatus = $assessment->workflowStatus();
+
             if (! AssessmentWorkflowStatus::reviewerCanReopen($currentStatus)) {
                 return back()->with('error', 'Only completed competency assessments can be reopened for editing.');
             }
@@ -2549,19 +2577,18 @@ class EmployeesController extends Controller
         }
 
         if ($action === 'approve') {
-            \App\Support\PreventsSelfAssessment::assertNotSelf($request->user(), $employee);
+            \App\Support\AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $employee);
 
-            if (! AssessmentWorkflowStatus::reviewerCanApprove($currentStatus)) {
-                return back()->with('error', 'This competency assessment is not waiting for reviewer approval.');
+            if (! AssessmentWorkflowStatus::reviewerCanApprove($currentSectionStatus)) {
+                return back()->with('error', 'This competency section is not waiting for reviewer approval.');
             }
 
-            $confirmationService = app(\App\Services\CompetencyAssessmentConfirmationService::class);
-            if ($confirmationService->hasChangedSinceEmployeeConfirmation($assessment)) {
-                return back()->with('error', 'This competency assessment was changed after the employee confirmed it. Resubmit it to the employee for confirmation before approving.');
+            if ($sectionWorkflow->sectionHasChangedSinceEmployeeConfirmation($assessment, $sectionLabel)) {
+                return back()->with('error', 'This competency section was changed after the employee confirmed it. Resubmit it to the employee for confirmation before approving.');
             }
 
-            if (blank($assessment->employee_signature_path)) {
-                return back()->with('error', 'Employee signature is required before this competency assessment can be approved.');
+            if (blank($sectionWorkflow->sectionEmployeeSignaturePath($assessment, $sectionLabel))) {
+                return back()->with('error', 'Employee signature is required before this competency section can be approved.');
             }
 
             $request->validate([
@@ -2571,15 +2598,19 @@ class EmployeesController extends Controller
 
             if (! $request->filled('reviewer_signature_data') && ! $request->hasFile('reviewer_signature_upload')) {
                 return back()
-                    ->withErrors(['reviewer_signature' => 'Draw or upload your signature before approving this assessment.'])
+                    ->withErrors(['reviewer_signature' => 'Draw or upload your signature before approving this section.'])
                     ->withInput();
             }
 
+            $existingPath = $sectionWorkflow->sectionReviewerSignaturePath($assessment, $sectionLabel);
+
             try {
-                $assessment->reviewer_signature_path = $confirmationService->storeReviewerSignature(
+                $signaturePath = $confirmationService->storeSectionReviewerSignature(
                     $assessment,
+                    $sectionLabel,
                     $request->input('reviewer_signature_data'),
                     $request->file('reviewer_signature_upload'),
+                    $existingPath,
                 );
             } catch (\InvalidArgumentException $exception) {
                 return back()
@@ -2587,9 +2618,7 @@ class EmployeesController extends Controller
                     ->withInput();
             }
 
-            $signedAt = now();
-            $assessment->reviewer_signed_at = $signedAt;
-            $assessment->review_date = $signedAt->toDateString();
+            $sectionWorkflow->reviewerApproveSection($assessment, $sectionLabel, $signaturePath);
 
             $reviewerEmployee = auth()->user()?->resolvedBpEmployee(['currentAssignment.position']);
             $reviewerTitle = trim((string) (
@@ -2603,18 +2632,26 @@ class EmployeesController extends Controller
             if (auth()->check()) {
                 $assessment->reviewer_name = trim((string) auth()->user()->name);
             }
-
-            $assessment->status = AssessmentWorkflowStatus::COMPLETED;
-            $assessment->completed_at = now();
             $assessment->save();
 
-            app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
-                ->refreshCompetencyWorkflowState($assessment);
+            $this->regenerateCompetencySectionPdf($assessment->fresh(), $sectionLabel);
 
-            return back()->with('success', 'Competency assessment signed, approved, and marked as completed. The final PDF now includes both signatures.');
+            return back()->with('success', "{$sectionLabel} signed, approved, and marked as completed.");
         }
 
         return back()->with('error', 'Unsupported competency workflow action.');
+    }
+
+    protected function regenerateCompetencySectionPdf(
+        EmployeeCompetencyAssessment $assessment,
+        string $sectionLabel,
+    ): void {
+        try {
+            app(\App\Http\Controllers\EmployeePerformanceAssessmentController::class)
+                ->persistCompetencySectionPdf($assessment->fresh(), $sectionLabel);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**
@@ -2887,7 +2924,23 @@ class EmployeesController extends Controller
         $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
         $requiredDocumentChecklist = app(\App\Services\DocumentComplianceService::class)->forEmployee($employee);
         $assessmentPeriods = $this->loadEmployeeAssessmentPeriods($employee);
+        $requestedAssessmentPeriodId = filled(request('assessment_period_id'))
+            ? (int) request('assessment_period_id')
+            : null;
         $selectedAssessmentPeriodId = $this->resolveSelectedAssessmentPeriodIdForEmployee($employee, $assessmentPeriods);
+
+        if ($requestedAssessmentPeriodId
+            && $selectedAssessmentPeriodId
+            && $requestedAssessmentPeriodId !== $selectedAssessmentPeriodId
+            && ! request()->boolean('view_period')) {
+            $resolvedPeriod = $assessmentPeriods->firstWhere('id', $selectedAssessmentPeriodId);
+
+            return redirect()->to(request()->fullUrlWithQuery([
+                'assessment_period_id' => $selectedAssessmentPeriodId,
+                'assessment_year' => $resolvedPeriod?->period_year,
+            ]));
+        }
+
         $suggestedAssessmentPeriod = app(EmployeeAssessmentPeriodService::class)->suggestedPeriodForEmployee(
             $employee,
             request('assessment_review_date') ? \Illuminate\Support\Carbon::parse(request('assessment_review_date')) : null
@@ -3304,7 +3357,7 @@ class EmployeesController extends Controller
             ->unique()
             ->values();
 
-        $evaluatorActionsDisabled = \App\Support\PreventsSelfAssessment::isSelfAssessment(
+        $evaluatorActionsDisabled = \App\Support\AssessmentEvaluatorAuthorization::isEvaluatorActionBlocked(
             auth()->user(),
             $employee->employee_num
         );

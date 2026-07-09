@@ -72,10 +72,12 @@
         </a>
         @endif
 
+        @if(\App\Support\MemberPortalLayout::userCanAccessDocumentsManagement($authUser))
         <a href="{{ route('admin.upload-types.index') }}"
-           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.upload-types.*') }}">
+           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.upload-types.*', 'admin.checklist-items.*']) }}">
             Documents Management
         </a>
+        @endif
 
         <a href="{{ route('admin.training-management.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.training-management.*') }}">

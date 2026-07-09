@@ -53,7 +53,7 @@
                     </td>
                     <td class="border border-slate-500 px-2 py-1.5">{{ $historyRow['reviewer_name'] ?: '—' }}</td>
                     <td class="border border-slate-500 px-2 py-1.5 text-center">{{ $historyRow['items_count'] }}/{{ $historyRow['total_items'] ?? $historyRow['items_count'] }}</td>
-                    <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['total_score'] }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['total_score'] }}/{{ $historyRow['total_max_points'] ?? $historyRow['total_score'] }}</td>
                     <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['average_score'] }}</td>
                     <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['overall_rating'] }}</td>
                     <td class="border border-slate-500 px-2 py-1.5 text-center font-semibold">{{ $historyRow['status'] ?? 'Draft' }}</td>

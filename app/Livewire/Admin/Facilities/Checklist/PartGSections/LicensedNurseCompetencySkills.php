@@ -68,7 +68,7 @@ class LicensedNurseCompetencySkills extends Component
 
         $user = Auth::user();
         $this->reviewerName = $user?->name ?? '';
-        $this->reviewerTitle = $user?->title ?? '';
+        $this->reviewerTitle = $this->resolveAuthenticatedReviewerTitle($user);
 
         $this->lnCompetencyItems = $this->buildCompetencyItems();
         $this->loadDraftResponses();
@@ -90,15 +90,6 @@ class LicensedNurseCompetencySkills extends Component
         $this->persistDraftIfPossible();
     }
 
-    public function updatedReviewSignDate(): void
-    {
-        $this->persistDraftIfPossible();
-    }
-
-    public function updatedEmployeeSignDate(): void
-    {
-        $this->persistDraftIfPossible();
-    }
 
     public function saveDraft(): void
     {
@@ -118,38 +109,6 @@ class LicensedNurseCompetencySkills extends Component
         }
     }
 
-    public function submitAssessment(): void
-    {
-        $this->draftSaveMessage = null;
-        $this->draftSaveType = '';
-
-        if (! $this->guardPartGSectionSubmit()) {
-            return;
-        }
-
-        $this->validate([
-            'reviewSignDate' => 'required|date',
-            'responses' => 'required|array',
-        ]);
-
-        if (! $this->sectionExcluded) {
-            foreach ($this->scorableItemIds() as $itemId) {
-                $response = $this->responses[$itemId] ?? null;
-                if (! PartGCompetencyScoring::isValidItemRating($response)) {
-                    $this->addError('responses', 'Please rate all competency items before submitting.');
-                    return;
-                }
-            }
-        }
-
-        try {
-            $this->persistResponses('section_submit');
-            $this->setDraftSaveFeedback('success', self::SECTION.' submitted successfully.');
-        } catch (\Throwable $e) {
-            report($e);
-            $this->setDraftSaveFeedback('error', 'Failed to submit this section. Please try again.');
-        }
-    }
 
     protected function buildCompetencyItems(): array
     {
@@ -193,38 +152,7 @@ class LicensedNurseCompetencySkills extends Component
 
     protected function calculateScores(): array
     {
-        if ($this->sectionExcluded) {
-            return $this->sectionExcludedScores();
-        }
-
-        $ratedCount = 0;
-        $points = 0;
-
-        foreach ($this->lnCompetencyItems as $item) {
-            if ($item['isParent'] ?? false) {
-                continue;
-            }
-
-            $response = $this->responses[$item['id']] ?? null;
-            if ($response === null || $response === '' || ! PartGCompetencyScoring::isValidItemRating($response)) {
-                continue;
-            }
-
-            if (! PartGCompetencyScoring::numericScore($response) !== null) {
-                continue;
-            }
-
-            $ratedCount++;
-            $points += PartGCompetencyScoring::numericScore($response) ?? 0;
-        }
-
-        $average = $ratedCount > 0 ? round($points / $ratedCount, 2) : 0;
-
-        return [
-            'totalPoints' => $points,
-            'average' => $average,
-            'overallRating' => PartGCompetencyScoring::overallLabel($average, $ratedCount),
-        ];
+        return $this->calculateScoresFromSectionItems($this->lnCompetencyItems);
     }
 
     /**

@@ -10,9 +10,12 @@ use App\Models\EmployeeCompetencyAssessment;
 trait ManagesPartGSectionExclusion
 {
     use GuardsAgainstSelfAssessment;
+    use ClearsPartGCompetencySectionProgress;
     use ManagesPartGItemReviews;
     use PersistsPartGCompetencyItemEntries;
     use PersistsPartGCompetencySectionResponses;
+    use ResolvesPartGReviewerIdentity;
+    use ManagesPartGSectionWorkflowUi;
 
     public bool $sectionExcluded = false;
 
@@ -27,7 +30,7 @@ trait ManagesPartGSectionExclusion
 
     protected function guardPartGManualDraftSave(): bool
     {
-        if ($this->assessmentLocked) {
+        if ($this->sectionItemReviewsLocked() && $this->reviewerSummaryCommentsLocked()) {
             $this->setDraftSaveFeedback('error', 'This assessment is read-only and cannot be saved.');
 
             return false;
@@ -137,7 +140,47 @@ trait ManagesPartGSectionExclusion
 
     /**
      * @param  list<array<string, mixed>>  $sectionItems
-     * @return array{totalItems: int, checkedOfTotal: string, totalPoints: int|float, average: string, overallRating: string}
+     * @return array{totalPoints: int|float, average: float, overallRating: string}
+     */
+    protected function calculateScoresFromSectionItems(array $sectionItems): array
+    {
+        if ($this->sectionExcluded ?? false) {
+            return $this->sectionExcludedScores();
+        }
+
+        $responses = property_exists($this, 'responses') && is_array($this->responses)
+            ? $this->responses
+            : [];
+
+        $ratings = [];
+
+        foreach ($sectionItems as $item) {
+            if ($item['isParent'] ?? false) {
+                continue;
+            }
+
+            $itemId = $item['id'] ?? null;
+            $response = $responses[$itemId] ?? null;
+
+            if (! PartGCompetencyScoring::isValidItemRating($response)) {
+                continue;
+            }
+
+            $ratings[(int) $itemId] = PartGCompetencyScoring::normalizeItemRating((string) $response);
+        }
+
+        $summary = PartGCompetencyScoring::summarize($ratings);
+
+        return [
+            'totalPoints' => $summary['total_score'],
+            'average' => $summary['average_score'],
+            'overallRating' => $summary['overall_rating'],
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $sectionItems
+     * @return array{totalItems: int, checkedOfTotal: string, totalPoints: int|float, average: string, overallRating: string, pointsOfTotal: string}
      */
     protected function sectionSummaryMetrics(array $sectionItems): array
     {
@@ -148,7 +191,22 @@ trait ManagesPartGSectionExclusion
                 'totalPoints' => 0,
                 'average' => '—',
                 'overallRating' => '—',
+                'pointsOfTotal' => PartGCompetencyScoring::pointsOfTotalLabel(0, 0),
             ];
+        }
+
+        $total = 0;
+
+        foreach ($sectionItems as $item) {
+            if ($item['isParent'] ?? false) {
+                continue;
+            }
+
+            $total++;
+        }
+
+        if (method_exists($this, 'itemReviewsVisibleToCurrentUser') && ! $this->itemReviewsVisibleToCurrentUser()) {
+            return $this->hiddenItemReviewsSummaryMetrics($total);
         }
 
         $scores = $this->calculateScores();
@@ -160,6 +218,7 @@ trait ManagesPartGSectionExclusion
                 'totalPoints' => $scores['totalPoints'],
                 'average' => '0',
                 'overallRating' => $scores['overallRating'],
+                'pointsOfTotal' => PartGCompetencyScoring::pointsOfTotalLabel((int) ($scores['totalPoints'] ?? 0), 0),
             ];
         }
 
@@ -192,6 +251,10 @@ trait ManagesPartGSectionExclusion
             'totalPoints' => $scores['totalPoints'] ?? 0,
             'average' => $rated > 0 ? number_format($average, 2, '.', '') : '—',
             'overallRating' => (string) ($scores['overallRating'] ?? '—'),
+            'pointsOfTotal' => PartGCompetencyScoring::pointsOfTotalLabel(
+                (int) ($scores['totalPoints'] ?? 0),
+                $total,
+            ),
         ];
     }
 

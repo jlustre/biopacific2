@@ -18,7 +18,11 @@
             </div>
             <div class="flex-1 space-y-3">
                 <label class="flex items-center gap-3 text-sm font-medium text-slate-700">
-                    <input type="checkbox" name="apply_to_everyone" value="1" class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                    <input type="checkbox" name="remove_from_everyone" value="1" class="bulk-everyone-toggle h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500" data-toggle-group="everyone">
+                    Remove selected documents from everybody
+                </label>
+                <label class="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <input type="checkbox" name="apply_to_everyone" value="1" class="bulk-everyone-toggle h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-toggle-group="everyone">
                     Apply selected documents to everybody
                 </label>
                 <div class="flex flex-wrap items-center gap-3">
@@ -31,3 +35,25 @@
         </div>
     </form>
 </div>
+
+@once
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.bulk-everyone-toggle').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                if (!checkbox.checked) {
+                    return;
+                }
+
+                document.querySelectorAll('.bulk-everyone-toggle').forEach((other) => {
+                    if (other !== checkbox) {
+                        other.checked = false;
+                    }
+                });
+            });
+        });
+    });
+</script>
+@endpush
+@endonce

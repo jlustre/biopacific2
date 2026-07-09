@@ -18,6 +18,7 @@ class AuthServiceProvider extends ServiceProvider
         JobApplication::class => JobApplicationPolicy::class,
         \App\Models\PreEmploymentApplication::class => \App\Policies\PreEmploymentApplicationPolicy::class,
         \App\Models\Backup::class => \App\Policies\BackupPolicy::class,
+        \App\Models\PersonalTask::class => \App\Policies\PersonalTaskPolicy::class,
         // ... other policies ...
     ];
 

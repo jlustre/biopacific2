@@ -43,4 +43,15 @@
             </a>
         </div>
     @endif
+
+    @if(\App\Support\MemberPortalLayout::userCanAccessDocumentsManagement($authUser) && !in_array($portalNav ?? 'employee', ['admin', 'facility', 'corporate'], true))
+        <div class="my-3 border-t border-white/10 pt-3">
+            <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Documents</p>
+            <a href="{{ route('admin.upload-types.index') }}"
+               class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs(['admin.upload-types.*', 'admin.checklist-items.*'])) }}">
+                <span>📄</span>
+                <span>Documents Management</span>
+            </a>
+        </div>
+    @endif
 @endif

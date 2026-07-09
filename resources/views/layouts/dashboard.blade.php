@@ -85,6 +85,8 @@
       'portalNav' => $portalNav ?? 'employee',
   ])
 
+  @include('layouts.partials.go_to_top')
+
   @stack('scripts')
   @livewireScripts(['vite' => true])
   <script src="/js/color-scheme-dropdown.js"></script>
@@ -92,7 +94,7 @@
 </html>
 @else
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 
 <head>
     <meta charset="UTF-8">

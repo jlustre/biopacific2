@@ -52,39 +52,17 @@
     <div class="mt-3 grid gap-3 lg:grid-cols-12">
         <div class="lg:col-span-7">
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-4 py-2.5">
-                    <h2 class="text-sm font-black text-slate-900">My tasks</h2>
-                    <p class="text-[11px] text-slate-500">Urgent profile, document uploads, certifications, and checklist items for your role</p>
+                <div class="flex items-start justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-black text-slate-900">My tasks</h2>
+                        <p class="text-[11px] text-slate-500">Urgent profile, document uploads, certifications, and checklist items for your role</p>
+                    </div>
+                    <a href="{{ route('member.tasks') }}"
+                       class="shrink-0 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-800 transition hover:bg-teal-100">
+                        View all
+                    </a>
                 </div>
-                @if(count($myTasks) === 0)
-                <p class="px-4 py-6 text-center text-sm text-slate-500">You’re caught up. Check back when HR assigns new items.</p>
-                @else
-                <ul class="divide-y divide-slate-100">
-                    @foreach($myTasks as $task)
-                    <li class="flex items-start gap-3 px-4 py-2.5 text-sm">
-                        <span class="mt-0.5 text-teal-600"><i class="fa-regular fa-circle"></i></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="font-semibold text-slate-900">{{ $task['title'] ?? 'Task' }}</p>
-                            @if(!empty($task['description']))
-                            <p class="text-xs text-slate-500">{{ $task['description'] }}</p>
-                            @endif
-                        </div>
-                        @if(!empty($task['route']) || ($task['action'] ?? '') === 'submit')
-                        @if(($task['action'] ?? '') === 'submit')
-                        <form method="POST" action="{{ route('settings.profile.submit-hr-review') }}" class="shrink-0">
-                            @csrf
-                            <button type="submit" class="text-xs font-bold text-teal-700 hover:text-teal-900">Submit</button>
-                        </form>
-                        @elseif(!empty($task['route']))
-                        <a href="{{ $task['route'] }}" class="shrink-0 text-xs font-bold text-teal-700 hover:text-teal-900">
-                            {{ ($task['action'] ?? '') === 'upload' ? 'Upload' : 'Open' }}
-                        </a>
-                        @endif
-                        @endif
-                    </li>
-                    @endforeach
-                </ul>
-                @endif
+                @include('dashboard.member.partials.my-tasks-list', ['myTasks' => $myTasks])
             </div>
         </div>
 

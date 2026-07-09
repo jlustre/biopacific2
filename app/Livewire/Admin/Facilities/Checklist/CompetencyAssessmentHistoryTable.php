@@ -190,6 +190,7 @@ class CompetencyAssessmentHistoryTable extends Component
                     (string) ($row['assessment_date'] ?? ''),
                     (string) ($row['items_count'] ?? ''),
                     (string) ($row['total_score'] ?? ''),
+                    (string) ($row['total_max_points'] ?? ''),
                     (string) ($row['average_score'] ?? ''),
                 ])));
 
