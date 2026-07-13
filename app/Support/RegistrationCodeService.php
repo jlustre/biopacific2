@@ -24,7 +24,8 @@ class RegistrationCodeService
             return false;
         }
 
-        if ($actor->can(RbacPermissions::CREATE_REGISTRATION_INVITATIONS)) {
+        if ($actor->can(RbacPermissions::CAN_INVITE_MEMBER)
+            || $actor->can(RbacPermissions::CREATE_REGISTRATION_INVITATIONS)) {
             return true;
         }
 
@@ -100,18 +101,7 @@ class RegistrationCodeService
         return false;
     }
 
-    public function issueApplicantRegistrationCode(JobApplication $application, User $generator): RegistrationCode
-    {
-        $code = $this->generateForApplicant($application, $generator);
-
-        \Illuminate\Support\Facades\Mail::to($code->email)->send(
-            new \App\Mail\ApplicantRegistrationInviteMail($code, $application)
-        );
-
-        return $code;
-    }
-
-    public function generateForEmployee(BPEmployee $employee, User $generator): RegistrationCode
+    public function generateForEmployee(BPEmployee $employee, User $generator, ?User $sponsor = null): RegistrationCode
     {
         if ($this->employeeHasPortalUser($employee)) {
             throw ValidationException::withMessages([
@@ -136,11 +126,13 @@ class RegistrationCodeService
             'email' => strtolower(trim((string) $employee->email)),
             'ssn_last4' => $this->extractSsnLast4($employee->ssn),
             'generated_by' => $generator->id,
+            'sponsor_user_id' => null,
+            'sponsor_name' => null,
             'expires_at' => now()->addDays(self::DEFAULT_EXPIRY_DAYS),
         ]);
     }
 
-    public function generateForApplicant(JobApplication $application, ?User $generator = null): RegistrationCode
+    public function generateForApplicant(JobApplication $application, ?User $generator = null, ?User $sponsor = null): RegistrationCode
     {
         if ($application->user_id) {
             throw ValidationException::withMessages([
@@ -174,8 +166,21 @@ class RegistrationCodeService
             'email' => strtolower(trim((string) $application->email)),
             'ssn_last4' => null,
             'generated_by' => $generator?->id,
+            'sponsor_user_id' => null,
+            'sponsor_name' => null,
             'expires_at' => now()->addDays(self::DEFAULT_EXPIRY_DAYS),
         ]);
+    }
+
+    public function issueApplicantRegistrationCode(JobApplication $application, User $generator, ?User $sponsor = null): RegistrationCode
+    {
+        $code = $this->generateForApplicant($application, $generator, null);
+
+        \Illuminate\Support\Facades\Mail::to($code->email)->send(
+            new \App\Mail\ApplicantRegistrationInviteMail($code, $application)
+        );
+
+        return $code;
     }
 
     /**
@@ -250,8 +255,8 @@ class RegistrationCodeService
 
             if ($employee) {
                 app(EmployeePortalRoleService::class)->assignRegistrationRole($user, $employee);
-            } elseif (! $user->hasRole('regular-user') && \Spatie\Permission\Models\Role::query()->where('name', 'regular-user')->exists()) {
-                $user->assignRole('regular-user');
+            } else {
+                $this->assignDefaultMemberRole($user);
             }
 
             if ($employee?->currentAssignment?->facility_id && ! $user->facility_id) {
@@ -270,6 +275,17 @@ class RegistrationCodeService
                 $application->save();
             }
         }
+
+        // New members (including applicants) start with the default role and no permissions.
+        $this->assignDefaultMemberRole($user);
+    }
+
+    /**
+     * Default portal member: regular-user role with no permissions attached.
+     */
+    private function assignDefaultMemberRole(User $user): void
+    {
+        app(EmployeePortalRoleService::class)->assignDefaultMemberRole($user);
     }
 
     public function registrationUrl(RegistrationCode $code): string

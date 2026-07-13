@@ -2,8 +2,8 @@
 
 @section('content')
 <section class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-    <h1 class="text-2xl font-black text-slate-900">Select a facility</h1>
-    <p class="mt-2 text-sm text-slate-600">Choose a facility to open its dashboard — staff, compliance, and team priorities for your scope.</p>
+    <h1 class="text-2xl font-black text-slate-900">{{ $portalPageTitle ?? 'Select a facility' }}</h1>
+    <p class="mt-2 text-sm text-slate-600">{{ $facilitySelectLead ?? 'Choose a facility to open its dashboard — staff, compliance, and team priorities for your scope.' }}</p>
 
     @if(!empty($organizationStats))
     <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -37,7 +37,12 @@
         @foreach($facilities as $f)
         @php
             $facilityRouteKey = $f->slug ?? $f->id;
-            $facilityDestination = route($facilitySwitchRoute ?? 'member.facility.dashboard', ['facility' => $facilityRouteKey], false);
+            $switchRoute = $facilitySwitchRoute ?? 'member.facility.dashboard';
+            // Entry routes without {facility} (e.g. competencies) remember session then redirect themselves.
+            $facilityDestination = \Illuminate\Support\Facades\Route::getRoutes()->getByName($switchRoute)
+                && in_array('facility', \Illuminate\Support\Facades\Route::getRoutes()->getByName($switchRoute)->parameterNames(), true)
+                ? route($switchRoute, ['facility' => $facilityRouteKey], false)
+                : route($switchRoute, [], false);
         @endphp
         <li>
             <a href="{{ route('member.select-facility', ['facility' => $facilityRouteKey, 'redirect' => $facilityDestination]) }}"

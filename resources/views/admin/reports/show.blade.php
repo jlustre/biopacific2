@@ -3,7 +3,7 @@
 <div class="container py-8">
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl font-bold">Report: {{ $report->name }}</h1>
-        <a href="{{ url('/admin/facility/' . ($facility->id ?? ($report->facility_id ?? 1)) . '/reports') }}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700">&larr; Back to Reports List</a>
+        <a href="{{ route('admin.reports.index') }}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700">&larr; Back to Reports List</a>
     </div>
     <div class="mb-2 text-gray-700">
         <span class="font-semibold">Category:</span>

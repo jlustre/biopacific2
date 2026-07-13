@@ -4,7 +4,7 @@
 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
     <div>
         <h1 class="text-xl font-bold text-slate-900">Facility leadership</h1>
-        <p class="mt-1 text-sm text-slate-600">Manage leadership rosters by facility for the Facility Dashboard.</p>
+        <p class="mt-1 text-sm text-slate-600">{{ !empty($canEdit) ? 'Manage leadership rosters by facility for the Facility Dashboard.' : 'View leadership rosters by facility.' }}</p>
     </div>
     <a href="{{ route('member.facility.dashboard') }}"
        class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
@@ -34,7 +34,7 @@
                 <td class="px-4 py-3 text-slate-600">{{ $filledCounts[$f->id] ?? 0 }}</td>
                 <td class="px-4 py-3 text-right">
                     <a href="{{ route('admin.facility.leadership.edit', ['facility' => $f->slug ?? $f->id]) }}"
-                       class="font-bold text-teal-700 hover:text-teal-900">Manage →</a>
+                       class="font-bold text-teal-700 hover:text-teal-900">{{ !empty($canEdit) ? 'Manage' : 'View' }} →</a>
                 </td>
             </tr>
             @empty

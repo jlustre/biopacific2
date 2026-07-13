@@ -9,6 +9,8 @@
     $avatarUrl = $avatarUrl ?? null;
     $portalNotifications = $portalNotifications ?? [];
     $portalNotificationCount = (int) ($portalNotificationCount ?? count($portalNotifications));
+    $myTasksCount = (int) ($myTasksCount ?? 0);
+    $myMessagesCount = (int) ($myMessagesCount ?? 0);
     $notificationToneClass = fn (string $tone) => match ($tone) {
         'rose' => 'bg-rose-50',
         'amber' => 'bg-amber-50',
@@ -66,6 +68,34 @@
         {{ $facilityName }}
       </span>
 
+      @if(\Illuminate\Support\Facades\Route::has('member.messages'))
+      <a href="{{ route('member.messages') }}"
+         class="relative rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm hover:bg-slate-50 {{ request()->routeIs(['member.messages', 'member.messages.*']) ? 'ring-2 ring-teal-500/30 border-teal-300' : '' }}"
+         aria-label="My Messages{{ $myMessagesCount > 0 ? ' ('.$myMessagesCount.')' : '' }}"
+         title="My Messages">
+        <i class="fa-solid fa-comments text-slate-700"></i>
+        @if($myMessagesCount > 0)
+        <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+          {{ $myMessagesCount > 99 ? '99+' : $myMessagesCount }}
+        </span>
+        @endif
+      </a>
+      @endif
+
+      @if(\Illuminate\Support\Facades\Route::has('member.tasks'))
+      <a href="{{ route('member.tasks') }}"
+         class="relative rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm hover:bg-slate-50 {{ request()->routeIs(['member.tasks', 'member.tasks.*']) ? 'ring-2 ring-teal-500/30 border-teal-300' : '' }}"
+         aria-label="My Tasks{{ $myTasksCount > 0 ? ' ('.$myTasksCount.')' : '' }}"
+         title="My Tasks">
+        <i class="fa-solid fa-list-check text-slate-700"></i>
+        @if($myTasksCount > 0)
+        <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 px-1 text-[10px] font-bold text-white">
+          {{ $myTasksCount > 99 ? '99+' : $myTasksCount }}
+        </span>
+        @endif
+      </a>
+      @endif
+
       @if($showNotifications)
       <div class="relative">
         <button type="button" @click="notifyOpen = !notifyOpen; profileOpen = false"
@@ -82,7 +112,7 @@
           class="absolute right-0 mt-3 w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-soft z-50">
           <div class="mb-3 flex items-center justify-between">
             <p class="font-bold text-slate-950">Notifications</p>
-            <a href="{{ route('dashboard.index') }}" class="text-xs font-semibold text-brand-600">Open dashboard</a>
+            <a href="{{ route('member.messages') }}" class="text-xs font-semibold text-brand-600">View all</a>
           </div>
           @if(count($portalNotifications) === 0)
           <p class="rounded-2xl bg-slate-50 p-3 text-sm text-slate-600">You’re caught up. New reminders will appear here when something needs your attention.</p>

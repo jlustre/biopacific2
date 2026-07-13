@@ -111,11 +111,11 @@
                 </div>
             </div>
 
-            <!-- Communications Menu -->
+            <!-- Web Communications Menu -->
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" @mouseenter="open = true" @mouseleave="open = false"
                     class="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-                    <i class="fas fa-comments mr-2"></i> Communications
+                    <i class="fas fa-comments mr-2"></i> Web Communications
                     <svg class="ml-auto h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>

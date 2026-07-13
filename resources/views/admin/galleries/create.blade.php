@@ -4,7 +4,7 @@
 <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
     <div>
         <h1 class="text-3xl font-bold text-gray-900">Upload Image</h1>
-        <p class="text-gray-600 mt-2">Add a photo to {{ $facility->name }}'s website gallery.</p>
+        <p class="text-gray-600 mt-2">Add a photo for {{ $facility->name }}. Choose whether it appears on the website, portal, or both.</p>
     </div>
     <a href="{{ route('admin.facilities.galleries.index', ['facility' => $facility->id]) }}"
         class="inline-flex items-center text-gray-600 hover:text-gray-900 font-semibold">
@@ -35,11 +35,20 @@
         <label for="caption" class="block text-sm font-semibold text-gray-700 mb-2">Caption <span class="font-normal text-gray-400">(optional)</span></label>
         <input type="text" name="caption" id="caption" value="{{ old('caption') }}"
           class="block w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          maxlength="255" placeholder="Short description shown on the website">
+          maxlength="255" placeholder="Short description shown with the photo">
         @error('caption')
         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
         @enderror
       </div>
+
+      @include('admin.partials.content-visibility-field', [
+        'visibilityValue' => old('visibility', 'both'),
+        'visibilityWrapperClass' => '',
+        'visibilityLabelClass' => 'block text-sm font-semibold text-gray-700 mb-2',
+        'visibilitySelectClass' => 'block w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+        'visibilityHelpClass' => 'mt-1 text-xs text-gray-500',
+        'visibilityHelp' => 'Website = public facility gallery. Portal = employee Facility Galleries. Both = all surfaces.',
+      ])
 
       <div class="flex items-center justify-end gap-3 pt-2">
         <a href="{{ route('admin.facilities.galleries.index', ['facility' => $facility->id]) }}"

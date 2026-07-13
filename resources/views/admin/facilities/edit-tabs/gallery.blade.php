@@ -12,10 +12,21 @@
             @endif
             <div class="flex items-center space-x-4">
                 <form action="{{ route('admin.gallery.upload', ['facility' => $facility->id]) }}" method="POST"
-                    enctype="multipart/form-data" class="flex items-center space-x-4">
+                    enctype="multipart/form-data" class="flex flex-wrap items-end gap-3">
                     @csrf
-                    <input type="file" name="image" id="gallery-image-input" accept="image/*" required
-                        class="border rounded px-2 py-1" />
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Image</label>
+                        <input type="file" name="image" id="gallery-image-input" accept="image/*" required
+                            class="border rounded px-2 py-1" />
+                    </div>
+                    @include('admin.partials.content-visibility-field', [
+                        'visibilityValue' => old('visibility', 'both'),
+                        'visibilityWrapperClass' => '',
+                        'visibilityLabelClass' => 'block text-xs font-semibold text-gray-600 mb-1',
+                        'visibilitySelectClass' => 'border rounded px-2 py-1 text-sm',
+                        'visibilityHelp' => '',
+                        'visibilityHelpClass' => 'hidden',
+                    ])
                     <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Upload
                         Image</button>
                 </form>
@@ -26,9 +37,6 @@
                         Images</button>
                 </form>
             </div>
-            <div id="gallery-image-preview" class="mt-2"></div>
-            Image</button>
-            </form>
             <div id="gallery-image-preview" class="mt-2"></div>
             <script>
                 document.getElementById('gallery-image-input').addEventListener('change', function(event) {

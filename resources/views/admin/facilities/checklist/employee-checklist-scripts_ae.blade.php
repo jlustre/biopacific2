@@ -347,7 +347,7 @@
         if (! document.querySelector('[data-checklist-tabs="alpine"]')) {
             return;
         }
-        ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'].forEach(function (id) {
+        ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG', 'partH'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) {
                 el.classList.remove('hidden');
@@ -367,7 +367,7 @@
         }
 
         // Legacy: tab buttons must expose data-tab="partA" etc., and panes are toggled without Alpine.
-        const tabContents = document.querySelectorAll('#employeeFileTabs ~ div.tab-content, #partA, #partB, #partC, #partD, #partE, #partF, #partG');
+        const tabContents = document.querySelectorAll('#employeeFileTabs ~ div.tab-content, #partA, #partB, #partC, #partD, #partE, #partF, #partG, #partH');
         const validTabIds = Array.from(tabLinks).map(link => link.getAttribute('data-tab')).filter(Boolean);
 
         function setActiveTab(tabId) {

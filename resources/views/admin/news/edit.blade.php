@@ -89,6 +89,11 @@
                 <option value="0" @if(!$news->status) selected @endif>Draft</option>
             </select>
         </div>
+        @include('admin.partials.content-visibility-field', [
+            'visibilityValue' => old('visibility', $news->visibility ?? 'both'),
+            'visibilityWrapperClass' => 'mb-4',
+            'visibilityHelp' => 'Website = public facility site. Portal = employee Company/Facility News. Both = all surfaces.',
+        ])
         <div class="flex gap-2 justify-end mt-2">
             <button type="submit"
                 class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 text-sm">Update</button>

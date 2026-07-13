@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\News;
+use App\Support\ContentVisibility;
 use App\Support\SelectedFacility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -161,6 +162,7 @@ class NewsController extends Controller
             'published_at' => 'nullable|date',
             'status' => 'required|in:0,1',
             'is_global' => 'nullable|boolean',
+            'visibility' => 'required|in:'.implode(',', array_keys(ContentVisibility::options())),
             'facility_ids' => 'array',
             'facility_ids.*' => 'exists:facilities,id',
         ]);
@@ -168,6 +170,7 @@ class NewsController extends Controller
         $news = new News($validated);
         $news->status = (bool) $request->input('status');
         $news->is_global = $scopedFacilityId ? false : $request->boolean('is_global');
+        $news->visibility = ContentVisibility::normalize($request->input('visibility'));
 
         if ($scopedFacilityId) {
             $news->facility_id = $scopedFacilityId;
@@ -229,6 +232,7 @@ class NewsController extends Controller
             'published_at' => 'nullable|date',
             'status' => 'required|in:0,1',
             'is_global' => 'nullable|boolean',
+            'visibility' => 'required|in:'.implode(',', array_keys(ContentVisibility::options())),
             'facility_ids' => 'array',
             'facility_ids.*' => 'exists:facilities,id',
         ]);
@@ -236,6 +240,7 @@ class NewsController extends Controller
         $news->fill($validated);
         $news->status = (bool) $request->input('status');
         $news->is_global = $scopedFacilityId ? false : $request->boolean('is_global');
+        $news->visibility = ContentVisibility::normalize($request->input('visibility'));
 
         if ($request->hasFile('image')) {
             if ($news->image && Storage::disk('public')->exists($news->image)) {

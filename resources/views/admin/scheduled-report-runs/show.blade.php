@@ -22,11 +22,18 @@
             <dd>{{ ucfirst($run->status) }}</dd>
             <dt class="font-semibold">Error Message</dt>
             <dd>{{ $run->error_message ?? '-' }}</dd>
+            <dt class="font-semibold">Output format</dt>
+            <dd>{{ strtoupper($run->scheduledReport->report_format ?? 'csv') }}{{ ($run->scheduledReport->report_format ?? '') === 'pdf' ? ' ('.(($run->scheduledReport->pdf_orientation ?? 'P') === 'L' ? 'Landscape' : 'Portrait').')' : '' }}</dd>
             <dt class="font-semibold">Result Path</dt>
             <dd>{{ $run->result_path ?? '-' }}</dd>
         </dl>
         <div class="mt-6">
-            <button type="button" onclick="showReportModal()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 mr-4">View Generated Report</button>
+            @if($run->status === 'success')
+                <a href="{{ route('admin.scheduled-report-runs.download', $run) }}" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 mr-4 inline-block">
+                    Download {{ strtoupper($run->scheduledReport->report_format ?? 'csv') }}
+                </a>
+                <button type="button" onclick="showReportModal()" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 mr-4">Preview</button>
+            @endif
             <a href="{{ route('admin.scheduled-report-runs.archive', $run) }}" class="text-yellow-600 hover:underline mr-4" onclick="event.preventDefault(); document.getElementById('archive-form').submit();">Archive</a>
             <form id="archive-form" action="{{ route('admin.scheduled-report-runs.archive', $run) }}" method="POST" class="hidden">
                 @csrf

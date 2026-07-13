@@ -15,3 +15,8 @@ Schedule::command('backup:run-scheduled')
     ->name('backup-nightly')
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('reports:run-scheduled')
+    ->everyMinute()
+    ->name('reports-run-scheduled')
+    ->withoutOverlapping();

@@ -12,11 +12,12 @@
         "permissions": [
             "access admin panel",
             "access hr portal",
+            "can invite member",
             "create registration invitations",
             "edit employee core tabs",
             "edit positions",
             "use import mapping presets",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view positions",
@@ -30,6 +31,7 @@
         "permissions": [
             "access admin panel",
             "access hr portal",
+            "can invite member",
             "create content",
             "create facilities",
             "create registration invitations",
@@ -51,7 +53,7 @@
             "manage tour requests",
             "publish content",
             "use import mapping presets",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view facility analytics",
@@ -66,11 +68,12 @@
         "permissions": [
             "access admin panel",
             "access hr portal",
+            "can invite member",
             "create registration invitations",
             "edit employee core tabs",
             "edit positions",
             "use import mapping presets",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view positions",
@@ -84,10 +87,11 @@
         "permissions": [
             "access admin panel",
             "access hr portal",
+            "can invite member",
             "create registration invitations",
             "edit positions",
             "use import mapping presets",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view positions",
@@ -100,8 +104,9 @@
         "name": "ssd",
         "permissions": [
             "access admin panel",
+            "can invite member",
             "create registration invitations",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view reports",
@@ -113,8 +118,9 @@
         "name": "activities-director",
         "permissions": [
             "access admin panel",
+            "can invite member",
             "create registration invitations",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view user profiles",
@@ -136,7 +142,7 @@
             "manage testimonials",
             "manage tour requests",
             "use import mapping presets",
-            "view communications",
+            "view web communications",
             "view content",
             "view facilities",
             "view user profiles",
@@ -145,13 +151,6 @@
     },
     {
         "name": "regular-user",
-        "permissions": [
-            "access admin panel",
-            "view communications",
-            "view content",
-            "view facilities",
-            "view user profiles",
-            "view users"
-        ]
+        "permissions": []
     }
 ]

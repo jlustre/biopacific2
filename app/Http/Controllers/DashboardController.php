@@ -198,6 +198,30 @@ class DashboardController extends Controller
         ]));
     }
 
+    public function memberMessages(\Illuminate\Http\Request $request)
+    {
+        $user = Auth::user();
+        $messagesService = app(\App\Services\MemberMessages\MemberMessagesService::class);
+        $filters = $messagesService->filtersFor($user);
+        $source = $request->string('source')->toString() ?: 'all';
+        $allowed = collect($filters)->pluck('key')->all();
+        if (! in_array($source, $allowed, true)) {
+            $source = 'all';
+        }
+
+        return view('dashboard.member.messages', array_merge($this->memberPortalContext($user), [
+            'portalActive' => 'messages',
+            'portalTitle' => 'My Messages | Bio Pacific HR Management',
+            'portalEyebrow' => 'Inbox',
+            'portalPageTitle' => 'My Messages',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+            'messageFilters' => $filters,
+            'messages' => $messagesService->allFor($user, $source),
+            'activeMessageSource' => $source,
+        ]));
+    }
+
     public function memberCertifications()
     {
         $user = Auth::user();
@@ -216,22 +240,31 @@ class DashboardController extends Controller
         ]));
     }
 
-    public function memberTrainings()
+    public function memberChecklists(Request $request)
     {
         $user = Auth::user();
-        $trainingsData = app(MemberDashboardService::class)->buildTrainingsPage($user);
+        $periodId = $request->filled('assessment_period_id')
+            ? (int) $request->input('assessment_period_id')
+            : null;
+        $trainingsData = app(MemberDashboardService::class)->buildTrainingsPage($user, $periodId);
         $isFacilityTrainingsAdmin = $user->hasRole(['facility-admin', 'facility-dsd'])
             && !empty($trainingsData['facilityTrainingsReport']);
 
-        return view('dashboard.member.trainings', array_merge($this->memberPortalContext($user), $trainingsData, [
-            'portalActive' => 'trainings',
-            'portalTitle' => 'Trainings | Bio Pacific HR Management',
-            'portalEyebrow' => 'Learning & Compliance',
-            'portalPageTitle' => 'Trainings',
+        return view('dashboard.member.checklists', array_merge($this->memberPortalContext($user), $trainingsData, [
+            'portalActive' => 'checklists',
+            'portalTitle' => 'My Checklists | Bio Pacific HR Management',
+            'portalEyebrow' => 'Personal Checklists',
+            'portalPageTitle' => 'My Checklists',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
             'isFacilityTrainingsAdmin' => $isFacilityTrainingsAdmin,
         ]));
+    }
+
+    /** @deprecated Use memberChecklists() */
+    public function memberTrainings(Request $request)
+    {
+        return $this->memberChecklists($request);
     }
 
     public function memberNewsEvents()
@@ -242,15 +275,52 @@ class DashboardController extends Controller
             : null;
         $facility = $this->resolveMemberFacility($user, $employee);
         $newsItems = $facility
-            ? FacilityDataHelper::getNews($facility)
-            : News::query()->where('status', true)->where('is_global', true)->orderByDesc('published_at')->get();
+            ? FacilityDataHelper::getNews($facility, 'portal')
+            : News::query()
+                ->where('status', true)
+                ->where('is_global', true)
+                ->visibleOn('portal')
+                ->orderByDesc('published_at')
+                ->get();
+
+        $newsItems->loadMissing('facility');
+
+        $articles = $newsItems->map(function (News $item) {
+            $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags((string) $item->content)));
+            $summary = filled($item->summary) ? (string) $item->summary : \Illuminate\Support\Str::limit($plain, 180);
+
+            return [
+                'id' => $item->id,
+                'title' => (string) $item->title,
+                'summary' => $summary,
+                'content' => (string) $item->content,
+                'excerpt' => \Illuminate\Support\Str::limit($summary, 140),
+                'image_url' => $item->image ? asset('storage/'.$item->image) : null,
+                'is_global' => (bool) $item->is_global,
+                'scope' => $item->is_global ? 'company' : 'facility',
+                'scope_label' => $item->is_global ? 'Company-wide' : 'Facility',
+                'facility_name' => $item->is_global
+                    ? 'Bio Pacific'
+                    : ($item->facility?->name ?? 'Facility'),
+                'published_at' => optional($item->published_at)?->toIso8601String(),
+                'published_label' => optional($item->published_at)?->timezone(config('app.timezone'))->format('M j, Y'),
+                'published_relative' => optional($item->published_at)?->timezone(config('app.timezone'))->diffForHumans(),
+            ];
+        })->values();
+
+        $companyCount = $articles->where('is_global', true)->count();
+        $facilityCount = $articles->where('is_global', false)->count();
 
         return view('dashboard.member.news-events', array_merge($this->memberPortalContext($user), [
             'newsItems' => $newsItems,
-            'portalActive' => 'news',
-            'portalTitle' => 'News & Events | Bio Pacific HR Management',
-            'portalEyebrow' => 'News & Events',
-            'portalPageTitle' => $facility?->name ?? 'Company updates',
+            'newsArticles' => $articles,
+            'newsCompanyCount' => $companyCount,
+            'newsFacilityCount' => $facilityCount,
+            'newsFacilityLabel' => $facility?->name,
+            'portalActive' => 'facility-news',
+            'portalTitle' => 'News/Events | Bio Pacific',
+            'portalEyebrow' => 'Facility',
+            'portalPageTitle' => 'News/Events',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
         ]));

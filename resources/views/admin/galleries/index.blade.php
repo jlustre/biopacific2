@@ -168,14 +168,22 @@
                 @if(!$image->is_active)
                 <span class="absolute top-2 left-2 px-2 py-0.5 text-xs font-semibold bg-gray-800/80 text-white rounded">Hidden</span>
                 @endif
+                @php
+                    $visibilityBadge = match ($image->visibility ?? 'both') {
+                        'website' => ['Website', 'bg-sky-500'],
+                        'portal' => ['Portal', 'bg-violet-500'],
+                        default => ['Both', 'bg-teal-600'],
+                    };
+                @endphp
+                <span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-semibold text-white rounded {{ $visibilityBadge[1] }}">{{ $visibilityBadge[0] }}</span>
                 @if($image->is_featured ?? false)
                 <span class="absolute top-2 right-2 px-2 py-0.5 text-xs font-semibold bg-amber-500 text-white rounded">Featured</span>
                 @endif
             </div>
             <div class="p-3">
                 <p class="text-sm font-medium text-gray-900 truncate" title="{{ $image->title }}">{{ $image->title }}</p>
-                @if($image->caption)
-                <p class="text-xs text-gray-500 truncate mt-0.5" title="{{ $image->caption }}">{{ $image->caption }}</p>
+                @if($image->description)
+                <p class="text-xs text-gray-500 truncate mt-0.5" title="{{ $image->description }}">{{ $image->description }}</p>
                 @endif
                 <p class="text-xs text-gray-400 mt-1">#{{ $image->order ?? '—' }} · {{ $image->created_at->format('M j, Y') }}</p>
             </div>

@@ -114,14 +114,14 @@ $employeeTabIds = ['personal', 'address', 'job-data', 'tax-data', 'documents', '
         if (window.__employeeInitialTab === 'checklist') {
             var checklistFromUrl = new URLSearchParams(window.location.search).get('checklist_tab');
             var checklistTab = checklistFromUrl;
-            if (!checklistTab || !/^part[A-G]$/.test(checklistTab)) {
+            if (!checklistTab || !/^part[A-H]$/.test(checklistTab)) {
                 try {
                     checklistTab = localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab');
                 } catch (e) {
                     checklistTab = null;
                 }
             }
-            if (checklistTab && /^part[A-G]$/.test(checklistTab)) {
+            if (checklistTab && /^part[A-H]$/.test(checklistTab)) {
                 window.__checklistInitialTab = checklistTab;
             }
         }

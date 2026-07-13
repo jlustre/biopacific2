@@ -1,7 +1,8 @@
 @extends('layouts.member-portal')
 
+{{-- Legacy view; prefer dashboard.member.checklists --}}
 @section('content')
 <section class="px-4 py-6 sm:px-6 lg:px-8">
-    @include('dashboard.member.partials.trainings-center')
+    @include('dashboard.member.partials.checklists-center')
 </section>
 @endsection

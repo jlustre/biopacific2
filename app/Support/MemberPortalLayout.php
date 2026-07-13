@@ -57,6 +57,322 @@ class MemberPortalLayout
         return $items;
     }
 
+    /**
+     * Purpose-grouped sidebar for all portal modes.
+     *
+     * @return list<array{id: string, label: string, icon: string, open: bool, items: list<array<string, mixed>>}>
+     */
+    public static function purposeGroupsForUser($user = null): array
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return [];
+        }
+
+        $groups = [];
+
+        foreach (config('member-portal.nav_purpose_groups', []) as $group) {
+            if (! self::userPassesNavGate($user, $group['gate'] ?? 'everyone')) {
+                continue;
+            }
+
+            $items = [];
+            foreach ($group['items'] ?? [] as $item) {
+                if (! self::userPassesNavGate($user, $item['gate'] ?? 'everyone')) {
+                    continue;
+                }
+
+                $route = $item['route'] ?? null;
+                if (! $route || ! \Illuminate\Support\Facades\Route::has($route)) {
+                    continue;
+                }
+
+                $items[] = $item;
+            }
+
+            $items = self::filterEmploymentSelfServiceNav($items, $user);
+
+            // Avoid duplicate Leadership under Company when Facility Leadership is already shown.
+            if (($group['id'] ?? '') === 'company') {
+                $facilityGroup = collect($groups)->firstWhere('id', 'facility');
+                $facilityShowsLeadership = $facilityGroup && collect($facilityGroup['items'] ?? [])
+                    ->contains(fn (array $item) => ($item['id'] ?? '') === 'facility-leadership');
+
+                if ($facilityShowsLeadership) {
+                    $items = collect($items)
+                        ->reject(fn (array $item) => ($item['id'] ?? '') === 'company-leadership')
+                        ->values()
+                        ->all();
+                }
+            }
+
+            // Prefer company news manage route for web managers.
+            if (($group['id'] ?? '') === 'company') {
+                $items = collect($items)->map(function (array $item) use ($user) {
+                    if (($item['id'] ?? '') === 'company-news' && self::userCanAccessWebContentsNav($user) && \Illuminate\Support\Facades\Route::has('admin.news.index')) {
+                        $item['route'] = 'admin.news.index';
+                        $item['route_is'] = ['admin.news.*', 'member.news-events.*'];
+                    }
+
+                    return $item;
+                })->all();
+            }
+
+            if ($items === []) {
+                continue;
+            }
+
+            $groups[] = [
+                'id' => $group['id'],
+                'label' => $group['label'],
+                'icon' => $group['icon'] ?? '•',
+                'open' => collect($items)->contains(fn (array $item) => self::navItemMatchesRequest($item)),
+                'items' => $items,
+            ];
+        }
+
+        return $groups;
+    }
+
+    public static function userPassesNavGate($user, string $gate): bool
+    {
+        return match ($gate) {
+            'everyone' => true,
+            'system_admin' => self::userIsSystemAdmin($user),
+            'web_contents' => self::userCanAccessWebContentsNav($user),
+            'documents_mgmt' => self::userCanAccessDocumentsManagement($user),
+            'facility_dashboard' => self::userCanAccessFacilityDashboard($user),
+            'facility_ops' => self::userCanAccessFacilityOpsNav($user),
+            'facility_member' => self::userCanAccessFacilityMemberNav($user),
+            'hr_portal' => self::userCanAccessHrPortalNav($user),
+            'training_mgmt' => self::userCanAccessTrainingManagementNav($user),
+            'reports' => self::userCanAccessReportsNav($user),
+            'positions' => self::userCanAccessPositionsNav($user),
+            'invite_mgmt' => self::userCanAccessInviteManagementNav($user),
+            default => true,
+        };
+    }
+
+    public static function userCanAccessFacilityOpsNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (self::userIsSystemAdmin($user) || self::userCanAccessHrPortalNav($user) || self::userCanAccessFacilityDashboard($user)) {
+            return true;
+        }
+
+        return method_exists($user, 'hasRole') && $user->hasRole(array_values(array_unique(array_merge(
+            self::facilityManagerRoles(),
+            self::corporateRoles(),
+            self::documentsManagementRoles(),
+            self::webContentsNavRoles()
+        ))));
+    }
+
+    /**
+     * Facility-linked employees (any position) plus facility management.
+     * Used for read-oriented Facility group items such as News/Events and Galleries.
+     */
+    public static function userCanAccessFacilityMemberNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (self::userCanAccessFacilityOpsNav($user)) {
+            return true;
+        }
+
+        if ((int) ($user->facility_id ?? 0) > 0) {
+            return true;
+        }
+
+        if (SelectedFacility::id() && SelectedFacility::userCanChooseFacility($user)) {
+            return true;
+        }
+
+        $employee = method_exists($user, 'resolvedBpEmployee')
+            ? $user->resolvedBpEmployee(['currentAssignment'])
+            : null;
+
+        return (int) ($employee?->currentAssignment?->facility_id ?? 0) > 0;
+    }
+
+    public static function userCanAccessHrPortalNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (self::userIsSystemAdmin($user)) {
+            return true;
+        }
+
+        if (method_exists($user, 'can') && $user->can(Permissions::ACCESS_HR_PORTAL)) {
+            return true;
+        }
+
+        return method_exists($user, 'hasRole') && $user->hasRole(array_merge(
+            self::facilityManagerRoles(),
+            self::corporateRoles()
+        ));
+    }
+
+    public static function userCanAccessTrainingManagementNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return $user && method_exists($user, 'hasRole')
+            && $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']);
+    }
+
+    public static function userCanAccessReportsNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (self::userIsSystemAdmin($user)) {
+            return true;
+        }
+
+        return method_exists($user, 'hasRole') && $user->hasRole(array_merge(
+            self::corporateRoles(),
+            ['facility-admin', 'facility-dsd']
+        ));
+    }
+
+    public static function userCanAccessPositionsNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (self::userIsSystemAdmin($user)) {
+            return true;
+        }
+
+        if (method_exists($user, 'can') && $user->can(Permissions::VIEW_POSITIONS)) {
+            return true;
+        }
+
+        return method_exists($user, 'hasRole')
+            && $user->hasRole(['facility-admin', 'facility-dsd', 'don', 'rdhr']);
+    }
+
+    public static function userCanAccessInviteManagementNav($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (self::userIsSystemAdmin($user)) {
+            return true;
+        }
+
+        return method_exists($user, 'can')
+            && $user->can(Permissions::CREATE_REGISTRATION_INVITATIONS);
+    }
+
+    /**
+     * Whether a purpose-nav item should appear active for the current request.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    public static function navItemMatchesRequest(array $item, ?string $activeId = null): bool
+    {
+        if ($activeId !== null && $activeId !== '' && $activeId === ($item['id'] ?? null)) {
+            return true;
+        }
+
+        $patterns = $item['route_is'] ?? $item['route'] ?? null;
+        if ($patterns && request()->routeIs($patterns) && self::navQueryConstraintsMatch($item)) {
+            return true;
+        }
+
+        foreach ($item['active_also'] ?? [] as $also) {
+            $alsoPatterns = $also['route_is'] ?? null;
+            if (! $alsoPatterns || ! request()->routeIs($alsoPatterns)) {
+                continue;
+            }
+
+            if (! self::navQueryConstraintsMatch($also)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $constraints
+     */
+    protected static function navQueryConstraintsMatch(array $constraints): bool
+    {
+        foreach ($constraints['query'] ?? [] as $key => $value) {
+            $actual = request()->query($key);
+            if (is_array($value)) {
+                if (! in_array((string) $actual, array_map('strval', $value), true)) {
+                    return false;
+                }
+            } elseif ((string) $actual !== (string) $value) {
+                return false;
+            }
+        }
+
+        foreach ($constraints['unless_query'] ?? [] as $key => $value) {
+            $actual = request()->query($key);
+            if (is_array($value)) {
+                if (in_array((string) $actual, array_map('strval', $value), true)) {
+                    return false;
+                }
+            } elseif ((string) $actual === (string) $value) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Keep personal “My …” links for every employee; show Employment or Pre-Employment by status.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    public static function filterEmploymentSelfServiceNav(array $items, $user = null): array
+    {
+        $user = $user ?? auth()->user();
+        $isEmployee = $user && method_exists($user, 'resolvedBpEmployee') && $user->resolvedBpEmployee() !== null;
+
+        return collect($items)
+            ->filter(function (array $item) use ($isEmployee) {
+                $id = $item['id'] ?? '';
+
+                if ($isEmployee && $id === 'pre-employment') {
+                    return false;
+                }
+
+                if (! $isEmployee && $id === 'employment') {
+                    return false;
+                }
+
+                return true;
+            })
+            ->values()
+            ->all();
+    }
+
     public static function systemAdminRoles(): array
     {
         return config('member-portal.system_admin_roles', ['admin', 'super-admin']);
@@ -120,6 +436,7 @@ class MemberPortalLayout
             'admin.upload-types.*',
             'admin.checklist-items.*',
             'admin.position-document-requirements.*',
+            'admin.training-items.*',
         ];
     }
 
@@ -239,6 +556,8 @@ class MemberPortalLayout
         return array_values(array_unique(array_merge(
             config('member-portal.facility_manager_global_route_patterns', []),
             config('member-portal.facility_management_route_patterns', []),
+            config('member-portal.facility_management_web_route_patterns', []),
+            config('member-portal.facility_management_comm_route_patterns', []),
         )));
     }
 
@@ -247,13 +566,15 @@ class MemberPortalLayout
         return array_values(array_unique(array_merge(
             config('member-portal.admin_route_patterns', []),
             config('member-portal.facility_management_route_patterns', []),
+            config('member-portal.facility_management_web_route_patterns', []),
+            config('member-portal.facility_management_comm_route_patterns', []),
         )));
     }
 
     public static function shouldUseForCurrentRequest(?Request $request = null): bool
     {
-        $request = $request ?? request();
-        return self::sidebarModeForCurrentRequest($request) !== 'employee';
+        // Legacy admin sidebar/topbar is retired; authenticated app chrome is always the member portal.
+        return ($request ?? request())->user() !== null;
     }
 
     public static function navModeForCurrentRequest(?Request $request = null): string
@@ -536,6 +857,17 @@ class MemberPortalLayout
 
             if (request()->routeIs('member.trainings')) {
                 return 'trainings';
+            }
+
+            if (request()->routeIs(['member.checklists', 'member.checklists.*'])) {
+                return 'checklists';
+            }
+
+            if (request()->routeIs(['admin.employees.edit', 'admin.employees.update', 'admin.employees.show'])) {
+                return match ((string) request('checklist_tab')) {
+                    'partH', 'partG', 'partF' => 'checklists',
+                    default => request('tab') === 'documents' ? 'documents' : 'checklists',
+                };
             }
 
             if (request()->routeIs('user.hr-portal')) {

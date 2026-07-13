@@ -141,7 +141,7 @@
                                     @if(!empty($task['route']))
                                         <a href="{{ $task['route'] }}"
                                            class="rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-800 hover:bg-teal-100">
-                                            {{ ($task['action'] ?? '') === 'sign' ? 'Sign' : (($task['action'] ?? '') === 'upload' ? 'Upload' : 'Open') }}
+                                            {{ $task['action_label'] ?? (($task['action'] ?? '') === 'sign' ? 'Sign' : (($task['action'] ?? '') === 'upload' ? 'Upload' : 'Open')) }}
                                         </a>
                                     @endif
 

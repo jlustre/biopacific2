@@ -24,6 +24,8 @@ class PersonalTask extends Model
         'assigned_to',
         'title',
         'description',
+        'action_url',
+        'action_label',
         'priority',
         'status',
         'due_at',
@@ -96,5 +98,16 @@ class PersonalTask extends Model
             $nested->where('created_by', $user->id)
                 ->orWhere('assigned_to', $user->id);
         });
+    }
+
+    /**
+     * Open tasks currently assigned to the user (pending action).
+     */
+    public static function assignedOpenCountForUser(User $user): int
+    {
+        return static::query()
+            ->where('assigned_to', $user->id)
+            ->where('status', self::STATUS_PENDING)
+            ->count();
     }
 }

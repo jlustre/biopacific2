@@ -1,21 +1,50 @@
 @extends('layouts.member-portal')
 
 @section('content')
-<section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+<section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8" x-data="{ category: '{{ old('category', '') }}' }">
     @include('dashboard.member.help.partials.hero', [
-        'heroIcon' => 'fa-envelope-open-text',
-        'heroTitle' => 'Email HR',
-        'heroSubtitle' => 'Send a secure message to the HR team about payroll, benefits, onboarding, time off, or your employee portal account. Do not include protected health information (PHI).',
+        'tone' => 'teal',
+        'heroIcon' => 'fa-headset',
+        'heroBadge' => 'Human Resources',
+        'heroTitle' => 'Contact HR',
+        'heroSubtitle' => 'Reach the HR team about payroll, benefits, time off, onboarding, employee records, or company policies. Use Technical Support for portal or website problems.',
         'tips' => [
             ['icon' => 'fa-receipt', 'title' => 'Include pay period dates', 'body' => 'For payroll questions, mention the check date or pay period so HR can locate your record quickly.'],
-            ['icon' => 'fa-shield-heart', 'title' => 'Keep it confidential', 'body' => 'Use this form for employment and HR matters only — not clinical or resident health information.'],
+            ['icon' => 'fa-shield-heart', 'title' => 'Employment matters only', 'body' => 'This form is for HR and employment topics — not clinical, resident, or patient health information.'],
             ['icon' => 'fa-clock', 'title' => 'Tell us how to reach you', 'body' => 'Choose email or phone and your preferred time window for a follow-up.'],
+        ],
+        'stats' => [
+            ['label' => 'Response time', 'value' => '1–2 business days'],
+            ['label' => 'For', 'value' => 'Payroll · Benefits · Leave'],
+            ['label' => 'Tracking', 'value' => 'Reference code provided'],
         ],
     ])
 
     <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ route('member.help.index') }}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">View my help requests</a>
-        <a href="{{ route('member.help.support') }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Need technical support instead?</a>
+        <a href="{{ route('member.help.index') }}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">View my HR & help requests</a>
+        <a href="{{ route('member.help.support') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900">
+            <i class="fa-solid fa-laptop-code text-xs"></i>
+            Need Technical Support instead?
+        </a>
+    </div>
+
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-teal-700">Payroll</p>
+            <p class="mt-1 text-xs text-slate-600">Pay, deposits, deductions</p>
+        </div>
+        <div class="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-teal-700">Benefits</p>
+            <p class="mt-1 text-xs text-slate-600">Insurance & retirement</p>
+        </div>
+        <div class="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-teal-700">Time off</p>
+            <p class="mt-1 text-xs text-slate-600">PTO, leave, attendance</p>
+        </div>
+        <div class="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-teal-700">Records</p>
+            <p class="mt-1 text-xs text-slate-600">Profile & employment data</p>
+        </div>
     </div>
 
     @if($errors->any())
@@ -34,12 +63,13 @@
         @include('dashboard.member.help.partials.section-header', [
             'sectionNumber' => '1',
             'sectionTitle' => 'What is your HR question about?',
-            'sectionDescription' => 'Choose the topic that best matches your request.',
+            'sectionDescription' => 'Choose the HR topic that best matches your request.',
         ])
         <div class="grid gap-3 px-6 py-6 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
             @foreach($categories as $value => $category)
-            <label class="group cursor-pointer rounded-2xl border p-4 transition {{ old('category') === $value ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-200' : 'border-slate-200 hover:border-teal-300 hover:bg-slate-50' }}">
-                <input type="radio" name="category" value="{{ $value }}" class="sr-only" @checked(old('category') === $value) required>
+            <label class="group cursor-pointer rounded-2xl border p-4 transition"
+                   :class="category === '{{ $value }}' ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-200' : 'border-slate-200 hover:border-teal-300 hover:bg-slate-50'">
+                <input type="radio" name="category" value="{{ $value }}" class="sr-only" x-model="category" @checked(old('category') === $value) required>
                 <div class="flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700 group-hover:bg-teal-200">
                         <i class="fa-solid {{ $category['icon'] }}"></i>
@@ -56,7 +86,7 @@
         @include('dashboard.member.help.partials.section-header', [
             'sectionNumber' => '2',
             'sectionTitle' => 'Your contact information',
-            'sectionDescription' => 'We will use these details to respond to your HR inquiry.',
+            'sectionDescription' => 'HR will use these details to respond to your inquiry.',
         ])
         <div class="space-y-4 px-6 py-6 sm:px-8">
             @if($facilities->count() > 1)

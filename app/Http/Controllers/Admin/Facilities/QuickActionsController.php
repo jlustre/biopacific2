@@ -532,47 +532,17 @@ class QuickActionsController extends Controller
     public function reports(Facility $facility)
     {
         $this->authorizeFacilityAccess($facility);
-        $user = auth()->user();
-        $isAdmin = MemberPortalLayout::userIsSystemAdmin($user);
-        $isRdhr = $user->hasRole('rdhr');
-        $roles = $user->getRoleNames()->toArray();
-        $userFacilityIds = collect();
-        if (method_exists($user, 'facilities')) {
-            $userFacilityIds = $user->facilities->pluck('id');
-        } elseif (isset($user->facility_id)) {
-            $userFacilityIds = collect([$user->facility_id]);
-        }
 
-        // Admins see all reports
-        if ($isAdmin) {
-            $reports = \App\Models\Report::where('is_active', true)->get();
-        } else {
-            $reports = \App\Models\Report::where('is_active', true)
-                ->where(function($q) use ($roles, $userFacilityIds, $isRdhr, $facility) {
-                    $q->where('visibility', 'all');
-                    $q->orWhere(function($q2) use ($roles) {
-                        $q2->where('visibility', 'roles')
-                            ->whereJsonContains('visible_roles', $roles);
-                    });
-                    $q->orWhere(function($q2) use ($userFacilityIds, $facility) {
-                        $q2->where('visibility', 'facilities')
-                            ->whereJsonContains('visible_facilities', $facility->id);
-                    });
-                    if ($isRdhr) {
-                        $q->orWhere('visibility', 'admin'); // RDHR can see admin reports
-                    }
-                })
-                ->get();
-        }
-        $canScheduleReports = MemberPortalLayout::userIsSystemAdmin($user)
-            || $user->hasAnyRole(['rdhr', 'facility-admin', 'facility-dsd']);
+        \App\Support\SelectedFacility::remember($facility);
 
-        return view('admin.facilities.reports', [
-            'facility' => $facility,
-            'reports' => $reports,
-            'isAdmin' => $isAdmin,
-            'canScheduleReports' => $canScheduleReports,
-        ]);
+        return redirect()->route('admin.reports.index', array_filter([
+            'facility_id' => $facility->id,
+            'department_id' => request('department_id') ?: null,
+            'position_id' => request('position_id') ?: null,
+            'reports_to' => request('reports_to') ?: null,
+            'search' => request('search') ?: null,
+            'category_id' => request('category_id') ?: null,
+        ], fn ($value) => $value !== null && $value !== ''));
     }
 
     public function downloadDocument(Facility $facility, EmployeeDocument $document)

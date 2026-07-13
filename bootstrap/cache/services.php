@@ -37,7 +37,8 @@
     33 => 'Spatie\\Permission\\PermissionServiceProvider',
     34 => 'PragmaRX\\Google2FALaravel\\ServiceProvider',
     35 => 'App\\Providers\\AppServiceProvider',
-    36 => 'App\\Providers\\HttpsServiceProvider',
+    36 => 'App\\Providers\\AuthServiceProvider',
+    37 => 'App\\Providers\\HttpsServiceProvider',
   ),
   'eager' => 
   array (
@@ -63,7 +64,8 @@
     19 => 'Spatie\\Permission\\PermissionServiceProvider',
     20 => 'PragmaRX\\Google2FALaravel\\ServiceProvider',
     21 => 'App\\Providers\\AppServiceProvider',
-    22 => 'App\\Providers\\HttpsServiceProvider',
+    22 => 'App\\Providers\\AuthServiceProvider',
+    23 => 'App\\Providers\\HttpsServiceProvider',
   ),
   'deferred' => 
   array (

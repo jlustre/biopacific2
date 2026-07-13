@@ -3,18 +3,11 @@
     $profileComplete = $profileComplete ?? 0;
     $portalNav = $portalNav ?? 'employee';
     $currentUser = auth()->user();
-    $isSystemAdmin = $currentUser && \App\Support\MemberPortalLayout::userHasFullNavAccess($currentUser);
-    $showHelpCard = ! ($currentUser && $currentUser->hasRole('rdhr'));
-    $usesStructuredNav = in_array($portalNav, ['employee', 'facility', 'corporate'], true);
-    $navItems = match ($portalNav) {
-        'admin' => config('member-portal.admin_sidebar_nav', []),
-        default => [],
-    };
-    $dashboardNav = \App\Support\MemberPortalLayout::dashboardNavItemsForUser($currentUser);
+    $purposeGroups = \App\Support\MemberPortalLayout::purposeGroupsForUser($currentUser);
     $portalSubtitle = $portalSubtitle ?? match ($portalNav) {
         'admin' => 'Admin Portal',
-    'corporate' => 'Corporate Management',
-    'facility' => 'Facility Portal',
+        'corporate' => 'Corporate Management',
+        'facility' => 'Facility Portal',
         default => 'HR Employee Portal',
     };
     $corporatePublicUrl = route('facility.public', ['facility' => \App\Models\Facility::corporateSiteSlug()]);
@@ -40,108 +33,20 @@
     </div>
 
     <nav class="flex-1 space-y-1 overflow-y-auto px-4 pt-4 pb-6 text-sm">
-      @if($usesStructuredNav)
-        <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Dashboard</p>
-        @include('dashboard.member.partials.portal-sidebar-dashboard-nav', [
-            'active' => $active,
-            'items' => $dashboardNav,
-        ])
-
-        @include('dashboard.member.partials.portal-sidebar-personal-portal', ['active' => $active])
-
-        @if(in_array($portalNav, ['corporate', 'facility'], true))
-          @include('dashboard.member.partials.portal-sidebar-management-groups', [
-              'active' => $active,
-              'portalNav' => $portalNav,
-          ])
-        @endif
-
-        @if($portalNav === 'employee')
-          @include('dashboard.member.partials.portal-sidebar-extras', ['active' => $active, 'portalNav' => $portalNav])
-        @endif
-      @else
-        @foreach($navItems as $item)
-          @php
-              $href = isset($item['route'])
-                  ? \App\Support\MemberPortalLayout::routeWithSelectedFacility($item['route'])
-                  : ($item['href'] ?? '#');
-              if (!empty($item['fragment'])) {
-                  $href .= '#' . ltrim($item['fragment'], '#');
-              }
-              $routePatterns = $item['route_is'] ?? null;
-              $isActive = $active === $item['id']
-                  || ($routePatterns && request()->routeIs($routePatterns));
-              $linkClass = $isActive
-                  ? 'member-portal-nav-active bg-brand-600 font-semibold shadow-lg shadow-brand-900/20 text-white'
-                  : 'text-teal-100';
-          @endphp
-          <a href="{{ $href }}"
-             class="member-portal-nav-link flex items-center {{ !empty($item['badge']) ? 'justify-between' : 'gap-3' }} rounded-xl px-4 py-3 {{ $linkClass }}">
-            <span class="flex items-center gap-3">
-              <span>{{ $item['icon'] }}</span>
-              <span>{{ $item['label'] }}</span>
-            </span>
-            @if(!empty($item['badge']))
-            <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $item['badge_class'] ?? 'bg-amber-400 text-slate-900' }}">{{ $item['badge'] }}</span>
-            @endif
-          </a>
-        @endforeach
-
-        @if(($portalNav ?? '') === 'admin' && $isSystemAdmin)
-          @include('dashboard.member.partials.portal-sidebar-admin-management-groups', ['active' => $active])
-
-          @include('dashboard.member.partials.portal-sidebar-management-groups', [
-              'active' => $active,
-              'portalNav' => 'corporate',
-              'sectionLabel' => 'HR & Operations',
-              'showAllOpsLinks' => true,
-          ])
-
-          <p class="px-4 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-teal-200/80 border-t border-white/10">Personal Portal</p>
-          @include('dashboard.member.partials.portal-sidebar-personal-portal', ['active' => $active])
-
-          <p class="px-4 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-teal-200/80">Employee Links</p>
-          @include('dashboard.member.partials.portal-sidebar-dashboard-nav', [
-              'active' => $active,
-              'items' => \App\Support\MemberPortalLayout::employeeDashboardNavItems($currentUser),
-          ])
-        @endif
-      @endif
+      @include('dashboard.member.partials.portal-sidebar-purpose-groups', [
+          'active' => $active,
+          'groups' => $purposeGroups,
+      ])
     </nav>
 
     <div class="border-t border-white/10 p-4">
-      @if($active === 'profile')
+      @if($active === 'profile' || request()->routeIs(['settings.profile', 'settings.profile.*']))
       <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
         <p class="text-sm font-semibold">Profile Record Status</p>
         <div class="mt-3 h-2 rounded-full bg-white/20">
           <div class="h-2 rounded-full bg-teal-300" style="width: {{ min(100, max(0, $profileComplete)) }}%"></div>
         </div>
         <p class="mt-2 text-xs text-teal-100">{{ $profileComplete }}% complete</p>
-      </div>
-      @elseif($showHelpCard)
-      <div class="member-portal-help-card overflow-hidden rounded-2xl p-4">
-        <div class="member-portal-help-card-glow pointer-events-none absolute inset-0" aria-hidden="true"></div>
-        <div class="relative">
-          <div class="flex items-start gap-3">
-            <span class="member-portal-help-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm" aria-hidden="true">
-              <i class="fa-solid fa-circle-question"></i>
-            </span>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-bold leading-snug text-white">Need help?</p>
-              <p class="mt-1 text-xs leading-relaxed text-teal-100">Contact HR for payroll, benefits, onboarding, or account questions.</p>
-            </div>
-          </div>
-          <div class="mt-4 grid gap-2">
-            <a href="{{ route('member.help.hr') }}" class="member-portal-help-action member-portal-help-action-primary">
-              <i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>
-              <span>Email HR</span>
-            </a>
-            <a href="{{ route('member.help.support') }}" class="member-portal-help-action member-portal-help-action-secondary">
-              <i class="fa-solid fa-ticket text-xs" aria-hidden="true"></i>
-              <span>Submit support request</span>
-            </a>
-          </div>
-        </div>
       </div>
       @endif
     </div>

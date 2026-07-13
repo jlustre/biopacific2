@@ -60,21 +60,41 @@
                     toggleOrientation();
                 });
                 </script>
+                @php
+                    $parametersLocked = !empty($scopedFacilityId);
+                    if ($parametersLocked) {
+                        $params = is_array($scheduledReport->parameters) ? $scheduledReport->parameters : [];
+                        $params['facility_id'] = (int) $scopedFacilityId;
+                        $lockedParamsJson = json_encode($params);
+                    } else {
+                        $lockedParamsJson = old('parameters', json_encode($scheduledReport->parameters));
+                    }
+                @endphp
+                @if($parametersLocked)
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-1">Facility</label>
+                    <input type="text" readonly value="{{ $scopedFacility->name ?? ('Facility #'.$scopedFacilityId) }}"
+                        class="form-input w-full border border-gray-300 bg-gray-50 px-2 py-1 rounded-sm text-gray-700">
+                    <input type="hidden" name="parameters" value="{{ $lockedParamsJson }}">
+                    <span class="text-xs text-gray-500">Parameters are set by administrators and locked to your facility.</span>
+                </div>
+                @else
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">
-                        Parameters (JSON)
+                        Parameters (JSON) <span class="text-gray-400 font-normal">(optional)</span>
                         <span class="ml-1 cursor-pointer relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
                             <i class="fas fa-info-circle text-teal-500"></i>
                             <span x-show="open" class="absolute left-6 top-0 z-10 w-64 p-2 bg-white border border-teal-400 text-xs text-gray-700 rounded shadow-lg" style="display:none;">
-                                Custom values to pass to the report when it runs.<br>
+                                Include only if the report needs parameters when it runs.<br>
                                 Example: <code class='bg-gray-100 px-1 rounded'>{"facility_id":1}</code><br>
                                 Leave blank if not needed.
                             </span>
                         </span>
                     </label>
-                    <textarea name="parameters" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" rows="2">{{ old('parameters', json_encode($scheduledReport->parameters)) }}</textarea>
-                    <span class="text-xs text-gray-500">Optional. Example: {"facility_id":1}</span>
+                    <textarea name="parameters" class="form-input w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white" rows="2">{{ $lockedParamsJson }}</textarea>
+                    <span class="text-xs text-gray-500">Optional. Leave blank if the report does not require parameters.</span>
                 </div>
+                @endif
                 <div>
                     <label class="inline-flex items-center">
                         <input type="checkbox" name="notifications_enabled" id="notifications_enabled" value="1" {{ old('notifications_enabled', $scheduledReport->notifications_enabled) ? 'checked' : '' }}>
@@ -158,17 +178,23 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">Minute</label>
+                            @php $cronMinute = explode(' ', old('cron_expression', $scheduledReport->cron_expression))[0] ?? '*'; @endphp
                             <select id="cron_minute" class="form-select w-full border border-teal-500 focus:border-teal-600 focus:ring-teal-500 px-2 py-1 rounded-sm bg-white">
-                                <option value="*">Every</option>
+                                <option value="*" @selected($cronMinute === '*')>Every minute</option>
+                                <option value="*/2" @selected($cronMinute === '*/2')>Every 2 minutes</option>
+                                <option value="*/5" @selected($cronMinute === '*/5')>Every 5 minutes</option>
+                                <option value="*/10" @selected($cronMinute === '*/10')>Every 10 minutes</option>
+                                <option value="*/15" @selected($cronMinute === '*/15')>Every 15 minutes</option>
+                                <option value="*/30" @selected($cronMinute === '*/30')>Every 30 minutes</option>
                                 @for($i=0;$i<60;$i++)
-                                    <option value="{{$i}}" {{ (explode(' ', old('cron_expression', $scheduledReport->cron_expression))[0] ?? '*') == $i ? 'selected' : '' }}>{{$i}}</option>
+                                    <option value="{{$i}}" @selected((string) $cronMinute === (string) $i)>At minute {{$i}}</option>
                                 @endfor
                             </select>
                         </div>
                     </div>
                     <input type="hidden" name="cron_expression" id="cron_expression" value="{{ old('cron_expression', $scheduledReport->cron_expression) }}">
-                    <span class="text-xs text-gray-500">Choose when the report should run. <a href='https://crontab.guru/' target='_blank' class='underline'>Learn more</a><br>
-                    </span>
+                    <p id="cron_preview" class="mt-2 text-sm font-semibold text-teal-800"></p>
+                    <span class="text-xs text-gray-500">Pick Minute → <strong>Every 2 minutes</strong>. Choosing <em>At minute 2</em> only runs once per hour at :02. Keep <code>php artisan schedule:work</code> running locally for timed runs. <a href='https://crontab.guru/' target='_blank' class='underline'>Learn more</a></span>
                 </div>
                 <div>
                     <label class="block text-gray-700 font-semibold mb-1">Status</label>
@@ -183,13 +209,29 @@
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">Update Schedule</button>
         </div>
         <script>
+        function describeCron(cron) {
+            const parts = String(cron || '').trim().split(/\s+/);
+            if (parts.length < 5) return 'Invalid schedule';
+            const [minute, hour, day, month, weekday] = parts;
+            if (minute.startsWith('*/') && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+                return `Runs every ${minute.slice(2)} minutes`;
+            }
+            if (minute === '*' && hour === '*' && day === '*' && month === '*' && weekday === '*') return 'Runs every minute';
+            if (/^\d+$/.test(minute) && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+                return `Runs once each hour at :${String(minute).padStart(2, '0')} (not every ${minute} minutes)`;
+            }
+            return `CRON: ${cron}`;
+        }
         function updateCron() {
             const minute = document.getElementById('cron_minute').value;
             const hour = document.getElementById('cron_hour').value;
             const day = document.getElementById('cron_day').value;
             const month = document.getElementById('cron_month').value;
             const weekday = document.getElementById('cron_weekday').value;
-            document.getElementById('cron_expression').value = `${minute} ${hour} ${day} ${month} ${weekday}`;
+            const cron = `${minute} ${hour} ${day} ${month} ${weekday}`;
+            document.getElementById('cron_expression').value = cron;
+            const preview = document.getElementById('cron_preview');
+            if (preview) preview.textContent = describeCron(cron);
         }
         function toggleNotificationRecipients() {
             const enabled = document.getElementById('notifications_enabled').checked;

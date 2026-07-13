@@ -3,6 +3,12 @@
 <div class="container py-8">
     <h1 class="mb-4 text-2xl font-bold">Reports</h1>
     <div class="flex flex-col md:flex-row md:justify-end gap-2 mb-4">
+        @if(!empty($canScheduleReports))
+        <a href="{{ route('admin.scheduled-reports.create', array_filter(['facility_id' => ($selectedFacilityId ?? 0) ?: null])) }}"
+            class="px-4 py-2 bg-blue-600 text-white rounded flex items-center">
+            <i class="fas fa-plus mr-2"></i> Schedule Report
+        </a>
+        @endif
         <a href="{{ route('admin.scheduled-reports.index') }}" class="px-4 py-2 bg-blue-600 text-white rounded flex items-center">
             <i class="fas fa-clock mr-2"></i> Scheduled Reports
         </a>
@@ -30,7 +36,55 @@
         {{ session('error') }}
     </div>
     @endif
-    <form method="GET" class="mb-4 flex flex-wrap gap-2 items-end">
+    <form method="GET" action="{{ route('admin.reports.index') }}" class="mb-4 flex flex-wrap gap-2 items-end rounded border border-slate-200 bg-white p-3 shadow-sm">
+        @if(!empty($canFilterAllFacilities))
+        <div>
+            <label class="block text-xs font-semibold mb-1">Facility</label>
+            <select name="facility_id" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48">
+                <option value="0">All Facilities</option>
+                @foreach($facilities as $filterFacility)
+                    <option value="{{ $filterFacility->id }}" @selected((int) ($selectedFacilityId ?? 0) === (int) $filterFacility->id)>
+                        {{ $filterFacility->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        @elseif(($selectedFacilityId ?? 0) > 0)
+            <input type="hidden" name="facility_id" value="{{ $selectedFacilityId }}">
+        @endif
+        <div>
+            <label class="block text-xs font-semibold mb-1">Department</label>
+            <select name="department_id" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48">
+                <option value="0">All Departments</option>
+                @foreach($departments as $department)
+                    <option value="{{ $department->id }}" @selected((int) ($selectedDepartmentId ?? 0) === (int) $department->id)>
+                        {{ $department->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold mb-1">Position</label>
+            <select name="position_id" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48">
+                <option value="0">All Positions</option>
+                @foreach($positions as $position)
+                    <option value="{{ $position->id }}" @selected((int) ($selectedPositionId ?? 0) === (int) $position->id)>
+                        {{ $position->title }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold mb-1">Reports To</label>
+            <select name="reports_to" class="form-select bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48">
+                <option value="0">All Supervisors</option>
+                @foreach($supervisorPositions as $supervisor)
+                    <option value="{{ $supervisor->id }}" @selected((int) ($selectedReportsTo ?? 0) === (int) $supervisor->id)>
+                        {{ $supervisor->title }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <div>
             <label class="block text-xs font-semibold mb-1">Search</label>
             <input type="text" name="search" value="{{ request('search') }}" class="form-input bg-teal-50 border border-teal-500 px-2 py-1 text-sm rounded w-48" placeholder="Name or description...">
@@ -90,13 +144,13 @@
         </div>
     </div>
     <!-- Modal -->
-    <div id="report-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50 overflow-y-auto">
-        <div class="bg-white p-6 rounded shadow w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 class="text-xl font-bold mb-4" id="modal-title">Run Report</h2>
+    <div id="report-modal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-black bg-opacity-50 p-4">
+        <div class="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded bg-white p-6 shadow">
+            <h2 class="mb-4 text-xl font-bold" id="modal-title">Run Report</h2>
             <form id="report-params-form">
-                <div id="report-params-fields"></div>
+                <div id="report-params-fields" class="space-y-3"></div>
                 <div class="mt-4">
-                    <label class="block font-semibold mb-1">Output Format</label>
+                    <label class="mb-1 block font-semibold">Output Format</label>
                     <select name="output_format" id="output_format_select" class="form-select w-full border border-teal-500 px-2 py-1">
                         <option value="table">Table</option>
                         <option value="csv">CSV</option>
@@ -105,26 +159,105 @@
                     </select>
                 </div>
                 <div class="mt-4 hidden" id="pdf_orientation_wrap">
-                    <label class="block font-semibold mb-1">PDF Orientation</label>
+                    <label class="mb-1 block font-semibold">PDF Orientation</label>
                     <select name="pdf_orientation" id="pdf_orientation_select" class="form-select w-full border border-teal-500 px-2 py-1">
                         <option value="portrait">Portrait</option>
                         <option value="landscape">Landscape</option>
                     </select>
                 </div>
-                <div class="flex justify-end mt-4 gap-2">
-                    <button type="button" class="px-4 py-2 bg-gray-300 rounded close-modal">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded" id="run-btn">Run</button>
-                    <button type="button" class="px-4 py-2 bg-teal-600 text-white rounded hidden" id="rerun-btn">Rerun</button>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" class="close-modal rounded bg-gray-300 px-4 py-2">Cancel</button>
+                    <button type="submit" class="rounded bg-blue-600 px-4 py-2 text-white" id="run-btn">Run</button>
+                    <button type="button" class="hidden rounded bg-teal-600 px-4 py-2 text-white" id="rerun-btn">Rerun</button>
                 </div>
             </form>
-            <div id="report-results" class="mt-6"></div>
+            <div id="report-results" class="mt-6 overflow-x-auto"></div>
         </div>
     </div>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const canFilterAllFacilities = @json(!empty($canFilterAllFacilities));
+    const orgOptions = {
+        facility: @json(
+            collect([['id' => 0, 'label' => 'All Facilities']])
+                ->concat(($facilities ?? collect())->map(fn ($f) => ['id' => $f->id, 'label' => $f->name]))
+                ->values()
+        ),
+        department: @json(
+            collect([['id' => 0, 'label' => 'All Departments']])
+                ->concat(($departments ?? collect())->map(fn ($d) => ['id' => $d->id, 'label' => $d->name]))
+                ->values()
+        ),
+        position: @json(
+            collect([['id' => 0, 'label' => 'All Positions']])
+                ->concat(($positions ?? collect())->map(fn ($p) => ['id' => $p->id, 'label' => $p->title]))
+                ->values()
+        ),
+        reports_to: @json(
+            collect([['id' => 0, 'label' => 'All Supervisors']])
+                ->concat(($supervisorPositions ?? collect())->map(fn ($p) => ['id' => $p->id, 'label' => $p->title]))
+                ->values()
+        ),
+    };
+
+    const pageDefaults = {
+        facility_id: String(@json((int) ($selectedFacilityId ?? 0))),
+        department_id: String(@json((int) ($selectedDepartmentId ?? 0))),
+        position_id: String(@json((int) ($selectedPositionId ?? 0))),
+        reports_to: String(@json((int) ($selectedReportsTo ?? 0))),
+        days_ahead: '30',
+        overdue_days: '90',
+    };
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildParamField(param) {
+        const name = param.name || '';
+        const label = param.label || name;
+        const type = (param.type || 'text').toLowerCase();
+        const defaultValue = pageDefaults[name] ?? (param.default != null ? String(param.default) : (
+            ['facility_id', 'department_id', 'position_id', 'reports_to'].includes(name) ? '0' : ''
+        ));
+
+        if (['facility', 'department', 'position', 'reports_to'].includes(type) || ['facility_id', 'department_id', 'position_id', 'reports_to'].includes(name)) {
+            const optionKey = type === 'facility' || name === 'facility_id' ? 'facility'
+                : (type === 'department' || name === 'department_id' ? 'department'
+                : (type === 'position' || name === 'position_id' ? 'position' : 'reports_to'));
+
+            if (optionKey === 'facility' && !canFilterAllFacilities) {
+                return `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(pageDefaults.facility_id)}">`
+                    + `<div class="mt-2 text-sm text-slate-600"><span class="font-semibold">${escapeHtml(label)}:</span> current facility</div>`;
+            }
+
+            const options = (orgOptions[optionKey] || []).map(opt => {
+                const selected = String(opt.id) === String(defaultValue) ? ' selected' : '';
+                return `<option value="${escapeHtml(opt.id)}"${selected}>${escapeHtml(opt.label)}</option>`;
+            }).join('');
+
+            return `<label class="mt-2 block text-sm font-semibold">${escapeHtml(label)}`
+                + `<select name="${escapeHtml(name)}" class="form-select mt-1 w-full rounded border border-teal-500 px-2 py-1">${options}</select>`
+                + `</label>`;
+        }
+
+        const inputType = type === 'integer' || type === 'number' ? 'number' : type;
+        return `<label class="mt-2 block text-sm font-semibold">${escapeHtml(label)}`
+            + `<input class="form-input mt-1 w-full rounded border border-teal-500 px-2 py-1" name="${escapeHtml(name)}" type="${escapeHtml(inputType)}" value="${escapeHtml(defaultValue)}">`
+            + `</label>`;
+    }
+
     const modal = document.getElementById('report-modal');
-    const closeModal = () => { modal.classList.add('hidden'); document.getElementById('report-results').innerHTML = ''; };
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('report-results').innerHTML = '';
+    };
     document.querySelectorAll('.run-report-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             fetch(`/admin/reports/${this.dataset.id}/json`)
@@ -145,16 +278,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     let params = report.parameters || [];
                     let fields = '';
                     if (!Array.isArray(params)) {
-                        // Defensive: if parameters is not an array, show a message
-                        fields = "<div class='text-red-600 text-sm'>Parameters (JSON) must be an array of objects with name, label, and type. Example:<br><code>[{&quot;name&quot;:&quot;is_active&quot;,&quot;label&quot;:&quot;Is Active&quot;,&quot;type&quot;:&quot;text&quot;}]</code></div>";
+                        fields = "<div class='text-red-600 text-sm'>Parameters (JSON) must be an array of objects with name, label, and type.</div>";
                         params = [];
                     } else {
-                        params.forEach(p => {
-                            fields += `<label class='block mt-2'>${p.label || p.name}<input class='form-input mt-1 w-full border border-teal-500 px-2 py-1 rounded' name='${p.name||''}' type='${p.type||'text'}'></label>`;
-                        });
+                        params.forEach(p => { fields += buildParamField(p); });
                     }
                     document.getElementById('report-params-fields').innerHTML = fields;
+                    document.getElementById('run-btn').style.display = '';
+                    document.getElementById('rerun-btn').classList.add('hidden');
+                    document.getElementById('report-results').innerHTML = '';
                     modal.classList.remove('hidden');
+                    modal.classList.add('flex');
                     document.getElementById('report-params-form').onsubmit = function(e) {
                         e.preventDefault();
                         runReport();
@@ -164,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const formData = new FormData(document.getElementById('report-params-form'));
                         const params = {};
                         for (const [k,v] of formData.entries()) {
-                            if (!['output_format', 'pdf_orientation'].includes(k)) params[k]=v;
+                            if (!['output_format', 'pdf_orientation'].includes(k)) params[k] = v === '' ? 0 : v;
                         }
                         const output_format = formData.get('output_format') || 'table';
                         const pdf_orientation = formData.get('pdf_orientation') || (report.default_pdf_orientation || 'portrait');
@@ -182,7 +316,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             let html = '';
                             const outputFormat = document.getElementById('output_format_select').value;
                             const params = {};
-                            // Collect params for download links
                             new FormData(document.getElementById('report-params-form')).forEach((v, k) => {
                                 if (!['output_format', 'pdf_orientation'].includes(k)) params[k] = v;
                             });
@@ -194,47 +327,41 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return q;
                             }
                             if (!data || (outputFormat === 'table' && !Array.isArray(data.results))) {
-                                html = '<div class="text-red-600 font-semibold">An error occurred or the server returned invalid data.</div>';
+                                html = `<div class="text-red-600 font-semibold">${escapeHtml(data?.error || 'An error occurred or the server returned invalid data.')}</div>`;
                             } else if (outputFormat === 'pdf') {
-                                // PDF: show View PDF button
                                 let query = 'download=pdf&pdf_orientation=' + encodeURIComponent(document.getElementById('pdf_orientation_select').value || 'portrait') + buildQueryString(params);
                                 html = `<a href="/admin/reports/${report.id}/run?${query}" class="px-3 py-1 bg-red-600 text-white rounded" target="_blank">View PDF</a><div class="text-gray-600 mt-2">PDF generated. Click above to view.</div>`;
                             } else if (outputFormat === 'csv') {
-                                // CSV: show Download CSV button and CSV content
                                 let query = 'download=csv' + buildQueryString(params);
                                 html = `<a href="/admin/reports/${report.id}/run?${query}" class="px-3 py-1 bg-green-600 text-white rounded">Download CSV</a>`;
-                                html += `<pre class="bg-gray-100 p-2 rounded text-xs mt-2">${data.csv ? data.csv : ''}</pre>`;
+                                html += `<pre class="bg-gray-100 p-2 rounded text-xs mt-2">${data.csv ? escapeHtml(data.csv) : ''}</pre>`;
                             } else if (outputFormat === 'json') {
                                 const jsonStr = JSON.stringify(data.results, null, 2);
                                 html = `<div class="flex items-center gap-2 mb-2">
                                     <button type="button" id="copy-json-btn" class="px-2 py-1 bg-teal-600 text-white rounded text-xs">Copy JSON</button>
                                     <span id="copy-json-message" class="hidden text-green-600 text-xs font-semibold">Copied!</span>
                                 </div>`;
-                                html += `<pre id="json-output" class="bg-gray-100 p-2 rounded text-xs mt-2">${jsonStr}</pre>`;
+                                html += `<pre id="json-output" class="bg-gray-100 p-2 rounded text-xs mt-2">${escapeHtml(jsonStr)}</pre>`;
+                            } else if (!data.results.length) {
+                                html = '<div class="text-slate-600">No results for the selected filters.</div>';
                             } else {
-                                // Table
-                                html = '<table class="min-w-full border mt-4"><thead><tr>';
-                                if (data.results.length) {
-                                    Object.keys(data.results[0]).forEach(col => html += `<th class='border px-2 py-1'>${col}</th>`);
-                                    html += '</tr></thead><tbody>';
-                                    data.results.forEach(row => {
-                                        html += '<tr>';
-                                        Object.values(row).forEach(val => {
-                                            if (typeof val === 'object' && val !== null) {
-                                                html += `<td class='border px-2 py-1'>${JSON.stringify(val)}</td>`;
-                                            } else {
-                                                html += `<td class='border px-2 py-1'>${val}</td>`;
-                                            }
-                                        });
-                                        html += '</tr>';
+                                html = '<table class="min-w-full border mt-4 text-xs"><thead><tr>';
+                                Object.keys(data.results[0]).forEach(col => html += `<th class='border px-2 py-1'>${escapeHtml(col)}</th>`);
+                                html += '</tr></thead><tbody>';
+                                data.results.forEach(row => {
+                                    html += '<tr>';
+                                    Object.values(row).forEach(val => {
+                                        if (typeof val === 'object' && val !== null) {
+                                            html += `<td class='border px-2 py-1'>${escapeHtml(JSON.stringify(val))}</td>`;
+                                        } else {
+                                            html += `<td class='border px-2 py-1'>${escapeHtml(val)}</td>`;
+                                        }
                                     });
-                                    html += '</tbody></table>';
-                                } else {
-                                    html += '<tr><td>No results</td></tr></thead></table>';
-                                }
+                                    html += '</tr>';
+                                });
+                                html += '</tbody></table>';
                             }
                             document.getElementById('report-results').innerHTML = html;
-                            // Add copy-to-clipboard logic for JSON
                             if (outputFormat === 'json') {
                                 const copyBtn = document.getElementById('copy-json-btn');
                                 const jsonOutput = document.getElementById('json-output');
@@ -248,24 +375,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     setTimeout(() => { copyMsg.classList.add('hidden'); }, 1500);
                                                 }
                                             });
-                                        } else {
-                                            // Fallback for older browsers
-                                            const range = document.createRange();
-                                            range.selectNodeContents(jsonOutput);
-                                            const sel = window.getSelection();
-                                            sel.removeAllRanges();
-                                            sel.addRange(range);
-                                            document.execCommand('copy');
-                                            sel.removeAllRanges();
-                                            if (copyMsg) {
-                                                copyMsg.classList.remove('hidden');
-                                                setTimeout(() => { copyMsg.classList.add('hidden'); }, 1500);
-                                            }
                                         }
                                     });
                                 }
                             }
-                            // Hide Run button, show Rerun button
                             document.getElementById('run-btn').style.display = 'none';
                             document.getElementById('rerun-btn').classList.remove('hidden');
                         })
@@ -274,7 +387,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
 
-                    // Rerun button logic
                     document.getElementById('rerun-btn').onclick = function() {
                         runReport();
                     };

@@ -14,6 +14,21 @@ class RolePermissionSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Rename legacy permission slug to match current RBAC naming.
+        $legacyCommunications = Permission::query()->where('name', 'view communications')->first();
+        if ($legacyCommunications) {
+            $targetName = RbacPermissions::VIEW_WEB_COMMUNICATIONS;
+            $existingTarget = Permission::query()->where('name', $targetName)->first();
+            if ($existingTarget) {
+                \Illuminate\Support\Facades\DB::table(config('permission.table_names.role_has_permissions'))
+                    ->where('permission_id', $legacyCommunications->id)
+                    ->update(['permission_id' => $existingTarget->id]);
+                $legacyCommunications->delete();
+            } else {
+                $legacyCommunications->update(['name' => $targetName]);
+            }
+        }
+
         foreach (RbacPermissions::all() as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }

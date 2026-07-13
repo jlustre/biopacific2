@@ -6,15 +6,18 @@
             </svg>
         </span>
     @elseif(!empty($generateUrl) && ($hasRecipientEmail ?? true))
+        @php
+            $isResend = ! empty($pendingRegistrationCode);
+        @endphp
         <form method="POST" action="{{ $generateUrl }}" class="inline">
             @csrf
             @if(!empty($facilityFilterId))
                 <input type="hidden" name="facility" value="{{ $facilityFilterId }}">
             @endif
             <button type="submit"
-                class="{{ !empty($pendingRegistrationCode) ? 'text-amber-600 hover:text-amber-800' : 'text-teal-600 hover:text-teal-800' }} transition"
-                title="{{ !empty($pendingRegistrationCode) ? 'Resend registration code (' . $pendingRegistrationCode->code . ')' : 'Generate registration code and email invite' }}">
-                @if(!empty($pendingRegistrationCode))
+                class="{{ $isResend ? 'text-amber-600 hover:text-amber-800' : 'text-teal-600 hover:text-teal-800' }} transition"
+                title="{{ $isResend ? 'Resend registration code (' . $pendingRegistrationCode->code . ')' : 'Generate registration code and email invite' }}">
+                @if($isResend)
                     <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 align-middle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>

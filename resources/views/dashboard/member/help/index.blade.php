@@ -6,11 +6,11 @@
         <div>
             <p class="text-sm font-semibold uppercase tracking-wide text-teal-600">Help & Support</p>
             <h1 class="text-2xl font-black text-slate-900">My help requests</h1>
-            <p class="mt-2 text-sm text-slate-600">HR inquiries and support tickets you submitted from the portal.</p>
+            <p class="mt-2 text-sm text-slate-600">Contact HR and Technical Support tickets you submitted from the portal.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('member.help.hr') }}" class="inline-flex items-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700">Email HR</a>
-            <a href="{{ route('member.help.support') }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Support request</a>
+            <a href="{{ route('member.help.hr') }}" class="inline-flex items-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700">Contact HR</a>
+            <a href="{{ route('member.help.support') }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Technical Support</a>
         </div>
     </div>
 
@@ -19,8 +19,8 @@
         <div class="px-6 py-12 text-center">
             <p class="text-sm text-slate-500">No help requests yet.</p>
             <div class="mt-4 flex flex-wrap justify-center gap-3">
-                <a href="{{ route('member.help.hr') }}" class="text-sm font-semibold text-teal-700">Email HR →</a>
-                <a href="{{ route('member.help.support') }}" class="text-sm font-semibold text-indigo-700">Submit support request →</a>
+                <a href="{{ route('member.help.hr') }}" class="text-sm font-semibold text-teal-700">Contact HR →</a>
+                <a href="{{ route('member.help.support') }}" class="text-sm font-semibold text-indigo-700">Technical Support →</a>
             </div>
         </div>
         @else

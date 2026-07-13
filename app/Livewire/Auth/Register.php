@@ -41,13 +41,7 @@ class Register extends Component
 
         if ($code && preg_match('/^[ET]-/i', $code)) {
             $this->registrationCode = strtoupper($code);
-            $record = RegistrationCode::query()->where('code', $this->registrationCode)->first();
-
-            if ($record && $record->isUsable()) {
-                $this->name = $record->fullName();
-                $this->email = $record->email;
-                $this->requiresIdentityVerification = $record->isEmployeeCode();
-            }
+            $this->hydrateFromRegistrationCode($this->registrationCode);
 
             return;
         }
@@ -59,9 +53,7 @@ class Register extends Component
     {
         $normalized = strtoupper(trim($value));
         $this->registrationCode = $normalized;
-
-        $record = RegistrationCode::query()->where('code', $normalized)->first();
-        $this->requiresIdentityVerification = ! $record || $record->isEmployeeCode();
+        $this->hydrateFromRegistrationCode($normalized);
     }
 
     /**
@@ -120,6 +112,17 @@ class Register extends Component
         }
 
         $this->redirect(route('dashboard.index', absolute: false), navigate: true);
+    }
+
+    protected function hydrateFromRegistrationCode(string $code): void
+    {
+        $record = RegistrationCode::query()->where('code', $code)->first();
+        $this->requiresIdentityVerification = ! $record || $record->isEmployeeCode();
+
+        if ($record && $record->isUsable()) {
+            $this->name = $record->fullName();
+            $this->email = $record->email;
+        }
     }
 
     public function render()

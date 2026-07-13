@@ -1,5 +1,7 @@
-@extends('layouts.dashboard', ['title' => 'Employee Email Mappings'])
+@extends('layouts.member-portal')
 
 @section('content')
-<livewire:admin.employee-email-mappings />
+<section class="px-4 py-4 sm:px-6 lg:px-8">
+    <livewire:admin.employee-email-mappings />
+</section>
 @endsection

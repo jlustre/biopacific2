@@ -225,9 +225,13 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="text-xs font-black uppercase tracking-wide text-slate-500">{{ ($facility->isCorporatePublicSite() ?? false) ? 'Corporate leadership' : 'Facility leadership' }}</h3>
-                    @if(\Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && auth()->user() && (auth()->user()->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || auth()->user()->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL)))
+                    @if(\Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && auth()->check())
+                    @php
+                        $canEditLeadership = app(\App\Services\FacilityLeadershipService::class)
+                            ->userCanEditLeadership(auth()->user(), $facility ?? null);
+                    @endphp
                     <a href="{{ auth()->user()->hasRole(['admin', 'super-admin', 'rdhr']) ? route('admin.facilities.leadership.index') : route('admin.facility.leadership.edit', ['facility' => $facilityKey]) }}"
-                       class="text-[10px] font-bold text-teal-700 hover:text-teal-900">Manage</a>
+                       class="text-[10px] font-bold text-teal-700 hover:text-teal-900">{{ $canEditLeadership ? 'Manage' : 'View' }}</a>
                     @endif
                 </div>
                 <ul class="mt-1.5 max-h-64 divide-y divide-slate-100 overflow-y-auto">

@@ -8,28 +8,47 @@ use App\Models\Report;
 use App\Models\ScheduledReport;
 use App\Models\ScheduledReportRun;
 use App\Models\ScheduledReportTemplate;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\User;
+use App\Support\SelectedFacility;
+use App\Services\ScheduledReportRunner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ScheduledReportController extends Controller
 {
+    /**
+     * Facility-bound roles (DSD, facility admin, etc.) are locked to their facility.
+     * Admin / super-admin / RDHR may schedule across facilities.
+     */
     protected function scopedFacilityId(Request $request): ?int
     {
         $user = $request->user();
 
-        if ($user && ! $user->hasRole(['admin', 'super-admin']) && $user->facility_id) {
-            return (int) $user->facility_id;
+        if (! $user) {
+            return null;
         }
 
-        return null;
+        if (SelectedFacility::userCanChooseFacility($user)) {
+            return null;
+        }
+
+        return SelectedFacility::forcedFacilityIdForUser($user)
+            ?? ($user->facility_id ? (int) $user->facility_id : null);
     }
 
     protected function canManageScheduledReports(Request $request): bool
     {
         return (bool) $request->user()?->hasAnyRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']);
+    }
+
+    /**
+     * Only admin / super-admin create and maintain report templates (including optional parameters).
+     */
+    protected function canManageReportTemplates(Request $request): bool
+    {
+        return (bool) $request->user()?->hasAnyRole(['admin', 'super-admin']);
     }
 
     protected function ensureCanManage(Request $request): void
@@ -39,47 +58,135 @@ class ScheduledReportController extends Controller
         }
     }
 
+    protected function ensureCanManageTemplates(Request $request): void
+    {
+        if (! $this->canManageReportTemplates($request)) {
+            abort(403, 'Only administrators can manage report templates.');
+        }
+    }
+
+    protected function globalReportRoles(): array
+    {
+        return ['admin', 'super-admin', 'rdhr'];
+    }
+
+    protected function userFacilityIds(?User $user): Collection
+    {
+        if (! $user) {
+            return collect();
+        }
+
+        $facilityIds = collect();
+
+        if (method_exists($user, 'facilities')) {
+            $facilityIds = $user->facilities()->pluck('facilities.id');
+        }
+
+        if ($user->facility_id) {
+            $facilityIds->push((int) $user->facility_id);
+        }
+
+        $forced = SelectedFacility::forcedFacilityIdForUser($user);
+        if ($forced) {
+            $facilityIds->push($forced);
+        }
+
+        $employee = method_exists($user, 'resolvedBpEmployee')
+            ? $user->resolvedBpEmployee(['currentAssignment'])
+            : null;
+
+        if ($employee?->currentAssignment?->facility_id) {
+            $facilityIds->push((int) $employee->currentAssignment->facility_id);
+        }
+
+        return $facilityIds->filter()->unique()->values();
+    }
+
     protected function reportsForUser(Request $request)
     {
         $user = $request->user();
-        $isAdmin = $user->hasRole(['admin', 'super-admin']);
-        $isRdhr = $user->hasRole('rdhr');
-        $roles = $user->getRoleNames()->toArray();
-        $userFacilityIds = collect();
 
-        if (method_exists($user, 'facilities')) {
-            $userFacilityIds = $user->facilities->pluck('id');
-        } elseif ($user->facility_id) {
-            $userFacilityIds = collect([$user->facility_id]);
-        }
-
-        if ($isAdmin) {
+        if ($user?->hasRole(['admin', 'super-admin'])) {
             return Report::orderBy('name')->get();
         }
 
-        return Report::where('is_active', true)
-            ->where(function ($q) use ($roles, $userFacilityIds, $isRdhr) {
-                $q->where('visibility', 'all');
-                if (! empty($roles)) {
-                    $q->orWhere(function ($q2) use ($roles) {
-                        $q2->where('visibility', 'roles');
-                        foreach ($roles as $role) {
-                            $q2->orWhereJsonContains('visible_roles', $role);
-                        }
+        $roles = $user?->getRoleNames()->values()->all() ?? [];
+        $facilityIds = $this->userFacilityIds($user);
+
+        return Report::query()
+            ->where('is_active', true)
+            ->where(function ($q) use ($roles, $facilityIds, $user) {
+                if ($user?->hasRole($this->globalReportRoles())) {
+                    $q->orWhereIn('visibility', ['admin', 'all']);
+                } else {
+                    $q->orWhere('visibility', 'all');
+                }
+
+                if ($roles !== []) {
+                    $q->orWhere(function ($roleQuery) use ($roles) {
+                        $roleQuery->where('visibility', 'roles')
+                            ->where(function ($jsonQuery) use ($roles) {
+                                foreach ($roles as $role) {
+                                    $jsonQuery->orWhereJsonContains('visible_roles', $role);
+                                }
+                            });
                     });
                 }
-                $q->orWhere(function ($q2) use ($userFacilityIds) {
-                    $q2->where('visibility', 'facilities');
-                    foreach ($userFacilityIds as $fid) {
-                        $q2->orWhereJsonContains('visible_facilities', $fid);
-                    }
-                });
-                if ($isRdhr) {
-                    $q->orWhere('visibility', 'admin');
+
+                if ($facilityIds->isNotEmpty()) {
+                    $q->orWhere(function ($facilityQuery) use ($facilityIds) {
+                        $facilityQuery->where('visibility', 'facilities')
+                            ->where(function ($jsonQuery) use ($facilityIds) {
+                                foreach ($facilityIds as $facilityId) {
+                                    $jsonQuery->orWhereJsonContains('visible_facilities', (int) $facilityId);
+                                }
+                            });
+                    });
                 }
             })
             ->orderBy('name')
             ->get();
+    }
+
+    protected function ensureReportAccessible(Request $request, int $reportId): void
+    {
+        $allowed = $this->reportsForUser($request)->contains(fn (Report $report) => (int) $report->id === $reportId);
+
+        abort_unless($allowed, 403, 'You do not have access to this report.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $parameters
+     * @return array<string, mixed>
+     */
+    protected function applyScopedParameters(Request $request, array $parameters): array
+    {
+        $scopedFacilityId = $this->scopedFacilityId($request);
+
+        if ($scopedFacilityId) {
+            $parameters['facility_id'] = $scopedFacilityId;
+
+            return $parameters;
+        }
+
+        $paramFacilityId = isset($parameters['facility_id']) ? (int) $parameters['facility_id'] : null;
+
+        if ($paramFacilityId && ! SelectedFacility::userCanAccessFacility($request->user(), $paramFacilityId)) {
+            abort(403, 'You do not have access to that facility.');
+        }
+
+        return $parameters;
+    }
+
+    protected function decodeParameters(?string $raw): array
+    {
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     public function applyFacilityScopeToScheduledReportsQuery($query, Request $request)
@@ -90,15 +197,14 @@ class ScheduledReportController extends Controller
             return $query;
         }
 
-        $visibleReportIds = $this->reportsForUser($request)->pluck('id');
-
-        return $query->where(function ($q) use ($facilityId, $visibleReportIds) {
+        return $query->where(function ($q) use ($facilityId) {
             $q->where(function ($pq) use ($facilityId) {
                 $pq->where('parameters->facility_id', $facilityId)
                     ->orWhere('parameters->facility_id', (string) $facilityId);
-            })
-                ->orWhereHas('creator', fn ($uq) => $uq->where('facility_id', $facilityId))
-                ->orWhereIn('report_id', $visibleReportIds);
+            })->orWhere(function ($cq) use ($facilityId) {
+                $cq->whereNull('parameters->facility_id')
+                    ->whereHas('creator', fn ($uq) => $uq->where('facility_id', $facilityId));
+            });
         });
     }
 
@@ -110,18 +216,16 @@ class ScheduledReportController extends Controller
             return;
         }
 
-        $scheduledReport->loadMissing(['report', 'creator']);
-        $visibleReportIds = $this->reportsForUser($request)->pluck('id');
+        $scheduledReport->loadMissing(['creator']);
         $parameters = $scheduledReport->parameters ?? [];
-        $paramFacilityId = $parameters['facility_id'] ?? null;
+        $paramFacilityId = isset($parameters['facility_id']) ? (int) $parameters['facility_id'] : null;
 
-        $allowed = ($paramFacilityId && (int) $paramFacilityId === $facilityId)
-            || ($scheduledReport->creator && (int) $scheduledReport->creator->facility_id === $facilityId)
-            || $visibleReportIds->contains($scheduledReport->report_id);
+        $allowed = ($paramFacilityId === $facilityId)
+            || ($paramFacilityId === null
+                && $scheduledReport->creator
+                && (int) $scheduledReport->creator->facility_id === $facilityId);
 
-        if (! $allowed) {
-            abort(403, 'You do not have access to this scheduled report.');
-        }
+        abort_unless($allowed, 403, 'You do not have access to this scheduled report.');
     }
 
     public function index(Request $request)
@@ -154,6 +258,7 @@ class ScheduledReportController extends Controller
         $scheduledReports = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
         $reports = $this->reportsForUser($request);
         $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
+        $canManageReportTemplates = $this->canManageReportTemplates($request);
 
         $templatesQuery = ScheduledReportTemplate::with(['report', 'facility', 'creator']);
         $this->applyFacilityScopeToTemplatesQuery($templatesQuery, $request);
@@ -169,6 +274,7 @@ class ScheduledReportController extends Controller
             'scopedFacility',
             'scopedFacilityId',
             'canManageScheduledReports',
+            'canManageReportTemplates',
             'templates',
             'facilities'
         ));
@@ -190,6 +296,8 @@ class ScheduledReportController extends Controller
 
     protected function validateTemplatePayload(Request $request): array
     {
+        $this->ensureCanManageTemplates($request);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
@@ -208,17 +316,19 @@ class ScheduledReportController extends Controller
             'pdf_orientation' => 'nullable|in:P,L',
         ]);
 
-        if (! empty($validated['parameters'])) {
-            $decoded = json_decode($validated['parameters'], true);
-            $validated['parameters'] = is_array($decoded) ? $decoded : [];
-        } else {
-            $validated['parameters'] = [];
-        }
+        $this->ensureReportAccessible($request, (int) $validated['report_id']);
+
+        $validated['parameters'] = $this->applyScopedParameters(
+            $request,
+            $this->decodeParameters($validated['parameters'] ?? null)
+        );
 
         $scopedFacilityId = $this->scopedFacilityId($request);
         if ($scopedFacilityId) {
             $validated['facility_id'] = $scopedFacilityId;
-            $validated['parameters']['facility_id'] = $scopedFacilityId;
+        } elseif (! empty($validated['facility_id'])
+            && ! SelectedFacility::userCanAccessFacility($request->user(), (int) $validated['facility_id'])) {
+            abort(403, 'You do not have access to that facility.');
         }
 
         $validated['notify_roles'] = $request->input('notify_roles', []);
@@ -246,14 +356,12 @@ class ScheduledReportController extends Controller
 
     public function destroyTemplate(Request $request, ScheduledReportTemplate $scheduledReportTemplate)
     {
+        $this->ensureCanManageTemplates($request);
+
         $facilityId = $this->scopedFacilityId($request);
 
         if ($facilityId && $scheduledReportTemplate->facility_id && (int) $scheduledReportTemplate->facility_id !== $facilityId) {
             abort(403, 'You do not have access to this template.');
-        }
-
-        if (! $this->canManageScheduledReports($request) && (int) $scheduledReportTemplate->created_by !== (int) $request->user()->id) {
-            abort(403, 'You can only delete templates you created.');
         }
 
         $scheduledReportTemplate->delete();
@@ -268,20 +376,34 @@ class ScheduledReportController extends Controller
         $this->ensureCanManage($request);
         $reports = $this->reportsForUser($request);
         $template = null;
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
 
         if ($request->filled('template')) {
             $template = ScheduledReportTemplate::with('report')->find($request->input('template'));
             if ($template) {
-                $facilityId = $this->scopedFacilityId($request);
-                if ($facilityId && $template->facility_id && (int) $template->facility_id !== $facilityId) {
+                if ($scopedFacilityId && $template->facility_id && (int) $template->facility_id !== $scopedFacilityId) {
                     abort(403, 'You do not have access to this template.');
                 }
             }
         }
 
-        $prefillFacilityId = $request->integer('facility_id') ?: $this->scopedFacilityId($request);
+        $requestedFacilityId = $request->integer('facility_id') ?: null;
+        if ($scopedFacilityId) {
+            $prefillFacilityId = $scopedFacilityId;
+        } elseif ($requestedFacilityId && SelectedFacility::userCanAccessFacility($request->user(), $requestedFacilityId)) {
+            $prefillFacilityId = $requestedFacilityId;
+        } else {
+            $prefillFacilityId = null;
+        }
 
-        return view('admin.scheduled-reports.create', compact('reports', 'template', 'prefillFacilityId'));
+        return view('admin.scheduled-reports.create', compact(
+            'reports',
+            'template',
+            'prefillFacilityId',
+            'scopedFacilityId',
+            'scopedFacility'
+        ));
     }
 
     public function store(Request $request)
@@ -304,19 +426,13 @@ class ScheduledReportController extends Controller
             'pdf_orientation' => 'nullable|in:P,L',
         ]);
 
+        $this->ensureReportAccessible($request, (int) $validated['report_id']);
+
         $validated['created_by'] = Auth::id();
-
-        if (! empty($validated['parameters'])) {
-            $decoded = json_decode($validated['parameters'], true);
-            $validated['parameters'] = is_array($decoded) ? $decoded : [];
-        } else {
-            $validated['parameters'] = [];
-        }
-
-        $scopedFacilityId = $this->scopedFacilityId($request);
-        if ($scopedFacilityId && empty($validated['parameters']['facility_id'])) {
-            $validated['parameters']['facility_id'] = $scopedFacilityId;
-        }
+        $validated['parameters'] = $this->applyScopedParameters(
+            $request,
+            $this->decodeParameters($validated['parameters'] ?? null)
+        );
 
         $validated['notify_roles'] = $request->input('notify_roles', []);
         $validated['notify_emails'] = $request->input('notify_emails', '');
@@ -326,6 +442,9 @@ class ScheduledReportController extends Controller
         $validated['pdf_orientation'] = $request->input('pdf_orientation');
 
         try {
+            $validated['next_run_at'] = app(ScheduledReportRunner::class)
+                ->getNextRunAt($validated['cron_expression'], now());
+
             ScheduledReport::create($validated);
 
             return redirect()->route('admin.scheduled-reports.index')->with('success', 'Scheduled report created successfully.');
@@ -348,20 +467,48 @@ class ScheduledReportController extends Controller
     {
         $this->authorizeScheduledReport($request, $scheduledReport);
 
-        return back()->with('error', 'Download not available. Please re-run the report.');
+        $run = ScheduledReportRun::where('scheduled_report_id', $scheduledReport->id)->findOrFail($runId);
+        if ($run->status !== 'success') {
+            return back()->with('error', 'This run did not complete successfully, so no file is available.');
+        }
+
+        try {
+            $export = app(ScheduledReportRunner::class)->exportForRun($scheduledReport, $run);
+
+            return response($export['content'])
+                ->header('Content-Type', $export['mime'])
+                ->header('Content-Disposition', 'attachment; filename="'.$export['filename'].'"');
+        } catch (\Throwable $e) {
+            Log::error('Scheduled report download failed', [
+                'scheduled_report_id' => $scheduledReport->id,
+                'run_id' => $run->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Download failed: '.$e->getMessage());
+        }
     }
 
     public function edit(Request $request, ScheduledReport $scheduledReport)
     {
         $this->ensureCanManage($request);
+        $this->authorizeScheduledReport($request, $scheduledReport);
         $reports = $this->reportsForUser($request);
+        $scopedFacilityId = $this->scopedFacilityId($request);
+        $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
 
-        return view('admin.scheduled-reports.edit', compact('scheduledReport', 'reports'));
+        return view('admin.scheduled-reports.edit', compact(
+            'scheduledReport',
+            'reports',
+            'scopedFacilityId',
+            'scopedFacility'
+        ));
     }
 
     public function update(Request $request, ScheduledReport $scheduledReport)
     {
         $this->ensureCanManage($request);
+        $this->authorizeScheduledReport($request, $scheduledReport);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -373,14 +520,15 @@ class ScheduledReportController extends Controller
             'pdf_orientation' => 'nullable|in:P,L',
         ]);
 
-        if (! empty($validated['parameters'])) {
-            $decoded = json_decode($validated['parameters'], true);
-            $validated['parameters'] = is_array($decoded) ? $decoded : [];
-        } else {
-            $validated['parameters'] = [];
-        }
+        $this->ensureReportAccessible($request, (int) $validated['report_id']);
 
+        $validated['parameters'] = $this->applyScopedParameters(
+            $request,
+            $this->decodeParameters($validated['parameters'] ?? null)
+        );
         $validated['pdf_orientation'] = $request->input('pdf_orientation');
+        $validated['next_run_at'] = app(ScheduledReportRunner::class)
+            ->getNextRunAt($validated['cron_expression'], now());
 
         $scheduledReport->update($validated);
 
@@ -390,6 +538,7 @@ class ScheduledReportController extends Controller
     public function destroy(Request $request, ScheduledReport $scheduledReport)
     {
         $this->ensureCanManage($request);
+        $this->authorizeScheduledReport($request, $scheduledReport);
         $scheduledReport->delete();
 
         return redirect()->route('admin.scheduled-reports.index')->with('success', 'Scheduled report deleted.');
@@ -398,110 +547,41 @@ class ScheduledReportController extends Controller
     public function runNow(Request $request, ScheduledReport $scheduledReport)
     {
         $this->ensureCanManage($request);
+        $this->authorizeScheduledReport($request, $scheduledReport);
 
-        $now = now();
         $report = $scheduledReport->report;
         if (! $report) {
             return back()->with('error', 'Report not found for this schedule.');
         }
+
+        $runner = app(ScheduledReportRunner::class);
+        $parameters = $this->applyScopedParameters($request, $scheduledReport->parameters ?? []);
+        $run = $runner->execute($scheduledReport, $parameters, true, false);
+
+        if ($run->status !== 'success') {
+            return back()->with('error', 'Failed to run scheduled report: '.($run->error_message ?: 'Unknown error'));
+        }
+
         try {
-            $parameters = $scheduledReport->parameters ?? [];
-            foreach ($parameters as $key => $value) {
-                if (is_array($value)) {
-                    if (count($value) === 1 && array_key_exists(0, $value)) {
-                        $parameters[$key] = $value[0];
-                    } else {
-                        $first = array_values($value);
-                        $parameters[$key] = $first[0] ?? null;
-                    }
-                }
-            }
-            $sql = $report->sql_template;
-            $results = DB::select($sql, $parameters);
-            $format = $scheduledReport->report_format ?? 'csv';
-            if ($format === 'csv') {
-                $csv = '';
-                if (! empty($results)) {
-                    $header = array_keys((array) $results[0]);
-                    $csv .= implode(',', $header)."\n";
-                    foreach ($results as $row) {
-                        $csv .= implode(',', array_map(function ($v) {
-                            return '"'.str_replace('"', '""', $v).'"';
-                        }, (array) $row))."\n";
-                    }
-                } else {
-                    $csv .= "No results found.\n";
-                }
-                $content = $csv;
-                $mime = 'text/csv';
-                $ext = 'csv';
-            } elseif ($format === 'pdf') {
-                $pdfView = view('admin.scheduled-reports.report-pdf', [
-                    'results' => $results,
-                    'scheduledReport' => $scheduledReport,
-                    'runAt' => $now,
-                ])->render();
-                $orientation = $scheduledReport->pdf_orientation === 'L' ? 'landscape' : 'portrait';
-                $pdf = Pdf::loadHTML($pdfView)->setPaper('a4', $orientation);
-                $content = $pdf->output();
-                $mime = 'application/pdf';
-                $ext = 'pdf';
-            } elseif ($format === 'html') {
-                $htmlView = view('admin.scheduled-reports.report-html', [
-                    'results' => $results,
-                    'scheduledReport' => $scheduledReport,
-                    'runAt' => $now,
-                ])->render();
-                $content = $htmlView;
-                $mime = 'text/html';
-                $ext = 'html';
-            } else {
-                throw new \Exception('Unsupported report format: '.$format);
-            }
+            $export = $runner->exportForRun($scheduledReport, $run);
 
-            ScheduledReportRun::create([
-                'scheduled_report_id' => $scheduledReport->id,
-                'executed_at' => $now,
-                'result_path' => null,
-                'result_json' => json_encode($results),
-                'status' => 'success',
-                'error_message' => null,
+            return response($export['content'])
+                ->header('Content-Type', $export['mime'])
+                ->header('Content-Disposition', 'attachment; filename="'.$export['filename'].'"');
+        } catch (\Throwable $e) {
+            Log::error('Manual scheduled report download failed', [
+                'id' => $scheduledReport->id,
+                'error' => $e->getMessage(),
             ]);
 
-            $scheduledReport->last_run_at = $now;
-            $scheduledReport->next_run_at = $this->getNextRunAt($scheduledReport->cron_expression, $now);
-            $scheduledReport->save();
-
-            $filename = 'scheduled_report_'.$scheduledReport->id.'_'.$now->format('Ymd_His').'.'.$ext;
-
-            return response($content)
-                ->header('Content-Type', $mime)
-                ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
-        } catch (\Exception $e) {
-            Log::error('Manual scheduled report run failed', ['id' => $scheduledReport->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            $scheduledReport->status = 'error';
-            $scheduledReport->save();
-            ScheduledReportRun::create([
-                'scheduled_report_id' => $scheduledReport->id,
-                'executed_at' => $now,
-                'result_path' => null,
-                'result_json' => null,
-                'status' => 'error',
-                'error_message' => $e->getMessage(),
-            ]);
-
-            return back()->with('error', 'Failed to run scheduled report: '.$e->getMessage());
+            return redirect()
+                ->route('admin.scheduled-reports.history', $scheduledReport)
+                ->with('success', 'Report ran and was saved to history, but the download failed: '.$e->getMessage());
         }
     }
 
     protected function getNextRunAt($cron, $from)
     {
-        try {
-            $cron = \Cron\CronExpression::factory($cron);
-
-            return $cron->getNextRunDate($from)->format('Y-m-d H:i:s');
-        } catch (\Exception $e) {
-            return null;
-        }
+        return app(ScheduledReportRunner::class)->getNextRunAt($cron, $from);
     }
 }

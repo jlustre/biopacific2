@@ -113,6 +113,56 @@ class ReportController extends Controller
         );
     }
 
+    /**
+     * Force facility scope and reject corporate org filters for facility-bound roles.
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    protected function scopedRunParameters(Request $request, array $params): array
+    {
+        $user = $request->user();
+
+        if ($user?->hasRole(['admin', 'super-admin', 'rdhr'])) {
+            return $params;
+        }
+
+        $forcedFacilityId = \App\Support\SelectedFacility::forcedFacilityIdForUser($user)
+            ?? \App\Support\SelectedFacility::id($request);
+
+        abort_unless(
+            $forcedFacilityId,
+            403,
+            'No facility is assigned to your account for facility-scoped reports.'
+        );
+
+        $params['facility_id'] = $forcedFacilityId;
+
+        $departmentId = isset($params['department_id']) ? (int) $params['department_id'] : 0;
+        if ($departmentId > 0) {
+            $allowed = \App\Models\Department::query()
+                ->whereKey($departmentId)
+                ->where('type', 'facility')
+                ->exists();
+            abort_unless($allowed, 403, 'You do not have access to that department.');
+        }
+
+        foreach (['position_id', 'reports_to'] as $positionKey) {
+            $positionId = isset($params[$positionKey]) ? (int) $params[$positionKey] : 0;
+            if ($positionId <= 0) {
+                continue;
+            }
+
+            $allowed = \App\Models\Position::query()
+                ->whereKey($positionId)
+                ->whereHas('department', fn ($q) => $q->where('type', 'facility'))
+                ->exists();
+            abort_unless($allowed, 403, 'You do not have access to that position.');
+        }
+
+        return $params;
+    }
+
     protected function defaultPdfOrientation(Report $report): string
     {
         return str_contains($report->name, 'Expiring Licenses & Certifications')
@@ -225,8 +275,82 @@ class ReportController extends Controller
 
         $reports = $query->orderBy('name')->paginate(10)->withQueryString();
         $categories = \App\Models\ReportCategory::orderBy('name')->get();
-        $canManageReports = $this->userCanManageReports($request->user());
-        return view('admin.reports.index', compact('reports', 'categories', 'canManageReports'));
+        $user = $request->user();
+        $canManageReports = $this->userCanManageReports($user);
+        $canFilterAllFacilities = (bool) $user?->hasRole(['admin', 'super-admin', 'rdhr']);
+        $canScheduleReports = $canManageReports
+            || (bool) $user?->hasAnyRole(['rdhr', 'facility-admin', 'facility-dsd']);
+
+        $forcedFacilityId = \App\Support\SelectedFacility::forcedFacilityIdForUser($user)
+            ?? \App\Support\SelectedFacility::id($request);
+
+        if ($canFilterAllFacilities) {
+            $facilities = \App\Models\Facility::query()->orderBy('name')->get(['id', 'name']);
+            $selectedFacilityId = (int) $request->input('facility_id', 0);
+            $departments = \App\Models\Department::query()->orderBy('name')->get(['id', 'name']);
+            $positions = \App\Models\Position::query()->orderBy('title')->get(['id', 'title']);
+            $supervisorPositions = \App\Models\Position::query()
+                ->supervisorRoles()
+                ->orderBy('title')
+                ->get(['id', 'title']);
+        } else {
+            $lockedFacility = $forcedFacilityId
+                ? \App\Models\Facility::query()->find($forcedFacilityId)
+                : null;
+            $facilities = $lockedFacility ? collect([$lockedFacility]) : collect();
+            $selectedFacilityId = (int) ($lockedFacility?->id ?? 0);
+
+            // Facility roles (DSD, etc.) only see facility org options — not corporate.
+            $departments = \App\Models\Department::query()
+                ->where('type', 'facility')
+                ->orderBy('name')
+                ->get(['id', 'name']);
+            $positions = \App\Models\Position::query()
+                ->whereHas('department', fn ($q) => $q->where('type', 'facility'))
+                ->orderBy('title')
+                ->get(['id', 'title']);
+            $supervisorPositions = \App\Models\Position::query()
+                ->supervisorRoles()
+                ->whereHas('department', fn ($q) => $q->where('type', 'facility'))
+                ->orderBy('title')
+                ->get(['id', 'title']);
+        }
+
+        $selectedDepartmentId = (int) $request->input('department_id', 0);
+        $selectedPositionId = (int) $request->input('position_id', 0);
+        $selectedReportsTo = (int) $request->input('reports_to', 0);
+
+        if (! $canFilterAllFacilities) {
+            $allowedDepartmentIds = $departments->pluck('id')->map(fn ($id) => (int) $id);
+            $allowedPositionIds = $positions->pluck('id')->map(fn ($id) => (int) $id);
+            $allowedSupervisorIds = $supervisorPositions->pluck('id')->map(fn ($id) => (int) $id);
+
+            if ($selectedDepartmentId && ! $allowedDepartmentIds->contains($selectedDepartmentId)) {
+                $selectedDepartmentId = 0;
+            }
+            if ($selectedPositionId && ! $allowedPositionIds->contains($selectedPositionId)) {
+                $selectedPositionId = 0;
+            }
+            if ($selectedReportsTo && ! $allowedSupervisorIds->contains($selectedReportsTo)) {
+                $selectedReportsTo = 0;
+            }
+        }
+
+        return view('admin.reports.index', compact(
+            'reports',
+            'categories',
+            'canManageReports',
+            'canScheduleReports',
+            'canFilterAllFacilities',
+            'facilities',
+            'departments',
+            'positions',
+            'supervisorPositions',
+            'selectedFacilityId',
+            'selectedDepartmentId',
+            'selectedPositionId',
+            'selectedReportsTo',
+        ));
     }
 
     public function create(Request $request)
@@ -236,9 +360,8 @@ class ReportController extends Controller
         return view('admin.reports.form');
     }
 
-    public function show(Request $request, $id)
+    public function show(Request $request, Report $report)
     {
-        $report = Report::findOrFail($id);
         $this->authorizeReportAccess($request, $report);
 
         // Handle CSV/PDF download
@@ -248,6 +371,7 @@ class ReportController extends Controller
             if (!is_array($params)) {
                 $params = [];
             }
+            $params = $this->scopedRunParameters($request, $params);
             $sql = $report->sql_template;
             foreach ($params as $key => $value) {
                 $sql = str_replace(':'.$key, DB::getPdo()->quote($value), $sql);
@@ -384,12 +508,11 @@ class ReportController extends Controller
     }
 
  
-    public function run(Request $request, $id)
+    public function run(Request $request, Report $report)
     {
-        $report = Report::findOrFail($id);
         $this->authorizeReportAccess($request, $report);
 
-        $params = $request->input('params', []);
+        $params = $this->scopedRunParameters($request, $request->input('params', []));
         $outputFormat = $request->input('output_format', 'table');
         $pdfOrientation = $this->pdfOrientation($request, $report);
         $sql = $report->sql_template;
@@ -447,9 +570,8 @@ class ReportController extends Controller
     }
 
     // JSON endpoint for modal fetch
-    public function json(Request $request, $id)
+    public function json(Request $request, Report $report)
     {
-        $report = Report::findOrFail($id);
         $this->authorizeReportAccess($request, $report);
 
         return response()->json([
@@ -484,18 +606,18 @@ class ReportController extends Controller
         }
     }
 
-        /**
+    /**
      * Handle GET download for PDF/CSV/JSON output.
      */
-    public function download(Request $request, $id)
+    public function download(Request $request, Report $report)
     {
-        $report = Report::findOrFail($id);
         $this->authorizeReportAccess($request, $report);
 
         $params = $request->query('params', []);
         if (!is_array($params)) {
             $params = [];
         }
+        $params = $this->scopedRunParameters($request, $params);
         $sql = $report->sql_template;
         foreach ($params as $key => $value) {
             $sql = str_replace(':'.$key, DB::getPdo()->quote($value), $sql);

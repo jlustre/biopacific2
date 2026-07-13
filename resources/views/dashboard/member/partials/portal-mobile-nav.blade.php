@@ -13,7 +13,8 @@
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
         ['id' => 'hr-portal', 'route' => 'user.hr-portal', 'icon' => '👥', 'label' => 'HR'],
         ['id' => 'positions', 'route' => 'admin.positions.index', 'icon' => '💼', 'label' => 'Positions'],
-        ['id' => 'reports', 'route' => 'admin.reports.index', 'icon' => '📊', 'label' => 'Reports'],
+        ['id' => 'reports', 'route' => 'admin.reports.index', 'icon' => '📊', 'label' => 'Reports Management'],
+        ['id' => 'scheduled-report-runs', 'route' => 'admin.scheduled-report-runs.index', 'icon' => '📋', 'label' => 'Scheduled Report Runs'],
         ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
       ],
       'facility' => [

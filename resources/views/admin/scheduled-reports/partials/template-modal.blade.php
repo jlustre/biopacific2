@@ -107,11 +107,11 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Parameters (JSON)</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Parameters (JSON) <span class="text-gray-400 font-normal">(optional)</span></label>
                             <textarea name="parameters" rows="2"
-                                placeholder='{"facility_id": 1}'
+                                placeholder='Leave blank if the report needs no parameters, or e.g. {"facility_id": 1}'
                                 class="w-full rounded-md border border-teal-500 bg-white px-3 py-2 font-mono text-sm">{{ old('parameters') }}</textarea>
-                            <p class="mt-1 text-xs text-gray-500">Optional. Passed to the report SQL when the schedule runs.</p>
+                            <p class="mt-1 text-xs text-gray-500">Include only if this report requires parameters when it runs. Facility users cannot change these later.</p>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">Default status <span class="text-red-500">*</span></label>
@@ -130,9 +130,14 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Minute</label>
                             <select id="template_cron_minute" class="w-full rounded border border-gray-300 px-2 py-1.5 text-sm">
-                                <option value="*">Every</option>
+                                <option value="*">Every minute</option>
+                                <option value="*/2">Every 2 minutes</option>
+                                <option value="*/5">Every 5 minutes</option>
+                                <option value="*/10">Every 10 minutes</option>
+                                <option value="*/15">Every 15 minutes</option>
+                                <option value="*/30">Every 30 minutes</option>
                                 @for($i = 0; $i < 60; $i++)
-                                <option value="{{ $i }}">{{ $i }}</option>
+                                <option value="{{ $i }}">At minute {{ $i }}</option>
                                 @endfor
                             </select>
                         </div>

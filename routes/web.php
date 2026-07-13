@@ -113,20 +113,25 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin/backups')->
 
 // Admin Reports Management (visibility is enforced in ReportController)
 Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|don|facility-editor'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
+    $missingReport = function () {
+        return redirect()
+            ->route('admin.reports.index')
+            ->with('error', 'That report template no longer exists. It may have already been deleted.');
+    };
+
     Route::get('/', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('index');
     Route::get('/create', [\App\Http\Controllers\Admin\ReportController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\Admin\ReportController::class, 'store'])->name('store');
     Route::post('/sync-seeder', [\App\Http\Controllers\Admin\ReportController::class, 'syncSeeder'])->name('sync-seeder');
-    Route::get('/{report}/edit', [\App\Http\Controllers\Admin\ReportController::class, 'edit'])->name('edit');
-    Route::put('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('update');
-    Route::delete('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'destroy'])->name('destroy');
-    // Existing show/run actions for running reports
-    Route::get('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'show'])->name('show');
-    Route::get('/{report}/json', [\App\Http\Controllers\Admin\ReportController::class, 'json'])->name('json');
-    Route::post('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'run'])->name('run');
-    // GET for downloads (PDF/CSV/JSON)
-    Route::get('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'download'])->name('download');
     Route::post('/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('validate-sql');
+
+    Route::get('/{report}/edit', [\App\Http\Controllers\Admin\ReportController::class, 'edit'])->name('edit')->missing($missingReport);
+    Route::put('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('update')->missing($missingReport);
+    Route::delete('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'destroy'])->name('destroy')->missing($missingReport);
+    Route::get('/{report}/json', [\App\Http\Controllers\Admin\ReportController::class, 'json'])->name('json')->missing($missingReport);
+    Route::post('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'run'])->name('run')->missing($missingReport);
+    Route::get('/{report}/run', [\App\Http\Controllers\Admin\ReportController::class, 'download'])->name('download')->missing($missingReport);
+    Route::get('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'show'])->name('show')->missing($missingReport);
 });
 
 // Scheduled Report Runs Management (Admin)
@@ -134,6 +139,7 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
     Route::get('/', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'index'])->name('index');
     Route::get('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'show'])->name('show');
     Route::get('/{run}/report', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'showReport'])->name('show-report');
+    Route::get('/{run}/download', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'download'])->name('download');
     Route::post('/{run}/archive', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'archive'])->name('archive');
     Route::delete('/{run}', [\App\Http\Controllers\Admin\ScheduledReportRunController::class, 'destroy'])->name('destroy');
 });
@@ -188,6 +194,22 @@ Route::middleware(['auth', 'permission:' . Permissions::VIEW_POSITIONS])->get('/
 // PART F: Areas for Development (save)
 Route::post('admin/employees/{employee}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
 Route::post('admin/employees/{employee}/competency-workflow', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveCompetencyWorkflow'])->name('admin.employees.competency-workflow.save');
+Route::middleware(['auth'])->prefix('admin/employees/{employee}/training-completions')->name('admin.employees.training-completions.')->group(function () {
+    Route::post('{trainingItem}/start', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'start'])
+        ->name('start');
+    Route::post('{trainingItem}/submit', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'submit'])
+        ->name('submit');
+    Route::post('{trainingItem}/approve', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'approve'])
+        ->name('approve');
+    Route::post('{trainingItem}/reject', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'reject'])
+        ->name('reject');
+});
+
+// Employee edit is auth-gated (not role-gated) so trainees and supervisor reviewers can open checklist deep-links.
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('employees/{employee}/edit', [\App\Http\Controllers\Admin\EmployeesController::class, 'edit'])
+        ->name('employees.edit');
+});
 
 // PART F: List reviewed employees for selected period and facility (AJAX)
 Route::middleware(['auth'])->prefix('admin')->group(function () {
@@ -275,6 +297,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/select-facility/{facility}', [\App\Http\Controllers\Admin\FacilitySessionController::class, 'select'])->name('member.select-facility');
     Route::get('/facility-dashboard/{facility?}', [DashboardController::class, 'facilityDashboard'])
         ->name('member.facility.dashboard');
+
+    // Facility Leadership — all authenticated employees can view (scoped); writers use PUT/DELETE routes below
+    Route::get('/admin/facilities/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'index'])->name('admin.facilities.leadership.index');
+    Route::get('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'edit'])->name('admin.facility.leadership.edit');
+});
+
+// Facility Leadership write access — scoped by role in the controller
+Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd'])->group(function () {
+    Route::put('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'update'])->name('admin.facility.leadership.update');
+    Route::delete('/admin/facility/{facility}/leadership/role/{roleKey}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroyRole'])->name('admin.facility.leadership.role.destroy');
+    Route::delete('/admin/facility/{facility}/leadership/{assignment}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroy'])->name('admin.facility.leadership.destroy');
 });
 
 // Facility-specific admin dashboard
@@ -305,14 +338,19 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
     Route::delete('/admin/facility/{facility}/document/{document}', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'deleteDocument'])->name('admin.facility.document.delete');
     Route::get('/admin/facility/{facility}/termination', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'termination'])->name('admin.facility.termination');
     Route::get('/admin/facility/{facility}/employees', [\App\Http\Controllers\Admin\EmployeesController::class, 'index'])->name('admin.facility.employees');
+    Route::get('/admin/facility/competencies', [\App\Http\Controllers\Admin\FacilityChecklistPartController::class, 'competencies'])
+        ->middleware('permission:' . Permissions::ACCESS_HR_PORTAL)
+        ->name('admin.facility.competencies');
+    Route::get('/admin/facility/performance', [\App\Http\Controllers\Admin\FacilityChecklistPartController::class, 'performance'])
+        ->middleware('permission:' . Permissions::ACCESS_HR_PORTAL)
+        ->name('admin.facility.performance');
+    Route::get('/admin/facility/trainings', [\App\Http\Controllers\Admin\FacilityChecklistPartController::class, 'trainings'])
+        ->name('admin.facility.trainings');
+    Route::get('/admin/facility/documents', [\App\Http\Controllers\Admin\FacilityChecklistPartController::class, 'documents'])
+        ->name('admin.facility.documents.entry');
     // Route::get('/admin/facility/{facility}/attendance', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'attendance'])->name('admin.facility.attendance');
     Route::get('/admin/facility/{facility}/documents', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'documents'])->name('admin.facility.documents');
     Route::get('/admin/facility/{facility}/reports', [\App\Http\Controllers\Admin\Facilities\QuickActionsController::class, 'reports'])->name('admin.facility.reports');
-    Route::get('/admin/facilities/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'index'])->name('admin.facilities.leadership.index');
-    Route::get('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'edit'])->name('admin.facility.leadership.edit');
-    Route::put('/admin/facility/{facility}/leadership', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'update'])->name('admin.facility.leadership.update');
-    Route::delete('/admin/facility/{facility}/leadership/role/{roleKey}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroyRole'])->name('admin.facility.leadership.role.destroy');
-    Route::delete('/admin/facility/{facility}/leadership/{assignment}', [\App\Http\Controllers\Admin\FacilityLeadershipController::class, 'destroy'])->name('admin.facility.leadership.destroy');
     Route::resource('admin/facility/{facility}/uploads', UploadController::class)
         ->parameters(['uploads' => 'upload'])
         ->names([
@@ -377,8 +415,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::post('/facilities/{facility}/sync-seeder', [FacilityAdminController::class, 'syncSeeder'])->name('facilities.sync-seeder');
     Route::post('/facilities/{facility}/services', [FacilityAdminController::class, 'updateServices'])->name('facilities.updateServices');
 
-    // Add resource route for employees (show, edit, update, create)
-    Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'edit', 'update', 'create', 'store']);
+    // Add resource route for employees (show/update/create/store stay role-gated).
+    // Edit is registered separately under auth so employees/supervisors can open checklist deep-links.
+    Route::resource('employees', \App\Http\Controllers\Admin\EmployeesController::class)->only(['show', 'update', 'create', 'store']);
     Route::post('employees/{employee}/profile/confirm-hr', [\App\Http\Controllers\Admin\MemberProfileHrReviewController::class, 'confirm'])->name('employees.profile.confirm-hr');
     Route::get('employees/{employee}/assessment-periods/modal-data', [\App\Http\Controllers\Admin\EmployeesController::class, 'assessmentPeriodModalData'])
         ->name('employees.assessment-periods.modal-data');
@@ -541,6 +580,11 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
         Route::resource('checklist-items', \App\Http\Controllers\Admin\ChecklistItemController::class)
             ->except(['show'])
             ->names('checklist-items');
+        Route::post('training-items/bulk-positions', [\App\Http\Controllers\Admin\EmployeeTrainingItemController::class, 'bulkUpdatePositions'])
+            ->name('training-items.bulk-positions');
+        Route::resource('training-items', \App\Http\Controllers\Admin\EmployeeTrainingItemController::class)
+            ->except(['show'])
+            ->names('training-items');
     });
 
     Route::middleware(['role:admin|super-admin'])->group(function () {
@@ -692,8 +736,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/dashboard/documents', [DashboardController::class, 'memberDocuments'])->name('member.documents');
     Route::get('/dashboard/tasks', [DashboardController::class, 'memberTasks'])->name('member.tasks');
+    Route::get('/dashboard/messages', [DashboardController::class, 'memberMessages'])->name('member.messages');
     Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
-    Route::get('/dashboard/trainings', [DashboardController::class, 'memberTrainings'])->name('member.trainings');
+    Route::get('/dashboard/checklists', [DashboardController::class, 'memberChecklists'])->name('member.checklists');
+    Route::post('/dashboard/checklists/{trainingItem}/start', [\App\Http\Controllers\MemberTrainingController::class, 'start'])->name('member.checklists.start');
+    Route::post('/dashboard/checklists/{trainingItem}/submit', [\App\Http\Controllers\MemberTrainingController::class, 'submit'])->name('member.checklists.submit');
+    Route::get('/dashboard/checklists/competency-assessment/{assessment}/section/pdf', [\App\Http\Controllers\MemberChecklistDocumentController::class, 'competencySectionPdf'])->name('member.checklists.competency-section.pdf');
+    Route::get('/dashboard/checklists/competency-assessment/{assessment}/pdf', [\App\Http\Controllers\MemberChecklistDocumentController::class, 'competencyAssessmentPdf'])->name('member.checklists.competency-assessment.pdf');
+    Route::get('/dashboard/checklists/performance-assessment/{assessment}/pdf', [\App\Http\Controllers\MemberChecklistDocumentController::class, 'performanceAssessmentPdf'])->name('member.checklists.performance-assessment.pdf');
+    // Legacy aliases
+    Route::get('/dashboard/trainings', [DashboardController::class, 'memberChecklists'])->name('member.trainings');
+    Route::post('/dashboard/trainings/{trainingItem}/start', [\App\Http\Controllers\MemberTrainingController::class, 'start'])->name('member.trainings.start');
+    Route::post('/dashboard/trainings/{trainingItem}/submit', [\App\Http\Controllers\MemberTrainingController::class, 'submit'])->name('member.trainings.submit');
     Route::get('/dashboard/feedback', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'index'])->name('member.feedback.index');
     Route::get('/dashboard/feedback/create', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'create'])->name('member.feedback.create');
     Route::post('/dashboard/feedback', [\App\Http\Controllers\MemberPortalFeedbackController::class, 'store'])->name('member.feedback.store');
@@ -706,9 +760,20 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/help/hr', [\App\Http\Controllers\MemberPortalHelpController::class, 'storeHr'])->name('member.help.hr.store');
     Route::get('/dashboard/help/support', [\App\Http\Controllers\MemberPortalHelpController::class, 'supportForm'])->name('member.help.support');
     Route::post('/dashboard/help/support', [\App\Http\Controllers\MemberPortalHelpController::class, 'storeSupport'])->name('member.help.support.store');
+    Route::get('/dashboard/help/manuals', [\App\Http\Controllers\MemberPortalHelpController::class, 'manuals'])->name('member.help.manuals');
     Route::get('/dashboard/help/{helpRequest}', [\App\Http\Controllers\MemberPortalHelpController::class, 'show'])->name('member.help.show');
     Route::get('/dashboard/help/{helpRequest}/confirmation', [\App\Http\Controllers\MemberPortalHelpController::class, 'confirmation'])->name('member.help.confirmation');
     Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
+    Route::get('/dashboard/galleries', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'index'])->name('member.galleries.index');
+    Route::get('/dashboard/galleries/create', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'create'])->name('member.galleries.create');
+    Route::post('/dashboard/galleries', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'store'])->name('member.galleries.store');
+    Route::get('/dashboard/galleries/{gallery}', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'show'])->name('member.galleries.show');
+    Route::get('/dashboard/galleries/{gallery}/edit', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'edit'])->name('member.galleries.edit');
+    Route::put('/dashboard/galleries/{gallery}', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'update'])->name('member.galleries.update');
+    Route::delete('/dashboard/galleries/{gallery}', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'destroy'])->name('member.galleries.destroy');
+    Route::post('/dashboard/galleries/{gallery}/images', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'storeImages'])->name('member.galleries.images.store');
+    Route::put('/dashboard/galleries/{gallery}/images/{image}', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'updateImage'])->name('member.galleries.images.update');
+    Route::delete('/dashboard/galleries/{gallery}/images/{image}', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'destroyImage'])->name('member.galleries.images.destroy');
     Route::get('/dashboard/facilities-websites', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'index'])->name('member.facilities.websites');
     Route::get('/dashboard/facilities-websites/{facility}', [\App\Http\Controllers\MemberFacilitiesWebsitesController::class, 'show'])->name('member.facilities.websites.show');
     Route::get('settings/profile', [DashboardController::class, 'memberProfile'])->name('settings.profile');

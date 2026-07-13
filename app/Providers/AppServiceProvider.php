@@ -32,25 +32,18 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register policies
         Gate::policy(PreEmploymentApplication::class, PreEmploymentApplicationPolicy::class);
+        Gate::policy(\App\Models\Gallery::class, \App\Policies\FacilityGalleryPolicy::class);
 
         Route::bind('submission', fn (string $value) => \App\Models\WebmasterContact::findOrFail($value));
         Route::bind('helpRequest', fn (string $value) => \App\Models\PortalHelpRequest::findOrFail($value));
         Route::bind('portalHelpRequest', fn (string $value) => \App\Models\PortalHelpRequest::findOrFail($value));
 
         View::composer('layouts.dashboard', function ($view) {
-            $useMemberPortalSidebar = MemberPortalLayout::shouldUseForCurrentRequest();
-            $view->with('useMemberPortalSidebar', $useMemberPortalSidebar);
+            // Always use the member portal chrome (sidebar/topbar). Legacy admin nav is retired.
+            $view->with('useMemberPortalSidebar', true);
 
-            if ($useMemberPortalSidebar) {
+            if (auth()->check()) {
                 $view->with(MemberPortalLayout::variablesForView());
-            } elseif (auth()->check()) {
-                $user = auth()->user();
-                $view->with([
-                    'selectedFacility' => \App\Support\SelectedFacility::model(),
-                    'selectedFacilityId' => \App\Support\SelectedFacility::id(),
-                    'selectedFacilityName' => \App\Support\SelectedFacility::name(),
-                    'canChooseFacility' => \App\Support\SelectedFacility::userCanChooseFacility($user),
-                ]);
             }
         });
 

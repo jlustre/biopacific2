@@ -50,6 +50,21 @@ class MemberPortalHelpController extends Controller
         return view('dashboard.member.help.support', array_merge($this->memberPortalContext($user), $this->formContext($user, PortalHelpRequest::TYPE_SUPPORT)));
     }
 
+    public function manuals(Request $request): View
+    {
+        $user = $request->user();
+
+        return view('dashboard.member.help.manuals', array_merge($this->memberPortalContext($user), [
+            'userGuides' => config('portal-help.user_guides', []),
+            'portalActive' => 'help-manuals',
+            'portalTitle' => 'Manuals and Docs | Bio Pacific',
+            'portalEyebrow' => 'Help & Support',
+            'portalPageTitle' => 'Manuals and Docs',
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+        ]));
+    }
+
     public function storeHr(Request $request, PortalHelpRequestService $service): RedirectResponse
     {
         return $this->storeRequest($request, $service, PortalHelpRequest::TYPE_HR);
@@ -155,17 +170,18 @@ class MemberPortalHelpController extends Controller
             'prefillPhone' => $employee?->displayPhoneNumber(),
             'prefillEmployeeNum' => $employee?->employee_num,
             'portalActive' => $isHr ? 'help-hr' : 'help-support',
-            'portalTitle' => ($isHr ? 'Email HR' : 'Support Request') . ' | Bio Pacific',
-            'portalEyebrow' => 'Help & Support',
-            'portalPageTitle' => $isHr ? 'Email HR' : 'Submit support request',
+            'portalTitle' => ($isHr ? 'Contact HR' : 'Technical Support') . ' | Bio Pacific',
+            'portalEyebrow' => 'Need Help',
+            'portalPageTitle' => $isHr ? 'Contact HR' : 'Technical Support',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
+            'userGuides' => $isHr ? [] : config('portal-help.user_guides', []),
         ];
     }
 
     protected function authorizeHelpRequest($user, PortalHelpRequest $helpRequest): void
     {
-        if ((int) $helpRequest->user_id !== (int) $user->id) {
+        if (! app(\App\Services\PortalHelpRecipientService::class)->userCanAccessHelpRequest($user, $helpRequest)) {
             throw new NotFoundHttpException();
         }
     }

@@ -29,6 +29,8 @@ trait ProvidesMemberPortalContext
         $lastName = $nameParts[1] ?? '';
         $firstNameOnly = explode(' ', trim($displayName))[0] ?? $displayName;
         $portalAlerts = app(MemberDashboardService::class)->buildPortalAlerts($user);
+        $myTasksCount = \App\Models\PersonalTask::assignedOpenCountForUser($user);
+        $myMessagesCount = app(\App\Services\MemberMessages\MemberMessagesService::class)->countFor($user);
 
         return [
             'user' => $user,
@@ -50,6 +52,8 @@ trait ProvidesMemberPortalContext
             'avatarUrl' => $user->profileAvatarUrl(),
             'profileComplete' => $this->calculatePersonalProfileComplete($user, $employee),
             'documentsNeededCount' => (int) ($portalAlerts['documents_needed'] ?? 0),
+            'myTasksCount' => $myTasksCount,
+            'myMessagesCount' => $myMessagesCount,
             'portalNotifications' => $portalAlerts['items'] ?? [],
             'portalNotificationCount' => (int) ($portalAlerts['count'] ?? 0),
             'newsEventsCount' => $this->countMemberNewsEvents($facility),
@@ -145,7 +149,16 @@ trait ProvidesMemberPortalContext
             return Facility::find($user->facility_id);
         }
 
-        return $user->facility;
+        if ($user->facility) {
+            return $user->facility;
+        }
+
+        // System admins / multi-facility users: honor selected facility context.
+        if (\App\Support\SelectedFacility::userCanChooseFacility($user)) {
+            return \App\Support\SelectedFacility::model();
+        }
+
+        return null;
     }
 
     protected function countMemberNewsEvents(?Facility $facility): int
@@ -154,9 +167,10 @@ trait ProvidesMemberPortalContext
             return News::query()
                 ->where('status', true)
                 ->where('is_global', true)
+                ->visibleOn('portal')
                 ->count();
         }
 
-        return FacilityDataHelper::getNews($facility)->count();
+        return FacilityDataHelper::getNews($facility, 'portal')->count();
     }
 }

@@ -17,4 +17,9 @@ class Event extends Model
     {
         return $this->belongsTo(Facility::class);
     }
+
+    public function galleries()
+    {
+        return $this->hasMany(Gallery::class);
+    }
 }

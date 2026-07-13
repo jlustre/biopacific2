@@ -80,6 +80,8 @@
         'avatarUrl' => $avatarUrl,
         'portalNotifications' => $portalNotifications ?? [],
         'portalNotificationCount' => $portalNotificationCount ?? 0,
+        'myTasksCount' => $myTasksCount ?? 0,
+        'myMessagesCount' => $myMessagesCount ?? 0,
       ])
 
       <div class="flex-1">

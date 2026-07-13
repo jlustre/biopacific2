@@ -243,14 +243,14 @@
     }
 
     #employee-checklist-root:not(.checklist-tabs-ready) [data-checklist-tab-panel] { display: none !important; }
-    @foreach(['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'] as $checklistPartId)
+    @foreach(['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG', 'partH'] as $checklistPartId)
     #employee-checklist-root[data-checklist-tab="{{ $checklistPartId }}"]:not(.checklist-tabs-ready) [data-checklist-tab-panel="{{ $checklistPartId }}"] { display: block !important; }
     #employee-checklist-root[data-checklist-tab="{{ $checklistPartId }}"]:not(.checklist-tabs-ready) [data-checklist-tab-btn="{{ $checklistPartId }}"] { background-color: #2563eb !important; color: #fff !important; }
     @endforeach
 </style>
 @php
     $initialChecklistTab = request('checklist_tab');
-    if (! in_array($initialChecklistTab, ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG'], true)) {
+    if (! in_array($initialChecklistTab, ['partA', 'partB', 'partC', 'partD', 'partE', 'partF', 'partG', 'partH'], true)) {
         $initialChecklistTab = filled(request('checklist_section')) ? 'partG' : null;
     }
 @endphp
@@ -290,19 +290,19 @@
         if (!root) return;
         var fromUrl = new URLSearchParams(window.location.search).get('checklist_tab');
         var tab = fromUrl;
-        if (!tab || !/^part[A-G]$/.test(tab)) {
+        if (!tab || !/^part[A-H]$/.test(tab)) {
             if (new URLSearchParams(window.location.search).get('checklist_section')) {
                 tab = 'partG';
             }
         }
-        if (!tab || !/^part[A-G]$/.test(tab)) {
+        if (!tab || !/^part[A-H]$/.test(tab)) {
             try {
                 tab = localStorage.getItem('checklistTab') || localStorage.getItem('employeeChecklistActiveTab');
             } catch (e) {
                 tab = null;
             }
         }
-        if (!tab || !/^part[A-G]$/.test(tab)) {
+        if (!tab || !/^part[A-H]$/.test(tab)) {
             tab = root.getAttribute('data-checklist-tab') || 'partA';
         }
         window.__checklistInitialTab = tab;
@@ -376,6 +376,7 @@
                 'partE' => 'Part E — Orientation checklist',
                 'partF' => 'Part F — Employee performance appraisal',
                 'partG' => 'Part G — Competencies checklist',
+                'partH' => 'Part H — Required trainings (hiring & annual)',
             ];
         @endphp
         
@@ -402,10 +403,16 @@
             <li class="-mb-px mr-1">
                 <button type="button" data-checklist-tab-btn="partG" @click="setChecklistTab('partG')" :class="checklistTab === 'partG' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partG'] }}" title="{{ $checklistTabTooltips['partG'] }}" aria-label="{{ $checklistTabTooltips['partG'] }}">PART G</button>
             </li>
+            <li class="-mb-px mr-1">
+                <button type="button" data-checklist-tab-btn="partH" @click="setChecklistTab('partH')" :class="checklistTab === 'partH' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'" class="tab-link inline-block border-l border-t border-r rounded-t py-2 px-4 font-semibold transition-colors duration-150" data-tooltip="{{ $checklistTabTooltips['partH'] }}" title="{{ $checklistTabTooltips['partH'] }}" aria-label="{{ $checklistTabTooltips['partH'] }}">PART H</button>
+            </li>
         </ul>
 
         @if(!empty($evaluatorActionsDisabled))
-            <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+            <div x-show="checklistTab !== 'partH'"
+                 x-cloak
+                 class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+                 role="status">
                 {{ \App\Support\PreventsSelfAssessment::DEFAULT_MESSAGE }}
             </div>
         @endif
@@ -443,6 +450,11 @@
         <!-- PART G: Competencies Checklist -->
         <div x-show="checklistTab === 'partG'" x-cloak data-checklist-tab-panel="partG">
             @include('admin.facilities.checklist.employee-checklist-part_g')
+        </div>
+
+        <!-- PART H: Trainings -->
+        <div x-show="checklistTab === 'partH'" x-cloak data-checklist-tab-panel="partH">
+            @include('admin.facilities.checklist.employee-checklist-part_h')
         </div>
     </div>
 </div>

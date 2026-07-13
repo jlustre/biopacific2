@@ -56,22 +56,70 @@
             </thead>
             <tbody>
                 @forelse($runs as $run)
+                @php
+                    $format = strtolower((string) ($run->scheduledReport->report_format ?? 'csv'));
+                    $canOpenFile = $run->status === 'success';
+                @endphp
                 <tr class="border-b">
                     <td class="px-4 py-2">{{ $run->id }}</td>
                     <td class="px-4 py-2">{{ $run->scheduledReport->name ?? '-' }}</td>
                     <td class="px-4 py-2">{{ $run->executed_at }}</td>
                     <td class="px-4 py-2">{{ ucfirst($run->status) }}</td>
-                    <td class="px-4 py-2 space-x-2">
-                        <a href="{{ route('admin.scheduled-report-runs.show', $run) }}" class="text-blue-600 hover:underline">View</a>
-                        <form action="{{ route('admin.scheduled-report-runs.archive', $run) }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="text-yellow-600 hover:underline" onclick="return confirm('Archive this run?')">Archive</button>
-                        </form>
-                        <form action="{{ route('admin.scheduled-report-runs.destroy', $run) }}" method="POST" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Delete this run?')">Delete</button>
-                        </form>
+                    <td class="px-4 py-2">
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('admin.scheduled-report-runs.show', $run) }}"
+                               class="text-blue-600 hover:text-blue-800"
+                               title="View details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            @if($canOpenFile && $format === 'pdf')
+                                <a href="{{ route('admin.scheduled-report-runs.show-report', $run) }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="text-red-600 hover:text-red-800"
+                                   title="View PDF in new tab">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            @elseif($canOpenFile && $format === 'html')
+                                <a href="{{ route('admin.scheduled-report-runs.show-report', $run) }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="text-indigo-600 hover:text-indigo-800"
+                                   title="View HTML in new tab">
+                                    <i class="fas fa-file-code"></i>
+                                </a>
+                            @endif
+
+                            @if($canOpenFile)
+                                <a href="{{ route('admin.scheduled-report-runs.download', $run) }}"
+                                   class="text-teal-600 hover:text-teal-800"
+                                   title="Download {{ strtoupper($format) }}">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            @endif
+
+                            <form action="{{ route('admin.scheduled-report-runs.archive', $run) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit"
+                                        class="text-yellow-600 hover:text-yellow-800"
+                                        title="Archive"
+                                        onclick="return confirm('Archive this run?')">
+                                    <i class="fas fa-archive"></i>
+                                </button>
+                            </form>
+
+                            <form action="{{ route('admin.scheduled-report-runs.destroy', $run) }}" method="POST" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="text-red-700 hover:text-red-900"
+                                        title="Delete"
+                                        onclick="return confirm('Delete this run?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

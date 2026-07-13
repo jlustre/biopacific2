@@ -44,11 +44,11 @@
             <div class="font-semibold text-lg mt-2">Web Contents</div>
             <div class="text-gray-600 text-sm">Manage testimonials, FAQs, news, blogs, and more</div>
         </a>
-        <!-- Communications -->
+        <!-- Web Communications -->
         <a href="{{ route('admin.tour-requests.index') }}" class="block bg-green-100 hover:bg-green-200 rounded-xl shadow p-6 text-center transition">
             <i class="fas fa-comments text-3xl text-green-600 mb-2"></i>
-            <div class="font-semibold text-lg mt-2">Communications</div>
-            <div class="text-gray-600 text-sm">View and manage communications</div>
+            <div class="font-semibold text-lg mt-2">Web Communications</div>
+            <div class="text-gray-600 text-sm">View and manage web communications</div>
         </a>
     </div>
 </div>

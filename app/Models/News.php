@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentVisibility;
 use Illuminate\Database\Eloquent\Model;
 
 class News extends Model
 {
+    use HasContentVisibility;
+
     protected $fillable = [
         'title',
         'summary',
@@ -14,6 +17,7 @@ class News extends Model
         'published_at',
         'status',
         'is_global',
+        'visibility',
         'facility_id',
     ];
 

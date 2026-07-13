@@ -30,6 +30,7 @@ class EmailTemplatePlaceholderService
         '{registration_code}',
         '{registration_link}',
         '{registration_expiration}',
+        '{sponsor_name}',
         '{verification_link}',
         '{dashboard_link}',
     ];
@@ -168,6 +169,7 @@ class EmailTemplatePlaceholderService
                 ? app(RegistrationCodeService::class)->registrationUrl($registrationCodeRecord)
                 : '',
             'registration_expiration' => $this->formatExpiration($registrationCodeRecord?->expires_at),
+            'sponsor_name' => $registrationCodeRecord?->sponsorDisplayName() ?? '',
             'verification_link' => '',
             'dashboard_link' => route('dashboard.index', absolute: true),
         ];
@@ -198,6 +200,7 @@ class EmailTemplatePlaceholderService
             'registration_code' => $registrationCode->code,
             'registration_link' => app(RegistrationCodeService::class)->registrationUrl($registrationCode),
             'registration_expiration' => $this->formatExpiration($registrationCode->expires_at),
+            'sponsor_name' => $registrationCode->sponsorDisplayName() ?? '',
             'verification_link' => '',
             'dashboard_link' => route('dashboard.index', absolute: true),
         ];
@@ -260,6 +263,7 @@ class EmailTemplatePlaceholderService
                 ? app(RegistrationCodeService::class)->registrationUrl($registrationCode)
                 : '',
             'registration_expiration' => $this->formatExpiration($registrationCode?->expires_at),
+            'sponsor_name' => $registrationCode?->sponsorDisplayName() ?? '',
             'verification_link' => $this->verificationUrlFor($user),
             'dashboard_link' => route('dashboard.index', absolute: true),
         ];

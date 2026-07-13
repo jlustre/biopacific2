@@ -290,6 +290,11 @@ class Facility extends Model
   public function testimonials() { return $this->hasMany(Testimonial::class); }
   public function galleryImages() { return $this->hasMany(GalleryImage::class); }
 
+  public function galleries()
+  {
+    return $this->hasMany(Gallery::class)->orderBy('sort_order')->orderByDesc('created_at');
+  }
+
   public function leadershipAssignments()
   {
     return $this->hasMany(FacilityLeadershipAssignment::class)->orderBy('sort_order')->orderBy('id');

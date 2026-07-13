@@ -12,6 +12,7 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule)
     {
-        $schedule->command('reports:run-scheduled')->everyMinute();
+        // Laravel 11+ loads schedules from routes/console.php.
+        // Keep this empty so report + backup jobs are not double-registered.
     }
 }

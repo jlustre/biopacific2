@@ -34,6 +34,7 @@ class ApplicantRegistrationInviteMail extends Mailable
                 'preEmploymentUrl' => $preEmploymentUrl,
                 'applicantCode' => $applicantCode,
                 'expiresAt' => $this->registrationCodeRecord->expires_at,
+                'sponsorName' => $this->registrationCodeRecord->sponsorDisplayName(),
             ]);
     }
 }

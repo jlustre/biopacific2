@@ -136,7 +136,7 @@ class MemberDashboardService
                         'hint' => 'Review overdue and pending signatures',
                         'route' => \Illuminate\Support\Facades\Route::has('admin.training-management.index')
                             ? route('admin.training-management.index')
-                            : route('member.trainings'),
+                            : route('member.checklists'),
                         'tone' => 'amber',
                         'icon' => 'fa-graduation-cap',
                     ],
@@ -174,7 +174,7 @@ class MemberDashboardService
                     'hint' => (($stats['trainings_pending_signature'] ?? 0) > 0)
                         ? (($stats['trainings_pending_signature'] ?? 0) . ' pending signatures')
                         : 'Review required trainings',
-                    'route' => route('member.trainings'),
+                    'route' => route('member.checklists'),
                     'tone' => 'amber',
                     'icon' => 'fa-graduation-cap',
                 ],
@@ -216,7 +216,7 @@ class MemberDashboardService
                     [
                         'title' => 'Facility Trainings',
                         'subtitle' => 'Track completion across your facility',
-                        'route' => route('member.trainings'),
+                        'route' => route('member.checklists'),
                         'icon' => 'fa-list-check',
                     ],
                     [
@@ -239,7 +239,7 @@ class MemberDashboardService
                     [
                         'title' => 'Training Sign-offs',
                         'subtitle' => 'Close pending signatures and overdue items',
-                        'route' => route('member.trainings'),
+                        'route' => route('member.checklists'),
                         'icon' => 'fa-user-check',
                     ],
                     [
@@ -268,7 +268,7 @@ class MemberDashboardService
                     [
                         'title' => 'Clinical Trainings',
                         'subtitle' => 'Review pending and overdue trainings',
-                        'route' => route('member.trainings'),
+                        'route' => route('member.checklists'),
                         'icon' => 'fa-person-chalkboard',
                     ],
                     [
@@ -295,9 +295,9 @@ class MemberDashboardService
                         'icon' => 'fa-certificate',
                     ],
                     [
-                        'title' => 'My Trainings',
+                        'title' => 'My Checklists',
                         'subtitle' => 'Complete required clinical trainings',
-                        'route' => route('member.trainings'),
+                        'route' => route('member.checklists'),
                         'icon' => 'fa-person-chalkboard',
                     ],
                     [
@@ -318,9 +318,9 @@ class MemberDashboardService
             if ($persona === 'cna') {
                 return [
                     [
-                        'title' => 'My Trainings',
+                        'title' => 'My Checklists',
                         'subtitle' => 'Stay current on mandatory training items',
-                        'route' => route('member.trainings'),
+                        'route' => route('member.checklists'),
                         'icon' => 'fa-person-chalkboard',
                     ],
                     [
@@ -354,7 +354,7 @@ class MemberDashboardService
                 [
                     'title' => 'Trainings',
                     'subtitle' => 'Track required training progress',
-                    'route' => route('member.trainings'),
+                    'route' => route('member.checklists'),
                     'icon' => 'fa-person-chalkboard',
                 ],
                 [
@@ -395,7 +395,7 @@ class MemberDashboardService
                     [
                         'title' => 'Clinical Trainings',
                         'subtitle' => 'Focus on pending signatures and overdue items',
-                        'route' => route('member.trainings'),
+                        'route' => route('member.checklists'),
                         'icon' => 'fa-list-check',
                     ],
                     [
@@ -423,7 +423,7 @@ class MemberDashboardService
                 [
                     'title' => 'Facility Trainings',
                     'subtitle' => 'Focus on overdue and pending sign-offs',
-                    'route' => route('member.trainings'),
+                    'route' => route('member.checklists'),
                     'icon' => 'fa-list-check',
                 ],
                 [
@@ -620,7 +620,7 @@ class MemberDashboardService
                     ? "{$pendingSignatures} training item(s) need your signature."
                     : ($trainingsSummary['needs_action'] . ' training item(s) need attention.'),
                 'tone' => 'amber',
-                'route' => route('member.trainings'),
+                'route' => route('member.checklists'),
             ];
         }
 
@@ -890,7 +890,7 @@ class MemberDashboardService
      *     stats: array<string, int>
      * }
      */
-    public function buildTrainingsPage(User $user): array
+    public function buildTrainingsPage(User $user, ?int $assessmentPeriodId = null): array
     {
         $bpEmployee = $user->resolvedBpEmployee([
             'currentAssignment.position',
@@ -908,17 +908,31 @@ class MemberDashboardService
             ? (optional(BPEmpChecklist::query()->where('employee_num', $bpEmployee->employee_num)->first())->items ?? [])
             : [];
 
+        $assessmentPeriods = collect();
+        $selectedAssessmentPeriodId = null;
+        if ($bpEmployee) {
+            $periodService = app(EmployeeAssessmentPeriodService::class);
+            $assessmentPeriods = $periodService->periodsForEmployee($bpEmployee);
+            $selectedAssessmentPeriodId = $assessmentPeriodId
+                && $assessmentPeriods->contains(fn ($period) => (int) $period->id === (int) $assessmentPeriodId)
+                ? (int) $assessmentPeriodId
+                : $periodService->resolveDefaultPeriodId($bpEmployee);
+        }
+
         $trainingsCenter = $this->buildTrainingsCenter(
             $user,
             $bpEmployee,
             is_array($empChecklistItems) ? $empChecklistItems : [],
-            $preEmploymentChecklists
+            $preEmploymentChecklists,
+            $selectedAssessmentPeriodId
         );
 
         return [
             'trainingsCenter' => $trainingsCenter,
             'facilityTrainingsReport' => $this->buildFacilityTrainingsReport($user),
             'stats' => $trainingsCenter['summary'],
+            'assessmentPeriods' => $assessmentPeriods,
+            'selectedAssessmentPeriodId' => $selectedAssessmentPeriodId,
         ];
     }
 
@@ -931,18 +945,36 @@ class MemberDashboardService
         User $user,
         ?BPEmployee $bpEmployee,
         array $empChecklistItems,
-        Collection $preEmploymentChecklists
+        Collection $preEmploymentChecklists,
+        ?int $assessmentPeriodId = null
     ): array {
         $employmentPortalUrl = route('employment.portal');
-        $profileCompetenciesUrl = route('settings.profile') . '#competencies';
 
-        $orientationItems = $bpEmployee
+        if ($bpEmployee && ! $assessmentPeriodId) {
+            $assessmentPeriodId = app(EmployeeAssessmentPeriodService::class)->resolveDefaultPeriodId($bpEmployee);
+        }
+
+        $moduleTrainings = $bpEmployee
+            ? $this->collectModuleTrainings($bpEmployee, $assessmentPeriodId)
+            : ['hiring' => [], 'annual' => []];
+
+        $orientationBundle = $bpEmployee
             ? $this->collectOrientationTrainings($empChecklistItems, $employmentPortalUrl)
-            : [];
+            : ['items' => [], 'history_documents' => []];
 
-        $competencyItems = $bpEmployee
-            ? $this->collectCompetencyTrainings($bpEmployee->employee_num, $profileCompetenciesUrl, $employmentPortalUrl)
-            : [];
+        $competencyBundle = $bpEmployee
+            ? $this->collectCompetencyTrainings(
+                $bpEmployee->employee_num,
+                $assessmentPeriodId
+            )
+            : ['items' => [], 'history_documents' => []];
+
+        $performanceBundle = $bpEmployee
+            ? $this->collectPerformanceChecklists(
+                $bpEmployee->employee_num,
+                $assessmentPeriodId
+            )
+            : ['items' => [], 'history_documents' => []];
 
         $requiredItems = $bpEmployee
             ? $this->evaluateTrainingChecklistItems($bpEmployee, $empChecklistItems, $employmentPortalUrl)
@@ -950,33 +982,84 @@ class MemberDashboardService
 
         $preEmploymentItems = $this->mapPreEmploymentTrainings($preEmploymentChecklists);
 
+        $trainingHistory = $bpEmployee
+            ? $this->collectModuleTrainingHistory($bpEmployee, $assessmentPeriodId)
+            : [];
+
         $groups = [
             [
-                'key' => 'orientation',
-                'label' => 'Orientation',
-                'description' => 'Part E facility orientation checklist and signatures',
-                'items' => $orientationItems,
+                'key' => 'modules_annual',
+                'bucket' => 'annual',
+                'section' => 'trainings',
+                'label' => 'Trainings',
+                'description' => 'Recurring modules (annual, every 2 years, etc.) for the selected assessment period. Use history for earlier periods.',
+                'items' => $moduleTrainings['annual'],
+                'interactive' => true,
+                'employee_can_act' => true,
+                'history_documents' => $trainingHistory,
             ],
             [
                 'key' => 'competency',
-                'label' => 'Competency evaluations',
-                'description' => 'Periodic skills and competency assessments',
-                'items' => $competencyItems,
+                'bucket' => 'annual',
+                'section' => 'competencies',
+                'label' => 'Competencies',
+                'description' => 'All competencies required for your role in the selected assessment period, including those not started yet.',
+                'items' => $competencyBundle['items'],
+                'read_only' => true,
+                'history_documents' => $competencyBundle['history_documents'],
+            ],
+            [
+                'key' => 'performance',
+                'bucket' => 'annual',
+                'section' => 'performance',
+                'label' => 'Performance',
+                'description' => 'Performance appraisal for the selected assessment period, with status and PDF when available.',
+                'items' => $performanceBundle['items'],
+                'read_only' => true,
+                'history_documents' => $performanceBundle['history_documents'],
+            ],
+            [
+                'key' => 'modules_hiring',
+                'bucket' => 'upon_hiring',
+                'section' => 'trainings',
+                'label' => 'Trainings',
+                'description' => 'You start each module and submit when finished. DSD or supervisors confirm completion.',
+                'items' => $moduleTrainings['hiring'],
+                'interactive' => true,
+                'employee_can_act' => true,
+                'history_documents' => [],
+            ],
+            [
+                'key' => 'orientation',
+                'bucket' => 'upon_hiring',
+                'section' => 'orientation',
+                'label' => 'Orientation',
+                'description' => 'Orientation progress. DSD or supervisors initiate and complete Part E.',
+                'items' => $orientationBundle['items'],
+                'read_only' => true,
+                'history_documents' => $orientationBundle['history_documents'],
             ],
             [
                 'key' => 'required',
-                'label' => 'Required training & acknowledgements',
-                'description' => 'Employee file items from Parts B–D (policies, safety, HIPAA, etc.)',
+                'bucket' => 'upon_hiring',
+                'section' => 'acknowledgements',
+                'label' => 'Acknowledgements',
+                'description' => 'Read-only status for Parts B–D file items managed with your employment record.',
                 'items' => $requiredItems,
+                'read_only' => true,
+                'history_documents' => [],
             ],
         ];
 
         if (count($preEmploymentItems) > 0) {
             $groups[] = [
                 'key' => 'pre_employment',
+                'bucket' => 'upon_hiring',
+                'section' => 'pre_employment',
                 'label' => 'Pre-employment checklist',
                 'description' => 'Onboarding tasks before your start date',
                 'items' => $preEmploymentItems,
+                'history_documents' => [],
             ];
         }
 
@@ -985,28 +1068,227 @@ class MemberDashboardService
 
         return [
             'groups' => $groups,
+            'buckets' => [
+                [
+                    'key' => 'annual',
+                    'label' => 'Annual checklists',
+                    'description' => 'Items tied to the selected assessment period.',
+                    'uses_assessment_period' => true,
+                ],
+                [
+                    'key' => 'upon_hiring',
+                    'label' => 'Upon hiring checklists',
+                    'description' => 'One-time onboarding and hire-period checklists.',
+                    'uses_assessment_period' => false,
+                ],
+            ],
             'items' => $allItems,
             'summary' => $summary,
             'has_employee_record' => (bool) $bpEmployee,
             'has_pre_employment' => count($preEmploymentItems) > 0,
+            'assessment_period_id' => $assessmentPeriodId,
         ];
     }
 
     /**
+     * Part H training modules the employee can start / submit from My Checklists.
+     *
+     * @return array{hiring: list<array<string, mixed>>, annual: list<array<string, mixed>>}
+     */
+    protected function collectModuleTrainings(BPEmployee $employee, ?int $assessmentPeriodId): array
+    {
+        $positionId = $employee->currentAssignment?->position_id
+            ?? $employee->currentAssignment?->position?->id;
+
+        $items = \App\Models\EmployeeTrainingItem::query()
+            ->active()
+            ->applicableToPosition($positionId)
+            ->orderBy('order')
+            ->orderBy('name')
+            ->get();
+
+        $hireCompletions = \App\Models\EmployeeTrainingCompletion::query()
+            ->where('employee_num', $employee->employee_num)
+            ->where('period_key', \App\Models\EmployeeTrainingCompletion::PERIOD_KEY_HIRE)
+            ->get()
+            ->keyBy('employee_training_item_id');
+
+        $periodCompletions = $assessmentPeriodId
+            ? \App\Models\EmployeeTrainingCompletion::query()
+                ->where('employee_num', $employee->employee_num)
+                ->where('period_key', (string) (int) $assessmentPeriodId)
+                ->get()
+                ->keyBy('employee_training_item_id')
+            : collect();
+
+        $latestCompletedAt = \App\Models\EmployeeTrainingCompletion::query()
+            ->where('employee_num', $employee->employee_num)
+            ->where('status', \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED)
+            ->whereIn('employee_training_item_id', $items->pluck('id'))
+            ->whereNotNull('completed_at')
+            ->orderByDesc('completed_at')
+            ->get(['employee_training_item_id', 'completed_at'])
+            ->unique('employee_training_item_id')
+            ->mapWithKeys(fn ($row) => [(int) $row->employee_training_item_id => $row->completed_at]);
+
+        $today = Carbon::today();
+        $hiring = [];
+        $annual = [];
+
+        foreach ($items as $item) {
+            $isHiring = $item->isHiring();
+            $completion = $isHiring
+                ? $hireCompletions->get($item->id)
+                : ($assessmentPeriodId ? $periodCompletions->get($item->id) : null);
+
+            $lastCompletedAt = $latestCompletedAt->get((int) $item->id)
+                ?? ($completion?->status === \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED
+                    ? $completion->completed_at
+                    : null);
+
+            $row = $this->mapModuleTrainingRow(
+                $item,
+                $completion,
+                $today,
+                $isHiring ? null : $assessmentPeriodId,
+                $lastCompletedAt
+            );
+            if ($isHiring) {
+                $hiring[] = $row;
+            } else {
+                $annual[] = $row;
+            }
+        }
+
+        usort($hiring, fn ($a, $b) => ($this->trainingStatusPriority($a['status'] ?? '') <=> $this->trainingStatusPriority($b['status'] ?? '')));
+        usort($annual, fn ($a, $b) => ($this->trainingStatusPriority($a['status'] ?? '') <=> $this->trainingStatusPriority($b['status'] ?? '')));
+
+        return ['hiring' => $hiring, 'annual' => $annual];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mapModuleTrainingRow(
+        \App\Models\EmployeeTrainingItem $item,
+        ?\App\Models\EmployeeTrainingCompletion $completion,
+        Carbon $today,
+        ?int $assessmentPeriodId,
+        mixed $lastCompletedAt = null
+    ): array {
+        $due = $item->evaluateDue(
+            $lastCompletedAt ? Carbon::parse($lastCompletedAt) : null,
+            $today
+        );
+
+        $hasOpenPeriodWork = $completion && ! in_array($completion->status, [
+            \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED,
+            \App\Models\EmployeeTrainingCompletion::STATUS_NA,
+            \App\Models\EmployeeTrainingCompletion::STATUS_NOT_STARTED,
+            null,
+        ], true);
+
+        $satisfiedFromPrior = $item->isRecurring()
+            && ! $completion
+            && ! $due['due'];
+
+        $status = $completion?->status ?? \App\Models\EmployeeTrainingCompletion::STATUS_NOT_STARTED;
+        if ($satisfiedFromPrior) {
+            $statusMeta = $this->trainingStatusRow('completed', $due['status_hint'] ?? 'Current', $today, null);
+            $statusMeta['badge_class'] = 'bg-emerald-50 text-emerald-800';
+        } else {
+            $statusMeta = match ($status) {
+                \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED => $this->trainingStatusRow('completed', 'Completed', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_IN_PROGRESS => $this->trainingStatusRow('in_progress', 'In progress', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_SUBMITTED => $this->trainingStatusRow('in_progress', 'Submitted for review', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_REJECTED => $this->trainingStatusRow('overdue', 'Returned — revise', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_NA => $this->trainingStatusRow('completed', 'N/A', $today, null),
+                default => $this->trainingStatusRow('not_started', 'Not started', $today, null),
+            };
+        }
+
+        // Preserve submitted as its own status for UI actions while keeping summary-friendly mapping above
+        if (! $satisfiedFromPrior && $status === \App\Models\EmployeeTrainingCompletion::STATUS_SUBMITTED) {
+            $statusMeta['status'] = 'submitted';
+            $statusMeta['status_label'] = 'Submitted for review';
+            $statusMeta['badge_class'] = 'bg-amber-50 text-amber-800';
+        } elseif (! $satisfiedFromPrior && $status === \App\Models\EmployeeTrainingCompletion::STATUS_REJECTED) {
+            $statusMeta['status'] = 'rejected';
+            $statusMeta['status_label'] = 'Returned — revise';
+            $statusMeta['badge_class'] = 'bg-rose-50 text-rose-700';
+        }
+
+        $canStart = ! $satisfiedFromPrior && (! $completion || $completion->employeeCanStart());
+        $canSubmit = ! $satisfiedFromPrior && $completion && $completion->employeeCanSubmit();
+        // Allow submit from not_started via controller auto-start, but prefer Start first in UI
+        $moduleUrl = $item->resolvedContentUrl();
+
+        $subtitleParts = array_filter([
+            $item->provider_label,
+            $item->frequencyShortLabel(),
+            $due['status_hint'] && $item->isRecurring() && ($satisfiedFromPrior || $hasOpenPeriodWork === false)
+                ? $due['status_hint']
+                : null,
+            $item->description,
+        ]);
+
+        return array_merge($statusMeta, [
+            'id' => 'training-module-'.$item->id.($assessmentPeriodId ? '-p'.$assessmentPeriodId : '-hire'),
+            'title' => $item->name,
+            'subtitle' => implode(' · ', $subtitleParts) ?: null,
+            'category' => 'module',
+            'interactive' => true,
+            'training_item_id' => $item->id,
+            'assessment_period_id' => $assessmentPeriodId,
+            'workflow_status' => $satisfiedFromPrior ? 'satisfied' : $status,
+            'module_url' => $moduleUrl,
+            'can_start' => $canStart && ($item->isHiring() || $assessmentPeriodId),
+            'can_submit' => $canSubmit && ($item->isHiring() || $assessmentPeriodId),
+            'period_required' => $item->requiresAssessmentPeriod() && ! $assessmentPeriodId,
+            'frequency' => $item->frequency,
+            'frequency_label' => $item->frequencyShortLabel(),
+            'due' => $due['due'] || $hasOpenPeriodWork,
+            'satisfied_until' => $due['satisfied_until']?->toDateString(),
+            'rejection_reason' => $completion?->rejection_reason,
+            'notes' => $completion?->notes,
+            'action_url' => $moduleUrl ?: '#',
+            'action_label' => $moduleUrl ? 'Open module' : '—',
+            'start_url' => route('member.checklists.start', $item),
+            'submit_url' => route('member.checklists.submit', $item),
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $empChecklistItems
-     * @return list<array<string, mixed>>
+     * @return array{items: list<array<string, mixed>>, history_documents: list<array<string, mixed>>}
      */
     protected function collectOrientationTrainings(array $empChecklistItems, string $actionUrl): array
     {
         $items = [];
+        $historyDocuments = [];
         $today = Carbon::today();
 
         foreach ($empChecklistItems as $storageKey => $payload) {
-            if (!is_string($storageKey) || !str_starts_with($storageKey, 'part_e_orientation_summary_')) {
+            if (! is_string($storageKey) || ! str_starts_with($storageKey, 'part_e_orientation_summary_')) {
                 continue;
             }
 
-            $items[] = $this->mapOrientationTraining($storageKey, is_array($payload) ? $payload : [], $actionUrl, $today);
+            $row = $this->mapOrientationTraining($storageKey, is_array($payload) ? $payload : [], $actionUrl, $today);
+            $workflow = (string) (($payload['workflow_status'] ?? PartEOrientationChecklist::WORKFLOW_DRAFT));
+
+            if ($workflow === PartEOrientationChecklist::WORKFLOW_COMPLETED) {
+                $historyDocuments[] = [
+                    'id' => 'orientation-history-'.$storageKey,
+                    'title' => $row['title'],
+                    'subtitle' => $row['history'] ?? 'Completed orientation record',
+                    'status_label' => $row['status_label'] ?? 'Completed',
+                    'badge_class' => $row['badge_class'] ?? 'bg-emerald-50 text-emerald-700',
+                    'pdf_url' => null,
+                    'period_label' => null,
+                ];
+            }
+
+            $items[] = $row;
         }
 
         if (count($items) === 0) {
@@ -1015,17 +1297,34 @@ class MemberDashboardService
                 [
                     'id' => 'training-orientation-default',
                     'title' => 'Part E orientation checklist',
-                    'subtitle' => 'Facility orientation has not been started in your employee file.',
+                    'subtitle' => 'Not started yet. Your DSD or supervisor will initiate orientation.',
                     'category' => 'orientation',
-                    'action_url' => $actionUrl,
-                    'action_label' => 'Open employment portal',
+                    'read_only' => true,
+                    'history' => 'No orientation activity recorded yet.',
+                    'pdf_url' => null,
+                    'can_view_pdf' => false,
+                    'action_url' => null,
+                    'action_label' => null,
                 ]
             );
         }
 
         usort($items, fn ($a, $b) => ($this->trainingStatusPriority($a['status'] ?? '') <=> $this->trainingStatusPriority($b['status'] ?? '')));
 
-        return $items;
+        // Keep only the primary current orientation row in the main list; completed copies live under history.
+        $currentItems = collect($items)
+            ->reject(fn (array $row) => ($row['workflow_status'] ?? '') === PartEOrientationChecklist::WORKFLOW_COMPLETED && count($items) > 1)
+            ->values()
+            ->all();
+
+        if ($currentItems === [] && $items !== []) {
+            $currentItems = [collect($items)->sortByDesc(fn ($row) => $row['due_at'] ?? '')->first()];
+        }
+
+        return [
+            'items' => $currentItems,
+            'history_documents' => $historyDocuments,
+        ];
     }
 
     /**
@@ -1037,66 +1336,389 @@ class MemberDashboardService
         $suffix = str_replace('part_e_orientation_summary_', '', $storageKey);
         $title = 'Part E orientation checklist';
         if ($suffix !== '' && $suffix !== 'none') {
-            $title .= ' (job code ' . $suffix . ')';
+            $title .= ' (job code '.$suffix.')';
         }
 
         $workflow = (string) ($stored['workflow_status'] ?? PartEOrientationChecklist::WORKFLOW_DRAFT);
         $statusMeta = $this->resolveOrientationTrainingStatus($workflow, $today);
 
-        $actionLabel = $statusMeta['status'] === 'pending_signature'
-            ? 'Sign checklist'
-            : 'View in employment portal';
+        $historyParts = array_filter([
+            'Workflow: '.str_replace('_', ' ', $workflow),
+            ! empty($stored['completed_at']) ? 'Completed: '.$stored['completed_at'] : null,
+            ! empty($stored['employee_signed_at']) ? 'Employee signed: '.$stored['employee_signed_at'] : null,
+            ! empty($stored['reviewer_signed_at']) ? 'Reviewer signed: '.$stored['reviewer_signed_at'] : null,
+        ]);
 
         return array_merge($statusMeta, [
-            'id' => 'training-orientation-' . $storageKey,
+            'id' => 'training-orientation-'.$storageKey,
             'title' => $title,
             'subtitle' => PartEOrientationChecklist::WORKFLOW_COMPLETED === $workflow
-                ? 'Orientation checklist completed and signed.'
-                : 'Workflow: ' . str_replace('_', ' ', $workflow),
+                ? 'Orientation completed by facility leadership.'
+                : 'Managed by DSD / supervisors — view progress only.',
             'category' => 'orientation',
             'workflow_status' => $workflow,
-            'action_url' => $actionUrl,
-            'action_label' => $actionLabel,
+            'read_only' => true,
+            'history' => implode(' · ', $historyParts) ?: null,
+            'pdf_url' => null,
+            'can_view_pdf' => false,
+            'action_url' => null,
+            'action_label' => null,
         ]);
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array{items: list<array<string, mixed>>, history_documents: list<array<string, mixed>>}
      */
     protected function collectCompetencyTrainings(
         string $employeeNum,
-        string $profileUrl,
-        string $employmentPortalUrl
+        ?int $assessmentPeriodId
     ): array {
         $today = Carbon::today();
-        $assessments = EmployeeCompetencyAssessment::query()
+        $historyRows = \App\Support\CompetencyAssessmentHistoryResolver::resolveForEmployee(
+            $employeeNum,
+            $assessmentPeriodId
+        );
+
+        $employee = BPEmployee::query()
+            ->with('currentAssignment.position')
+            ->where('employee_num', $employeeNum)
+            ->first();
+
+        $positionId = $employee?->currentAssignment?->position_id
+            ?? $employee?->currentAssignment?->position?->id;
+
+        $applicableSections = CompetencyAssessmentWorkflowReadiness::applicableSectionLabels(
+            $positionId ? (int) $positionId : null
+        );
+
+        $period = $assessmentPeriodId
+            ? EmployeeAssessmentPeriod::query()->find($assessmentPeriodId)
+            : null;
+        $periodLabel = $this->formatPeriodLabel($period)
+            ?? ($assessmentPeriodId ? 'Period #'.$assessmentPeriodId : null);
+
+        $submission = $assessmentPeriodId
+            ? EmployeeCompetencyAssessment::query()
+                ->where('employee_num', $employeeNum)
+                ->where('assessment_period_id', $assessmentPeriodId)
+                ->first()
+            : null;
+
+        $excludedSections = collect(
+            is_array($submission?->snapshot_json)
+                ? ($submission->snapshot_json['excluded_section_labels'] ?? [])
+                : []
+        )
+            ->map(fn ($label) => trim((string) $label))
+            ->filter(fn (string $label) => $label !== '')
+            ->values()
+            ->all();
+
+        $currentItems = [];
+        $historyDocuments = [];
+        $seenCurrentSections = [];
+
+        foreach ($historyRows as $row) {
+            $periodId = (int) ($row['assessment_period_id'] ?? 0);
+            $isCurrent = $assessmentPeriodId !== null && $periodId === (int) $assessmentPeriodId;
+            $sectionLabel = trim((string) ($row['competency_section'] ?? $row['competency_name'] ?? ''));
+            $statusMeta = $this->mapDisplayedChecklistStatus((string) ($row['status'] ?? 'Not started'), $today);
+            $canViewPdf = ! empty($row['can_view_pdf'])
+                && ! empty($row['competency_assessment_id'])
+                && $sectionLabel !== '';
+            $pdfUrl = $canViewPdf
+                ? route('member.checklists.competency-section.pdf', [
+                    'assessment' => $row['competency_assessment_id'],
+                    'section' => $sectionLabel,
+                ])
+                : null;
+
+            $mapped = array_merge($statusMeta, [
+                'id' => 'training-competency-'.$periodId.'-'.md5($sectionLabel !== '' ? $sectionLabel : (string) ($row['competency_name'] ?? '')),
+                'title' => $sectionLabel !== '' ? $sectionLabel : (string) ($row['competency_name'] ?? 'Competency'),
+                'competency_section' => $sectionLabel !== '' ? $sectionLabel : null,
+                'subtitle' => trim(implode(' · ', array_filter([
+                    $row['period_label'] ?? null,
+                    ! empty($row['reviewer_name']) ? 'Reviewer: '.$row['reviewer_name'] : null,
+                    isset($row['items_count'], $row['total_items'])
+                        ? 'Rated '.$row['items_count'].'/'.$row['total_items']
+                        : null,
+                ]))),
+                'category' => 'competency',
+                'assessment_id' => $row['competency_assessment_id'] ?? null,
+                'assessment_period_id' => $periodId ?: null,
+                'read_only' => true,
+                'history' => $row['period_label'] ?? null,
+                'pdf_url' => $pdfUrl,
+                'can_view_pdf' => $canViewPdf,
+                'action_url' => null,
+                'action_label' => null,
+            ]);
+
+            if ($isCurrent) {
+                $currentItems[] = $mapped;
+                if ($sectionLabel !== '') {
+                    $seenCurrentSections[mb_strtolower($sectionLabel)] = true;
+                }
+            } elseif ($canViewPdf || ($row['items_count'] ?? 0) > 0) {
+                $historyDocuments[] = [
+                    'id' => $mapped['id'].'-history',
+                    'title' => $mapped['title'],
+                    'subtitle' => $mapped['subtitle'],
+                    'status_label' => $mapped['status_label'],
+                    'badge_class' => $mapped['badge_class'],
+                    'pdf_url' => $pdfUrl,
+                    'period_label' => $row['period_label'] ?? null,
+                ];
+            }
+        }
+
+        // Include every role-required competency for the selected period, even if not started.
+        if ($assessmentPeriodId) {
+            foreach ($applicableSections as $sectionLabel) {
+                $sectionLabel = trim((string) $sectionLabel);
+                if ($sectionLabel === '') {
+                    continue;
+                }
+
+                if (in_array($sectionLabel, $excludedSections, true)) {
+                    continue;
+                }
+
+                $sectionKey = mb_strtolower($sectionLabel);
+                if (isset($seenCurrentSections[$sectionKey])) {
+                    continue;
+                }
+
+                $totalItems = \App\Support\CompetencyAssessmentHistoryBuilder::rateableItemCountForSection($sectionLabel);
+                $statusMeta = $this->trainingStatusRow('not_started', 'Not Started', $today, null);
+
+                $currentItems[] = array_merge($statusMeta, [
+                    'id' => 'training-competency-'.$assessmentPeriodId.'-'.md5($sectionLabel),
+                    'title' => $sectionLabel,
+                    'competency_section' => $sectionLabel,
+                    'subtitle' => trim(implode(' · ', array_filter([
+                        $periodLabel,
+                        $totalItems > 0 ? 'Rated 0/'.$totalItems : null,
+                        'Required for your role — not started yet',
+                    ]))),
+                    'category' => 'competency',
+                    'assessment_id' => $submission?->id,
+                    'assessment_period_id' => $assessmentPeriodId,
+                    'read_only' => true,
+                    'history' => $periodLabel,
+                    'pdf_url' => null,
+                    'can_view_pdf' => false,
+                    'action_url' => null,
+                    'action_label' => null,
+                ]);
+
+                $seenCurrentSections[$sectionKey] = true;
+            }
+        }
+
+        if ($currentItems === [] && $assessmentPeriodId) {
+            $currentItems[] = array_merge(
+                $this->trainingStatusRow('not_started', 'Not started', $today, null),
+                [
+                    'id' => 'training-competency-empty-'.$assessmentPeriodId,
+                    'title' => 'Competency sections',
+                    'subtitle' => $applicableSections === []
+                        ? 'No competency sections are assigned to your role for this assessment period.'
+                        : 'No competency ratings have been started for this assessment period yet.',
+                    'category' => 'competency',
+                    'read_only' => true,
+                    'history' => null,
+                    'pdf_url' => null,
+                    'can_view_pdf' => false,
+                    'action_url' => null,
+                    'action_label' => null,
+                ]
+            );
+        }
+
+        usort($currentItems, function (array $a, array $b): int {
+            $priority = $this->trainingStatusPriority($a['status'] ?? '') <=> $this->trainingStatusPriority($b['status'] ?? '');
+            if ($priority !== 0) {
+                return $priority;
+            }
+
+            return strcasecmp((string) ($a['title'] ?? ''), (string) ($b['title'] ?? ''));
+        });
+
+        return [
+            'items' => $currentItems,
+            'history_documents' => $historyDocuments,
+        ];
+    }
+
+    /**
+     * @return array{items: list<array<string, mixed>>, history_documents: list<array<string, mixed>>}
+     */
+    protected function collectPerformanceChecklists(
+        string $employeeNum,
+        ?int $assessmentPeriodId
+    ): array {
+        $today = Carbon::today();
+        $assessments = EmployeePerformanceAssessment::query()
             ->where('employee_num', $employeeNum)
             ->with('period')
             ->orderByDesc('updated_at')
             ->get();
 
-        $items = [];
+        $currentItems = [];
+        $historyDocuments = [];
 
         foreach ($assessments as $assessment) {
+            $periodId = (int) ($assessment->assessment_period_id ?? 0);
+            $isCurrent = $assessmentPeriodId !== null && $periodId === (int) $assessmentPeriodId;
             $periodLabel = $this->formatPeriodLabel($assessment->period);
-            $title = 'Competency assessment' . ($periodLabel ? " · {$periodLabel}" : '');
-            $statusMeta = $this->resolveCompetencyTrainingStatus($assessment, $today);
-            $needsSign = ($statusMeta['status'] ?? '') === 'pending_signature';
+            $statusMeta = $this->resolvePerformanceChecklistStatus($assessment, $today);
+            $pdfUrl = route('member.checklists.performance-assessment.pdf', $assessment);
+            $canViewPdf = true;
 
-            $items[] = array_merge($statusMeta, [
-                'id' => 'training-competency-' . $assessment->id,
-                'title' => $title,
-                'subtitle' => 'Status: ' . str_replace('_', ' ', (string) ($assessment->status ?? 'unknown')),
-                'category' => 'competency',
+            $mapped = array_merge($statusMeta, [
+                'id' => 'checklist-performance-'.$assessment->id,
+                'title' => 'Performance appraisal'.($periodLabel ? ' · '.$periodLabel : ''),
+                'subtitle' => 'Managed by DSD / supervisors — view status and PDF.',
+                'category' => 'performance',
                 'assessment_id' => $assessment->id,
-                'action_url' => $needsSign ? $profileUrl : $employmentPortalUrl,
-                'action_label' => $needsSign ? 'Review & sign' : 'View details',
+                'assessment_period_id' => $periodId ?: null,
+                'read_only' => true,
+                'history' => implode(' · ', array_filter([
+                    'Status: '.AssessmentWorkflowStatus::label($assessment->workflowStatus()),
+                    $assessment->acknowledge_dt ? 'Acknowledged: '.$assessment->acknowledge_dt->format('Y-m-d') : null,
+                    $assessment->review_dt ? 'Reviewed: '.$assessment->review_dt->format('Y-m-d') : null,
+                ])) ?: null,
+                'pdf_url' => $pdfUrl,
+                'can_view_pdf' => $canViewPdf,
+                'action_url' => null,
+                'action_label' => null,
             ]);
+
+            if ($isCurrent) {
+                $currentItems[] = $mapped;
+            } else {
+                $historyDocuments[] = [
+                    'id' => $mapped['id'].'-history',
+                    'title' => $mapped['title'],
+                    'subtitle' => $mapped['history'],
+                    'status_label' => $mapped['status_label'],
+                    'badge_class' => $mapped['badge_class'],
+                    'pdf_url' => $pdfUrl,
+                    'period_label' => $periodLabel,
+                ];
+            }
         }
 
-        usort($items, fn ($a, $b) => ($this->trainingStatusPriority($a['status'] ?? '') <=> $this->trainingStatusPriority($b['status'] ?? '')));
+        if ($currentItems === []) {
+            $currentItems[] = array_merge(
+                $this->trainingStatusRow('not_started', 'Not started', $today, null),
+                [
+                    'id' => 'checklist-performance-empty',
+                    'title' => 'Performance appraisal',
+                    'subtitle' => 'No performance appraisal has been started for the current assessment period yet.',
+                    'category' => 'performance',
+                    'read_only' => true,
+                    'history' => null,
+                    'pdf_url' => null,
+                    'can_view_pdf' => false,
+                    'action_url' => null,
+                    'action_label' => null,
+                ]
+            );
+        }
 
-        return $items;
+        usort($currentItems, fn ($a, $b) => ($this->trainingStatusPriority($a['status'] ?? '') <=> $this->trainingStatusPriority($b['status'] ?? '')));
+
+        return [
+            'items' => $currentItems,
+            'history_documents' => $historyDocuments,
+        ];
+    }
+
+    /**
+     * Prior annual training completions outside the selected/current period.
+     *
+     * @return list<array<string, mixed>>
+     */
+    protected function collectModuleTrainingHistory(BPEmployee $employee, ?int $assessmentPeriodId): array
+    {
+        $today = Carbon::today();
+        $completions = \App\Models\EmployeeTrainingCompletion::query()
+            ->with('trainingItem')
+            ->where('employee_num', $employee->employee_num)
+            ->where('period_key', '!=', \App\Models\EmployeeTrainingCompletion::PERIOD_KEY_HIRE)
+            ->when($assessmentPeriodId, fn ($q) => $q->where('period_key', '!=', (string) (int) $assessmentPeriodId))
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $periodIds = $completions
+            ->pluck('period_key')
+            ->filter(fn ($key) => is_numeric($key))
+            ->map(fn ($key) => (int) $key)
+            ->unique()
+            ->values();
+
+        $periods = $periodIds->isEmpty()
+            ? collect()
+            : EmployeeAssessmentPeriod::query()->whereIn('id', $periodIds)->get()->keyBy('id');
+
+        $rows = [];
+        foreach ($completions as $completion) {
+            $item = $completion->trainingItem;
+            if (! $item) {
+                continue;
+            }
+
+            $periodId = is_numeric($completion->period_key) ? (int) $completion->period_key : null;
+            $periodLabel = $periodId && $periods->has($periodId)
+                ? $this->formatPeriodLabel($periods->get($periodId))
+                : ('Period '.$completion->period_key);
+
+            $statusMeta = match ($completion->status) {
+                \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED => $this->trainingStatusRow('completed', 'Completed', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_SUBMITTED => $this->trainingStatusRow('submitted', 'Submitted for review', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_IN_PROGRESS => $this->trainingStatusRow('in_progress', 'In progress', $today, null),
+                \App\Models\EmployeeTrainingCompletion::STATUS_REJECTED => $this->trainingStatusRow('rejected', 'Returned — revise', $today, null),
+                default => $this->trainingStatusRow('not_started', 'Not started', $today, null),
+            };
+
+            $rows[] = [
+                'id' => 'training-history-'.$completion->id,
+                'title' => $item->name,
+                'subtitle' => $periodLabel,
+                'status_label' => $statusMeta['status_label'],
+                'badge_class' => $statusMeta['badge_class'],
+                'pdf_url' => $item->resolvedContentUrl(),
+                'period_label' => $periodLabel,
+            ];
+        }
+
+        return $rows;
+    }
+
+    protected function mapDisplayedChecklistStatus(string $label, Carbon $today): array
+    {
+        $lower = strtolower(trim($label));
+
+        if ($lower === '' || str_contains($lower, 'not started') || str_contains($lower, 'pending start')) {
+            return $this->trainingStatusRow('not_started', $label !== '' ? $label : 'Not started', $today, null);
+        }
+
+        if (str_contains($lower, 'complet') || str_contains($lower, 'approved') || str_contains($lower, 'signed')) {
+            return $this->trainingStatusRow('completed', $label, $today, null);
+        }
+
+        if (str_contains($lower, 'confirm') || str_contains($lower, 'signature') || str_contains($lower, 'acknowledg')) {
+            return $this->trainingStatusRow('pending_signature', $label, $today, null);
+        }
+
+        if (str_contains($lower, 'overdue')) {
+            return $this->trainingStatusRow('overdue', $label, $today, null);
+        }
+
+        return $this->trainingStatusRow('in_progress', $label, $today, null);
     }
 
     /**
@@ -1138,11 +1760,15 @@ class MemberDashboardService
             $rows[] = array_merge($statusMeta, [
                 'id' => 'training-checklist-' . $item->id,
                 'title' => $item->name,
-                'subtitle' => $item->section,
+                'subtitle' => $item->section.' · Managed with your employment file',
                 'category' => 'required',
                 'section' => $item->section,
-                'action_url' => $actionUrl,
-                'action_label' => ($statusMeta['status'] ?? '') === 'completed' ? 'View file' : 'Complete in portal',
+                'read_only' => true,
+                'history' => $onFile
+                    ? ($verified ? 'On file and verified' : 'On file — pending verification')
+                    : 'Not on file yet',
+                'action_url' => null,
+                'action_label' => null,
             ]);
         }
 
@@ -1204,13 +1830,13 @@ class MemberDashboardService
             $status = $item['status'] ?? '';
             match ($status) {
                 'completed' => $summary['completed']++,
-                'in_progress' => $summary['in_progress']++,
+                'in_progress', 'submitted' => $summary['in_progress']++,
                 'pending_signature' => $summary['pending_signature']++,
-                'overdue' => $summary['overdue']++,
+                'overdue', 'rejected' => $summary['overdue']++,
                 default => null,
             };
 
-            if (in_array($status, ['pending_signature', 'overdue', 'not_started'], true)) {
+            if (in_array($status, ['pending_signature', 'overdue', 'not_started', 'rejected'], true)) {
                 $summary['needs_action']++;
             }
         }
@@ -1300,7 +1926,7 @@ class MemberDashboardService
      */
     public function summarizeEmployeeTraining(BPEmployee $employee, array $empChecklistItems): array
     {
-        $orientationItems = $this->collectOrientationTrainings($empChecklistItems, '#');
+        $orientationItems = $this->collectOrientationTrainings($empChecklistItems, '#')['items'];
         $incompleteOrientation = collect($orientationItems)
             ->where('status', '!=', 'completed')
             ->count();
@@ -1487,19 +2113,19 @@ class MemberDashboardService
             ),
             PartEOrientationChecklist::WORKFLOW_EMPLOYEE_SIGNATURE => $this->trainingStatusRow(
                 'pending_signature',
-                'Your signature required',
+                'Awaiting employee signature',
                 $today,
                 null
             ),
             PartEOrientationChecklist::WORKFLOW_REVIEWER_SIGNATURE => $this->trainingStatusRow(
                 'in_progress',
-                'Awaiting reviewer signature',
+                'Awaiting DSD / supervisor signature',
                 $today,
                 null
             ),
             default => $this->trainingStatusRow(
                 'in_progress',
-                'In progress',
+                'In progress (DSD / supervisor)',
                 $today,
                 null
             ),
@@ -1550,6 +2176,35 @@ class MemberDashboardService
         return $this->trainingStatusRow('not_started', 'Not started', $today, $dueAt);
     }
 
+    protected function resolvePerformanceChecklistStatus(EmployeePerformanceAssessment $assessment, Carbon $today): array
+    {
+        $periodEnd = $this->parseDate($assessment->period?->date_to);
+        $dueAt = $periodEnd?->toDateString();
+        $workflowStatus = AssessmentWorkflowStatus::normalize($assessment->workflowStatus());
+
+        if ($workflowStatus === AssessmentWorkflowStatus::COMPLETED || $assessment->finalized) {
+            return $this->trainingStatusRow('completed', 'Completed', $today, $dueAt);
+        }
+
+        if ($workflowStatus === AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION) {
+            return $this->trainingStatusRow('pending_signature', 'Signature required', $today, $dueAt);
+        }
+
+        if ($workflowStatus === AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL) {
+            return $this->trainingStatusRow('in_progress', 'Awaiting reviewer approval', $today, $dueAt);
+        }
+
+        if ($periodEnd && $periodEnd->lt($today)) {
+            return $this->trainingStatusRow('overdue', 'Period ended — not complete', $today, $dueAt);
+        }
+
+        if ($workflowStatus === AssessmentWorkflowStatus::DRAFT) {
+            return $this->trainingStatusRow('in_progress', 'In progress', $today, $dueAt);
+        }
+
+        return $this->trainingStatusRow('not_started', 'Not started', $today, $dueAt);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -1583,10 +2238,10 @@ class MemberDashboardService
     protected function trainingStatusPriority(string $status): int
     {
         return match ($status) {
-            'overdue' => 0,
+            'overdue', 'rejected' => 0,
             'pending_signature' => 1,
             'not_started' => 2,
-            'in_progress' => 3,
+            'in_progress', 'submitted' => 3,
             'completed' => 4,
             default => 5,
         };

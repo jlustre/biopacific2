@@ -48,8 +48,19 @@ class EmployeePortalRoleService
             return;
         }
 
-        if (! $user->hasRole('regular-user') && Role::query()->where('name', 'regular-user')->exists()) {
-            $user->assignRole('regular-user');
+        $this->assignDefaultMemberRole($user);
+    }
+
+    /**
+     * Default new member: regular-user with no permissions.
+     */
+    public function assignDefaultMemberRole(User $user): void
+    {
+        if ($user->roles()->exists()) {
+            return;
         }
+
+        $role = Role::query()->firstOrCreate(['name' => 'regular-user']);
+        $user->assignRole($role);
     }
 }

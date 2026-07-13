@@ -83,7 +83,8 @@ class PersonalTaskPageService
     protected function systemRows(User $user): Collection
     {
         $payload = $this->memberDashboard->build($user);
-        $tasks = $this->memberPersonalTaskService->buildStaffTasks($user, $payload, null);
+        // PersonalTask rows are merged separately below — exclude them here to avoid duplicates.
+        $tasks = $this->memberPersonalTaskService->buildStaffTasks($user, $payload, null, false);
 
         return collect($tasks)->map(function (array $task) {
             return [
@@ -134,28 +135,34 @@ class PersonalTaskPageService
     {
         $isCreator = (int) $task->created_by === (int) $user->id;
         $isAssignee = (int) $task->assigned_to === (int) $user->id;
+        $actionUrl = filled($task->action_url) ? (string) $task->action_url : null;
+        $description = trim((string) preg_replace('/^\[training_completion_id:\d+\]\s*/', '', (string) ($task->description ?? '')));
 
         return [
             'key' => 'personal:' . $task->id,
             'type' => 'personal',
             'personal_task_id' => $task->id,
             'title' => $task->title,
-            'description' => (string) ($task->description ?? ''),
+            'description' => $description,
             'priority' => $task->priority,
             'category' => 'personal',
             'status' => $task->status,
             'status_label' => $task->statusLabel(),
             'due_at' => $task->due_at?->format('M j, Y'),
             'due_at_sort' => $task->due_at?->toDateString() ?? '9999-99-99',
-            'route' => null,
-            'action' => null,
+            'route' => $actionUrl,
+            'action' => $actionUrl ? 'open' : null,
+            'action_label' => $actionUrl
+                ? ((string) ($task->action_label ?: 'Open'))
+                : null,
             'created_by' => $task->created_by,
             'created_by_name' => $task->creator?->name ?? 'Unknown',
             'assigned_to' => $task->assigned_to,
             'assigned_to_name' => $task->assignee?->name ?? 'Unknown',
-            'can_edit' => $isCreator && $task->status === PersonalTask::STATUS_PENDING,
-            'can_delete' => $isCreator && $task->status === PersonalTask::STATUS_PENDING,
-            'can_complete' => $isAssignee && $task->status === PersonalTask::STATUS_PENDING,
+            'can_edit' => $isCreator && $task->status === PersonalTask::STATUS_PENDING && ! $actionUrl,
+            'can_delete' => $isCreator && $task->status === PersonalTask::STATUS_PENDING && ! $actionUrl,
+            // Training (and similar) review tasks are completed via the action link, not a generic Complete click.
+            'can_complete' => $isAssignee && $task->status === PersonalTask::STATUS_PENDING && ! $actionUrl,
             'can_confirm' => $isCreator && $task->awaitsCreatorConfirmation(),
             'sort_tier' => in_array($task->status, [PersonalTask::STATUS_PENDING, PersonalTask::STATUS_COMPLETED], true) ? 0 : 2,
         ];

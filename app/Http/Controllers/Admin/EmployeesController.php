@@ -230,6 +230,35 @@ class EmployeesController extends Controller
         }
     }
 
+    /**
+     * Gate employee edit (and similar deep-links) for staff, the employee themselves, or assigned reviewers.
+     */
+    protected function authorizeEmployeeRecordAccess(Request $request, BPEmployee $employee): void
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            abort(403);
+        }
+
+        // Trainee opening their own record (approval emails / checklist deep-links).
+        if ((int) ($employee->user_id ?? 0) === (int) $user->id) {
+            return;
+        }
+
+        if ($user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don', 'facility-editor'])) {
+            $this->authorizeEmployeeFacilityAccess($request, $employee);
+
+            return;
+        }
+
+        if (app(\App\Services\EmployeeTrainingWorkflowService::class)->actorCanReview($user, $employee)) {
+            return;
+        }
+
+        abort(403, 'You do not have access to this employee record.');
+    }
+
     protected function canEditCoreEmployeeTabs($user): bool
     {
         return (bool) ($user && method_exists($user, 'can')
@@ -1650,7 +1679,10 @@ class EmployeesController extends Controller
         }
 
         try {
-            $registrationCode = $registrationCodeService->generateForEmployee($employeeModel, $request->user());
+            $registrationCode = $registrationCodeService->generateForEmployee(
+                $employeeModel,
+                $request->user()
+            );
             Mail::to($registrationCode->email)->send(new EmployeeRegistrationInviteMail($registrationCode));
         } catch (\Illuminate\Validation\ValidationException $exception) {
             return redirect()->back()->withErrors($exception->errors());
@@ -2665,6 +2697,10 @@ class EmployeesController extends Controller
         $facilities = \App\Models\Facility::all();
         $checklistItems = \App\Models\ChecklistItem::all();
         $employeeCompetencyItems = collect();
+        $employeeTrainingItems = collect();
+        $employeeTrainingHireCompletions = collect();
+        $employeeTrainingPeriodCompletions = collect();
+        $employeeTrainingLatestCompletedAt = collect();
         $empChecklists = collect();
         $users = \App\Models\User::all();
         $states = \App\Models\State::orderBy('name')->get();
@@ -2727,6 +2763,10 @@ class EmployeesController extends Controller
             'facilities',
             'checklistItems',
             'employeeCompetencyItems',
+            'employeeTrainingItems',
+            'employeeTrainingHireCompletions',
+            'employeeTrainingPeriodCompletions',
+            'employeeTrainingLatestCompletedAt',
             'empChecklists',
             'users',
             'empPerformanceChecklist',
@@ -2905,7 +2945,7 @@ class EmployeesController extends Controller
             'currentAssignment.hourlyStatus',
             'currentAssignment.compensationRate',
         ]);
-        $this->authorizeEmployeeFacilityAccess($request, $employee);
+        $this->authorizeEmployeeRecordAccess($request, $employee);
         $employeesListFacilityId = $this->resolveFacilityFilterId($request);
         $employeesListFacility = $employeesListFacilityId
             ? Facility::find($employeesListFacilityId)
@@ -2973,6 +3013,13 @@ class EmployeesController extends Controller
             ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
             ->orderBy('order')
             ->get();
+        $positionIdForTrainings = $employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id;
+        $employeeTrainingItems = \App\Models\EmployeeTrainingItem::query()
+            ->active()
+            ->applicableToPosition($positionIdForTrainings)
+            ->orderBy('order')
+            ->orderBy('name')
+            ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
         $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
@@ -3028,6 +3075,30 @@ class EmployeesController extends Controller
         $selectedPerformanceAssessment = $selectedAssessmentPeriodId
             ? $performanceAssessmentSubmissions->get((int) $selectedAssessmentPeriodId)
             : null;
+        $trainingCompletionRelations = ['completedByUser', 'reviewedByUser', 'startedByUser', 'submittedByUser'];
+        $employeeTrainingHireCompletions = \App\Models\EmployeeTrainingCompletion::query()
+            ->with($trainingCompletionRelations)
+            ->where('employee_num', $employee->employee_num)
+            ->where('period_key', \App\Models\EmployeeTrainingCompletion::PERIOD_KEY_HIRE)
+            ->get()
+            ->keyBy('employee_training_item_id');
+        $employeeTrainingPeriodCompletions = $selectedAssessmentPeriodId
+            ? \App\Models\EmployeeTrainingCompletion::query()
+                ->with($trainingCompletionRelations)
+                ->where('employee_num', $employee->employee_num)
+                ->where('period_key', (string) (int) $selectedAssessmentPeriodId)
+                ->get()
+                ->keyBy('employee_training_item_id')
+            : collect();
+        $employeeTrainingLatestCompletedAt = \App\Models\EmployeeTrainingCompletion::query()
+            ->where('employee_num', $employee->employee_num)
+            ->where('status', \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED)
+            ->whereIn('employee_training_item_id', $employeeTrainingItems->pluck('id'))
+            ->whereNotNull('completed_at')
+            ->orderByDesc('completed_at')
+            ->get(['employee_training_item_id', 'completed_at'])
+            ->unique('employee_training_item_id')
+            ->mapWithKeys(fn ($row) => [(int) $row->employee_training_item_id => $row->completed_at]);
         $reviewDate = '';
         $employeeAcknowledgeDt = '';
         $reviewerName = '';
@@ -3383,6 +3454,10 @@ class EmployeesController extends Controller
             'facilities',
             'checklistItems',
             'employeeCompetencyItems',
+            'employeeTrainingItems',
+            'employeeTrainingHireCompletions',
+            'employeeTrainingPeriodCompletions',
+            'employeeTrainingLatestCompletedAt',
             'empChecklists',
             'users',
             'empPerformanceChecklist',

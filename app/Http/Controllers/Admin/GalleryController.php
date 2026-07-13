@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\GalleryImage;
+use App\Support\ContentVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -135,6 +136,7 @@ class GalleryController extends Controller
         $request->validate([
             'image' => 'required|image|max:4096',
             'caption' => 'nullable|string|max:255',
+            'visibility' => 'required|in:'.implode(',', array_keys(ContentVisibility::options())),
             'facility_id' => 'required|integer|exists:facilities,id',
         ]);
 
@@ -149,13 +151,22 @@ class GalleryController extends Controller
         $maxOrder = GalleryImage::where('facility_id', $facilityId)->max('order');
         $nextOrder = is_null($maxOrder) ? 1 : $maxOrder + 1;
 
+        $facility = Facility::findOrFail($facilityId);
+        $gallery = app(\App\Services\FacilityGalleryService::class)
+            ->ensureDefaultGallery($facility, $request->user());
+        $visibility = ContentVisibility::normalize($request->input('visibility'));
+
         GalleryImage::create([
             'facility_id' => $facilityId,
+            'gallery_id' => $gallery->id,
             'image_url' => $path,
             'title' => $originalFilename,
             'caption' => $request->input('caption'),
+            'description' => $request->input('caption'),
             'order' => $nextOrder,
             'is_active' => true,
+            'visibility' => $visibility,
+            'created_by' => $request->user()?->id,
         ]);
 
         return redirect()
@@ -171,10 +182,15 @@ class GalleryController extends Controller
         $request->validate([
             'caption' => 'nullable|string|max:255',
             'is_active' => 'boolean',
+            'visibility' => 'nullable|in:'.implode(',', array_keys(ContentVisibility::options())),
         ]);
 
+        $image->description = $request->input('caption');
         $image->caption = $request->input('caption');
         $image->is_active = $request->boolean('is_active');
+        if ($request->filled('visibility')) {
+            $image->visibility = ContentVisibility::normalize($request->input('visibility'));
+        }
         $image->save();
 
         return redirect()
@@ -204,6 +220,7 @@ class GalleryController extends Controller
 
         $request->validate([
             'image' => 'required|image|max:4096',
+            'visibility' => 'nullable|in:'.implode(',', array_keys(ContentVisibility::options())),
         ]);
 
         $file = $request->file('image');
@@ -222,12 +239,19 @@ class GalleryController extends Controller
         $maxOrder = GalleryImage::where('facility_id', $facility_id)->max('order');
         $nextOrder = is_null($maxOrder) ? 1 : $maxOrder + 1;
 
+        $facility = Facility::findOrFail($facility_id);
+        $gallery = app(\App\Services\FacilityGalleryService::class)
+            ->ensureDefaultGallery($facility, $request->user());
+
         GalleryImage::create([
             'facility_id' => $facility_id,
+            'gallery_id' => $gallery->id,
             'image_url' => $path,
             'title' => $originalFilename,
             'order' => $nextOrder,
             'is_active' => true,
+            'visibility' => ContentVisibility::normalize($request->input('visibility')),
+            'created_by' => $request->user()?->id,
         ]);
 
         return redirect()->back()->with('success', 'Image uploaded successfully.');

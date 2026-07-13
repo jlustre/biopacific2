@@ -72,6 +72,10 @@
                     <option value="0" @if(old('status')=='0' ) selected @endif>Draft</option>
                 </select>
             </div>
+            @include('admin.partials.content-visibility-field', [
+                'visibilityValue' => old('visibility', 'both'),
+                'visibilityHelp' => 'Website = public facility site. Portal = employee Company/Facility News. Both = all surfaces.',
+            ])
             <div class="flex gap-2 justify-end mt-6">
                 <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 text-sm">Save
                     News</button>

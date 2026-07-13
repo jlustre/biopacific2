@@ -20,11 +20,12 @@
         @elseif(!empty($task['route']))
         <a href="{{ $task['route'] }}" class="shrink-0 text-xs font-bold text-teal-700 hover:text-teal-900">
             @php
-                $actionLabel = match ($task['action'] ?? '') {
-                    'upload' => 'Upload',
-                    'sign' => 'Sign',
-                    default => 'Open',
-                };
+                $actionLabel = $task['action_label']
+                    ?? match ($task['action'] ?? '') {
+                        'upload' => 'Upload',
+                        'sign' => 'Sign',
+                        default => 'Open',
+                    };
             @endphp
             {{ $actionLabel }}
         </a>

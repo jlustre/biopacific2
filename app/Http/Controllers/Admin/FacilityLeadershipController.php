@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ProvidesMemberPortalContext;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\FacilityLeadershipAssignment;
 use App\Services\FacilityLeadershipService;
+use App\Support\SelectedFacility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class FacilityLeadershipController extends Controller
 {
+    use ProvidesMemberPortalContext;
+
     public function __construct(
         protected FacilityLeadershipService $leadership
     ) {}
@@ -18,27 +22,32 @@ class FacilityLeadershipController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $facilities = $this->leadership->facilitiesForUser($user);
+        $facilities = $this->leadership->viewableFacilitiesForUser($user);
 
-        if ($facilities->count() === 1) {
-            $only = $facilities->first();
-
-            return redirect()->route('admin.facility.leadership.edit', [
-                'facility' => $only->getRouteKey(),
-            ]);
+        if ($facilities->isEmpty()) {
+            return view('admin.facilities.leadership.edit', $this->portalViewData($user, null, $facilities, false));
         }
 
-        $filledCounts = FacilityLeadershipAssignment::query()
-            ->whereIn('facility_id', $facilities->pluck('id'))
-            ->whereNotNull('name')
-            ->where('name', '!=', '')
-            ->selectRaw('facility_id, COUNT(*) as filled_count')
-            ->groupBy('facility_id')
-            ->pluck('filled_count', 'facility_id');
+        $preferredId = SelectedFacility::id();
+        $scoped = $this->leadership->writableFacilitiesForUser($user);
+        if ($scoped->isEmpty()) {
+            $scoped = $this->leadership->scopedHomeFacilities($user);
+        }
 
-        return view('admin.facilities.leadership.index', [
-            'facilities' => $facilities,
-            'filledCounts' => $filledCounts,
+        $target = $preferredId
+            ? $facilities->first(fn (Facility $facility) => (int) $facility->id === (int) $preferredId)
+            : null;
+
+        if (! $target && $scoped->isNotEmpty()) {
+            $target = $facilities->first(
+                fn (Facility $facility) => $scoped->contains(fn (Facility $home) => (int) $home->id === (int) $facility->id)
+            );
+        }
+
+        $target ??= $facilities->first();
+
+        return redirect()->route('admin.facility.leadership.edit', [
+            'facility' => $target->getRouteKey(),
         ]);
     }
 
@@ -47,19 +56,29 @@ class FacilityLeadershipController extends Controller
         $user = Auth::user();
         $this->leadership->authorizeFacility($user, $facility);
 
-        return view('admin.facilities.leadership.edit', [
-            'facility' => $facility,
-            'rows' => $this->leadership->formRowsForFacility($facility),
-            'roleDefinitions' => $this->leadership->roleDefinitionsForFacility($facility),
-            'employeeOptions' => $this->leadership->employeeNameOptionsForFacility($facility),
-            'canRemoveRoles' => $user->hasRole(['admin', 'super-admin', 'facility-dsd']),
-        ]);
+        // Only persist selection when the facility is within the user's home/write scope.
+        if ($this->leadership->userCanEditLeadership($user, $facility)
+            || $this->leadership->scopedHomeFacilities($user)->contains(
+                fn (Facility $home) => (int) $home->id === (int) $facility->id
+            )) {
+            SelectedFacility::remember($facility);
+        }
+
+        $facilities = $this->leadership->viewableFacilitiesForUser($user);
+        $canEdit = $this->leadership->userCanEditLeadership($user, $facility);
+
+        return view('admin.facilities.leadership.edit', $this->portalViewData(
+            $user,
+            $facility,
+            $facilities,
+            $canEdit
+        ));
     }
 
     public function update(Request $request, Facility $facility)
     {
         $user = Auth::user();
-        $this->leadership->authorizeFacility($user, $facility);
+        $this->leadership->authorizeFacilityWrite($user, $facility);
 
         $validated = $request->validate([
             'leadership' => ['nullable', 'array'],
@@ -82,7 +101,7 @@ class FacilityLeadershipController extends Controller
     public function destroyRole(Facility $facility, string $roleKey)
     {
         $user = Auth::user();
-        $this->leadership->authorizeFacility($user, $facility);
+        $this->leadership->authorizeFacilityWrite($user, $facility);
         $this->leadership->authorizeRoleRemoval($user);
         $this->leadership->removeStandardRole($facility, $roleKey);
 
@@ -94,14 +113,14 @@ class FacilityLeadershipController extends Controller
     public function destroy(Facility $facility, FacilityLeadershipAssignment $assignment)
     {
         $user = Auth::user();
-        $this->leadership->authorizeFacility($user, $facility);
+        $this->leadership->authorizeFacilityWrite($user, $facility);
         $this->leadership->authorizeRoleRemoval($user);
 
         if ((int) $assignment->facility_id !== (int) $facility->id) {
             abort(404);
         }
 
-        if (!$assignment->is_custom) {
+        if (! $assignment->is_custom) {
             abort(403, 'Standard leadership roles cannot be removed. Clear the name instead.');
         }
 
@@ -110,5 +129,38 @@ class FacilityLeadershipController extends Controller
         return redirect()
             ->route('admin.facility.leadership.edit', ['facility' => $facility->getRouteKey()])
             ->with('success', 'Custom leadership role removed.');
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, Facility>  $facilities
+     * @return array<string, mixed>
+     */
+    protected function portalViewData($user, ?Facility $facility, $facilities, bool $canEdit): array
+    {
+        $context = $this->memberPortalContext($user);
+
+        return array_merge($context, [
+            'portalNav' => \App\Support\MemberPortalLayout::navModeForCurrentRequest(),
+            'portalActive' => 'facility-leadership',
+            'portalTitle' => 'Facility Leadership | Bio Pacific',
+            'portalEyebrow' => 'Facility Leadership',
+            'portalPageTitle' => 'Facility Leadership',
+            'portalSubtitle' => match (\App\Support\MemberPortalLayout::navModeForCurrentRequest()) {
+                'admin' => 'Bio-Pacific Administration',
+                'corporate' => 'Corporate Management',
+                'facility' => 'Facility Portal',
+                default => 'HR Employee Portal',
+            },
+            'showPortalSearch' => false,
+            'showPortalNotifications' => true,
+            'showPortalFooter' => false,
+            'facility' => $facility,
+            'facilities' => $facilities,
+            'rows' => $facility ? $this->leadership->formRowsForFacility($facility) : collect(),
+            'roleDefinitions' => $facility ? $this->leadership->roleDefinitionsForFacility($facility) : [],
+            'employeeOptions' => $facility ? $this->leadership->employeeNameOptionsForFacility($facility) : collect(),
+            'canEdit' => $canEdit,
+            'canRemoveRoles' => $canEdit && $user->hasRole(['admin', 'super-admin', 'facility-dsd']),
+        ]);
     }
 }

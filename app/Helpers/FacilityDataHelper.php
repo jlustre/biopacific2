@@ -17,13 +17,48 @@ class FacilityDataHelper
 {
 
     /**
-     * Get gallery images for a facility, ordered by 'order'
+     * Get gallery images for a facility, ordered by 'order'.
+     *
+     * Prefers album-backed images whose parent gallery is visible on the channel.
+     *
+     * @param  string  $channel  website|portal|all
      */
-    public static function getGalleryImages($facilityId)
+    public static function getGalleryImages($facilityId, string $channel = 'website')
     {
-        return \App\Models\GalleryImage::where('facility_id', $facilityId)
+        $query = \App\Models\GalleryImage::query()
+            ->where('facility_id', $facilityId)
             ->where('is_active', true)
+            ->where(function ($q) use ($channel) {
+                $q->whereHas('gallery', function ($gallery) use ($channel) {
+                    $gallery->where('is_active', true);
+                    if ($channel !== 'all') {
+                        $gallery->visibleOn($channel);
+                    }
+                })->orWhere(function ($legacy) use ($channel) {
+                    $legacy->whereNull('gallery_id');
+                    if ($channel !== 'all') {
+                        $legacy->visibleOn($channel);
+                    }
+                });
+            })
             ->orderBy('order')
+            ->orderBy('id');
+
+        return $query->get();
+    }
+
+    /**
+     * @param  string  $channel  website|portal|all
+     */
+    public static function getGalleries($facilityId, string $channel = 'website')
+    {
+        return \App\Models\Gallery::query()
+            ->with(['event', 'images' => fn ($q) => $q->where('is_active', true)->orderBy('order')->orderBy('id')])
+            ->where('facility_id', $facilityId)
+            ->where('is_active', true)
+            ->when($channel !== 'all', fn ($q) => $q->visibleOn($channel))
+            ->orderBy('sort_order')
+            ->orderByDesc('created_at')
             ->get();
     }
     /**
@@ -190,7 +225,7 @@ class FacilityDataHelper
 
     public static function getFormattedNews(Facility $facility)
     {
-        return self::getNews($facility)->map(function($item) {
+        return self::getNews($facility, 'website')->map(function ($item) {
             return [
                 'title' => $item->title,
                 'desc' => $item->content,
@@ -215,17 +250,25 @@ class FacilityDataHelper
         return $globalServices->concat($facilityServices)->unique('id')->values();
     }
 
-    public static function getNews(Facility $facility)
+    /**
+     * @param  string  $channel  website|portal|all
+     */
+    public static function getNews(Facility $facility, string $channel = 'all')
     {
-        $globalNews = News::where('is_global', true)
+        $globalNews = News::query()
+            ->where('is_global', true)
             ->where('status', true)
+            ->when($channel !== 'all', fn ($q) => $q->visibleOn($channel))
             ->orderBy('published_at', 'desc')
             ->get();
+
         $facilityNews = $facility->news()
             ->where('status', true)
             ->where('is_global', false)
+            ->when($channel !== 'all', fn ($q) => $q->visibleOn($channel))
             ->orderBy('published_at', 'desc')
             ->get();
+
         return $globalNews->concat($facilityNews)->sortByDesc('published_at')->values();
     }
 

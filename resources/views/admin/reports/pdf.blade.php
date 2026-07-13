@@ -20,6 +20,19 @@
         $facilityNameFromTitle = trim((string) \Illuminate\Support\Str::after((string) $report->name, 'Expiring Licenses & Certifications - '));
     }
 
+    if (! $facilityNameFromTitle) {
+        $facilityIdParam = (int) (
+            request()->input('params.facility_id')
+            ?? data_get(request()->query('params'), 'facility_id')
+            ?? data_get(session('last_params'), 'facility_id')
+            ?? 0
+        );
+
+        if ($facilityIdParam > 0) {
+            $facilityNameFromTitle = \App\Models\Facility::query()->whereKey($facilityIdParam)->value('name');
+        }
+    }
+
     $facilityDisplayName = $facilityNameFromRows->count() === 1
         ? $facilityNameFromRows->first()
         : $facilityNameFromTitle;
@@ -41,6 +54,16 @@
         'days_until_expiration' => 'Days',
         'expiration_status' => 'Status',
         'verification_status' => 'Verified',
+        'hire_date' => 'Hire Date',
+        'training_name' => 'Training',
+        'frequency' => 'Frequency',
+        'last_completed_at' => 'Last Completed',
+        'training_due_date' => 'Due Date',
+        'days_until_due' => 'Days',
+        'due_status' => 'Due Status',
+        'training_status' => 'Workflow Status',
+        'competency_due_date' => 'Competency Due',
+        'performance_due_date' => 'Performance Due',
         'id' => 'ID',
         'name' => 'Name',
         'description' => 'Description',

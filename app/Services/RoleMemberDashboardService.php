@@ -163,7 +163,7 @@ class RoleMemberDashboardService
                 'department_id' => $scope['department_id'],
                 'facility_id' => $scope['facility']?->id,
             ]))
-            : route('member.trainings');
+            : route('member.checklists');
 
         return [
             'roleDashboardMode' => 'leadership',
@@ -287,9 +287,11 @@ class RoleMemberDashboardService
     {
         $stats ??= ($this->memberDashboard->build($user)['stats'] ?? []);
 
+        $assignedPersonal = \App\Models\PersonalTask::assignedOpenCountForUser($user);
         $myActions = (int) ($stats['documents_needed'] ?? 0)
             + (int) ($stats['trainings_needs_action'] ?? 0)
-            + (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0));
+            + (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0))
+            + $assignedPersonal;
 
         $credentialCount = (int) (($stats['certifications_expiring'] ?? 0) + ($stats['certifications_expired'] ?? 0));
         if ($credentialCount === 0 && ($stats['certifications_needs_attention'] ?? 0) > 0) {
@@ -300,20 +302,22 @@ class RoleMemberDashboardService
             [
                 'label' => 'My open tasks',
                 'value' => $myActions,
-                'hint' => 'Documents, training, credentials',
+                'hint' => $assignedPersonal > 0
+                    ? $assignedPersonal.' assigned to you'
+                    : 'Documents, training, credentials',
                 'route' => route('member.tasks'),
                 'tone' => 'brand',
                 'icon' => 'fa-list-check',
             ],
             [
-                'label' => 'My Trainings',
+                'label' => 'My Checklists',
                 'value' => (int) ($stats['trainings_needs_action'] ?? 0),
                 'hint' => ($stats['trainings_pending_signature'] ?? 0) > 0
                     ? ($stats['trainings_pending_signature'] . ' need signature')
                     : (($stats['trainings_total'] ?? 0) > 0
                         ? ($stats['trainings_total'] . ' assigned')
                         : 'Required items'),
-                'route' => route('member.trainings'),
+                'route' => route('member.checklists'),
                 'tone' => 'amber',
                 'icon' => 'fa-graduation-cap',
             ],
@@ -799,7 +803,7 @@ class RoleMemberDashboardService
 
         $trainingRoute = \Illuminate\Support\Facades\Route::has('admin.training-management.index')
             ? route('admin.training-management.index')
-            : route('member.trainings');
+            : route('member.checklists');
 
         return [
             'kpis' => [
@@ -867,7 +871,7 @@ class RoleMemberDashboardService
         return [
             ['label' => 'Team size', 'value' => 0, 'hint' => 'Active in ' . $scopeLabel, 'tone' => 'teal', 'icon' => 'fa-users', 'route' => route('user.hr-portal')],
             ['label' => 'Need attention', 'value' => 0, 'hint' => 'Staff with open issues', 'tone' => 'brand', 'icon' => 'fa-user-clock', 'route' => route('user.hr-portal')],
-            ['label' => 'Overdue training', 'value' => 0, 'hint' => 'Across ' . $scopeLabel, 'tone' => 'amber', 'icon' => 'fa-graduation-cap', 'route' => route('member.trainings')],
+            ['label' => 'Overdue training', 'value' => 0, 'hint' => 'Across ' . $scopeLabel, 'tone' => 'amber', 'icon' => 'fa-graduation-cap', 'route' => route('member.checklists')],
             ['label' => 'Credential risks', 'value' => 0, 'hint' => 'Licenses & certifications', 'tone' => 'rose', 'icon' => 'fa-id-card', 'route' => route('member.certifications')],
         ];
     }
@@ -947,7 +951,7 @@ class RoleMemberDashboardService
     {
         $actions = [
             ['title' => 'My documents', 'subtitle' => 'Documents & checklist', 'route' => route('member.documents'), 'icon' => 'fa-file-lines'],
-            ['title' => 'My trainings', 'subtitle' => 'Required completion', 'route' => route('member.trainings'), 'icon' => 'fa-graduation-cap'],
+            ['title' => 'My checklists', 'subtitle' => 'Required completion', 'route' => route('member.checklists'), 'icon' => 'fa-graduation-cap'],
             ['title' => 'My profile', 'subtitle' => 'Contact & account', 'route' => route('settings.profile'), 'icon' => 'fa-user'],
         ];
 

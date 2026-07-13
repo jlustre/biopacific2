@@ -42,7 +42,7 @@ final class Permissions
     public const MANAGE_GALLERIES = 'manage galleries';
     public const MANAGE_SERVICES = 'manage services';
 
-    public const VIEW_COMMUNICATIONS = 'view communications';
+    public const VIEW_WEB_COMMUNICATIONS = 'view web communications';
     public const MANAGE_TOUR_REQUESTS = 'manage tour requests';
     public const MANAGE_INQUIRIES = 'manage inquiries';
     public const MANAGE_JOB_APPLICATIONS = 'manage job applications';
@@ -69,6 +69,9 @@ final class Permissions
     public const USE_IMPORT_MAPPING_PRESETS = 'use import mapping presets';
     public const CREATE_IMPORT_MAPPING_PRESETS = 'create import mapping presets';
     public const CREATE_REGISTRATION_INVITATIONS = 'create registration invitations';
+
+    /** Invite a person to register as a portal member. */
+    public const CAN_INVITE_MEMBER = 'can invite member';
 
     /**
      * @return array<int, string>
@@ -110,7 +113,7 @@ final class Permissions
             self::MANAGE_FAQS,
             self::MANAGE_GALLERIES,
             self::MANAGE_SERVICES,
-            self::VIEW_COMMUNICATIONS,
+            self::VIEW_WEB_COMMUNICATIONS,
             self::MANAGE_TOUR_REQUESTS,
             self::MANAGE_INQUIRIES,
             self::MANAGE_JOB_APPLICATIONS,
@@ -133,6 +136,7 @@ final class Permissions
             self::USE_IMPORT_MAPPING_PRESETS,
             self::CREATE_IMPORT_MAPPING_PRESETS,
             self::CREATE_REGISTRATION_INVITATIONS,
+            self::CAN_INVITE_MEMBER,
         ];
     }
 

@@ -19,7 +19,6 @@
         ? 'member-portal-nav-sub-active font-semibold text-white'
         : 'text-teal-100';
     $selectedFacilityId = $selectedFacilityId ?? \App\Support\SelectedFacility::id();
-    $selectedFacilityRouteKey = \App\Support\SelectedFacility::routeKey();
     $careersUrl = $selectedFacilityId
         ? route('admin.facilities.webcontents.careers', ['facility_id' => $selectedFacilityId])
         : (($authUser && $authUser->facility_id)
@@ -46,7 +45,11 @@
         </a>
         <a href="{{ route('admin.reports.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.reports.*', 'admin.scheduled-reports.*']) }}">
-            Reports
+            Reports Management
+        </a>
+        <a href="{{ route('admin.scheduled-report-runs.index') }}"
+           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.scheduled-report-runs.*') }}">
+            Scheduled Report Runs
         </a>
         @endif
 
@@ -55,23 +58,6 @@
             Employee Management
         </a>
 
-        @php
-            $leadershipFacility = $selectedFacilityId
-                ? \App\Models\Facility::find($selectedFacilityId)
-                : ($authUser->facility_id ? \App\Models\Facility::find($authUser->facility_id) : null);
-            $leadershipHref = ($leadershipFacility && ! $authUser->hasRole(['admin', 'super-admin', 'rdhr']))
-                ? route('admin.facility.leadership.edit', ['facility' => $leadershipFacility->getRouteKey()])
-                : ($selectedFacilityRouteKey
-                    ? route('admin.facility.leadership.edit', ['facility' => $selectedFacilityRouteKey])
-                    : route('admin.facilities.leadership.index'));
-        @endphp
-        @if($showAllOpsLinks || (in_array($portalNav, ['facility', 'corporate'], true) && \Illuminate\Support\Facades\Route::has('admin.facility.leadership.edit') && ($authUser->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd']) || $authUser->can(\App\Support\Rbac\Permissions::ACCESS_HR_PORTAL))))
-        <a href="{{ $leadershipHref }}"
-           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ request()->routeIs(['admin.facility.leadership*', 'admin.facilities.leadership*']) ? 'member-portal-nav-sub-active font-semibold text-white' : 'text-teal-100' }}">
-            Facility Leadership
-        </a>
-        @endif
-
         @if(\App\Support\MemberPortalLayout::userCanAccessDocumentsManagement($authUser))
         <a href="{{ route('admin.upload-types.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.upload-types.*', 'admin.checklist-items.*']) }}">
@@ -79,9 +65,9 @@
         </a>
         @endif
 
-        <a href="{{ route('admin.training-management.index') }}"
-           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.training-management.*') }}">
-            Training Management
+        <a href="{{ route('admin.facility.trainings') }}"
+           class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.facility.trainings', 'admin.facility.employees*']) }}">
+            Trainings
         </a>
 
         @if($showAllOpsLinks || ($portalNav === 'facility' && ($authUser->can(\App\Support\Rbac\Permissions::VIEW_POSITIONS) || $authUser->hasRole(['facility-admin', 'facility-dsd', 'don']))))

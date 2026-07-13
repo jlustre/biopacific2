@@ -157,6 +157,14 @@
                     @if($item->is_global)
                     <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500 text-white">Global</span>
                     @endif
+                    @php
+                        $visibilityBadge = match ($item->visibility ?? 'both') {
+                            'website' => ['Website', 'bg-sky-500 text-white'],
+                            'portal' => ['Portal', 'bg-violet-500 text-white'],
+                            default => ['Both', 'bg-teal-600 text-white'],
+                        };
+                    @endphp
+                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $visibilityBadge[1] }}">{{ $visibilityBadge[0] }}</span>
                 </div>
             </div>
             <div class="p-5 flex flex-col flex-1">

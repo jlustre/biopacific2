@@ -90,7 +90,11 @@ class EmployeeAssessmentPeriod extends Model
         return EmployeeCompetencyAssessment::query()
             ->where('employee_num', $employeeNum)
             ->where('assessment_period_id', $this->id)
-            ->exists();
+            ->exists()
+            || EmployeeTrainingCompletion::query()
+                ->where('employee_num', $employeeNum)
+                ->where('assessment_period_id', $this->id)
+                ->exists();
     }
 
     public function employeeHasAssessmentData(): bool
@@ -108,6 +112,13 @@ class EmployeeAssessmentPeriod extends Model
             ->where('employee_num', $employeeNum)
             ->where('assessment_period_id', $this->id)
             ->whereNull('revoked_at')
+            ->exists()) {
+            return true;
+        }
+
+        if (EmployeeTrainingCompletion::query()
+            ->where('employee_num', $employeeNum)
+            ->where('assessment_period_id', $this->id)
             ->exists()) {
             return true;
         }
@@ -136,6 +147,12 @@ class EmployeeAssessmentPeriod extends Model
             )
             ->merge(
                 EmployeePerformanceSectionComment::query()
+                    ->where('assessment_period_id', $periodId)
+                    ->distinct()
+                    ->pluck('employee_num')
+            )
+            ->merge(
+                EmployeeTrainingCompletion::query()
                     ->where('assessment_period_id', $periodId)
                     ->distinct()
                     ->pluck('employee_num')

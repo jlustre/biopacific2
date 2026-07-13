@@ -7,10 +7,12 @@
         <p class="text-gray-600 mt-2">Manage and schedule automated report generation using CRON expressions.</p>
     </div>
     <div class="flex flex-wrap gap-2">
+        @if(!empty($canManageReportTemplates))
         <button type="button" onclick="openScheduledReportTemplateModal()"
             class="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition font-semibold flex items-center">
             <i class="fas fa-file-alt mr-2"></i> Create Template
         </button>
+        @endif
         @if(!empty($canManageScheduledReports))
         <a href="{{ route('admin.reports.index') }}" target="_blank"
             class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition font-semibold flex items-center">
@@ -161,11 +163,24 @@
                         <i class="fas fa-clock text-4xl text-gray-300 mb-4"></i>
                         @if(isset($scopedFacility) && $scopedFacility)
                         <h3 class="text-lg font-medium text-gray-900 mb-1">No scheduled reports for this facility</h3>
-                        <p class="text-gray-500 max-w-md">There are no scheduled reports configured for <strong>{{ $scopedFacility->name }}</strong> at this time. Create a template to save a reusable configuration, or contact your system administrator.</p>
+                        <p class="text-gray-500 max-w-md">There are no scheduled reports configured for <strong>{{ $scopedFacility->name }}</strong> at this time.
+                            @if(!empty($canManageReportTemplates))
+                            Create a template to save a reusable configuration, or schedule a new report.
+                            @else
+                            Use a saved template below, or contact your system administrator.
+                            @endif
+                        </p>
+                        @if(!empty($canManageReportTemplates))
                         <button type="button" onclick="openScheduledReportTemplateModal()"
                             class="mt-4 bg-teal-600 text-white px-5 py-2 rounded-lg hover:bg-teal-700 text-sm font-semibold">
                             <i class="fas fa-file-alt mr-1"></i> Create Template
                         </button>
+                        @elseif(!empty($canManageScheduledReports))
+                        <a href="{{ route('admin.scheduled-reports.create') }}"
+                            class="mt-4 inline-flex items-center bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                            <i class="fas fa-plus mr-1"></i> Schedule New Report
+                        </a>
+                        @endif
                         @else
                         <h3 class="text-lg font-medium text-gray-900 mb-1">No scheduled reports found</h3>
                         <p class="text-gray-500">No scheduled reports have been configured yet.</p>
@@ -217,6 +232,7 @@
                             <i class="fas fa-calendar-plus mr-1"></i> Use
                         </a>
                         @endif
+                        @if(!empty($canManageReportTemplates))
                         <form action="{{ route('admin.scheduled-reports.templates.destroy', $template) }}" method="POST"
                             class="inline-block" onsubmit="return confirm('Delete this template?');">
                             @csrf
@@ -225,6 +241,7 @@
                                 <i class="fas fa-trash mr-1"></i> Delete
                             </button>
                         </form>
+                        @endif
                     </td>
                 </tr>
                 @endforeach
@@ -234,5 +251,7 @@
 </div>
 @endif
 
+@if(!empty($canManageReportTemplates))
 @include('admin.scheduled-reports.partials.template-modal')
+@endif
 @endsection

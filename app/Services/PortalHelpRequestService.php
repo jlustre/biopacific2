@@ -62,11 +62,13 @@ class PortalHelpRequestService
 
     public function notifyTeam(PortalHelpRequest $request): void
     {
-        $recipient = $request->isHrInquiry()
-            ? config('portal-help.hr_notification_email')
-            : config('portal-help.support_notification_email');
+        $resolved = app(PortalHelpRecipientService::class)
+            ->resolveEmailRecipients((string) $request->type, $request->facility_id ? (int) $request->facility_id : null);
 
-        if (! $recipient) {
+        $to = $resolved['to'] ?? [];
+        $cc = $resolved['cc'] ?? [];
+
+        if ($to === [] && $cc === []) {
             return;
         }
 
@@ -91,9 +93,26 @@ class PortalHelpRequestService
                 $body .= "\nAttachments saved in admin panel.";
             }
 
-            Mail::raw($body, function ($message) use ($recipient, $request) {
-                $message->to($recipient)
-                    ->subject('[' . $request->typeLabel() . '] ' . $request->subject);
+            if (! empty($resolved['skipped_vacation'])) {
+                $body .= "\n\nNote: On vacation (not emailed): " . implode(', ', $resolved['skipped_vacation']);
+            }
+
+            Mail::raw($body, function ($message) use ($to, $cc, $request) {
+                $toAddresses = $to;
+                $ccAddresses = $cc;
+
+                if ($toAddresses !== []) {
+                    $message->to($toAddresses);
+                } elseif ($ccAddresses !== []) {
+                    $message->to($ccAddresses);
+                    $ccAddresses = [];
+                }
+
+                if ($ccAddresses !== []) {
+                    $message->cc($ccAddresses);
+                }
+
+                $message->subject('[' . $request->typeLabel() . '] ' . $request->subject);
             });
         } catch (\Throwable $e) {
             Log::error('Portal help request notification failed: ' . $e->getMessage());

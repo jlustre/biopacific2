@@ -8,7 +8,7 @@
 @if(!empty($parameters))
 **Parameters:**
 @foreach($parameters as $key => $value)
-- {{ $key }}: {{ $value }}
+- {{ $key }}: {{ is_array($value) ? json_encode($value) : $value }}
 @endforeach
 @endif
 
@@ -16,6 +16,8 @@
 **Result Summary:**
 {{ $resultSummary }}
 @endif
+
+The generated report file is attached when available.
 
 Thank you,
 BioPacific Admin

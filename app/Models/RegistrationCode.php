@@ -21,6 +21,8 @@ class RegistrationCode extends Model
         'email',
         'ssn_last4',
         'generated_by',
+        'sponsor_user_id',
+        'sponsor_name',
         'used_at',
         'used_by_user_id',
         'expires_at',
@@ -36,9 +38,29 @@ class RegistrationCode extends Model
         return $this->belongsTo(User::class, 'generated_by');
     }
 
+    public function sponsor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sponsor_user_id');
+    }
+
     public function usedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'used_by_user_id');
+    }
+
+    public function sponsorDisplayName(): ?string
+    {
+        $name = trim((string) ($this->sponsor_name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        return $this->sponsor?->name ? trim((string) $this->sponsor->name) : null;
+    }
+
+    public function hasSponsor(): bool
+    {
+        return filled($this->sponsorDisplayName());
     }
 
     public function employee(): BelongsTo
@@ -68,5 +90,27 @@ class RegistrationCode extends Model
     public function isEmployeeCode(): bool
     {
         return $this->type === self::TYPE_EMPLOYEE;
+    }
+
+    public function statusKey(): string
+    {
+        if ($this->used_at !== null) {
+            return 'used';
+        }
+
+        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+            return 'expired';
+        }
+
+        return 'pending';
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->statusKey()) {
+            'used' => 'Used',
+            'expired' => 'Expired',
+            default => 'Pending',
+        };
     }
 }

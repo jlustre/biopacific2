@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ChecklistItem;
+use App\Models\PersonalTask;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -32,14 +33,23 @@ class MemberPersonalTaskService
      * @param  array<string, mixed>  $dashboardPayload
      * @return list<array<string, mixed>>
      */
-    public function buildStaffTasks(User $user, array $dashboardPayload, ?int $limit = 8): array
-    {
+    public function buildStaffTasks(
+        User $user,
+        array $dashboardPayload,
+        ?int $limit = 8,
+        bool $includeAssignedPersonalTasks = true
+    ): array {
         $employee = $dashboardPayload['bpEmployee'] ?? $user->resolvedBpEmployee();
         $profileTasks = $this->build($user);
+        $assigned = $includeAssignedPersonalTasks
+            ? $this->buildAssignedPersonalTasks($user)
+            : collect();
 
         if (! $employee) {
             return $this->prioritizeTasks(
-                collect($profileTasks)->merge($this->filterApplicantTasks($dashboardPayload['todos'] ?? [])),
+                collect($profileTasks)
+                    ->merge($this->filterApplicantTasks($dashboardPayload['todos'] ?? []))
+                    ->merge($assigned),
                 $limit
             );
         }
@@ -47,9 +57,57 @@ class MemberPersonalTaskService
         return $this->prioritizeTasks(
             collect($profileTasks)
                 ->merge($this->buildEmployeeWorkTasks($dashboardPayload))
-                ->merge($this->buildAssessmentConfirmationTasks($user, $employee)),
+                ->merge($this->buildAssessmentConfirmationTasks($user, $employee))
+                ->merge($assigned),
             $limit
         );
+    }
+
+    /**
+     * Open personal tasks assigned to the user (e.g. DSD training reviews).
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function buildAssignedPersonalTasks(User $user): Collection
+    {
+        return PersonalTask::query()
+            ->where('assigned_to', $user->id)
+            ->where('status', PersonalTask::STATUS_PENDING)
+            ->latest('due_at')
+            ->limit(40)
+            ->get()
+            ->map(function (PersonalTask $task) {
+                $description = trim((string) preg_replace(
+                    '/^\[training_completion_id:\d+\]\s*/',
+                    '',
+                    (string) ($task->description ?? '')
+                ));
+                $route = filled($task->action_url)
+                    ? (string) $task->action_url
+                    : route('member.tasks');
+                $isTrainingReview = str_contains((string) ($task->description ?? ''), '[training_completion_id:')
+                    || str_starts_with((string) $task->title, 'Review training:');
+
+                return array_merge(
+                    $this->task(
+                        'personal-'.$task->id,
+                        (string) $task->title,
+                        $description !== ''
+                            ? $description
+                            : 'Assigned task requiring your attention.',
+                        $isTrainingReview ? 'training-review' : 'assigned-task',
+                        in_array($task->priority, PersonalTask::PRIORITIES, true) ? $task->priority : 'medium',
+                        $route,
+                        false,
+                        'open',
+                    ),
+                    [
+                        'action_label' => filled($task->action_url)
+                            ? (string) ($task->action_label ?: 'Open')
+                            : 'View',
+                    ]
+                );
+            });
     }
 
     /**
@@ -123,7 +181,7 @@ class MemberPersonalTaskService
         $certificationsUrl = route('member.certifications');
         $documentsPageUrl = route('member.documents');
         $employmentPortalUrl = route('employment.portal');
-        $trainingsUrl = route('member.trainings');
+        $trainingsUrl = route('member.checklists');
 
         $requiredDocuments = $payload['documentsCenter']['compliance_missing']
             ?? $payload['documentsNeeded']
@@ -417,6 +475,8 @@ class MemberPersonalTaskService
             'competency-confirmation' => 0,
             'performance-confirmation' => 0,
             'assessment-review' => 0,
+            'training-review' => 0,
+            'assigned-task' => 0,
             'profile' => 1,
             'upload' => 2,
             'certification' => 3,
@@ -493,6 +553,8 @@ class MemberPersonalTaskService
             'competency-confirmation',
             'performance-confirmation',
             'assessment-review',
+            'training-review',
+            'assigned-task',
         ], true)) {
             return true;
         }

@@ -60,6 +60,34 @@ class FacilityLeadershipService
         abort(403, 'You do not have permission to remove leadership roles.');
     }
 
+    public function userCanEditLeadership(User $user, ?Facility $facility = null): bool
+    {
+        if ($user->hasRole(['admin', 'super-admin', 'rdhr'])) {
+            return true;
+        }
+
+        if (! $user->hasRole(['facility-admin', 'facility-dsd'])) {
+            return false;
+        }
+
+        if ($facility === null) {
+            return true;
+        }
+
+        return $this->writableFacilitiesForUser($user)->contains(
+            fn (Facility $allowed) => (int) $allowed->id === (int) $facility->id
+        );
+    }
+
+    public function authorizeFacilityWrite(User $user, Facility $facility): void
+    {
+        abort_unless(
+            $this->userCanEditLeadership($user, $facility),
+            403,
+            'You do not have permission to edit leadership for this facility.'
+        );
+    }
+
     public function removeStandardRole(Facility $facility, string $roleKey): void
     {
         $roleDef = $this->roleDefinitionMapForFacility($facility)[$roleKey] ?? null;
@@ -231,6 +259,7 @@ class FacilityLeadershipService
             ->keyBy('role_key');
 
         $employeesByPosition = $this->employeesByPositionTitle($facility);
+        $contactsByName = $this->employeeContactsByDisplayName($facility);
         $usedNames = [];
         $rows = [];
         $sort = 0;
@@ -253,11 +282,15 @@ class FacilityLeadershipService
                 $usedNames[$this->normalizeName($name)] = true;
             }
 
+            $contact = $this->contactForName($name, $contactsByName);
+
             $rows[] = [
                 'role_key' => $key,
                 'role_label' => $role['label'] ?? $key,
                 'abbrev' => $role['abbrev'] ?? strtoupper($key),
                 'name' => $name,
+                'email' => $contact['email'],
+                'phone' => $contact['phone'],
                 'is_custom' => false,
                 'assignment_id' => $assignment?->id,
                 'can_delete' => ! $this->roleIsInUseAtFacility($role, $assignment, $employeesByPosition, $facility),
@@ -266,11 +299,16 @@ class FacilityLeadershipService
         }
 
         foreach ($assignments->where('is_custom', true) as $custom) {
+            $name = trim((string) ($custom->name ?? ''));
+            $contact = $this->contactForName($name, $contactsByName);
+
             $rows[] = [
                 'role_key' => $custom->role_key,
                 'role_label' => $custom->role_label ?? 'Custom role',
                 'abbrev' => 'Other',
-                'name' => $custom->name ?? '',
+                'name' => $name,
+                'email' => $contact['email'],
+                'phone' => $contact['phone'],
                 'is_custom' => true,
                 'assignment_id' => $custom->id,
                 'sort_order' => $custom->sort_order,
@@ -581,6 +619,7 @@ class FacilityLeadershipService
     public function employeeNameOptionsForFacility(Facility $facility): Collection
     {
         return BPEmployee::query()
+            ->with(['currentAssignment', 'phone', 'phones'])
             ->whereHas('currentAssignment', function ($query) use ($facility) {
                 $query->where('facility_id', $facility->id);
             })
@@ -595,11 +634,63 @@ class FacilityLeadershipService
                 return [
                     'value' => $value,
                     'label' => $this->employeeSelectLabel($employee),
+                    'email' => trim((string) ($employee->email ?? '')) ?: null,
+                    'phone' => $employee->displayPhoneNumber(),
                 ];
             })
             ->filter()
             ->unique('value')
             ->values();
+    }
+
+    /**
+     * Map display names to company email / phone for leadership roster rows.
+     *
+     * @return array<string, array{email: ?string, phone: ?string, value: string}>
+     */
+    public function employeeContactsByDisplayName(Facility $facility): array
+    {
+        $map = [];
+
+        foreach ($this->employeeNameOptionsForFacility($facility) as $option) {
+            $value = (string) ($option['value'] ?? '');
+            if ($value === '') {
+                continue;
+            }
+
+            $map[$this->normalizeName($value)] = [
+                'value' => $value,
+                'email' => $option['email'] ?? null,
+                'phone' => $option['phone'] ?? null,
+            ];
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, array{email: ?string, phone: ?string, value: string}>  $contactsByName
+     * @return array{email: ?string, phone: ?string}
+     */
+    protected function contactForName(string $name, array $contactsByName): array
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return ['email' => null, 'phone' => null];
+        }
+
+        $exact = $contactsByName[$this->normalizeName($name)] ?? null;
+        if ($exact) {
+            return ['email' => $exact['email'] ?? null, 'phone' => $exact['phone'] ?? null];
+        }
+
+        foreach ($contactsByName as $contact) {
+            if ($this->leadershipNamesMatch($name, (string) ($contact['value'] ?? ''))) {
+                return ['email' => $contact['email'] ?? null, 'phone' => $contact['phone'] ?? null];
+            }
+        }
+
+        return ['email' => null, 'phone' => null];
     }
 
     /**
@@ -691,35 +782,98 @@ class FacilityLeadershipService
 
     public function authorizeFacility(User $user, Facility $facility): void
     {
+        // Any authenticated employee may view any facility leadership roster (read-only unless they can edit).
+        if (! $user) {
+            abort(403, 'You do not have access to view leadership for this facility.');
+        }
+    }
+
+    /**
+     * Facilities shown in the leadership selector (all active facilities for browsing).
+     *
+     * @return Collection<int, Facility>
+     */
+    public function viewableFacilitiesForUser(?User $user = null): Collection
+    {
+        return Facility::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
+    }
+
+    /**
+     * Facilities the user may edit leadership for.
+     *
+     * @return Collection<int, Facility>
+     */
+    public function writableFacilitiesForUser(User $user): Collection
+    {
         if ($user->hasRole(['admin', 'super-admin', 'rdhr'])) {
-            return;
+            return $this->viewableFacilitiesForUser($user);
         }
 
-        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
-            if ((int) $user->facility_id === (int) $facility->id) {
-                return;
-            }
+        if (! $user->hasRole(['facility-admin', 'facility-dsd'])) {
+            return collect();
         }
 
-        abort(403, 'You do not have access to manage leadership for this facility.');
+        return $this->scopedFacilitiesForUser($user);
+    }
+
+    /**
+     * @deprecated Use viewableFacilitiesForUser() for the selector, writableFacilitiesForUser() for edit scope.
+     *
+     * @return Collection<int, Facility>
+     */
+    public function facilitiesForUser(User $user): Collection
+    {
+        return $this->viewableFacilitiesForUser($user);
+    }
+
+    /**
+     * Home / assigned facilities for the user (used for default selection).
+     *
+     * @return Collection<int, Facility>
+     */
+    public function scopedHomeFacilities(User $user): Collection
+    {
+        return $this->scopedFacilitiesForUser($user);
     }
 
     /**
      * @return Collection<int, Facility>
      */
-    public function facilitiesForUser(User $user): Collection
+    protected function scopedFacilitiesForUser(User $user): Collection
     {
-        if ($user->hasRole(['admin', 'super-admin', 'rdhr'])) {
-            return Facility::query()->orderBy('name')->get(['id', 'name', 'slug']);
-        }
+        $facilityIds = collect();
 
         if ($user->facility_id) {
-            $facility = Facility::find($user->facility_id);
-
-            return $facility ? collect([$facility]) : collect();
+            $facilityIds->push((int) $user->facility_id);
         }
 
-        return collect();
+        $forced = \App\Support\SelectedFacility::forcedFacilityIdForUser($user);
+        if ($forced) {
+            $facilityIds->push($forced);
+        }
+
+        $employee = method_exists($user, 'resolvedBpEmployee')
+            ? $user->resolvedBpEmployee(['currentAssignment'])
+            : null;
+
+        if ($employee?->currentAssignment?->facility_id) {
+            $facilityIds->push((int) $employee->currentAssignment->facility_id);
+        }
+
+        $facilityIds = $facilityIds->filter()->unique()->values();
+
+        if ($facilityIds->isEmpty()) {
+            return collect();
+        }
+
+        return Facility::query()
+            ->whereIn('id', $facilityIds)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
     }
 
     protected function upsertAssignment(

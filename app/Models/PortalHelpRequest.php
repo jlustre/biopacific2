@@ -72,18 +72,22 @@ class PortalHelpRequest extends Model
 
     public function categoryLabel(): string
     {
-        $key = $this->isHrInquiry() ? 'hr_categories' : 'support_categories';
-        $categories = config('portal-help.' . $key, []);
+        $hr = config('portal-help.hr_categories', []);
+        $support = config('portal-help.support_categories', []);
 
-        return $categories[$this->category]['label'] ?? ucfirst(str_replace('_', ' ', $this->category));
+        return $hr[$this->category]['label']
+            ?? $support[$this->category]['label']
+            ?? ucfirst(str_replace('_', ' ', (string) $this->category));
     }
 
     public function categoryIcon(): string
     {
-        $key = $this->isHrInquiry() ? 'hr_categories' : 'support_categories';
-        $categories = config('portal-help.' . $key, []);
+        $hr = config('portal-help.hr_categories', []);
+        $support = config('portal-help.support_categories', []);
 
-        return $categories[$this->category]['icon'] ?? 'fa-circle-question';
+        return $hr[$this->category]['icon']
+            ?? $support[$this->category]['icon']
+            ?? 'fa-circle-question';
     }
 
     public function referenceCode(): string

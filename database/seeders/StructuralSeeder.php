@@ -57,6 +57,7 @@ class StructuralSeeder extends Seeder
             PositionDocumentRequirementsSeeder::class,
             EmployeePerformanceItemsSeeder::class,
             EmployeeCompetencyItemsSeeder::class,
+            EmployeeTrainingItemsSeeder::class,
 
             // Job description templates (services catalog seeded above)
             JobDescriptionsSeeder::class,

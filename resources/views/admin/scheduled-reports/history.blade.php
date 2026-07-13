@@ -34,9 +34,18 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap flex gap-2 items-center">
-                    <a href="{{ route('admin.scheduled-report-runs.show', $run) }}" class="text-teal-600 hover:text-teal-800" title="View Report">
-                        <i class="fas fa-file-alt"></i>
-                    </a>
+                    @if($run->status === 'success')
+                        <a href="{{ route('admin.scheduled-reports.download', [$scheduledReport, $run->id]) }}"
+                           class="text-teal-600 hover:text-teal-800"
+                           title="Download {{ strtoupper($scheduledReport->report_format ?? 'csv') }}">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <a href="{{ route('admin.scheduled-report-runs.show', $run) }}" class="text-teal-600 hover:text-teal-800" title="View details">
+                            <i class="fas fa-file-alt"></i>
+                        </a>
+                    @else
+                        <span class="text-gray-400 text-xs">—</span>
+                    @endif
                     <form action="{{ route('admin.scheduled-report-runs.destroy', $run) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this report run?');">
                         @csrf
                         @method('DELETE')
