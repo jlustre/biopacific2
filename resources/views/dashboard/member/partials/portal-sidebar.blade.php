@@ -13,8 +13,11 @@
     $corporatePublicUrl = route('facility.public', ['facility' => \App\Models\Facility::corporateSiteSlug()]);
 @endphp
 
-<aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-    class="member-portal-sidebar fixed inset-y-0 left-0 z-40 w-80 transform bg-teal-800 text-white transition-transform duration-300 lg:static lg:translate-x-0 lg:w-72">
+<aside :class="[
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+        sidebarCollapsed ? 'lg:-ml-72 lg:-translate-x-full' : 'lg:ml-0 lg:translate-x-0'
+    ]"
+    class="member-portal-sidebar fixed inset-y-0 left-0 z-40 w-80 shrink-0 transform bg-teal-800 text-white transition-[transform,margin] duration-300 ease-in-out lg:static lg:w-72">
   <div class="flex h-full flex-col">
     <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
       <a href="{{ $corporatePublicUrl }}"

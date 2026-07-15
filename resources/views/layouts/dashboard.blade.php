@@ -13,6 +13,18 @@
     $positionTitle = $positionTitle ?? 'Team Member';
     $facilityName = $facilityName ?? '—';
     $initials = $initials ?? strtoupper(substr($firstNameOnly, 0, 1));
+
+    // Topbar H1 = sidebar purpose group (Personal, Facility, Company, …).
+    if ($user) {
+        $purposeMatch = \App\Support\MemberPortalLayout::activePurposeNavMatch($user);
+        if ($purposeMatch) {
+            $portalPageTitle = $purposeMatch['group']['label'] ?? $portalPageTitle;
+            $portalEyebrow = $purposeMatch['item']['label'] ?? $portalEyebrow;
+            if (! empty($purposeMatch['item']['id'])) {
+                $portalActive = $purposeMatch['item']['id'];
+            }
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -31,7 +43,16 @@
   @stack('head')
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased pb-20 lg:pb-0"
-      x-data="{ sidebarOpen: false, profileOpen: false, notifyOpen: false }">
+      x-data="{
+          sidebarOpen: false,
+          sidebarCollapsed: localStorage.getItem('memberPortalSidebarCollapsed') === 'true',
+          profileOpen: false,
+          notifyOpen: false,
+          toggleSidebar() {
+              this.sidebarCollapsed = !this.sidebarCollapsed;
+              localStorage.setItem('memberPortalSidebarCollapsed', this.sidebarCollapsed ? 'true' : 'false');
+          }
+      }">
   @include('layouts.partials.page-loader')
   <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
 
@@ -47,7 +68,8 @@
         'portalSubtitle' => $portalSubtitle ?? 'HR Employee Portal',
     ])
 
-    <main class="flex-1 lg:min-w-0 flex flex-col min-h-screen">
+    <main class="flex-1 lg:min-w-0 flex flex-col min-h-screen"
+          :class="{ 'member-portal-main-expanded': sidebarCollapsed }">
       @include('layouts.partials.email-verification-banner', ['user' => $user ?? auth()->user()])
       @include('dashboard.member.partials.portal-topbar', [
         'eyebrow' => $portalEyebrow,
@@ -59,6 +81,8 @@
         'initials' => $initials,
         'portalNotifications' => $portalNotifications ?? [],
         'portalNotificationCount' => $portalNotificationCount ?? 0,
+        'myTasksCount' => $myTasksCount ?? 0,
+        'myMessagesCount' => $myMessagesCount ?? 0,
       ])
 
       <div class="flex-1 min-w-0">

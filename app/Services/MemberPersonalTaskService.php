@@ -73,30 +73,48 @@ class MemberPersonalTaskService
         return PersonalTask::query()
             ->where('assigned_to', $user->id)
             ->where('status', PersonalTask::STATUS_PENDING)
+            ->orderByRaw("CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END")
             ->latest('due_at')
             ->limit(40)
             ->get()
             ->map(function (PersonalTask $task) {
+                $rawDescription = (string) ($task->description ?? '');
                 $description = trim((string) preg_replace(
-                    '/^\[training_completion_id:\d+\]\s*/',
+                    '/^\[(?:training_completion_id|upload_verification_id|upload_correction_id):\d+\]\s*/',
                     '',
-                    (string) ($task->description ?? '')
+                    $rawDescription
                 ));
                 $route = filled($task->action_url)
                     ? (string) $task->action_url
                     : route('member.tasks');
-                $isTrainingReview = str_contains((string) ($task->description ?? ''), '[training_completion_id:')
-                    || str_starts_with((string) $task->title, 'Review training:');
+                $title = (string) $task->title;
+                $isTrainingReview = str_contains($rawDescription, '[training_completion_id:')
+                    || str_starts_with($title, 'Review training:');
+                $isDocumentReview = str_contains($rawDescription, '[upload_verification_id:')
+                    || str_starts_with($title, 'Verify document');
+                $isDocumentCorrection = str_contains($rawDescription, '[upload_correction_id:')
+                    || str_starts_with($title, 'Correct & resubmit');
+
+                $category = match (true) {
+                    $isTrainingReview => 'training-review',
+                    $isDocumentReview, $isDocumentCorrection => 'document-review',
+                    default => 'assigned-task',
+                };
+
+                // Document verification / correction tasks always surface as high priority.
+                $priority = ($isDocumentReview || $isDocumentCorrection)
+                    ? 'high'
+                    : (in_array($task->priority, PersonalTask::PRIORITIES, true) ? $task->priority : 'medium');
 
                 return array_merge(
                     $this->task(
                         'personal-'.$task->id,
-                        (string) $task->title,
+                        $title,
                         $description !== ''
                             ? $description
                             : 'Assigned task requiring your attention.',
-                        $isTrainingReview ? 'training-review' : 'assigned-task',
-                        in_array($task->priority, PersonalTask::PRIORITIES, true) ? $task->priority : 'medium',
+                        $category,
+                        $priority,
                         $route,
                         false,
                         'open',
@@ -195,9 +213,6 @@ class MemberPersonalTaskService
             }
 
             $status = (string) ($doc['status'] ?? '');
-            if ($status === 'pending_review') {
-                continue;
-            }
 
             $dedupeKey = $this->documentDedupeKey($doc);
             if (isset($coveredKeys[$dedupeKey])) {
@@ -206,7 +221,7 @@ class MemberPersonalTaskService
             $coveredKeys[$dedupeKey] = true;
 
             $uploadTypeId = $doc['upload_type_id'] ?? null;
-            $needsUpload = in_array($status, ['missing', 'not_on_file', 'expired', 'expiry_missing'], true);
+            $needsUpload = in_array($status, ['missing', 'not_on_file', 'rejected', 'expired', 'expiry_missing'], true);
             $route = $employmentPortalUrl;
 
             if ($needsUpload && $uploadTypeId) {
@@ -476,6 +491,7 @@ class MemberPersonalTaskService
             'performance-confirmation' => 0,
             'assessment-review' => 0,
             'training-review' => 0,
+            'document-review' => 0,
             'assigned-task' => 0,
             'profile' => 1,
             'upload' => 2,
@@ -554,6 +570,7 @@ class MemberPersonalTaskService
             'performance-confirmation',
             'assessment-review',
             'training-review',
+            'document-review',
             'assigned-task',
         ], true)) {
             return true;

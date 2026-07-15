@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Auto-generated from Import Preset Management → Update seeder.
- * Last exported: 2026-06-25 12:03:17
+ * Last exported: 2026-07-15 09:41:02
  *
  * Do not edit preset data by hand; use the admin UI and re-export.
  */

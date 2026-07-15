@@ -37,7 +37,6 @@ class EmployeeRegistrationInviteMail extends Mailable
                 'registrationCode' => $this->registrationCodeRecord->code,
                 'registrationUrl' => $registrationUrl,
                 'expiresAt' => $this->registrationCodeRecord->expires_at,
-                'sponsorName' => $this->registrationCodeRecord->sponsorDisplayName(),
             ]);
     }
 }

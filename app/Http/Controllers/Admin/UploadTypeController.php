@@ -15,6 +15,7 @@ use App\Services\PositionRequirementPresetService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class UploadTypeController extends Controller
@@ -37,6 +38,8 @@ class UploadTypeController extends Controller
         $positionGroupCatalog = [];
         $generalUploadTypes = collect();
         $requirementOverview = [];
+        $selectedRequirementPosition = null;
+        $selectedRequirementUploadTypeIds = [];
 
         if ($tab === 'requirements') {
             $presetService = app(PositionRequirementPresetService::class);
@@ -60,6 +63,14 @@ class UploadTypeController extends Controller
                 $departmentFilter,
                 $overviewSearch !== '' ? $overviewSearch : null,
             );
+            $selectedPositionId = $request->filled('position_id') ? (int) $request->input('position_id') : null;
+            $selectedRequirementPosition = $selectedPositionId
+                ? $positions->firstWhere('id', $selectedPositionId)
+                : null;
+            if ($selectedRequirementPosition) {
+                $selectedRequirementUploadTypeIds = app(\App\Services\EmployeeDocumentRequirementsService::class)
+                    ->requiredGeneralUploadTypeIdsForPosition($selectedRequirementPosition);
+            }
         } elseif ($tab === 'items') {
             $itemsQuery = ChecklistItem::query()->with('docType');
 
@@ -139,6 +150,8 @@ class UploadTypeController extends Controller
             'positionGroupCatalog',
             'generalUploadTypes',
             'requirementOverview',
+            'selectedRequirementPosition',
+            'selectedRequirementUploadTypeIds',
         ));
     }
 
@@ -234,8 +247,15 @@ class UploadTypeController extends Controller
     public function destroy(UploadType $uploadType): RedirectResponse
     {
         $user = auth()->user();
-        if (! $user || ! method_exists($user, 'hasRole') || ! $user->hasRole(['admin', 'super-admin'])) {
-            abort(403, 'Only admin roles can delete document types.');
+        if (! $user || ! method_exists($user, 'hasRole') || ! $user->hasRole([
+            'admin',
+            'super-admin',
+            'facility-admin',
+            'facility-dsd',
+            'rdhr',
+            'don',
+        ])) {
+            abort(403, 'You do not have permission to remove document types.');
         }
 
         if ($uploadType->isEmployeeFileChecklistType()) {
@@ -244,8 +264,17 @@ class UploadTypeController extends Controller
                 ->with('error', 'Employee file document types cannot be deleted here. Remove or update the employee file item instead.');
         }
 
+        $permanent = $user->hasRole(['admin', 'super-admin']);
+
         try {
-            $uploadType->delete();
+            if ($permanent) {
+                DB::transaction(function () use ($uploadType): void {
+                    $uploadType->uploads()->update(['upload_type_id' => null]);
+                    $uploadType->forceDelete();
+                });
+            } else {
+                $uploadType->delete();
+            }
         } catch (QueryException) {
             return redirect()
                 ->route('admin.upload-types.index')
@@ -254,7 +283,12 @@ class UploadTypeController extends Controller
 
         return redirect()
             ->route('admin.upload-types.index')
-            ->with('success', config('documents.messages.type_deleted'));
+            ->with(
+                'success',
+                $permanent
+                    ? 'Document type permanently deleted.'
+                    : 'Document type archived. Existing document history is preserved.'
+            );
     }
 
     public function syncSeeder(DocumentsManagementSeederExporter $exporter): RedirectResponse

@@ -74,6 +74,9 @@ class StructuralSeeder extends Seeder
             // Super-admin account (production-safe; idempotent via firstOrCreate)
             SuperAdminSeeder::class,
 
+            // Restores exported facility galleries and their photo files, when present
+            GallerySeeder::class,
+
             // Import presets reference owner_email — must run after SuperAdminSeeder
             ImportMappingPresetsTableSeeder::class,
 

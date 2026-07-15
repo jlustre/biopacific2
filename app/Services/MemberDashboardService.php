@@ -651,7 +651,7 @@ class MemberDashboardService
         return [
             'count' => count($uniqueItems),
             'items' => array_slice($uniqueItems, 0, $limit),
-            'documents_needed' => count($documentsNeeded),
+            'documents_needed' => count($documentsCenter['compliance_missing'] ?? $documentsNeeded),
             'trainings_needs_action' => (int) ($trainingsSummary['needs_action'] ?? 0),
             'credentials_at_risk' => $credentialCount,
         ];
@@ -822,7 +822,7 @@ class MemberDashboardService
         $documentsCenter['documents_paginator'] = $documentsPaginator;
         $documentsCenter['document_filters'] = $documentFilters;
         $documentsCenter['document_type_options'] = $this->documentTypeFilterOptions($bpEmployee);
-        $documentsCenter['documents_total'] = $bpEmployee ? (int) $bpEmployee->uploads()->count() : 0;
+        $documentsCenter['documents_total'] = $bpEmployee ? (int) $bpEmployee->uploads()->current()->count() : 0;
         $documentsCenter['documents'] = $documentsPaginator->items();
         $documentsCenter['uploads'] = $documentsPaginator->items();
         $documentsCenter['position_id'] = $documentCompliance['position_id'] ?? null;
@@ -838,6 +838,115 @@ class MemberDashboardService
                 'documents_needed' => $documentsNeeded,
             ],
         ];
+    }
+
+    /**
+     * Facility Documents: search an in-scope employee, then browse their documents + history (read-only).
+     *
+     * @return array{
+     *     can_access: bool,
+     *     query: string,
+     *     selected_employee_id: int|null,
+     *     search_results: list<array<string, mixed>>,
+     *     selected_employee: array<string, mixed>|null,
+     *     documents: list<array<string, mixed>>,
+     *     scope_label: string
+     * }
+     */
+    public function buildTeamDocumentHistory(User $user, ?Request $request = null, ?Facility $facility = null): array
+    {
+        $verification = app(EmployeeDocumentVerificationService::class);
+        $canAccess = $verification->actorCanBrowseTeamDocumentHistory($user);
+
+        $facilityKey = $facility ? ($facility->slug ?? $facility->id) : null;
+        $baseRouteParams = $facilityKey !== null
+            ? ['facility' => $facilityKey]
+            : [];
+
+        $payload = [
+            'can_access' => $canAccess,
+            'query' => trim((string) ($request?->query('team_q') ?? '')),
+            'selected_employee_id' => $request?->filled('team_employee') ? (int) $request->query('team_employee') : null,
+            'search_results' => [],
+            'selected_employee' => null,
+            'documents' => [],
+            'scope_label' => $facility
+                ? 'staff at '.$facility->name
+                : ($user->hasRole(['facility-admin', 'facility-dsd', 'don'])
+                    ? 'facility staff'
+                    : ($user->hasRole(['admin', 'super-admin', 'rdhr'])
+                        ? 'employees'
+                        : 'employees who report to you')),
+        ];
+
+        if (! $canAccess || ! $facility || $facilityKey === null) {
+            return $payload;
+        }
+
+        $matchesFacility = function (BPEmployee $employee) use ($facility): bool {
+            return (int) ($employee->currentAssignment?->facility_id ?? 0) === (int) $facility->id;
+        };
+
+        if ($payload['query'] !== '' && $payload['selected_employee_id'] === null) {
+            $payload['search_results'] = $verification
+                ->searchEmployeesForDocumentHistory($user, $payload['query'])
+                ->filter($matchesFacility)
+                ->map(function (BPEmployee $employee) use ($baseRouteParams) {
+                    return array_merge($employee->tableNameFields(), [
+                        'id' => $employee->id,
+                        'employee_num' => $employee->employee_num,
+                        'position' => $employee->currentAssignment?->position?->title ?? '—',
+                        'facility' => $employee->currentAssignment?->facility?->name ?? '—',
+                        'select_url' => route('admin.facility.documents', array_merge($baseRouteParams, [
+                            'team_employee' => $employee->id,
+                            'team_q' => $employee->formalName(),
+                        ])),
+                    ]);
+                })
+                ->values()
+                ->all();
+        }
+
+        if ($payload['selected_employee_id']) {
+            $employee = BPEmployee::query()
+                ->with(['currentAssignment.position', 'currentAssignment.facility'])
+                ->find($payload['selected_employee_id']);
+
+            if (
+                $employee
+                && $matchesFacility($employee)
+                && $verification->actorCanViewEmployeeDocumentHistory($user, $employee)
+            ) {
+                $employeeFacility = $employee->currentAssignment?->facility ?? $facility;
+                $payload['selected_employee'] = array_merge($employee->tableNameFields(), [
+                    'id' => $employee->id,
+                    'employee_num' => $employee->employee_num,
+                    'position' => $employee->currentAssignment?->position?->title ?? '—',
+                    'facility' => $employeeFacility?->name ?? '—',
+                    'clear_url' => route('admin.facility.documents', $baseRouteParams),
+                ]);
+                $payload['documents'] = $employee->uploads()
+                    ->current()
+                    ->with(['uploadType', 'checklistItem'])
+                    ->orderByDesc('uploaded_at')
+                    ->orderByDesc('id')
+                    ->get()
+                    ->map(fn (Upload $upload) => $this->formatUploadRow(
+                        $upload,
+                        $employee,
+                        $employeeFacility,
+                        $user,
+                        forceReadOnly: true,
+                        viewerContext: 'team'
+                    ))
+                    ->values()
+                    ->all();
+            } else {
+                $payload['selected_employee_id'] = null;
+            }
+        }
+
+        return $payload;
     }
 
     /**
@@ -876,7 +985,6 @@ class MemberDashboardService
 
         return [
             'certificationsCenter' => $certificationsCenter,
-            'facilityCertificationsReport' => $this->buildFacilityCertificationsReport($user),
             'stats' => $certificationsCenter['summary'],
         ];
     }
@@ -2299,12 +2407,43 @@ class MemberDashboardService
             };
         }
 
+        $uploadTypeIds = collect($items)
+            ->pluck('upload_type_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $typesById = $uploadTypeIds->isEmpty()
+            ? collect()
+            : UploadType::query()->whereIn('id', $uploadTypeIds->all())->get()->keyBy('id');
+
+        $requiredUploadTypes = $uploadTypeIds
+            ->map(function (int $id) use ($items, $typesById) {
+                $item = collect($items)->firstWhere(fn ($row) => (int) ($row['upload_type_id'] ?? 0) === $id) ?? [];
+                $type = $typesById->get($id);
+
+                return [
+                    'id' => $id,
+                    'name' => (string) ($item['title'] ?? $type?->name ?? 'Credential'),
+                    'requires_expiry' => (bool) ($type?->requires_expiry ?? true),
+                    'section' => (string) ($item['section'] ?? 'Credentials'),
+                    'kind' => 'upload_type',
+                ];
+            })
+            ->values()
+            ->all();
+
         return [
             'items' => $items,
             'expiring_documents' => $expiringUploads,
             'expiring_uploads' => $expiringUploads,
             'summary' => $summary,
             'has_employee_record' => (bool) $bpEmployee,
+            'position_id' => $documentCompliance['position_id'] ?? null,
+            'position_title' => $documentCompliance['position_title'] ?? null,
+            'required_upload_types' => $requiredUploadTypes,
+            'submission_reason_options' => \App\Support\UploadSubmissionReason::options(),
             'position_id' => $documentCompliance['position_id'] ?? null,
             'position_title' => $documentCompliance['position_title'] ?? null,
         ];
@@ -2408,6 +2547,7 @@ class MemberDashboardService
                 'missing_expiry' => 4,
                 'not_on_file' => 5,
                 'not_verified' => 6,
+                'rejected' => 6,
                 'valid' => 7,
             ];
 
@@ -2457,7 +2597,9 @@ class MemberDashboardService
             $expiredDays = $latestExpiry ? (int) $today->diffInDays($latestExpiry, false) : null;
             $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $expiredDays, $latestExpiry?->format('M j, Y'));
         } elseif ($status === 'pending_review') {
-            $statusMeta = $this->certificationStatusRow('not_verified', 'Pending leadership review', null, null);
+            $statusMeta = $this->certificationStatusRow('not_verified', 'Pending for Approval', null, null);
+        } elseif ($status === 'rejected') {
+            $statusMeta = $this->certificationStatusRow('rejected', 'Rejected — re-upload required', null, null);
         } else {
             $statusMeta = $this->certificationStatusRow('not_on_file', 'Not on file', null, null);
         }
@@ -2469,9 +2611,10 @@ class MemberDashboardService
             'section' => 'Required for your position',
             'required' => true,
             'doc_type' => 'Required document',
-            'on_file' => in_array($status, ['complete', 'pending_review', 'expired'], true),
+            'on_file' => in_array($status, ['complete', 'pending_review', 'rejected', 'expired'], true),
             'verified' => $status === 'complete',
             'is_license_or_certification' => true,
+            'verification_notes' => $item['verification_notes'] ?? null,
         ], $statusMeta);
     }
 
@@ -2591,6 +2734,8 @@ class MemberDashboardService
             'expiring_soon' => 'bg-amber-50 text-amber-700',
             'valid' => 'bg-emerald-50 text-emerald-700',
             'missing_expiry' => 'bg-amber-50 text-amber-700',
+            'not_verified' => 'bg-sky-50 text-sky-700',
+            'rejected' => 'bg-rose-100 text-rose-800',
             default => 'bg-slate-100 text-slate-700',
         };
 
@@ -2926,6 +3071,7 @@ class MemberDashboardService
         $requiredTypeIds = collect($complianceItems)->pluck('upload_type_id')->filter()->values()->all();
         $uncountedUploadQuery = Upload::query()
             ->where('employee_num', $employee->employee_num)
+            ->current()
             ->whereNotNull('expires_at')
             ->whereDate('expires_at', '>=', $today)
             ->whereDate('expires_at', '<=', $through);
@@ -2969,12 +3115,13 @@ class MemberDashboardService
         $requiredUploadTypes = $this->buildEmployeeUploadTypeOptions($bpEmployee, $complianceItems->all());
 
         $complianceMissing = $complianceItems
-            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'expired', 'pending_review'], true))
+            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'rejected', 'expired', 'pending_review'], true))
             ->map(function ($item) {
                 $status = (string) ($item['status'] ?? 'missing');
                 $statusLabel = match ($status) {
                     'expired' => 'Expired',
-                    'pending_review' => 'Pending leadership review',
+                    'rejected' => 'Rejected — re-upload required',
+                    'pending_review' => 'Pending for Approval',
                     default => 'Not on file',
                 };
 
@@ -2989,6 +3136,7 @@ class MemberDashboardService
                     'status_label' => $statusLabel,
                     'priority' => in_array($status, ['expired', 'pending_review'], true) ? 'medium' : 'high',
                     'due_at' => null,
+                    'verification_notes' => $item['verification_notes'] ?? null,
                 ];
             })
             ->values();
@@ -3180,6 +3328,7 @@ class MemberDashboardService
         }
 
         return $employee->uploads()
+            ->current()
             ->with(['uploadType', 'checklistItem'])
             ->orderByDesc('uploaded_at')
             ->get()
@@ -3223,6 +3372,7 @@ class MemberDashboardService
         $search = trim((string) ($filters['search'] ?? ''));
 
         $query = $employee->uploads()
+            ->current()
             ->with(['uploadType', 'checklistItem']);
 
         if ($search !== '') {
@@ -3306,6 +3456,7 @@ class MemberDashboardService
 
         return Upload::query()
             ->where('employee_num', $employee->employee_num)
+            ->current()
             ->with(['uploadType:id,name', 'checklistItem:id,name'])
             ->get()
             ->map(function (Upload $upload) {
@@ -3341,11 +3492,16 @@ class MemberDashboardService
         Upload $upload,
         BPEmployee $employee,
         ?Facility $facility,
-        User $user
+        User $user,
+        bool $forceReadOnly = false,
+        string $viewerContext = 'self'
     ): array {
-        $canUseAdminUploadRoutes = $facility
+        $canUseAdminUploadRoutes = $viewerContext !== 'team'
+            && $facility
             && method_exists($user, 'canManageFacility')
             && $user->canManageFacility($facility->id);
+
+        $useTeamRoutes = $viewerContext === 'team';
 
         $facilityKey = $facility ? ($facility->slug ?? $facility->id) : null;
         $uploadedAt = $this->parseDate($upload->uploaded_at);
@@ -3364,6 +3520,64 @@ class MemberDashboardService
             || $upload->checklistItem?->isExpiring
         );
 
+        $historyUploads = app(\App\Services\DocumentUploadLifecycleService::class)
+            ->historyFor($upload, true);
+
+        $canModify = (! $forceReadOnly) && ($canUseAdminUploadRoutes
+            ? true
+            : $upload->employeeCanModify($user));
+
+        $resolveUrls = function (Upload $target) use ($canUseAdminUploadRoutes, $facilityKey, $employee, $useTeamRoutes): array {
+            if ($useTeamRoutes) {
+                return [
+                    'view_url' => route('member.documents.team.view', [
+                        'employee' => $employee->id,
+                        'upload' => $target->id,
+                    ]),
+                    'download_url' => route('member.documents.team.download', [
+                        'employee' => $employee->id,
+                        'upload' => $target->id,
+                    ]),
+                ];
+            }
+
+            if ($canUseAdminUploadRoutes && $facilityKey) {
+                return [
+                    'view_url' => route('admin.facility.uploads.view', [
+                        'facility' => $facilityKey,
+                        'upload' => $target->id,
+                    ]),
+                    'download_url' => route('admin.facility.uploads.download', [
+                        'facility' => $facilityKey,
+                        'upload' => $target->id,
+                    ]),
+                ];
+            }
+
+            return [
+                'view_url' => route('employment.documents.view', ['document' => $target->id]),
+                'download_url' => route('employment.documents.download', ['document' => $target->id]),
+            ];
+        };
+
+        $history = $historyUploads->map(function (Upload $prior) use ($resolveUrls) {
+            $priorExpires = $this->parseDate($prior->expires_at);
+            $priorUploaded = $this->parseDate($prior->uploaded_at);
+            $urls = $resolveUrls($prior);
+
+            return [
+                'id' => $prior->id,
+                'name' => $prior->original_filename ?: basename((string) $prior->file_path),
+                'uploaded_at' => $priorUploaded?->format('M j, Y'),
+                'expires_at' => $priorExpires?->format('M j, Y'),
+                'coverage_year' => $prior->coverage_year,
+                'verification_status' => $prior->verification_status,
+                'verification_status_label' => $prior->verificationStatusLabel() ?? 'Not submitted',
+                'view_url' => $urls['view_url'],
+                'download_url' => $urls['download_url'],
+            ];
+        })->values()->all();
+
         $row = [
             'id' => $upload->id,
             'upload_type_id' => $upload->upload_type_id,
@@ -3381,8 +3595,11 @@ class MemberDashboardService
                 default => 'bg-slate-100 text-slate-600',
             },
             'verification_notes' => $upload->verification_notes,
-            'can_submit_for_review' => $upload->isOwnedBy($user) && $upload->canSubmitForVerification(),
+            'can_submit_for_review' => (! $forceReadOnly) && $upload->isOwnedBy($user) && $upload->canSubmitForVerification(),
             'is_owned_by_user' => $upload->isOwnedBy($user),
+            'is_approved' => $upload->isApproved(),
+            'can_modify' => $canModify,
+            'is_read_only' => ! $canModify,
             'notify_preview_url' => null,
             'notify_send_url' => null,
             'uploaded_at' => $uploadedAt?->format('M j, Y'),
@@ -3393,29 +3610,27 @@ class MemberDashboardService
             'expiry_status' => $expiryStatus,
             'need_tracking' => $needTracking,
             'need_tracking_label' => $needTracking ? 'Yes' : 'No',
+            'coverage_year' => $upload->coverage_year,
+            'history_count' => count($history),
+            'history' => $history,
             'view_url' => null,
             'download_url' => null,
             'edit_url' => null,
         ];
 
-        if ($canUseAdminUploadRoutes && $facilityKey) {
-            $row['view_url'] = route('admin.facility.uploads.view', [
-                'facility' => $facilityKey,
-                'upload' => $upload->id,
-            ]);
-            $row['download_url'] = route('admin.facility.uploads.download', [
-                'facility' => $facilityKey,
-                'upload' => $upload->id,
-            ]);
+        $urls = $resolveUrls($upload);
+        $row['view_url'] = $urls['view_url'];
+        $row['download_url'] = $urls['download_url'];
+
+        if ($canModify && $canUseAdminUploadRoutes) {
             $row['edit_url'] = $this->buildAdminEmployeeEditUrl($employee->id, 'documents');
-        } else {
-            $row['view_url'] = route('employment.documents.view', ['document' => $upload->id]);
-            $row['download_url'] = route('employment.documents.download', ['document' => $upload->id]);
+        } elseif ($canModify) {
             $row['edit_url'] = route('employment.portal', ['tab' => 'documents']) . '#upload-table';
-            if ($upload->isOwnedBy($user)) {
-                $row['notify_preview_url'] = route('employment.documents.notify.preview', ['document' => $upload->id]);
-                $row['notify_send_url'] = route('employment.documents.notify', ['document' => $upload->id]);
-            }
+        }
+
+        if (! $forceReadOnly && $upload->isOwnedBy($user) && $viewerContext === 'self') {
+            $row['notify_preview_url'] = route('employment.documents.notify.preview', ['document' => $upload->id]);
+            $row['notify_send_url'] = route('employment.documents.notify', ['document' => $upload->id]);
         }
 
         return $row;

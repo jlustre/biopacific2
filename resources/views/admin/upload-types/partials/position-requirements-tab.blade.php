@@ -42,6 +42,103 @@
     </div>
 </div>
 
+<div class="rounded-2xl border border-teal-200 bg-white shadow-sm">
+    <div class="border-b border-teal-100 bg-teal-50/70 p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Requirements for one position</h3>
+                <p class="mt-1 text-sm text-slate-600">Choose a position to review and save its organization-wide required documents.</p>
+            </div>
+            <form method="GET" action="{{ route('admin.upload-types.index') }}" class="w-full lg:w-[28rem]">
+                <input type="hidden" name="tab" value="requirements">
+                <label for="requirement_position_id" class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Position</label>
+                <div class="flex gap-2">
+                    <select id="requirement_position_id" name="position_id"
+                            class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                            onchange="this.form.submit()">
+                        <option value="">Select a position…</option>
+                        @foreach($positionsByDepartment as $departmentName => $departmentPositions)
+                            <optgroup label="{{ $departmentName }}">
+                                @foreach($departmentPositions as $position)
+                                    <option value="{{ $position->id }}" @selected((int) request('position_id') === (int) $position->id)>
+                                        {{ $position->title }}{{ $position->position_code ? ' ('.$position->position_code.')' : '' }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="rounded-xl bg-teal-700 px-4 py-2 text-sm font-bold text-white hover:bg-teal-800">Show</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if($selectedRequirementPosition)
+        @php $selectedRequirementIds = collect($selectedRequirementUploadTypeIds ?? [])->map(fn ($id) => (int) $id); @endphp
+        <form method="POST" action="{{ route('admin.position-document-requirements.sync-position', $selectedRequirementPosition) }}">
+            @csrf
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                <div>
+                    <p class="font-bold text-slate-900">{{ $selectedRequirementPosition->title }}</p>
+                    <p class="text-xs text-slate-500">
+                        {{ $selectedRequirementPosition->department?->name ?? 'No department' }}
+                        · {{ $selectedRequirementIds->count() }} required document(s)
+                    </p>
+                </div>
+                <button type="submit" class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-700">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Save requirements
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] text-left text-sm">
+                    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="w-24 px-4 py-3 text-center">Required</th>
+                            <th class="px-4 py-3">Document</th>
+                            <th class="px-4 py-3">Department scope</th>
+                            <th class="px-4 py-3 text-center">Tracks expiry</th>
+                            <th class="px-4 py-3 text-center">License / certification</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($generalUploadTypes as $type)
+                            <tr class="hover:bg-slate-50/80">
+                                <td class="px-4 py-3 text-center">
+                                    <input type="checkbox" name="upload_type_ids[]" value="{{ $type->id }}"
+                                           @checked($selectedRequirementIds->contains((int) $type->id))
+                                           class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-900">{{ $type->name }}</td>
+                                <td class="px-4 py-3 text-xs text-slate-600">
+                                    @if(empty($type->department_ids))
+                                        Organization-wide
+                                    @else
+                                        {{ $departments->whereIn('id', collect($type->department_ids)->map(fn ($id) => (int) $id))->pluck('name')->join(', ') ?: 'Restricted' }}
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $type->requires_expiry ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-600' }}">
+                                        {{ $type->requires_expiry ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $type->is_license_or_certification ? 'bg-violet-50 text-violet-700' : 'bg-slate-100 text-slate-600' }}">
+                                        {{ $type->is_license_or_certification ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No document types are available for this position.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    @else
+        <div class="px-5 py-10 text-center text-sm text-slate-500">Select a position to see its required-document table.</div>
+    @endif
+</div>
+
 <form method="POST" action="{{ route('admin.position-document-requirements.bulk') }}" id="positionRequirementsForm" class="space-y-6">
     @csrf
     @if($selectedDepartmentId)

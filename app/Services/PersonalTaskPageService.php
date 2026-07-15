@@ -45,6 +45,11 @@ class PersonalTaskPageService
         );
     }
 
+    public function openCountForUser(User $user): int
+    {
+        return $this->collectRows($user, ['status' => 'open'])->count();
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      * @return Collection<int, array<string, mixed>>
@@ -66,6 +71,7 @@ class PersonalTaskPageService
         return $rows
             ->sortBy(fn (array $row) => [
                 $row['sort_tier'] ?? 1,
+                $row['sort_boost'] ?? 1,
                 match ($row['priority'] ?? 'medium') {
                     'high' => 0,
                     'medium' => 1,
@@ -87,14 +93,25 @@ class PersonalTaskPageService
         $tasks = $this->memberPersonalTaskService->buildStaffTasks($user, $payload, null, false);
 
         return collect($tasks)->map(function (array $task) {
+            $priority = (string) ($task['priority'] ?? 'medium');
+            $category = (string) ($task['category'] ?? 'system');
+            $isReviewQueue = in_array($category, [
+                'document-review',
+                'training-review',
+                'assessment-review',
+                'signature',
+                'competency-confirmation',
+                'performance-confirmation',
+            ], true);
+
             return [
                 'key' => 'system:' . ($task['id'] ?? uniqid('system-')),
                 'type' => 'system',
                 'personal_task_id' => null,
                 'title' => (string) ($task['title'] ?? 'Task'),
                 'description' => (string) ($task['description'] ?? ''),
-                'priority' => (string) ($task['priority'] ?? 'medium'),
-                'category' => (string) ($task['category'] ?? 'system'),
+                'priority' => $priority,
+                'category' => $category,
                 'status' => 'pending',
                 'status_label' => 'Open',
                 'due_at' => null,
@@ -110,6 +127,7 @@ class PersonalTaskPageService
                 'can_complete' => false,
                 'can_confirm' => false,
                 'sort_tier' => 0,
+                'sort_boost' => $isReviewQueue || $priority === 'high' ? 0 : 1,
             ];
         });
     }
@@ -136,7 +154,29 @@ class PersonalTaskPageService
         $isCreator = (int) $task->created_by === (int) $user->id;
         $isAssignee = (int) $task->assigned_to === (int) $user->id;
         $actionUrl = filled($task->action_url) ? (string) $task->action_url : null;
-        $description = trim((string) preg_replace('/^\[training_completion_id:\d+\]\s*/', '', (string) ($task->description ?? '')));
+        $rawDescription = (string) ($task->description ?? '');
+        $description = trim((string) preg_replace(
+            '/^\[(?:training_completion_id|upload_verification_id|upload_correction_id):\d+\]\s*/',
+            '',
+            $rawDescription
+        ));
+        $title = (string) $task->title;
+        $isDocumentReview = str_contains($rawDescription, '[upload_verification_id:')
+            || str_starts_with($title, 'Verify document');
+        $isDocumentCorrection = str_contains($rawDescription, '[upload_correction_id:')
+            || str_starts_with($title, 'Correct & resubmit');
+        $isTrainingReview = str_contains($rawDescription, '[training_completion_id:')
+            || str_starts_with($title, 'Review training:');
+        $isReviewQueue = $isDocumentReview || $isDocumentCorrection || $isTrainingReview;
+
+        // Document verification / correction tasks always stay high priority on My Tasks.
+        $priority = ($isDocumentReview || $isDocumentCorrection)
+            ? 'high'
+            : (in_array($task->priority, PersonalTask::PRIORITIES, true) ? $task->priority : 'medium');
+
+        if (($isDocumentReview || $isDocumentCorrection) && $task->priority !== 'high') {
+            $task->forceFill(['priority' => 'high'])->saveQuietly();
+        }
 
         return [
             'key' => 'personal:' . $task->id,
@@ -144,8 +184,12 @@ class PersonalTaskPageService
             'personal_task_id' => $task->id,
             'title' => $task->title,
             'description' => $description,
-            'priority' => $task->priority,
-            'category' => 'personal',
+            'priority' => $priority,
+            'category' => match (true) {
+                $isDocumentReview, $isDocumentCorrection => 'document-review',
+                $isTrainingReview => 'training-review',
+                default => 'personal',
+            },
             'status' => $task->status,
             'status_label' => $task->statusLabel(),
             'due_at' => $task->due_at?->format('M j, Y'),
@@ -161,10 +205,11 @@ class PersonalTaskPageService
             'assigned_to_name' => $task->assignee?->name ?? 'Unknown',
             'can_edit' => $isCreator && $task->status === PersonalTask::STATUS_PENDING && ! $actionUrl,
             'can_delete' => $isCreator && $task->status === PersonalTask::STATUS_PENDING && ! $actionUrl,
-            // Training (and similar) review tasks are completed via the action link, not a generic Complete click.
+            // Training/document review tasks are completed via the action link, not a generic Complete click.
             'can_complete' => $isAssignee && $task->status === PersonalTask::STATUS_PENDING && ! $actionUrl,
             'can_confirm' => $isCreator && $task->awaitsCreatorConfirmation(),
             'sort_tier' => in_array($task->status, [PersonalTask::STATUS_PENDING, PersonalTask::STATUS_COMPLETED], true) ? 0 : 2,
+            'sort_boost' => ($isReviewQueue || $priority === 'high') ? 0 : 1,
         ];
     }
 

@@ -35,6 +35,7 @@ class PersonalProfilePanelsService
         if ($employee) {
             Upload::query()
                 ->where('employee_num', $employee->employee_num)
+                ->current()
                 ->whereNotNull('expires_at')
                 ->whereDate('expires_at', '>=', $today)
                 ->whereHas('uploadType', fn ($q) => $q->where('is_license_or_certification', true))

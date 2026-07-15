@@ -7,14 +7,24 @@ use App\Models\Facility;
 use App\Models\PortalHelpRequest;
 use App\Services\PortalHelpRequestService;
 use App\Support\SelectedFacility;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class MemberPortalHelpController extends Controller
 {
     use ProvidesMemberPortalContext;
+
+    private const PORTAL_DOCUMENTS = [
+        'HR_PORTAL_USER_MANUAL.md' => 'HR Portal User Manual',
+        'HR_PORTAL_WORKFLOWS.md' => 'HR Portal Workflow Reference',
+        'HR_PORTAL_BUSINESS_RULES.md' => 'HR Portal Business Rules',
+        'DEVELOPER_GUIDE.md' => 'Developer Guide',
+        'FEATURES.md' => 'Application Features',
+    ];
 
     public function index(Request $request): View
     {
@@ -63,6 +73,71 @@ class MemberPortalHelpController extends Controller
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
         ]));
+    }
+
+    public function userManual()
+    {
+        return $this->portalDocumentPdf('HR_PORTAL_USER_MANUAL.md');
+    }
+
+    public function portalDocumentPdf(string $document)
+    {
+        abort_unless(array_key_exists($document, self::PORTAL_DOCUMENTS), 404);
+
+        $path = base_path('docs/'.$document);
+        abort_unless(is_file($path), 404);
+
+        $markdown = $this->rewritePortalDocumentLinks((string) file_get_contents($path));
+        $content = Str::markdown($markdown, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
+        $content = $this->addHeadingAnchors($content);
+
+        return Pdf::loadView('dashboard.member.help.user-manual-pdf', [
+            'content' => $content,
+            'documentTitle' => self::PORTAL_DOCUMENTS[$document],
+            'updatedAt' => date('F j, Y', (int) filemtime($path)),
+        ])
+            ->setPaper('letter')
+            ->stream(Str::replaceEnd('.md', '.pdf', $document));
+    }
+
+    private function rewritePortalDocumentLinks(string $markdown): string
+    {
+        return (string) preg_replace_callback(
+            '/(?<=\]\()([A-Za-z0-9_-]+\.md)(#[^)]+)?(?=\))/',
+            function (array $matches): string {
+                if (! array_key_exists($matches[1], self::PORTAL_DOCUMENTS)) {
+                    return $matches[0];
+                }
+
+                return route('member.help.document', ['document' => $matches[1]])
+                    .($matches[2] ?? '');
+            },
+            $markdown
+        );
+    }
+
+    private function addHeadingAnchors(string $html): string
+    {
+        return (string) preg_replace_callback(
+            '/<(h[1-6])>(.*?)<\/\1>/si',
+            function (array $matches): string {
+                $heading = html_entity_decode(strip_tags($matches[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $slug = mb_strtolower($heading, 'UTF-8');
+                $slug = (string) preg_replace('/[^\p{L}\p{N}\s-]/u', '', $slug);
+                $slug = (string) preg_replace('/\s/u', '-', $slug);
+
+                return sprintf(
+                    '<%1$s id="%2$s">%3$s</%1$s>',
+                    $matches[1],
+                    e($slug),
+                    $matches[2]
+                );
+            },
+            $html
+        );
     }
 
     public function storeHr(Request $request, PortalHelpRequestService $service): RedirectResponse

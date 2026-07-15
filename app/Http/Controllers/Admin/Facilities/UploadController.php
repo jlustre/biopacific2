@@ -19,14 +19,30 @@ use App\Support\UploadNotificationContext;
 
 class UploadController extends Controller {
 
+    protected function resolveFacilityModel($facility): Facility
+    {
+        if ($facility instanceof Facility) {
+            return $facility;
+        }
+
+        return Facility::query()
+            ->whereKey($facility)
+            ->orWhere('slug', $facility)
+            ->firstOrFail();
+    }
+
     protected function authorizeFacilityAccess(Facility $facility): void
     {
         $user = Auth::user();
         if (MemberPortalLayout::userIsSystemAdmin($user) || $user->hasRole('rdhr')) {
             return;
         }
-        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor'])) {
+        if ($user->hasRole(['facility-admin', 'facility-dsd', 'facility-editor', 'don'])) {
             if (isset($user->facility_id) && (int) $user->facility_id === (int) $facility->id) {
+                return;
+            }
+            $employeeFacilityId = $user->resolvedBpEmployee(['currentAssignment'])?->currentAssignment?->facility_id;
+            if ($employeeFacilityId && (int) $employeeFacilityId === (int) $facility->id) {
                 return;
             }
             if (method_exists($user, 'facilities') && $user->facilities->contains('id', $facility->id)) {
@@ -36,12 +52,18 @@ class UploadController extends Controller {
         abort(403, 'Unauthorized facility access.');
     }
 
+    protected function authorizeUploadFacility(Facility $facility, Upload $upload): void
+    {
+        $this->authorizeFacilityAccess($facility);
+        abort_unless((int) $upload->facility_id === (int) $facility->id, 404);
+    }
+
     /**
      * @return array{upload: Upload, facility: Facility, email: string, expiryTier: string}
      */
     protected function resolveUploadNotificationContext(Facility $facility, Upload $upload): array
     {
-        $this->authorizeFacilityAccess($facility);
+        $this->authorizeUploadFacility($facility, $upload);
 
         return UploadNotificationContext::resolve($upload, $facility);
     }
@@ -117,10 +139,13 @@ class UploadController extends Controller {
 
     public function update(Request $request, $facility, $upload)
     {
+        $facilityModel = $this->resolveFacilityModel($facility);
         $upload = Upload::findOrFail($upload);
+        $this->authorizeUploadFacility($facilityModel, $upload);
         $uploadType = UploadType::find($request->upload_type_id);
         $rules = [
             'facility_id' => 'required|exists:facilities,id',
+            'employee_num' => 'required|exists:bp_employees,employee_num',
             'upload_type_id' => 'required|exists:upload_types,id',
         ];
         if ($uploadType && $uploadType->requires_expiry) {
@@ -136,16 +161,38 @@ class UploadController extends Controller {
         }
         $validated = $request->validate($rules);
 
-        $upload->facility_id = $request->facility_id;
-        $upload->employee_num = $request->employee_num;
+        $lifecycle = app(\App\Services\DocumentUploadLifecycleService::class);
+        $previousAttributes = $upload->only([
+            'expires_at',
+            'effective_start_date',
+            'file_path',
+            'original_filename',
+            'file_size',
+            'comments',
+            'uploaded_at',
+            'submission_reason',
+            'verification_status',
+            'submitted_for_review_at',
+            'verified_by_user_id',
+            'verified_at',
+            'verification_notes',
+            'user_id',
+        ]);
+
+        abort_unless((int) $validated['facility_id'] === (int) $facilityModel->id, 422, 'The selected facility does not match this page.');
+        BPEmployee::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->whereHas('currentAssignment', fn ($query) => $query->where('facility_id', $facilityModel->id))
+            ->firstOrFail();
+        $upload->facility_id = $facilityModel->id;
+        $upload->employee_num = $validated['employee_num'];
         $upload->upload_type_id = $request->upload_type_id;
         $upload->expires_at = $request->expires_at;
         $upload->effective_start_date = $request->effective_start_date;
         $upload->comments = $request->comments;
 
         if ($request->has('reupload') && $request->hasFile('file')) {
-            // Delete old file from storage if it exists
-            $upload->deleteStoredFile();
+            // Keep the previous file for the preserved history snapshot.
             $file = $request->file('file');
             $path = Upload::storeEmployeeFile($file, $request->employee_num);
             $upload->file_path = $path;
@@ -153,15 +200,25 @@ class UploadController extends Controller {
             $upload->file_size = $file->getSize();
             $upload->user_id = Auth::id();
             $upload->uploaded_at = now();
+            $upload->verification_status = Upload::VERIFICATION_APPROVED;
+            $upload->submitted_for_review_at = now();
+            $upload->verified_by_user_id = Auth::id();
+            $upload->verified_at = now();
+            $upload->verification_notes = null;
         }
 
         $upload->save();
+        $lifecycle->preservePreviousVersionBeforeUpdate($upload, $previousAttributes);
+        $lifecycle->supersedePriorCurrents($upload);
+
         return redirect()->route('admin.facility.documents', ['facility' => $facility])->with('success', config('documents.messages.updated'));
     }
 
     public function index(Request $request, $facility, $editUploadId = null)
     {
-        $query = Upload::with(['facility', 'user', 'uploadType']);
+        $facility = $this->resolveFacilityModel($facility);
+        $this->authorizeFacilityAccess($facility);
+        $query = Upload::with(['facility', 'user', 'uploadType'])->current()->where('facility_id', $facility->id);
         if ($request->facility_id) $query->where('facility_id', $request->facility_id);
         if ($request->search) $query->where('original_filename', 'like', '%'.$request->search.'%');
         $uploads = $query->latest()->paginate(15);
@@ -171,10 +228,6 @@ class UploadController extends Controller {
         if ($editUploadId) {
             $editUpload = Upload::find($editUploadId);
         }
-        // Find the current facility
-        if (is_numeric($facility)) {
-            $facility = Facility::find($facility);
-        }
         // Get employees for the current facility
         $employees = [];
         if ($facility && $facility->id) {
@@ -183,8 +236,10 @@ class UploadController extends Controller {
         return view('admin.facilities.uploads', compact('uploads', 'facilities', 'uploadTypes', 'editUpload', 'facility', 'employees'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, $facility)
     {
+        $facility = $this->resolveFacilityModel($facility);
+        $this->authorizeFacilityAccess($facility);
         $uploadType = UploadType::find($request->upload_type_id);
             $rules = [
                 'facility_id' => 'required|exists:facilities,id',
@@ -200,10 +255,15 @@ class UploadController extends Controller {
             $rules['expires_at'] = 'nullable';
         }
         $validated = $request->validate($rules);
+        abort_unless((int) $validated['facility_id'] === (int) $facility->id, 422, 'The selected facility does not match this page.');
+        $employee = BPEmployee::query()
+            ->where('employee_num', $validated['employee_num'])
+            ->whereHas('currentAssignment', fn ($query) => $query->where('facility_id', $facility->id))
+            ->firstOrFail();
         $file = $request->file('file');
         $path = Upload::storeEmployeeFile($file, $request->employee_num);
             $upload = Upload::create([
-                'facility_id' => $request->facility_id,
+                'facility_id' => $facility->id,
                 'employee_num' => $request->employee_num,
                 'user_id' => Auth::id(),
                 'upload_type_id' => $request->upload_type_id,
@@ -214,19 +274,28 @@ class UploadController extends Controller {
                 'expires_at' => $request->expires_at,
                 'effective_start_date' => $request->effective_start_date,
                 'comments' => $request->comments,
+                'verification_status' => Upload::VERIFICATION_APPROVED,
+                'submitted_for_review_at' => now(),
+                'verified_by_user_id' => Auth::id(),
+                'verified_at' => now(),
             ]);
+            app(\App\Services\DocumentUploadLifecycleService::class)->supersedePriorCurrents($upload);
         return redirect()->back()->with('success', config('documents.messages.created'));
     }
 
     public function download($facility, $upload)
     {
+        $facility = $this->resolveFacilityModel($facility);
         $upload = Upload::findOrFail($upload);
+        $this->authorizeUploadFacility($facility, $upload);
         return Storage::disk('public')->download($upload->file_path, $upload->original_filename);
     }
 
     public function view($facility, $upload)
     {
+        $facility = $this->resolveFacilityModel($facility);
         $upload = Upload::findOrFail($upload);
+        $this->authorizeUploadFacility($facility, $upload);
         $exists = Storage::disk('public')->exists($upload->file_path);
         $fullPath = Storage::disk('public')->path($upload->file_path);
         // Log::info('View method file check', [
@@ -248,11 +317,13 @@ class UploadController extends Controller {
 
     public function destroy($facility, $upload)
     {
+        $facility = $this->resolveFacilityModel($facility);
         // Always resolve the model manually to avoid property access on string
         $upload = Upload::find($upload);
         if (!$upload) {
             return redirect()->back()->with('error', config('documents.messages.not_found'));
         }
+        $this->authorizeUploadFacility($facility, $upload);
         $upload->delete();
         return redirect()->back()->with('success', config('documents.messages.deleted'));
     }

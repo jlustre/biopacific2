@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Auto-generated from Admin Reports -> Add/update seeder.
- * Last exported: 2026-07-13 10:43:20
+ * Last exported: 2026-07-15 09:43:14
  *
  * Do not edit report data by hand; use Admin Reports and re-export.
  */
@@ -175,6 +175,28 @@ class ReportSeeder extends Seeder
         "visible_facilities": []
     },
     {
+        "category_name": "Facility",
+        "name": "Get All Facilities domain",
+        "description": "Get facilities id, name and domain names.",
+        "sql_template": "SELECT `id`,`name`,`domain` FROM `facilities` WHERE `is_active` = :is_active",
+        "parameters": [
+            {
+                "name": "is_active",
+                "type": "integer",
+                "label": "Is Active"
+            }
+        ],
+        "is_active": true,
+        "is_public": false,
+        "visibility": "roles",
+        "visible_roles": [
+            "admin",
+            "facility-admin",
+            "facility-editor"
+        ],
+        "visible_facilities": []
+    },
+    {
         "category_name": "Licensure & Certification",
         "name": "Get Expiring Licenses & Certifications",
         "description": "Lists expired and upcoming licenses/certifications from HR credentials and uploaded license/certification documents. Choose a facility, or All Facilities (admins). Facility-scoped roles are limited to their assigned facility.",
@@ -245,37 +267,5 @@ REPORTS_JSON, true) ?? [];
                 ]
             );
         }
-
-        $this->retireLegacyExpiringLicensesReports();
-    }
-
-    /**
-     * Retire the old all-facilities + per-facility clones in favor of the shared template.
-     */
-    protected function retireLegacyExpiringLicensesReports(): void
-    {
-        $canonicalName = 'Get Expiring Licenses & Certifications';
-        $canonical = Report::query()->where('name', $canonicalName)->first();
-
-        $legacyQuery = Report::query()
-            ->where(function ($query) use ($canonicalName) {
-                $query->where('name', 'Get All Expiring Licenses & Certifications For All Facilities')
-                    ->orWhere('name', 'like', 'Get Expiring Licenses & Certifications - %');
-            })
-            ->when($canonical, fn ($query) => $query->whereKeyNot($canonical->getKey()));
-
-        $legacyIds = $legacyQuery->pluck('id');
-
-        if ($legacyIds->isEmpty()) {
-            return;
-        }
-
-        if ($canonical && \Illuminate\Support\Facades\Schema::hasTable('scheduled_reports')) {
-            \Illuminate\Support\Facades\DB::table('scheduled_reports')
-                ->whereIn('report_id', $legacyIds)
-                ->update(['report_id' => $canonical->id]);
-        }
-
-        Report::query()->whereIn('id', $legacyIds)->delete();
     }
 }

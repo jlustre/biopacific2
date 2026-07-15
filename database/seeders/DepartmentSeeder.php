@@ -9,6 +9,27 @@ class DepartmentSeeder extends Seeder
 {
     public function run(): void
     {
+        $exportedDataPath = database_path('seeders/data/departments.php');
+        if (is_file($exportedDataPath)) {
+            $departments = require $exportedDataPath;
+
+            if (is_array($departments)) {
+                foreach ($departments as $department) {
+                    Department::query()->updateOrCreate(
+                        ['name' => (string) ($department['name'] ?? '')],
+                        [
+                            'type' => $department['type'] ?? 'facility',
+                            'description' => $department['description'] ?? null,
+                        ]
+                    );
+                }
+
+                $this->command?->info('Seeded '.count($departments).' exported departments.');
+
+                return;
+            }
+        }
+
         // Nursing Home Facility Departments (California specific)
         $facilityDepartments = [
             ['name' => 'Nursing', 'type' => 'facility', 'description' => 'Direct patient care, RNs, LVNs, CNAs'],

@@ -7,7 +7,9 @@ use App\Services\MemberDashboardService;
 use App\Services\PersonalProfilePanelsService;
 use Illuminate\Http\Request;
 use App\Helpers\FacilityDataHelper;
+use App\Models\BPEmployee;
 use App\Models\Facility;
+use App\Models\Upload;
 use App\Support\FacilityShutdown;
 use App\Support\SelectedFacility;
 use App\Models\Testimonial;
@@ -144,7 +146,7 @@ class DashboardController extends Controller
             'portalActive' => $portalActive,
             'portalTitle' => ($facility->name ?? 'Facility') . ' | Bio Pacific',
             'portalEyebrow' => $profile === 'hr_hub' ? 'HR Management' : 'Facility Portal',
-            'portalPageTitle' => $profile === 'hr_hub' ? 'HR Management' : $facility->name,
+            'portalPageTitle' => $profile === 'hr_hub' ? 'HR Management' : 'Facility Dashboard',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
         ]));
@@ -183,6 +185,53 @@ class DashboardController extends Controller
             'isFacilityDocumentsAdmin' => $isFacilityDocumentsAdmin,
         ]));
     }
+
+    public function memberTeamDocumentView(Request $request, BPEmployee $employee, Upload $upload)
+    {
+        return $this->serveTeamDocument($request, $employee, $upload, download: false);
+    }
+
+    public function memberTeamDocumentDownload(Request $request, BPEmployee $employee, Upload $upload)
+    {
+        return $this->serveTeamDocument($request, $employee, $upload, download: true);
+    }
+
+    protected function serveTeamDocument(Request $request, BPEmployee $employee, Upload $upload, bool $download)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            abort(403);
+        }
+
+        if ($upload->employee_num !== $employee->employee_num) {
+            abort(404);
+        }
+
+        $verification = app(\App\Services\EmployeeDocumentVerificationService::class);
+        if (! $verification->actorCanViewEmployeeDocumentHistory($user, $employee)) {
+            abort(403, 'You do not have access to this employee\'s documents.');
+        }
+
+        $filePath = storage_path('app/public/' . $upload->file_path);
+        if (! file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
+
+        if ($download) {
+            return response()->download($filePath, $upload->original_filename);
+        }
+
+        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+        $disposition = in_array($mimeType, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'], true)
+            ? 'inline'
+            : 'attachment';
+
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => $disposition . '; filename="' . $upload->original_filename . '"',
+        ]);
+    }
+
 
     public function memberTasks()
     {
@@ -226,17 +275,14 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $certificationsData = app(MemberDashboardService::class)->buildCertificationsPage($user);
-        $isFacilityCertificationsAdmin = $user->hasRole(['facility-admin', 'facility-dsd'])
-            && !empty($certificationsData['facilityCertificationsReport']);
 
         return view('dashboard.member.certifications', array_merge($this->memberPortalContext($user), $certificationsData, [
             'portalActive' => 'certifications',
-            'portalTitle' => 'Certifications | Bio Pacific HR Management',
-            'portalEyebrow' => 'Licenses & Certifications',
-            'portalPageTitle' => 'Certifications',
+            'portalTitle' => 'My Credentials | Bio Pacific HR Management',
+            'portalEyebrow' => 'My Credentials',
+            'portalPageTitle' => 'My Credentials',
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
-            'isFacilityCertificationsAdmin' => $isFacilityCertificationsAdmin,
         ]));
     }
 

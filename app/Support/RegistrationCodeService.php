@@ -101,7 +101,7 @@ class RegistrationCodeService
         return false;
     }
 
-    public function generateForEmployee(BPEmployee $employee, User $generator, ?User $sponsor = null): RegistrationCode
+    public function generateForEmployee(BPEmployee $employee, User $generator): RegistrationCode
     {
         if ($this->employeeHasPortalUser($employee)) {
             throw ValidationException::withMessages([
@@ -126,13 +126,11 @@ class RegistrationCodeService
             'email' => strtolower(trim((string) $employee->email)),
             'ssn_last4' => $this->extractSsnLast4($employee->ssn),
             'generated_by' => $generator->id,
-            'sponsor_user_id' => null,
-            'sponsor_name' => null,
             'expires_at' => now()->addDays(self::DEFAULT_EXPIRY_DAYS),
         ]);
     }
 
-    public function generateForApplicant(JobApplication $application, ?User $generator = null, ?User $sponsor = null): RegistrationCode
+    public function generateForApplicant(JobApplication $application, ?User $generator = null): RegistrationCode
     {
         if ($application->user_id) {
             throw ValidationException::withMessages([
@@ -166,15 +164,13 @@ class RegistrationCodeService
             'email' => strtolower(trim((string) $application->email)),
             'ssn_last4' => null,
             'generated_by' => $generator?->id,
-            'sponsor_user_id' => null,
-            'sponsor_name' => null,
             'expires_at' => now()->addDays(self::DEFAULT_EXPIRY_DAYS),
         ]);
     }
 
-    public function issueApplicantRegistrationCode(JobApplication $application, User $generator, ?User $sponsor = null): RegistrationCode
+    public function issueApplicantRegistrationCode(JobApplication $application, User $generator): RegistrationCode
     {
-        $code = $this->generateForApplicant($application, $generator, null);
+        $code = $this->generateForApplicant($application, $generator);
 
         \Illuminate\Support\Facades\Mail::to($code->email)->send(
             new \App\Mail\ApplicantRegistrationInviteMail($code, $application)

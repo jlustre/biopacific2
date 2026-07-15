@@ -21,13 +21,26 @@
                         @endif
                     </p>
                 </div>
-                @if($canManage)
-                <a href="{{ route('member.galleries.create') }}"
-                   class="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700">
-                    <i class="fa-solid fa-plus"></i>
-                    New gallery
-                </a>
-                @endif
+                <div class="flex flex-wrap items-center gap-2">
+                    @if($canUpdateSeeder ?? false)
+                        <form method="POST" action="{{ route('member.galleries.sync-seeder') }}"
+                              onsubmit="return confirm('Replace the gallery seeder snapshot with all current galleries and photo files?');">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm font-bold text-teal-800 shadow-sm transition hover:bg-teal-50">
+                                <i class="fa-solid fa-database"></i>
+                                Update seeder
+                            </button>
+                        </form>
+                    @endif
+                    @if($canManage)
+                        <a href="{{ route('member.galleries.create') }}"
+                           class="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700">
+                            <i class="fa-solid fa-plus"></i>
+                            New gallery
+                        </a>
+                    @endif
+                </div>
             </div>
         </div>
 

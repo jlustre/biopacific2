@@ -93,9 +93,14 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($tasks as $task)
-                        <tr wire:key="task-row-{{ $task['key'] }}" class="hover:bg-slate-50/70">
+                        <tr wire:key="task-row-{{ $task['key'] }}" class="hover:bg-slate-50/70 {{ ($task['priority'] ?? '') === 'high' ? 'bg-rose-50/40' : '' }}">
                             <td class="px-4 py-3 align-top">
-                                <p class="font-semibold text-slate-900">{{ $task['title'] }}</p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-semibold text-slate-900">{{ $task['title'] }}</p>
+                                    @if(($task['category'] ?? '') === 'document-review')
+                                        <span class="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-800">Document review</span>
+                                    @endif
+                                </div>
                                 @if(!empty($task['description']))
                                     <p class="mt-0.5 text-xs text-slate-500">{{ $task['description'] }}</p>
                                 @endif

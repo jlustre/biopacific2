@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Services\DepartmentSeederExporter;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class DepartmentController extends Controller
@@ -105,5 +107,27 @@ class DepartmentController extends Controller
         $department->delete();
 
         return redirect()->route('admin.departments.index')->with('success', 'Department deleted successfully.');
+    }
+
+    public function syncSeeder(DepartmentSeederExporter $exporter): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasRole(['admin', 'super-admin']), 403);
+
+        try {
+            $result = $exporter->writeSeederFile();
+
+            return redirect()->route('admin.departments.index')
+                ->with(
+                    'success',
+                    'Seeder updated with '.$result['count'].' department(s). '
+                    .'File: database/seeders/data/departments.php. '
+                    .'Commit this file so migrate:fresh --seed restores the current department catalog.'
+                );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('admin.departments.index')
+                ->with('error', 'Could not update the department seeder: '.$e->getMessage());
+        }
     }
 }

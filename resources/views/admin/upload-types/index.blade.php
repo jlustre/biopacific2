@@ -1,4 +1,4 @@
-@extends('layouts.dashboard', ['title' => 'Documents Management'])
+@extends('layouts.dashboard', ['title' => 'Documents Settings'])
 
 @section('content')
 @php
@@ -7,7 +7,7 @@
 <div class="space-y-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-black text-slate-900">Documents Management</h1>
+            <h1 class="text-2xl font-black text-slate-900">Documents Settings</h1>
             <p class="text-sm text-slate-500">Assign required documents to positions, manage employee file items, and maintain document types.</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -221,6 +221,7 @@
                             $appliesToAllPositions = $uploadType->checklistItem?->position_ids === null;
                             $appliesToNoPositions = is_array($uploadType->checklistItem?->position_ids)
                                 && $uploadType->checklistItem->position_ids === [];
+                            $permanentDelete = auth()->user()?->hasRole(['admin', 'super-admin']) ?? false;
                         @endphp
                         <tr>
                             @if($hasEmployeeFileRows)
@@ -285,12 +286,17 @@
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
                                     @endif
-                                    @if(auth()->user()?->hasRole(['admin', 'super-admin']) && ! $uploadType->isEmployeeFileChecklistType())
-                                        <form method="POST" action="{{ route('admin.upload-types.destroy', $uploadType) }}" onsubmit="return confirm('Delete this document type?');" class="inline-flex">
+                                    @if(! $uploadType->isEmployeeFileChecklistType())
+                                        <form method="POST" action="{{ route('admin.upload-types.destroy', $uploadType) }}"
+                                              onsubmit="return confirm('{{ $permanentDelete ? 'Permanently delete this document type? This cannot be undone.' : 'Archive this document type? It will no longer be available for new requirements or uploads.' }}');"
+                                              class="inline-flex">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50" title="Delete" aria-label="Delete">
-                                                <i class="fa-solid fa-trash"></i>
+                                            <button type="submit"
+                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border {{ $permanentDelete ? 'border-rose-200 text-rose-600 hover:bg-rose-50' : 'border-amber-200 text-amber-700 hover:bg-amber-50' }}"
+                                                    title="{{ $permanentDelete ? 'Permanently delete' : 'Archive document type' }}"
+                                                    aria-label="{{ $permanentDelete ? 'Permanently delete' : 'Archive document type' }}">
+                                                <i class="fa-solid {{ $permanentDelete ? 'fa-trash' : 'fa-box-archive' }}"></i>
                                             </button>
                                         </form>
                                     @endif

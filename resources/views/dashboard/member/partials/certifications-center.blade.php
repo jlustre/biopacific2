@@ -1,33 +1,39 @@
 @php
     $certificationsCenter = $certificationsCenter ?? [];
-    $facilityReport = $facilityCertificationsReport ?? null;
-    $showFacilityTab = ($isFacilityCertificationsAdmin ?? false) && !empty($facilityReport);
     $items = $certificationsCenter['items'] ?? [];
-    $expiringUploads = $certificationsCenter['expiring_documents'] ?? $certificationsCenter['expiring_uploads'] ?? [];
-    $summary = $certificationsCenter['summary'] ?? ($stats ?? []);
     $hasEmployeeRecord = $certificationsCenter['has_employee_record'] ?? false;
     $positionTitle = $certificationsCenter['position_title'] ?? null;
     $employmentPortalUrl = \Illuminate\Support\Facades\Route::has('employment.portal') ? route('employment.portal') : '#';
-    $documentsUploadUrl = \Illuminate\Support\Facades\Route::has('member.documents')
+    $documentsPageUrl = \Illuminate\Support\Facades\Route::has('member.documents')
         ? route('member.documents')
         : $employmentPortalUrl;
-    $documentsPageUrl = $documentsUploadUrl;
+    $requiredUploadTypes = collect($certificationsCenter['required_upload_types'] ?? [])->values();
+    $submissionReasonOptions = $certificationsCenter['submission_reason_options'] ?? \App\Support\UploadSubmissionReason::options();
+    $canUploadCredentials = $hasEmployeeRecord && $requiredUploadTypes->isNotEmpty();
 @endphp
 
-<section id="certifications" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="{ tab: 'mine', facilityFilter: '' }">
+<section id="certifications"
+         class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card"
+         x-data="memberCredentialsCenter({
+            uploadUrl: @js(route('employment.documents.upload')),
+            uploadTypes: @js($requiredUploadTypes),
+            submissionReasons: @js($submissionReasonOptions),
+            csrf: @js(csrf_token())
+         })"
+         x-init="initFromQuery()">
     <div class="border-b border-slate-200 bg-teal-50 p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div class="inline-flex items-center gap-2 rounded-full bg-teal-100/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-teal-800">
-                    <i class="fa-solid fa-award"></i>
-                    Certifications Center
+                    <i class="fa-solid fa-certificate"></i>
+                    My Credentials
                 </div>
-                <h2 class="mt-3 text-lg font-bold text-slate-950 sm:text-xl">Licenses & certifications</h2>
+                <h2 class="mt-3 text-lg font-bold text-slate-950 sm:text-xl">My Credentials</h2>
                 <p class="mt-1 text-sm text-slate-500">
                     @if($positionTitle)
-                        Licenses and credentials required for <span class="font-semibold text-slate-700">{{ $positionTitle }}</span>
+                        Required licenses and certifications for <span class="font-semibold text-slate-700">{{ $positionTitle }}</span>
                     @else
-                        Licenses and credentials for your position
+                        Required licenses and certifications for your position
                     @endif
                     <span class="block mt-1 text-xs text-slate-500">
                         {{ config('documents.labels.certifications_subset_note') }}
@@ -37,32 +43,25 @@
                 </p>
             </div>
             @if($hasEmployeeRecord)
-                <a href="{{ $employmentPortalUrl }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
-                    <i class="fa-solid fa-briefcase"></i>
-                    Employment portal
-                </a>
-            @endif
-        </div>
-
-        <div class="mt-5 flex flex-wrap gap-2 border-b border-slate-200 pb-0">
-            <button type="button"
-                @click="tab = 'mine'"
-                :class="tab === 'mine' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-700'"
-                class="border-b-2 px-4 py-2.5 text-sm font-bold transition">
-                My certifications
-            </button>
-            @if($showFacilityTab)
-                <button type="button"
-                    @click="tab = 'facility'"
-                    :class="tab === 'facility' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-700'"
-                    class="border-b-2 px-4 py-2.5 text-sm font-bold transition">
-                    Facility compliance
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    @if($canUploadCredentials)
+                        <button type="button"
+                                @click="openUploadModal()"
+                                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-bold text-brand-700 hover:bg-brand-50">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload credential
+                        </button>
+                    @endif
+                    <a href="{{ $employmentPortalUrl }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
+                        <i class="fa-solid fa-briefcase"></i>
+                        Employment portal
+                    </a>
+                </div>
             @endif
         </div>
     </div>
 
-    <div x-show="tab === 'mine'" class="p-6">
+    <div class="p-6">
         @unless($hasEmployeeRecord)
             <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
                 <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-200 text-2xl text-slate-500">
@@ -72,39 +71,16 @@
                 <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Your account is not linked to an employee file yet. Contact HR if you believe this is an error.</p>
             </div>
         @else
-            <div class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total tracked</p>
-                    <p class="mt-1 text-2xl font-black text-slate-950">{{ $summary['total'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                    <p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Valid</p>
-                    <p class="mt-1 text-2xl font-black text-emerald-900">{{ $summary['valid'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                    <p class="text-xs font-medium uppercase tracking-wide text-amber-700">Expiring soon</p>
-                    <p class="mt-1 text-2xl font-black text-amber-900">{{ $summary['expiring'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-                    <p class="text-xs font-medium uppercase tracking-wide text-rose-600">Expired</p>
-                    <p class="mt-1 text-2xl font-black text-rose-900">{{ $summary['expired'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Needs attention</p>
-                    <p class="mt-1 text-2xl font-black text-slate-950">{{ $summary['missing'] ?? 0 }}</p>
-                </div>
-            </div>
-
             @if(count($items) === 0)
                 <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
                     <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-100 text-2xl text-teal-700">
-                        <i class="fa-solid fa-award"></i>
+                        <i class="fa-solid fa-certificate"></i>
                     </div>
                     <h3 class="mt-4 text-lg font-bold text-slate-950">No licenses or certifications for your position</h3>
                     <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">When licenses or credentials apply to your role, they will appear here with status and renewal dates from your employee file.</p>
                 </div>
             @else
-                <div class="mb-8 overflow-x-auto rounded-2xl border border-slate-200">
+                <div class="overflow-x-auto rounded-2xl border border-slate-200">
                     <table class="w-full min-w-[800px] text-left text-sm">
                         <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                             <tr>
@@ -146,181 +122,142 @@
                                         </span>
                                     </td>
                                     <td class="px-3 py-3 text-right">
-                                        <a href="{{ $documentsUploadUrl }}"
-                                           class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700"
-                                           title="Upload document"
-                                           aria-label="Upload document">
-                                            <i class="fa-solid fa-upload"></i>
-                                        </a>
+                                        @if(!empty($cert['upload_type_id']))
+                                            <button type="button"
+                                                    @click="openUploadModal(@js($cert['upload_type_id']))"
+                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700"
+                                                    title="Upload credential"
+                                                    aria-label="Upload credential">
+                                                <i class="fa-solid fa-upload"></i>
+                                            </button>
+                                        @else
+                                            <span class="text-slate-300" title="No upload type configured">—</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </div>
-
-                @if(($summary['expiring'] ?? 0) > 0 || ($summary['expired'] ?? 0) > 0 || ($summary['missing'] ?? 0) > 0)
-                    <p class="mb-6 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">
-                        <i class="fa-solid fa-circle-info mr-1"></i>
-                        Renewals and file updates are managed through HR.
-                        <a href="{{ $employmentPortalUrl }}" class="font-bold text-brand-600 hover:text-brand-700">Open employment portal</a>
-                        or contact your facility administrator.
-                    </p>
-                @endif
-            @endif
-
-            @if(count($expiringUploads) > 0)
-                <div>
-                    <h3 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-                        <i class="fa-solid fa-cloud-arrow-up text-brand-600"></i>
-                        Uploaded files with expiry dates
-                    </h3>
-                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
-                        <table class="w-full min-w-[560px] text-left text-sm">
-                            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <tr>
-                                    <th class="px-4 py-3">File</th>
-                                    <th class="px-4 py-3">Type</th>
-                                    <th class="px-4 py-3">Uploaded</th>
-                                    <th class="px-4 py-3">Expires</th>
-                                    <th class="px-4 py-3 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @foreach($expiringUploads as $upload)
-                                    <tr>
-                                        <td class="px-4 py-3 font-semibold text-slate-950">{{ $upload['name'] ?? '—' }}</td>
-                                        <td class="px-4 py-3 text-slate-500">{{ $upload['type'] ?? '—' }}</td>
-                                        <td class="px-4 py-3 text-slate-500">{{ $upload['uploaded_at'] ?? '—' }}</td>
-                                        <td class="px-4 py-3 text-slate-500">{{ $upload['expires_at'] ?? '—' }}</td>
-                                        <td class="px-4 py-3 text-right">
-                                            @if(!empty($upload['view_url']))
-                                                <a href="{{ $upload['view_url'] }}" target="_blank" rel="noopener" class="font-bold text-brand-600 hover:text-brand-700">View</a>
-                                            @else
-                                                <span class="text-slate-400">—</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             @endif
         @endunless
     </div>
 
-    @if($showFacilityTab)
-        @php
-            $facilitySummary = $facilityReport['summary'] ?? [];
-            $facilityEmployees = $facilityReport['employees'] ?? [];
-        @endphp
-        <div x-show="tab === 'facility'" x-cloak class="p-6">
-            <div class="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-sm text-slate-500">
-                    <span class="font-bold text-slate-700">{{ $facilityReport['facility']['name'] ?? 'Facility' }}</span>
-                    — expiring licenses & credentials across active employees
-                </p>
-                @if(!empty($facilityReport['employees_list_url']))
-                    <a href="{{ $facilityReport['employees_list_url'] }}" class="text-sm font-bold text-brand-600 hover:text-brand-700">
-                        Manage all employees →
-                    </a>
-                @endif
-            </div>
+    <template x-teleport="body">
+        <div x-show="showUploadModal" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-black/50" @click="closeUploadModal()"></div>
+            <div class="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900">Upload credential</h3>
+                    <button type="button" class="text-xl leading-none text-slate-500 hover:text-slate-700" @click="closeUploadModal()" aria-label="Close">&times;</button>
+                </div>
+                <form method="POST" :action="uploadUrl" enctype="multipart/form-data" class="space-y-4">
+                    <input type="hidden" name="_token" :value="csrf">
+                    <input type="hidden" name="redirect_to" value="member.certifications">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">Credential type <span class="text-rose-600">*</span></label>
+                            <select name="upload_type_id" x-model="form.upload_type_id" required class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                                <option value="">Select credential type</option>
+                                <template x-for="group in uploadTypeGroups" :key="group.section">
+                                    <optgroup :label="group.section">
+                                        <template x-for="type in group.items" :key="type.id">
+                                            <option :value="String(type.id)" x-text="type.name"></option>
+                                        </template>
+                                    </optgroup>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">File <span class="text-rose-600">*</span></label>
+                            <input type="file" name="document" required class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                        </div>
+                    </div>
 
-            <div class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-xs font-medium uppercase text-slate-500">Employees</p>
-                    <p class="mt-1 text-2xl font-black text-slate-950">{{ $facilitySummary['total_employees'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                    <p class="text-xs font-medium uppercase text-amber-700">With issues</p>
-                    <p class="mt-1 text-2xl font-black text-amber-900">{{ $facilitySummary['employees_with_issues'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                    <p class="text-xs font-medium uppercase text-amber-700">Expiring</p>
-                    <p class="mt-1 text-2xl font-black text-amber-900">{{ $facilitySummary['total_expiring'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-                    <p class="text-xs font-medium uppercase text-rose-600">Expired</p>
-                    <p class="mt-1 text-2xl font-black text-rose-900">{{ $facilitySummary['total_expired'] ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-xs font-medium uppercase text-slate-500">Missing / unverified</p>
-                    <p class="mt-1 text-2xl font-black text-slate-950">{{ $facilitySummary['total_missing'] ?? 0 }}</p>
-                </div>
-            </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold">{{ config('documents.labels.submission_reason') }} <span class="text-rose-600">*</span></label>
+                        <select name="submission_reason" x-model="form.submission_reason" required class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                            <option value="">Select a reason…</option>
+                            <template x-for="(label, key) in submissionReasons" :key="key">
+                                <option :value="key" x-text="label"></option>
+                            </template>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">{{ config('documents.labels.upload_review_notice') }}</p>
+                    </div>
 
-            <div class="mb-4">
-                <label for="facility-cert-filter" class="sr-only">Filter employees</label>
-                <input type="search" id="facility-cert-filter" x-model="facilityFilter" placeholder="Filter by employee name…"
-                    class="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100" />
-            </div>
+                    <div x-show="requiresExpiry" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">Effective Start Date</label>
+                            <input type="date" name="effective_start_date" x-model="form.effective_start_date" class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold">Expires At <span class="text-rose-600">*</span></label>
+                            <input type="date" name="expires_at" x-model="form.expires_at" :required="requiresExpiry" :min="form.effective_start_date || null" class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none">
+                        </div>
+                    </div>
 
-            @if(count($facilityEmployees) === 0)
-                <p class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No employees with active assignments at this facility.</p>
-            @else
-                <div class="overflow-x-auto rounded-2xl border border-slate-200">
-                    <table class="w-full min-w-[760px] text-left text-sm">
-                        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                            <tr>
-                                <th class="px-4 py-3">Employee</th>
-                                <th class="px-4 py-3">Position</th>
-                                <th class="px-4 py-3">Expiring</th>
-                                <th class="px-4 py-3">Expired</th>
-                                <th class="px-4 py-3">Missing</th>
-                                <th class="px-4 py-3">Top issues</th>
-                                <th class="px-4 py-3 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @foreach($facilityEmployees as $row)
-                                <tr x-show="!facilityFilter || ($el.dataset.name || '').includes(facilityFilter.toLowerCase())" data-name="{{ strtolower($row['name'] ?? '') }}">
-                                    <td class="px-4 py-3 font-semibold text-slate-950">{{ $row['name'] ?: '—' }}</td>
-                                    <td class="px-4 py-3 text-slate-500">{{ $row['position'] ?? '—' }}</td>
-                                    <td class="px-4 py-3">
-                                        @if(($row['expiring_count'] ?? 0) > 0)
-                                            <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">{{ $row['expiring_count'] }}</span>
-                                        @else
-                                            <span class="text-slate-400">0</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if(($row['expired_count'] ?? 0) > 0)
-                                            <span class="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">{{ $row['expired_count'] }}</span>
-                                        @else
-                                            <span class="text-slate-400">0</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if(($row['missing_count'] ?? 0) > 0)
-                                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">{{ $row['missing_count'] }}</span>
-                                        @else
-                                            <span class="text-slate-400">0</span>
-                                        @endif
-                                    </td>
-                                    <td class="max-w-xs px-4 py-3 text-slate-600">
-                                        @if(!empty($row['top_issues']))
-                                            <ul class="list-inside list-disc text-xs">
-                                                @foreach($row['top_issues'] as $issue)
-                                                    <li>{{ $issue }}</li>
-                                                @endforeach
-                                            </ul>
-                                        @else
-                                            <span class="text-emerald-600">All clear</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        @if(!empty($row['manage_url']))
-                                            <a href="{{ $row['manage_url'] }}" class="font-bold text-brand-600 hover:text-brand-700">Manage</a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold">Comments</label>
+                        <textarea name="comments" rows="2" x-model="form.comments" class="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="closeUploadModal()" class="rounded bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300">Cancel</button>
+                        <button type="submit" class="rounded bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Upload</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    @endif
+    </template>
 </section>
+
+<script>
+    function memberCredentialsCenter(config) {
+        return {
+            showUploadModal: false,
+            uploadUrl: config.uploadUrl,
+            uploadTypes: config.uploadTypes || [],
+            submissionReasons: config.submissionReasons || {},
+            csrf: config.csrf,
+            form: {
+                upload_type_id: '',
+                submission_reason: '',
+                effective_start_date: '',
+                expires_at: '',
+                comments: '',
+            },
+            get uploadTypeGroups() {
+                const groups = {};
+                for (const type of this.uploadTypes) {
+                    const section = type.section || 'Credentials';
+                    if (!groups[section]) {
+                        groups[section] = { section, items: [] };
+                    }
+                    groups[section].items.push(type);
+                }
+                return Object.values(groups);
+            },
+            get requiresExpiry() {
+                const selected = this.uploadTypes.find((type) => String(type.id) === String(this.form.upload_type_id));
+                return !!(selected && selected.requires_expiry);
+            },
+            openUploadModal(uploadTypeId = null) {
+                this.form.upload_type_id = uploadTypeId ? String(uploadTypeId) : '';
+                this.form.submission_reason = '';
+                this.form.effective_start_date = '';
+                this.form.expires_at = '';
+                this.form.comments = '';
+                this.showUploadModal = true;
+            },
+            initFromQuery() {
+                const uploadTypeId = new URLSearchParams(window.location.search).get('upload_type_id');
+                if (uploadTypeId) {
+                    this.openUploadModal(uploadTypeId);
+                }
+            },
+            closeUploadModal() {
+                this.showUploadModal = false;
+            },
+        };
+    }
+</script>

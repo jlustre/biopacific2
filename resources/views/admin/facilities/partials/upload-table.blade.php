@@ -44,7 +44,7 @@
         }
     }
 
-    $filterOptionsQuery = \App\Models\Upload::query();
+    $filterOptionsQuery = \App\Models\Upload::query()->current();
     if ($isEmployeeTable && isset($employee)) {
         $filterOptionsQuery->where('employee_num', $employee->employee_num);
     } elseif ($filterFacilityId) {
@@ -233,7 +233,7 @@
                 <select name="verification_status" class="px-2 py-1 border-teal-300 rounded border-1 focus:border-teal-600 form-select min-w-[160px]">
                     <option value="">All statuses</option>
                     <option value="none" @if(request('verification_status') === 'none') selected @endif>Not submitted</option>
-                    <option value="{{ \App\Models\Upload::VERIFICATION_PENDING }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_PENDING) selected @endif>Pending review</option>
+                    <option value="{{ \App\Models\Upload::VERIFICATION_PENDING }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_PENDING) selected @endif>Pending for Approval</option>
                     <option value="{{ \App\Models\Upload::VERIFICATION_APPROVED }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_APPROVED) selected @endif>Approved</option>
                     <option value="{{ \App\Models\Upload::VERIFICATION_REJECTED }}" @if(request('verification_status') === \App\Models\Upload::VERIFICATION_REJECTED) selected @endif>Rejected</option>
                 </select>
@@ -303,7 +303,8 @@
         </thead>
         <tbody>
             @php
-            $query = App\Models\Upload::with(['facility','user','uploadType','employee','verifiedBy']);
+            $query = App\Models\Upload::with(['facility','user','uploadType','employee','verifiedBy'])
+                ->current();
 
             if ($isEmployeeTable && isset($employee)) {
                 $query->where('employee_num', $employee->employee_num);
@@ -525,7 +526,7 @@
                     <a href="{{ str_replace('__ID__', (string) $upload->id, $documentsViewTemplate ?? '#') }}" title="View" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     </a>
-                    @if($upload->isOwnedBy($user))
+                    @if($upload->isOwnedBy($user) && ((!($isSelfService ?? false)) || $upload->employeeCanModify($user)))
                     <button type="button" title="Edit" class="text-green-600 hover:text-green-800 bg-transparent border-none p-0 m-0" @click="startEdit({
                         id: {{ $upload->id }},
                         upload_type_id: '{{ $upload->upload_type_id }}',
@@ -535,6 +536,10 @@
                     })">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     </button>
+                    @elseif(($isSelfService ?? false) && $upload->isApproved())
+                    <span title="Approved documents are read-only. Upload a new version to renew." class="text-gray-400 cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    </span>
                     @endif
                     @else
                     <a href="{{ route('admin.facility.uploads.download', ['facility' => $upload->facility_id, 'upload' => $upload->id]) }}" title="Download" class="text-blue-600 hover:text-blue-800">
@@ -605,7 +610,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </button>
                     @endif
-                    @if($isEmployeeTable && isset($employee) && $upload->isOwnedBy($user))
+                    @if($isEmployeeTable && isset($employee) && $upload->isOwnedBy($user) && ((!($isSelfService ?? false)) || $upload->employeeCanModify($user)))
                     <form action="{{ str_replace('__ID__', (string) $upload->id, $documentsDeleteTemplate ?? '#') }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
                         @csrf
                         @method('DELETE')
@@ -674,17 +679,18 @@
     <div id="uploadRejectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="uploadRejectModalTitle">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
             <button type="button" onclick="closeUploadRejectModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl leading-none" aria-label="Close">&times;</button>
-            <h3 id="uploadRejectModalTitle" class="text-xl font-bold text-gray-900 mb-1">Reject document</h3>
+            <h3 id="uploadRejectModalTitle" class="text-xl font-bold text-gray-900 mb-1">Return document for correction</h3>
             <p id="uploadRejectModalMeta" class="text-sm text-gray-500 mb-4"></p>
             <form id="uploadRejectModalForm" method="POST" class="space-y-4">
                 @csrf
                 <div>
                     <label for="uploadRejectNotes" class="block mb-1 text-xs font-semibold text-gray-700">Reason for rejection <span class="text-red-600">*</span></label>
                     <textarea name="verification_notes" id="uploadRejectNotes" required rows="4" maxlength="1000" class="w-full px-3 py-2 border border-red-300 rounded focus:border-red-600 focus:ring-red-500 text-sm" placeholder="Explain what needs to be corrected…"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">The uploader will receive a My Tasks item and email with these notes.</p>
                 </div>
                 <div class="flex flex-wrap justify-end gap-2 pt-2">
                     <button type="button" onclick="closeUploadRejectModal()" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Cancel</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-700">Reject document</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-700">Return to uploader</button>
                 </div>
             </form>
         </div>

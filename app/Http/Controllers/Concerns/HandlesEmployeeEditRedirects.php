@@ -52,11 +52,18 @@ trait HandlesEmployeeEditRedirects
             : BPEmployee::with('currentAssignment')->findOrFail($employee);
 
         if (request()->routeIs('employment.*')) {
+            $redirectTo = (string) request()->input('redirect_to', '');
+
             if (
-                request()->input('redirect_to') === 'member.documents'
+                $redirectTo === 'member.documents'
                 && \Illuminate\Support\Facades\Route::has('member.documents')
             ) {
                 $redirect = redirect()->route('member.documents');
+            } elseif (
+                $redirectTo === 'member.certifications'
+                && \Illuminate\Support\Facades\Route::has('member.certifications')
+            ) {
+                $redirect = redirect()->route('member.certifications');
             } else {
                 $params = array_filter([
                     'tab' => $tab,

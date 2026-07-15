@@ -11,6 +11,7 @@ use App\Models\BPEmpTaxData;
 use App\Models\BPEmployee;
 use App\Models\Upload;
 use App\Models\Facility;
+use App\Models\ImportMappingPreset;
 use App\Models\State;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,7 @@ use App\Mail\EmployeeRegistrationInviteMail;
 use App\Mail\EmployeeDocumentSubmissionMail;
 use App\Mail\FacilityUploadNotificationMail;
 use App\Support\MemberPortalLayout;
+use App\Support\ImportMappingPresetAccess;
 use App\Support\SelectedFacility;
 use App\Support\UploadNotificationContext;
 use App\Support\UploadSubmissionReason;
@@ -256,6 +258,14 @@ class EmployeesController extends Controller
             return;
         }
 
+        if (app(\App\Services\EmployeeDocumentVerificationService::class)->actorCanReview($user, $employee)) {
+            return;
+        }
+
+        if (app(\App\Services\EmployeeDocumentVerificationService::class)->actorCanViewEmployeeDocumentHistory($user, $employee)) {
+            return;
+        }
+
         abort(403, 'You do not have access to this employee record.');
     }
 
@@ -267,9 +277,38 @@ class EmployeesController extends Controller
 
     protected function authorizeUploadModification(Upload $upload): void
     {
-        if (! $upload->isOwnedBy(Auth::user())) {
+        $user = Auth::user();
+
+        if (! $upload->isOwnedBy($user)) {
             abort(403, 'You can only modify documents you uploaded.');
         }
+
+        $employee = $upload->relationLoaded('employee')
+            ? $upload->employee
+            : $upload->employee()->first();
+
+        $isSelfService = $employee
+            && $this->isEmployeeSelfServiceRequest(request(), $employee);
+
+        if ($isSelfService && $upload->isApproved()) {
+            abort(403, 'Approved documents are read-only. Upload a new version to renew or replace them.');
+        }
+
+        if ($isSelfService && ! $upload->isCurrent()) {
+            abort(403, 'Historical document versions are read-only.');
+        }
+    }
+
+    /**
+     * Employee (or reviewer/admin within role scope) may view/download current and historical uploads.
+     */
+    protected function authorizeUploadRead(Request $request, BPEmployee $employee, Upload $upload): void
+    {
+        if ($upload->employee_num !== $employee->employee_num) {
+            abort(403, 'This document does not belong to this employee.');
+        }
+
+        $this->authorizeEmployeeRecordAccess($request, $employee);
     }
 
     protected function authorizeEmployeeDocumentNotification(Request $request, BPEmployee $employee): void
@@ -325,7 +364,10 @@ class EmployeesController extends Controller
         }
 
         $user = Auth::user();
-        if (! $user || ! $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don'])) {
+        if (
+            ! $user
+            || ! app(\App\Services\EmployeeDocumentVerificationService::class)->actorCanReview($user, $employee)
+        ) {
             abort(403, 'You are not authorized to verify employee documents.');
         }
 
@@ -444,10 +486,16 @@ class EmployeesController extends Controller
         }
 
         $upload = Upload::create($uploadAttributes);
+        app(\App\Services\DocumentUploadLifecycleService::class)->supersedePriorCurrents($upload);
 
         if ($isSelfService) {
             try {
-                $this->notifyLeadershipOfDocumentSubmission($upload, $employee);
+                app(\App\Services\EmployeeDocumentVerificationService::class)->handlePendingSubmission(
+                    $upload,
+                    $employee,
+                    Auth::user(),
+                    $validated['submission_reason'] ?? null,
+                );
             } catch (\Throwable $e) {
                 Log::error('Employee document submission notification failed', [
                     'upload_id' => $upload->id,
@@ -476,7 +524,7 @@ class EmployeesController extends Controller
 
         return $this->redirectToEmployeeEdit($employee->id, 'documents', [
             'success' => $isSelfService
-                ? 'Document uploaded and submitted for review by your facility DSD, DON, or administrator.'
+                ? 'Document uploaded and submitted for approval. Your DSD or supervisor will review it.'
                 : config('documents.messages.created'),
         ]);
     }
@@ -524,9 +572,12 @@ class EmployeesController extends Controller
             ->whereKey($upload_id)
             ->firstOrFail();
         $this->authorizeUploadModification($upload);
-        $upload->delete();
+
+        // Soft-archive so prior versions (different expiration dates) remain in history.
+        app(\App\Services\DocumentUploadLifecycleService::class)->archiveCurrent($upload);
+
         return $this->redirectToEmployeeEdit($employee->id, 'documents', [
-            'success' => 'Document deleted successfully.',
+            'success' => 'Document removed from the active list. Previous versions are preserved.',
         ]);
     }
 
@@ -562,14 +613,31 @@ class EmployeesController extends Controller
             'expires_at.after_or_equal' => 'The expiration date must be on or after the Effective Start Date.',
         ]);
 
+        $lifecycle = app(\App\Services\DocumentUploadLifecycleService::class);
+        $previousAttributes = $upload->only([
+            'expires_at',
+            'effective_start_date',
+            'file_path',
+            'original_filename',
+            'file_size',
+            'comments',
+            'uploaded_at',
+            'submission_reason',
+            'verification_status',
+            'submitted_for_review_at',
+            'verified_by_user_id',
+            'verified_at',
+            'verification_notes',
+            'user_id',
+        ]);
+
         $upload->upload_type_id = $uploadTypeId;
         $upload->expires_at = $validated['expires_at'] ?? null;
         $upload->effective_start_date = $validated['effective_start_date'] ?? null;
         $upload->comments = $validated['comments'] ?? null;
 
         if ($request->hasFile('document')) {
-            // Delete old file
-            $upload->deleteStoredFile();
+            // Keep the previous file for the preserved history snapshot.
             $file = $request->file('document');
             $path = Upload::storeEmployeeFile($file, $employee->employee_num);
             $upload->file_path = $path;
@@ -586,6 +654,36 @@ class EmployeesController extends Controller
         }
 
         $upload->save();
+        $lifecycle->preservePreviousVersionBeforeUpdate($upload, $previousAttributes);
+        $lifecycle->supersedePriorCurrents($upload);
+
+        if ($request->hasFile('document')) {
+            if ($upload->checklist_item_id) {
+                $checklistItem = \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
+                if ($checklistItem) {
+                    \App\Support\EmployeeChecklistDocuments::markOnFile(
+                        $employee,
+                        $checklistItem,
+                        optional($upload->expires_at)->toDateString(),
+                    );
+                }
+            }
+
+            try {
+                app(\App\Services\EmployeeDocumentVerificationService::class)->handlePendingSubmission(
+                    $upload->fresh(),
+                    $employee,
+                    Auth::user(),
+                    \App\Support\UploadSubmissionReason::CORRECTION,
+                );
+            } catch (\Throwable $e) {
+                Log::error('Corrected employee document notification failed', [
+                    'upload_id' => $upload->id,
+                    'employee_id' => $employee->id,
+                    'exception' => $e,
+                ]);
+            }
+        }
 
         return $this->redirectToEmployeeEdit($employee->id, 'documents', [
             'success' => 'Document updated successfully.',
@@ -751,17 +849,17 @@ class EmployeesController extends Controller
         $submittedBy = Auth::user();
 
         try {
-            $this->notifyLeadershipOfDocumentSubmission(
+            app(\App\Services\EmployeeDocumentVerificationService::class)->handlePendingSubmission(
                 $upload,
                 $employee,
-                $submissionReason,
                 $submittedBy,
+                $submissionReason,
                 $customSubject !== '' ? $customSubject : null,
                 $customMessage !== '' ? $customMessage : null,
             );
 
             return $this->redirectToEmployeeEdit($employee, 'documents', [
-                'success' => 'Document submitted for leadership review. Reason: ' . UploadSubmissionReason::label($submissionReason) . '.',
+                'success' => 'Document submitted for approval. Reason: ' . UploadSubmissionReason::label($submissionReason) . '.',
             ]);
         } catch (\Throwable $e) {
             Log::error('Employee document submission notification failed', [
@@ -788,38 +886,19 @@ class EmployeesController extends Controller
         ?string $customSubject = null,
         ?string $customMessage = null,
     ): void {
-        $upload->loadMissing(['employee.user', 'facility', 'uploadType']);
-        $facility = $upload->facility ?? $employee->currentAssignment?->facility;
-
-        if (! $facility) {
-            throw new \RuntimeException('No facility is linked to this upload.');
-        }
-
-        $emails = UploadNotificationContext::facilityDocumentReviewerEmails($facility);
-        if ($emails === []) {
-            throw new \RuntimeException('No DSD, DON, or administrator contact email is configured for this facility.');
-        }
-
         $submittedBy ??= Auth::user();
         if (! $submittedBy) {
             throw new \RuntimeException('No submitting user is available for this notification.');
         }
 
-        $reason = $submissionReason ?? $upload->submission_reason ?? UploadSubmissionReason::INITIAL;
-
-        $mail = new EmployeeDocumentSubmissionMail(
+        app(\App\Services\EmployeeDocumentVerificationService::class)->handlePendingSubmission(
             $upload,
             $employee,
-            $facility,
             $submittedBy,
-            $reason,
+            $submissionReason,
             $customSubject,
             $customMessage,
         );
-
-        foreach ($emails as $email) {
-            Mail::to($email)->send($mail);
-        }
     }
 
     public function approveDocument(Request $request, $employee_num, $upload_id)
@@ -834,7 +913,7 @@ class EmployeesController extends Controller
 
         if (! $upload->isPendingVerification()) {
             return $this->redirectToEmployeeEdit($employee, 'documents', [
-                'error' => 'Only documents pending review can be approved.',
+                'error' => 'Only documents pending for approval can be approved.',
             ]);
         }
 
@@ -849,6 +928,9 @@ class EmployeesController extends Controller
             'verification_notes' => $validated['verification_notes'] ?? null,
         ]);
 
+        $verification = app(\App\Services\EmployeeDocumentVerificationService::class);
+        $verification->completeOpenReviewTasks($upload->fresh(), Auth::user());
+
         if ($upload->checklist_item_id) {
             $checklistItem = \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
             if ($checklistItem) {
@@ -861,8 +943,12 @@ class EmployeesController extends Controller
             }
         }
 
+        $mailSent = $verification->notifyEmployeeApproved($upload->fresh(['uploadType', 'checklistItem', 'verifiedBy']), $employee);
+
         return $this->redirectToEmployeeEdit($employee, 'documents', [
-            'success' => 'Document approved.',
+            'success' => $mailSent
+                ? 'Document approved. The employee has been notified.'
+                : 'Document approved. The employee can also see this confirmation in Messages (no email on file or mail failed).',
         ]);
     }
 
@@ -878,7 +964,7 @@ class EmployeesController extends Controller
 
         if (! $upload->isPendingVerification()) {
             return $this->redirectToEmployeeEdit($employee, 'documents', [
-                'error' => 'Only documents pending review can be rejected.',
+                'error' => 'Only documents pending for approval can be rejected.',
             ]);
         }
 
@@ -895,21 +981,44 @@ class EmployeesController extends Controller
             'verification_notes' => $validated['verification_notes'],
         ]);
 
+        if ($upload->checklist_item_id) {
+            $checklistItem = \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
+            if ($checklistItem) {
+                \App\Support\EmployeeChecklistDocuments::markOnFile(
+                    $employee,
+                    $checklistItem,
+                    optional($upload->expires_at)->toDateString(),
+                );
+            }
+        }
+
+        $verification = app(\App\Services\EmployeeDocumentVerificationService::class);
+        $task = $verification->handleRejection(
+            $upload->fresh(['uploadType', 'checklistItem', 'verifiedBy', 'user']),
+            $employee,
+            Auth::user(),
+            $validated['verification_notes'],
+        );
+
         return $this->redirectToEmployeeEdit($employee, 'documents', [
-            'success' => 'Document rejected. The employee may upload a corrected version and resubmit.',
+            'success' => $task
+                ? 'Document rejected with notes. The uploader received a correction task and notification.'
+                : 'Document rejected with notes. The uploader was notified (no portal user was available for a task).',
         ]);
     }
 
     /**
      * View an employee document (shows file inline if possible, otherwise downloads).
+     * Includes approved and historical versions on the employee’s file (read-only).
      */
-    public function viewDocument($employee_num, $upload_id)
+    public function viewDocument(Request $request, $employee_num, $upload_id)
     {
         $employee = $this->employeeFromRouteKey($employee_num);
         $upload = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($upload_id)
             ->firstOrFail();
+        $this->authorizeUploadRead($request, $employee, $upload);
         $filePath = storage_path('app/public/' . $upload->file_path);
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'File not found.');
@@ -923,15 +1032,16 @@ class EmployeesController extends Controller
     }
 
     /**
-     * Download an employee document.
+     * Download an employee document (current or historical version).
      */
-    public function downloadDocument($employee_num, $document_id)
+    public function downloadDocument(Request $request, $employee_num, $document_id)
     {
         $employee = $this->employeeFromRouteKey($employee_num);
         $document = Upload::query()
             ->where('employee_num', $employee->employee_num)
             ->whereKey($document_id)
             ->firstOrFail();
+        $this->authorizeUploadRead($request, $employee, $document);
         $filePath = storage_path('app/public/' . $document->file_path);
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'File not found.');
@@ -978,6 +1088,41 @@ class EmployeesController extends Controller
         $facilityFilterId = $this->resolveFacilityFilterId($request, $facility);
         $facilities = $this->facilitiesForUser($request);
         $scopedFacility = $scopedFacilityId ? Facility::find($scopedFacilityId) : null;
+        $globalImportFacilityId = (int) config('import-mapping.global_facility_id', 99);
+        $canImportEmployees = ImportMappingPresetAccess::canUse($user);
+        $employeeImportPresets = collect();
+
+        if ($canImportEmployees) {
+            $presetQuery = ImportMappingPreset::query()
+                ->whereNotNull('mappings');
+
+            if ($facilityFilterId) {
+                $presetQuery->where(function ($query) use ($facilityFilterId, $globalImportFacilityId) {
+                    $query->where('facility_id', $globalImportFacilityId)
+                        ->orWhere('facility_id', $facilityFilterId);
+                });
+            }
+
+            if (! $user?->hasRole(['admin', 'super-admin', 'rdhr'])) {
+                $presetQuery->where(function ($query) use ($globalImportFacilityId, $user) {
+                    $query->where('facility_id', $globalImportFacilityId)
+                        ->orWhere('user_id', $user->id);
+                });
+            }
+
+            $employeeImportPresets = $presetQuery
+                ->orderBy('name')
+                ->get()
+                ->filter(fn (ImportMappingPreset $preset) => $preset->mappingsCount() > 0)
+                ->values();
+        }
+
+        $importFacilities = $facilities
+            ->where('id', '!=', $globalImportFacilityId)
+            ->values();
+        $importTargetFacilityId = $facilityFilterId;
+        $globalId = $globalImportFacilityId;
+        $parseWorkbookUrl = route('admin.facility.mapping-presets.parse-workbook');
 
         if ($isDonDepartmentScoped && ! $request->filled('department')) {
             $request->merge(['department' => $scopedDepartmentId]);
@@ -1106,6 +1251,12 @@ class EmployeesController extends Controller
             'canGenerateRegistrationCodes',
             'activeRegistrationCodes',
             'registrationCodeService',
+            'canImportEmployees',
+            'employeeImportPresets',
+            'importFacilities',
+            'importTargetFacilityId',
+            'globalId',
+            'parseWorkbookUrl',
         ));
     }
     /**

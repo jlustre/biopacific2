@@ -38,7 +38,7 @@ return [
 
     'verification' => [
         'not_submitted' => 'Not submitted',
-        'pending' => 'Pending review',
+        'pending' => 'Pending for Approval',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
     ],

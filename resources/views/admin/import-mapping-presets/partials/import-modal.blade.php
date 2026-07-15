@@ -251,7 +251,7 @@
         els.name.textContent = preset.name || '';
         if (preset.isGlobal) {
             els.facilityWrap.classList.remove('hidden');
-            els.facility.value = '';
+            els.facility.value = String(preset.defaultFacilityId || '');
         } else {
             els.facilityWrap.classList.add('hidden');
             els.facility.value = String(preset.facilityId || '');
@@ -310,6 +310,10 @@
         const file = els.file.files[0];
         const formData = new FormData();
         formData.append('file', file);
+        const facilityId = resolveImportFacilityId();
+        if (facilityId) {
+            formData.append('facility_id', String(facilityId));
+        }
 
         els.loadBtn.disabled = true;
         setStatus('info', 'Reading workbook…');
@@ -407,6 +411,10 @@
         const file = els.file.files[0];
         const formData = new FormData();
         formData.append('file', file);
+        const facilityId = resolveImportFacilityId();
+        if (facilityId) {
+            formData.append('facility_id', String(facilityId));
+        }
 
         clearValidation();
         els.validateBtn.disabled = true;
@@ -577,7 +585,7 @@
             formData.append('primary_worksheet', els.worksheet.value);
         }
         const facilityId = resolveImportFacilityId();
-        if (currentPreset.isGlobal && facilityId) {
+        if (facilityId) {
             formData.append('facility_id', String(facilityId));
         }
 

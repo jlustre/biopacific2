@@ -6,7 +6,7 @@
  * Document type names must match general upload_types (Documents Management),
  * not checklist-synced PART A–D types.
  *
- * Auto-generated from Documents Management → Position requirements → Update seeder on 2026-07-08 11:18:55.
+ * Auto-generated from Documents Management → Position requirements → Update seeder on 2026-07-15 13:13:21.
  *
  * @return array{
  *     sets: array<string, list<string>>,
@@ -115,12 +115,10 @@ return [
      */
     'position_sets' => [
             'Activities Director' => [
-                0 => 'all_staff',
-                1 => 'annual_compliance',
+                0 => 'custom_e77baa0c',
             ],
             'Activity Assistant' => [
-                0 => 'all_staff',
-                1 => 'annual_compliance',
+                0 => 'custom_e77baa0c',
             ],
             'Administrator' => [
                 0 => 'custom_f1b93a93',
@@ -173,6 +171,9 @@ return [
                 0 => 'custom_e77baa0c',
                 1 => 'nursing_clinical',
                 2 => 'rn_license',
+            ],
+            'IT Director' => [
+                0 => 'all_staff',
             ],
             'Janitor' => [
                 0 => 'custom_e77baa0c',
@@ -232,6 +233,9 @@ return [
                 0 => 'custom_e77baa0c',
                 1 => 'nursing_clinical',
             ],
+            'President' => [
+                0 => 'all_staff',
+            ],
             'Receptionist' => [
                 0 => 'custom_e77baa0c',
             ],
@@ -260,6 +264,9 @@ return [
             ],
             'Unit Clerk' => [
                 0 => 'custom_e77baa0c',
+            ],
+            'Web Developer' => [
+                0 => 'all_staff',
             ],
         ],
 ];

@@ -42,6 +42,7 @@ class DocumentComplianceService
 
         $uploadsByType = Upload::query()
             ->where('employee_num', $employee->employee_num)
+            ->current()
             ->whereIn('upload_type_id', $requiredTypes->pluck('id'))
             ->orderByDesc('uploaded_at')
             ->get()
@@ -52,29 +53,9 @@ class DocumentComplianceService
         $items = $requiredTypes->map(function ($type) use ($uploadsByType, $today) {
             $uploads = $uploadsByType->get($type->id, collect());
             $latestUpload = $uploads->first();
-
-            $validApprovedUpload = $uploads->first(function ($upload) use ($today) {
-                if ($upload->verification_status !== Upload::VERIFICATION_APPROVED) {
-                    return false;
-                }
-
-                if ($upload->expires_at === null) {
-                    return true;
-                }
-
-                return Carbon::parse($upload->expires_at)->startOfDay()->gte($today);
-            });
-
-            $status = 'missing';
-            if ($validApprovedUpload) {
-                $status = 'complete';
-            } elseif ($uploads->contains(fn ($upload) => $upload->verification_status === Upload::VERIFICATION_PENDING)) {
-                $status = 'pending_review';
-            } elseif ($uploads->contains(fn ($upload) => $upload->verification_status === Upload::VERIFICATION_APPROVED)) {
-                $status = 'expired';
-            } elseif ($uploads->isNotEmpty()) {
-                $status = 'missing';
-            }
+            $evaluation = $this->evaluateUploads($uploads, $today);
+            $validApprovedUpload = $evaluation['valid_approved_upload'];
+            $status = $evaluation['status'];
 
             $daysToExpiry = null;
             if ($validApprovedUpload && $validApprovedUpload->expires_at) {
@@ -93,6 +74,8 @@ class DocumentComplianceService
                 'latest_uploaded_at' => optional($latestUpload?->uploaded_at)->toDateString(),
                 'latest_expires_at' => optional($referenceUpload?->expires_at)->toDateString(),
                 'valid_upload_id' => $validApprovedUpload?->id,
+                'latest_upload_id' => $latestUpload?->id,
+                'verification_notes' => $latestUpload?->verification_notes,
                 'days_to_expiry' => $daysToExpiry,
             ];
         })->values();
@@ -106,9 +89,43 @@ class DocumentComplianceService
                 'total' => $items->count(),
                 'complete' => $items->where('status', 'complete')->count(),
                 'expired' => $items->where('status', 'expired')->count(),
-                'missing' => $items->whereIn('status', ['missing', 'pending_review'])->count(),
+                'missing' => $items->whereIn('status', ['missing', 'rejected', 'pending_review'])->count(),
                 'pending_review' => $items->where('status', 'pending_review')->count(),
+                'rejected' => $items->where('status', 'rejected')->count(),
             ],
+        ];
+    }
+
+    /**
+     * Newer pending/rejected submissions remain outstanding even when an older
+     * approved upload for another coverage year is still current.
+     *
+     * @return array{status:string, valid_approved_upload:?Upload}
+     */
+    public function evaluateUploads(Collection $uploads, ?Carbon $today = null): array
+    {
+        $today ??= Carbon::today();
+        $latestUpload = $uploads->first();
+        $validApprovedUpload = $uploads->first(function (Upload $upload) use ($today): bool {
+            if ($upload->verification_status !== Upload::VERIFICATION_APPROVED) {
+                return false;
+            }
+
+            return $upload->expires_at === null
+                || Carbon::parse($upload->expires_at)->startOfDay()->gte($today);
+        });
+
+        $status = match (true) {
+            $latestUpload?->verification_status === Upload::VERIFICATION_PENDING => 'pending_review',
+            $latestUpload?->verification_status === Upload::VERIFICATION_REJECTED => 'rejected',
+            $validApprovedUpload instanceof Upload => 'complete',
+            $uploads->contains(fn (Upload $upload) => $upload->verification_status === Upload::VERIFICATION_APPROVED) => 'expired',
+            default => 'missing',
+        };
+
+        return [
+            'status' => $status,
+            'valid_approved_upload' => $validApprovedUpload,
         ];
     }
 }

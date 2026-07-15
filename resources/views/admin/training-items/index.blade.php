@@ -9,9 +9,21 @@
         <h1 class="text-2xl font-black text-slate-900">Training Configuration</h1>
         <p class="mt-1 text-sm text-slate-500">Create and maintain training modules, then map which positions require each training (or assign trainings globally). Facility Trainings and Part H use this catalog to monitor completion.</p>
     </div>
-    <a href="{{ route('admin.training-items.create') }}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-        + Add training module
-    </a>
+    <div class="flex flex-wrap gap-2">
+        @if(auth()->user()?->hasRole(['admin', 'super-admin']))
+        <form method="POST" action="{{ route('admin.training-items.sync-seeder') }}"
+              onsubmit="return confirm('Export every training module and its position assignments into database/seeders/data/employee_training_items.php?\n\nThis overwrites that file. Commit it to git so migrate:fresh --seed restores the current training catalog.');">
+            @csrf
+            <button type="submit"
+                    class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+                <i class="fa-solid fa-database mr-2"></i> Update seeder
+            </button>
+        </form>
+        @endif
+        <a href="{{ route('admin.training-items.create') }}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+            + Add training module
+        </a>
+    </div>
 </div>
 
 @if(session('success'))

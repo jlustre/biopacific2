@@ -92,14 +92,14 @@ class EmploymentController extends Controller
         return app(EmployeesController::class)->deleteDocument($this->resolveOwnEmployeeOrFail()->id, $document);
     }
 
-    public function viewDocument($document)
+    public function viewDocument(Request $request, $document)
     {
-        return app(EmployeesController::class)->viewDocument($this->resolveOwnEmployeeOrFail()->id, $document);
+        return app(EmployeesController::class)->viewDocument($request, $this->resolveOwnEmployeeOrFail()->id, $document);
     }
 
-    public function downloadDocument($document)
+    public function downloadDocument(Request $request, $document)
     {
-        return app(EmployeesController::class)->downloadDocument($this->resolveOwnEmployeeOrFail()->id, $document);
+        return app(EmployeesController::class)->downloadDocument($request, $this->resolveOwnEmployeeOrFail()->id, $document);
     }
 
     public function previewDocumentNotification(Request $request, $document)

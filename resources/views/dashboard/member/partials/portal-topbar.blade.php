@@ -7,33 +7,34 @@
     $firstName = $firstName ?? 'Employee';
     $initials = $initials ?? 'E';
     $avatarUrl = $avatarUrl ?? null;
-    $portalNotifications = $portalNotifications ?? [];
-    $portalNotificationCount = (int) ($portalNotificationCount ?? count($portalNotifications));
     $myTasksCount = (int) ($myTasksCount ?? 0);
     $myMessagesCount = (int) ($myMessagesCount ?? 0);
-    $notificationToneClass = fn (string $tone) => match ($tone) {
-        'rose' => 'bg-rose-50',
-        'amber' => 'bg-amber-50',
-        'brand' => 'bg-brand-50',
-        default => 'bg-slate-50',
-    };
-    $notificationTitleClass = fn (string $tone) => match ($tone) {
-        'rose' => 'text-rose-800',
-        'amber' => 'text-amber-800',
-        'brand' => 'text-brand-800',
-        default => 'text-slate-800',
-    };
-    $notificationMessageClass = fn (string $tone) => match ($tone) {
-        'rose' => 'text-rose-600',
-        'amber' => 'text-amber-600',
-        'brand' => 'text-brand-600',
-        default => 'text-slate-600',
-    };
+    $brandName = config('member-portal.brand_name', 'Bio-Pacific');
+    $brandTagline = config('member-portal.brand_tagline', 'Facility');
 @endphp
 
 <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
   <div class="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
     <div class="flex items-center gap-3 min-w-0">
+      <div class="hidden shrink-0 items-center gap-1 lg:flex"
+           :class="sidebarCollapsed ? '-ml-3' : ''">
+        <div x-show="sidebarCollapsed" x-cloak class="flex h-14 shrink-0 items-center gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+            <img src="{{ asset('images/bplogo.png') }}" alt="Bio-Pacific" class="h-full w-full object-contain">
+          </span>
+          <span class="min-w-0 text-left leading-tight">
+            <span class="block truncate text-lg font-black text-slate-900">{{ $brandName }}</span>
+            <span class="block truncate text-xs font-medium text-slate-500">{{ $brandTagline }}</span>
+          </span>
+        </div>
+        <button type="button"
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800"
+          @click="toggleSidebar()"
+          :aria-label="sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'"
+          :title="sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+      </div>
       <button type="button"
         class="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm lg:hidden shrink-0"
         @click="sidebarOpen = true" aria-label="Open menu">☰</button>
@@ -96,52 +97,8 @@
       </a>
       @endif
 
-      @if($showNotifications)
       <div class="relative">
-        <button type="button" @click="notifyOpen = !notifyOpen; profileOpen = false"
-          class="relative rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm hover:bg-slate-50"
-          aria-label="Notifications">
-          🔔
-          @if($portalNotificationCount > 0)
-          <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-            {{ $portalNotificationCount > 9 ? '9+' : $portalNotificationCount }}
-          </span>
-          @endif
-        </button>
-        <div x-show="notifyOpen" x-cloak x-transition @click.outside="notifyOpen = false"
-          class="absolute right-0 mt-3 w-80 rounded-3xl border border-slate-200 bg-white p-4 shadow-soft z-50">
-          <div class="mb-3 flex items-center justify-between">
-            <p class="font-bold text-slate-950">Notifications</p>
-            <a href="{{ route('member.messages') }}" class="text-xs font-semibold text-brand-600">View all</a>
-          </div>
-          @if(count($portalNotifications) === 0)
-          <p class="rounded-2xl bg-slate-50 p-3 text-sm text-slate-600">You’re caught up. New reminders will appear here when something needs your attention.</p>
-          @else
-          <div class="space-y-3 text-sm">
-            @foreach($portalNotifications as $notification)
-            @php
-                $tone = $notification['tone'] ?? 'slate';
-            @endphp
-            @if(!empty($notification['route']))
-            <a href="{{ $notification['route'] }}" class="block rounded-2xl p-3 {{ $notificationToneClass($tone) }} hover:opacity-90">
-              <p class="font-semibold {{ $notificationTitleClass($tone) }}">{{ $notification['title'] }}</p>
-              <p class="text-xs {{ $notificationMessageClass($tone) }}">{{ $notification['message'] }}</p>
-            </a>
-            @else
-            <div class="rounded-2xl p-3 {{ $notificationToneClass($tone) }}">
-              <p class="font-semibold {{ $notificationTitleClass($tone) }}">{{ $notification['title'] }}</p>
-              <p class="text-xs {{ $notificationMessageClass($tone) }}">{{ $notification['message'] }}</p>
-            </div>
-            @endif
-            @endforeach
-          </div>
-          @endif
-        </div>
-      </div>
-      @endif
-
-      <div class="relative">
-        <button type="button" @click="profileOpen = !profileOpen; notifyOpen = false"
+        <button type="button" @click="profileOpen = !profileOpen"
           class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 pr-3 shadow-sm hover:bg-slate-50">
           @include('dashboard.member.partials.user-avatar', [
               'avatarUrl' => $avatarUrl,

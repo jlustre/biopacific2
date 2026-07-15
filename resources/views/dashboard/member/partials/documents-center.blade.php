@@ -2,6 +2,7 @@
     $documentsCenter = $documentsCenter ?? [];
     $facilityReport = $facilityComplianceReport ?? null;
     $showFacilityTab = ($isFacilityDocumentsAdmin ?? false) && !empty($facilityReport);
+    $initialDocsTab = request('docs_tab') === 'facility' && $showFacilityTab ? 'facility' : 'mine';
     $documentsPaginator = $documentsCenter['documents_paginator'] ?? null;
     $documents = $documentsPaginator ? $documentsPaginator->items() : ($documentsCenter['documents'] ?? $documentsCenter['uploads'] ?? []);
     $documentFilters = $documentsCenter['document_filters'] ?? ['search' => '', 'type' => '', 'expiry' => '', 'sort' => 'uploaded_desc', 'per_page' => 10];
@@ -41,7 +42,7 @@
     </div>
 @endif
 
-<section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="memberDocumentsCenter({ uploadUrl: @js(route('employment.documents.upload')), uploadTypes: @js($requiredUploadTypes), submissionReasons: @js($submissionReasonOptions), csrf: @js(csrf_token()) })" x-init="initFromQuery()">
+<section id="documents" class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card" x-data="memberDocumentsCenter({ uploadUrl: @js(route('employment.documents.upload')), uploadTypes: @js($requiredUploadTypes), submissionReasons: @js($submissionReasonOptions), csrf: @js(csrf_token()), initialTab: @js($initialDocsTab) })" x-init="initFromQuery()">
     <div class="border-b border-slate-200 bg-teal-50 p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -51,7 +52,7 @@
                 </div>
                 <h2 class="mt-3 text-lg font-bold text-slate-950 sm:text-xl">Documents & compliance</h2>
                 <p class="mt-1 text-sm text-slate-500">
-                    Employee documents, file checklist, and signatures
+                    Your employee documents, file checklist, and signatures
                     @if($positionTitle)
                         <span class="block mt-1 text-xs text-teal-700">Requirements based on your position: <strong>{{ $positionTitle }}</strong></span>
                     @endif
@@ -77,6 +78,12 @@
         </div>
 
         <div class="mt-2 flex flex-wrap gap-2 border-b border-slate-200 pb-0">
+            <button type="button"
+                @click="tab = 'mine'"
+                :class="tab === 'mine' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500 hover:text-slate-700'"
+                class="border-b-2 px-4 py-2.5 text-sm font-bold transition">
+                My documents
+            </button>
             @if($showFacilityTab)
                 <button type="button"
                     @click="tab = 'facility'"
@@ -171,6 +178,7 @@
                                         $badgeClass = match ($doc['status'] ?? '') {
                                             'not_on_file' => 'bg-rose-50 text-rose-700',
                                             'missing' => 'bg-rose-50 text-rose-700',
+                                            'rejected' => 'bg-rose-100 text-rose-800',
                                             'expired' => 'bg-amber-50 text-amber-700',
                                             'expiry_missing' => 'bg-amber-50 text-amber-700',
                                             'pending_review' => 'bg-sky-50 text-sky-700',
@@ -178,7 +186,12 @@
                                         };
                                     @endphp
                                     <tr>
-                                        <td class="px-3 py-2 font-semibold text-slate-950">{{ $doc['title'] ?? '—' }}</td>
+                                        <td class="px-3 py-2 font-semibold text-slate-950">
+                                            {{ $doc['title'] ?? '—' }}
+                                            @if(!empty($doc['verification_notes']))
+                                                <span class="mt-0.5 block text-xs font-normal text-rose-700">{{ $doc['verification_notes'] }}</span>
+                                            @endif
+                                        </td>
                                         <td class="px-3 py-2 text-slate-500">{{ !empty($doc['required']) ? 'Yes' : 'No' }}</td>
                                         <td class="whitespace-nowrap px-3 py-2">
                                             <span class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ $badgeClass }}">{{ $doc['status_label'] ?? 'Needs attention' }}</span>
@@ -323,7 +336,35 @@
                                         $needTracking = (bool) ($upload['need_tracking'] ?? false);
                                     @endphp
                                     <tr>
-                                        <td class="px-4 py-3 font-semibold text-slate-950">{{ $upload['name'] ?? '—' }}</td>
+                                        <td class="px-4 py-3 font-semibold text-slate-950">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span>{{ $upload['name'] ?? '—' }}</span>
+                                                @if(!empty($upload['is_approved']) && !empty($upload['is_read_only']))
+                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700" title="Approved documents are view-only. Upload a new file to renew.">Read-only</span>
+                                                @endif
+                                            </div>
+                                            @if(!empty($upload['history_count']))
+                                                <button
+                                                    type="button"
+                                                    class="mt-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                                                    @click="openHistoryModal(@js([
+                                                        'name' => $upload['name'] ?? 'Document',
+                                                        'type' => $upload['type'] ?? 'Document',
+                                                        'current' => [
+                                                            'name' => $upload['name'] ?? 'Document',
+                                                            'uploaded_at' => $upload['uploaded_at'] ?? null,
+                                                            'expires_at' => $upload['expiration_date'] ?? $upload['expires_at'] ?? null,
+                                                            'verification_status_label' => $upload['verification_status_label'] ?? null,
+                                                            'view_url' => $upload['view_url'] ?? null,
+                                                            'download_url' => $upload['download_url'] ?? null,
+                                                        ],
+                                                        'history' => $upload['history'] ?? [],
+                                                    ]))"
+                                                >
+                                                    View history ({{ $upload['history_count'] }})
+                                                </button>
+                                            @endif
+                                        </td>
                                         <td class="px-4 py-3 text-slate-500">{{ $upload['type'] ?? '—' }}</td>
                                         <td class="px-4 py-3 text-slate-500">{{ $upload['uploaded_at'] ?? '—' }}</td>
                                         <td class="px-4 py-3">
@@ -362,10 +403,20 @@
                                                     </span>
                                                 @endif
 
-                                                @if(!empty($upload['edit_url']))
+                                                @if(!empty($upload['download_url']))
+                                                    <a href="{{ $upload['download_url'] }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="Download document" aria-label="Download document">
+                                                        <i class="fa-solid fa-download"></i>
+                                                    </a>
+                                                @endif
+
+                                                @if(!empty($upload['edit_url']) && !empty($upload['can_modify']))
                                                     <a href="{{ $upload['edit_url'] }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="Edit document" aria-label="Edit document">
                                                         <i class="fa-solid fa-pen-to-square"></i>
                                                     </a>
+                                                @elseif(!empty($upload['is_approved']))
+                                                    <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="Approved documents are read-only. Upload a new version to renew." aria-label="Edit unavailable">
+                                                        <i class="fa-solid fa-lock"></i>
+                                                    </span>
                                                 @else
                                                     <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="Edit unavailable" aria-label="Edit unavailable">
                                                         <i class="fa-solid fa-pen-to-square"></i>
@@ -388,6 +439,77 @@
             </div>
         @endunless
     </div>
+
+    <template x-teleport="body">
+        <div x-show="showHistoryModal" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-black/50" @click="closeHistoryModal()"></div>
+            <div class="relative z-10 w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Document history</h3>
+                        <p class="mt-1 text-sm text-slate-500" x-text="historyContext.type + ' · ' + historyContext.name"></p>
+                    </div>
+                    <button type="button" class="text-xl leading-none text-slate-500 hover:text-slate-700" @click="closeHistoryModal()" aria-label="Close">&times;</button>
+                </div>
+
+                <div class="space-y-3">
+                    <template x-if="historyContext.current">
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Current version</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-900" x-text="historyContext.current.name"></p>
+                                    <p class="mt-1 text-xs text-slate-600">
+                                        Uploaded <span x-text="historyContext.current.uploaded_at || '—'"></span>
+                                        · Expires <span x-text="historyContext.current.expires_at || '—'"></span>
+                                        · <span x-text="historyContext.current.verification_status_label || '—'"></span>
+                                    </p>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <a x-show="historyContext.current.view_url" :href="historyContext.current.view_url" target="_blank" rel="noopener" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-white" title="View">
+                                        <i class="fa-solid fa-eye text-xs"></i>
+                                    </a>
+                                    <a x-show="historyContext.current.download_url" :href="historyContext.current.download_url" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-white" title="Download">
+                                        <i class="fa-solid fa-download text-xs"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="(historyContext.history || []).length === 0">
+                        <p class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">No prior versions preserved yet.</p>
+                    </template>
+
+                    <template x-for="prior in (historyContext.history || [])" :key="prior.id">
+                        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Prior version</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-900" x-text="prior.name"></p>
+                                    <p class="mt-1 text-xs text-slate-600">
+                                        Uploaded <span x-text="prior.uploaded_at || '—'"></span>
+                                        · Expires <span x-text="prior.expires_at || '—'"></span>
+                                        · <span x-text="prior.verification_status_label || '—'"></span>
+                                    </p>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <a x-show="prior.view_url" :href="prior.view_url" target="_blank" rel="noopener" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" title="View prior version">
+                                        <i class="fa-solid fa-eye text-xs"></i>
+                                    </a>
+                                    <a x-show="prior.download_url" :href="prior.download_url" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" title="Download prior version">
+                                        <i class="fa-solid fa-download text-xs"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <p class="mt-4 text-xs text-slate-500">Prior versions are preserved with their original expiration dates. Approved documents stay read-only; upload a new file to renew.</p>
+            </div>
+        </div>
+    </template>
 
     <template x-teleport="body">
         <div x-show="showUploadModal" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
@@ -557,9 +679,16 @@
 <script>
     function memberDocumentsCenter(config) {
         return {
-            tab: 'mine',
+            tab: config.initialTab || 'mine',
             facilityFilter: '',
             showUploadModal: false,
+            showHistoryModal: false,
+            historyContext: {
+                name: '',
+                type: '',
+                current: null,
+                history: [],
+            },
             uploadUrl: config.uploadUrl,
             uploadTypes: config.uploadTypes || [],
             submissionReasons: config.submissionReasons || {},
@@ -602,6 +731,18 @@
             },
             closeUploadModal() {
                 this.showUploadModal = false;
+            },
+            openHistoryModal(payload) {
+                this.historyContext = {
+                    name: payload?.name || 'Document',
+                    type: payload?.type || 'Document',
+                    current: payload?.current || null,
+                    history: Array.isArray(payload?.history) ? payload.history : [],
+                };
+                this.showHistoryModal = true;
+            },
+            closeHistoryModal() {
+                this.showHistoryModal = false;
             },
         };
     }

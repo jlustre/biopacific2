@@ -599,104 +599,71 @@ class MemberPortalLayout
         ]);
     }
 
-    public static function pageMeta(): array
+    /**
+     * Active sidebar purpose-group + nav item for the current request (if any).
+     *
+     * @return array{group: array<string, mixed>, item: array<string, mixed>}|null
+     */
+    public static function activePurposeNavMatch($user = null): ?array
     {
-        $routeName = request()->route()?->getName() ?? '';
-
-        if (request()->routeIs('member.facilities.websites*')) {
-            $title = 'Bio-Pacific Websites';
-
-            return [
-                'portalNav' => self::navModeForCurrentRequest(),
-                'portalActive' => self::activeIdForRoute($routeName),
-                'portalTitle' => $title . ' | Bio Pacific',
-                'portalEyebrow' => $title,
-                'portalPageTitle' => $title,
-                'portalSubtitle' => self::navModeForCurrentRequest() === 'employee'
-                    ? 'HR Employee Portal'
-                    : (self::navModeForCurrentRequest() === 'corporate' ? 'Corporate Management' : 'Facility Portal'),
-                'showPortalSearch' => false,
-                'showPortalNotifications' => true,
-                'showPortalFooter' => false,
-            ];
-        }
-
-        if (self::isPersonalPortalRoute()) {
-            $pageTitle = self::personalPortalPageTitle() ?? 'Personal';
-
-            return [
-                'portalNav' => self::navModeForCurrentRequest(),
-                'portalActive' => self::activeIdForRoute($routeName),
-                'portalTitle' => $pageTitle . ' | Bio Pacific',
-                'portalEyebrow' => 'Personal Portal',
-                'portalPageTitle' => $pageTitle,
-                'portalSubtitle' => 'Personal Portal',
-                'showPortalSearch' => false,
-                'showPortalNotifications' => true,
-                'showPortalFooter' => false,
-            ];
-        }
-
-        $title = self::titleForRoute($routeName);
-
-        if (in_array($routeName, ['admin.facility.dashboard', 'member.facility.dashboard', 'user.hr-portal'], true)) {
-            $facility = request()->route('facility');
-            if ($facility instanceof \App\Models\Facility) {
-                $title = $facility->name;
+        foreach (self::purposeGroupsForUser($user) as $group) {
+            foreach ($group['items'] ?? [] as $item) {
+                // Route/query match only — do not short-circuit on portalActive id.
+                if (self::navItemMatchesRequest($item)) {
+                    return [
+                        'group' => $group,
+                        'item' => $item,
+                    ];
+                }
             }
         }
 
+        return null;
+    }
+
+    public static function pageMeta(): array
+    {
+        $routeName = request()->route()?->getName() ?? '';
         $navMode = self::navModeForCurrentRequest();
+        $match = self::activePurposeNavMatch();
 
-        if ($navMode === 'admin') {
-            return [
-                'portalNav' => 'admin',
-                'portalActive' => self::activeIdForAdminRoute($routeName),
-                'portalTitle' => self::adminTitleForRoute($routeName) . ' | Bio Pacific',
-                'portalEyebrow' => 'System Administration',
-                'portalPageTitle' => self::adminTitleForRoute($routeName),
-                'portalSubtitle' => 'Bio-Pacific Administration',
-                'showPortalSearch' => false,
-                'showPortalNotifications' => true,
-                'showPortalFooter' => false,
-            ];
+        $groupLabel = $match['group']['label'] ?? null;
+        $itemLabel = $match['item']['label'] ?? null;
+
+        $pageLabel = $itemLabel
+            ?? self::personalPortalPageTitle()
+            ?? ($navMode === 'admin' ? self::adminTitleForRoute($routeName) : self::titleForRoute($routeName));
+
+        if (! $itemLabel && in_array($routeName, ['admin.facility.dashboard', 'member.facility.dashboard', 'user.hr-portal'], true)) {
+            $facility = request()->route('facility');
+            if ($facility instanceof \App\Models\Facility) {
+                $pageLabel = $facility->name;
+            }
         }
 
-        if ($navMode === 'corporate') {
-            return [
-                'portalNav' => 'corporate',
-                'portalActive' => self::activeIdForRoute($routeName),
-                'portalTitle' => $title . ' | Bio Pacific',
-                'portalEyebrow' => 'Corporate Management',
-                'portalPageTitle' => $title,
-                'portalSubtitle' => 'Corporate Management',
-                'showPortalSearch' => false,
-                'showPortalNotifications' => true,
-                'showPortalFooter' => false,
-            ];
-        }
+        $heading = $groupLabel ?? match (true) {
+            self::isPersonalPortalRoute() => 'Personal',
+            $navMode === 'admin' => 'Settings',
+            $navMode === 'corporate' => 'Company',
+            $navMode === 'facility' => 'Facility',
+            default => 'Personal',
+        };
 
-        if ($navMode === 'facility') {
-            return [
-                'portalNav' => 'facility',
-                'portalActive' => self::activeIdForRoute($routeName),
-                'portalTitle' => $title . ' | Bio Pacific',
-                'portalEyebrow' => 'Facility Portal',
-                'portalPageTitle' => $title,
-                'portalSubtitle' => 'Facility Portal',
-                'showPortalSearch' => false,
-                'showPortalNotifications' => true,
-                'showPortalFooter' => false,
-            ];
+        $portalActive = $navMode === 'admin'
+            ? self::activeIdForAdminRoute($routeName)
+            : self::activeIdForRoute($routeName);
+
+        if ($match && ($match['item']['id'] ?? null)) {
+            $portalActive = $match['item']['id'];
         }
 
         return [
-            'portalNav' => 'employee',
-            'portalActive' => self::activeIdForRoute($routeName),
-            'portalTitle' => $title . ' | Bio Pacific',
-            'portalEyebrow' => 'Employee Portal',
-            'portalPageTitle' => $title,
-            'portalSubtitle' => 'HR Employee Portal',
+            'portalNav' => $navMode,
+            'portalActive' => $portalActive,
+            'portalTitle' => $heading.' | Bio Pacific',
+            'portalEyebrow' => $pageLabel,
+            'portalPageTitle' => $heading,
+            'portalSubtitle' => $heading,
             'showPortalSearch' => false,
             'showPortalNotifications' => true,
             'showPortalFooter' => false,

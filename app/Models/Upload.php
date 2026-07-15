@@ -44,6 +44,15 @@ class Upload extends Model
             return;
         }
 
+        // Keep the file when another upload version still references it.
+        $shared = static::query()
+            ->where('file_path', $this->file_path)
+            ->where('id', '!=', $this->id)
+            ->exists();
+        if ($shared) {
+            return;
+        }
+
         $storage = Storage::disk($disk);
 
         if ($storage->exists($this->file_path)) {
@@ -84,6 +93,9 @@ class Upload extends Model
         'verified_by_user_id',
         'verified_at',
         'verification_notes',
+        'superseded_at',
+        'superseded_by_upload_id',
+        'coverage_year',
     ];
 
     public const VERIFICATION_PENDING = 'pending';
@@ -98,7 +110,29 @@ class Upload extends Model
         'effective_start_date' => 'date',
         'submitted_for_review_at' => 'datetime',
         'verified_at' => 'datetime',
+        'superseded_at' => 'datetime',
+        'coverage_year' => 'integer',
     ];
+
+    public function scopeCurrent($query)
+    {
+        return $query->whereNull('superseded_at');
+    }
+
+    public function isCurrent(): bool
+    {
+        return $this->superseded_at === null;
+    }
+
+    public function supersededBy()
+    {
+        return $this->belongsTo(self::class, 'superseded_by_upload_id');
+    }
+
+    public function supersedes()
+    {
+        return $this->hasMany(self::class, 'superseded_by_upload_id');
+    }
     /**
      * Get the employee that owns this upload.
      */
@@ -127,9 +161,27 @@ class Upload extends Model
         return (int) $this->user_id === (int) $user->id;
     }
 
+    /**
+     * Employees may edit/delete only their own current, non-approved uploads.
+     * Approved documents remain on file as read-only (view/download).
+     */
+    public function employeeCanModify(?User $user): bool
+    {
+        if (! $this->isOwnedBy($user) || ! $this->isCurrent()) {
+            return false;
+        }
+
+        return $this->verification_status !== self::VERIFICATION_APPROVED;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->verification_status === self::VERIFICATION_APPROVED;
+    }
+
     public function uploadType()
     {
-        return $this->belongsTo(UploadType::class);
+        return $this->belongsTo(UploadType::class)->withTrashed();
     }
 
     public function checklistItem()
@@ -150,7 +202,7 @@ class Upload extends Model
     public function verificationStatusLabel(): ?string
     {
         return match ($this->verification_status) {
-            self::VERIFICATION_PENDING => 'Pending review',
+            self::VERIFICATION_PENDING => 'Pending for Approval',
             self::VERIFICATION_APPROVED => 'Approved',
             self::VERIFICATION_REJECTED => 'Rejected',
             default => null,
@@ -173,7 +225,16 @@ class Upload extends Model
             return false;
         }
 
-        return $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']);
+        $employee = $this->relationLoaded('employee')
+            ? $this->employee
+            : $this->employee()->first();
+
+        if (! $employee) {
+            return $user->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']);
+        }
+
+        return app(\App\Services\EmployeeDocumentVerificationService::class)
+            ->actorCanReview($user, $employee);
     }
 
     /**

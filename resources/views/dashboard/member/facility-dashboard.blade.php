@@ -15,7 +15,7 @@
     $staffDirectoryByDepartment = $staffDirectoryByDepartment ?? [];
     $staffDirectoryCount = $staffDirectoryCount ?? collect($staffDirectoryByDepartment)->sum('count');
     $staffDirectoryOpenDefault = collect($staffDirectoryByDepartment)
-        ->mapWithKeys(fn ($group) => [($group['key'] ?? 'department') => true])
+        ->mapWithKeys(fn ($group) => [($group['key'] ?? 'department') => false])
         ->all();
     $hrManagementCards = $hrManagementCards ?? [];
     $hrManagementIntro = $hrManagementIntro ?? '';
@@ -272,14 +272,14 @@
             <div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
                 <div>
                     <h2 class="text-sm font-black text-slate-900">Documents, licenses & certifications</h2>
-                    <p class="text-[11px] text-slate-500">Expiring within 60 days — all staff in scope</p>
+                    <p class="text-[11px] text-slate-500">Missing requirements or expiring within 60 days — all staff in scope</p>
                 </div>
                 @if(!empty($facilityDocumentsUrl))
                 <a href="{{ $facilityDocumentsUrl }}" class="text-[11px] font-bold text-teal-700 hover:text-teal-900">Facility documents →</a>
                 @endif
             </div>
             @if(count($expiringDocuments) === 0)
-            <p class="px-4 py-6 text-center text-sm text-slate-500">Nothing expiring in this window.</p>
+            <p class="px-4 py-6 text-center text-sm text-slate-500">No missing or expiring requirements.</p>
             @else
             @if($expiringDocumentsTotal > count($expiringDocuments))
             <p class="border-b border-slate-100 px-4 py-1.5 text-[11px] text-slate-500">Showing {{ count($expiringDocuments) }} of {{ $expiringDocumentsTotal }} (most urgent first).</p>
@@ -307,10 +307,10 @@
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-4 py-2.5">
                 <h2 class="text-sm font-black text-slate-900">Appraisals & competencies due</h2>
-                <p class="text-[11px] text-slate-500">Assessment periods ending in 30 days</p>
+                <p class="text-[11px] text-slate-500">Missing or incomplete annual assessments, plus periods ending in 30 days</p>
             </div>
             @if(count($assessmentsDue) === 0)
-            <p class="px-4 py-6 text-center text-sm text-slate-500">None due in this window.</p>
+            <p class="px-4 py-6 text-center text-sm text-slate-500">No assessment gaps or upcoming due dates.</p>
             @else
             <ul class="max-h-72 divide-y divide-slate-100 overflow-y-auto">
                 @foreach($assessmentsDue as $row)
@@ -353,7 +353,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                @if(count($staffDirectoryByDepartment) > 1)
+                @if(count($staffDirectoryByDepartment) >= 1)
                 <button type="button"
                         @click="allExpanded() ? collapseAll() : expandAll()"
                         class="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"

@@ -134,6 +134,12 @@
             </form>
 
         </div>
+
+    @include('admin.facilities.partials.team-document-history', [
+        'facility' => $facility,
+        'teamDocumentHistory' => $teamDocumentHistory ?? ['can_access' => false],
+    ])
+
     <!-- List of existing documents -->
     @include('admin.facilities.partials.upload-table', ['facility' => $facility, 'employees' => $employees])
 

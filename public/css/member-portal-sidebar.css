@@ -112,3 +112,14 @@ aside.member-portal-sidebar a.member-portal-nav-link.member-portal-nav-sub-activ
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
+/*
+ * Let the page-level content container use the viewport space released by the
+ * desktop sidebar. This targets only the first content wrapper, preserving
+ * intentional max-widths on forms, cards, and other nested components.
+ */
+@media (min-width: 1024px) {
+    main.member-portal-main-expanded > .flex-1 > [class*="max-w-"] {
+        max-width: none !important;
+    }
+}
+

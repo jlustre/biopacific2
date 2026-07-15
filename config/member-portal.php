@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'brand_name' => env('MEMBER_PORTAL_BRAND_NAME', 'Bio-Pacific'),
+
+    'brand_tagline' => env('MEMBER_PORTAL_BRAND_TAGLINE', 'Facility'),
+
     'corporate_facility_slug' => env('CORPORATE_FACILITY_SLUG', 'bio-pacific-corporate'),
 
     'corporate_public_domain' => env('CORPORATE_PUBLIC_DOMAIN', 'biopacificoperational.com'),
@@ -237,7 +241,7 @@ return [
                 ['id' => 'pre-employment', 'route' => 'pre-employment.portal', 'route_is' => 'pre-employment.*', 'icon' => '📋', 'label' => 'Pre-Employment'],
                 ['id' => 'documents', 'route' => 'member.documents', 'route_is' => ['member.documents', 'member.documents.*'], 'icon' => '📄', 'label' => 'My Documents', 'badge' => 'documents'],
                 ['id' => 'checklists', 'route' => 'member.checklists', 'route_is' => ['member.checklists', 'member.checklists.*', 'member.trainings', 'member.trainings.*'], 'icon' => '📋', 'label' => 'My Checklists'],
-                ['id' => 'certifications', 'route' => 'member.certifications', 'route_is' => ['member.certifications', 'member.certifications.*'], 'icon' => '🏅', 'label' => 'Licenses & Certifications'],
+                ['id' => 'certifications', 'route' => 'member.certifications', 'route_is' => ['member.certifications', 'member.certifications.*'], 'icon' => '🪪', 'label' => 'My Credentials'],
             ],
         ],
         [
@@ -271,7 +275,8 @@ return [
                 ['id' => 'facilities', 'route' => 'admin.facilities.index', 'route_is' => ['admin.facilities.index', 'admin.facilities.create', 'admin.facilities.edit', 'admin.facilities.update', 'admin.facilities.show', 'admin.facilities.store', 'admin.facilities.destroy'], 'icon' => '🏢', 'label' => 'Facilities', 'gate' => 'system_admin'],
                 ['id' => 'facilities-websites', 'route' => 'member.facilities.websites', 'route_is' => ['member.facilities.websites', 'member.facilities.websites.*'], 'icon' => '🌍', 'label' => 'Bio-Pacific Websites'],
                 ['id' => 'company-leadership', 'route' => 'admin.facilities.leadership.index', 'route_is' => ['admin.facilities.leadership*', 'admin.facility.leadership*'], 'icon' => '🏛️', 'label' => 'Leadership'],
-                ['id' => 'company-news', 'route' => 'member.news-events.index', 'route_is' => ['member.news-events.*', 'admin.news.*'], 'icon' => '🗞️', 'label' => 'Company News/Events'],
+                ['id' => 'company-news', 'route' => 'member.news-events.index', 'route_is' => ['member.news-events.*', 'admin.news.*'], 'icon' => '📰', 'label' => 'News & Events'],
+                ['id' => 'company-galleries', 'route' => 'member.galleries.index', 'route_is' => ['member.galleries.*'], 'icon' => '🖼️', 'label' => 'Photo Galleries'],
             ],
         ],
         [
@@ -317,7 +322,7 @@ return [
                 ['id' => 'settings-baa', 'route' => 'admin.baa-registry.index', 'route_is' => 'admin.baa-registry.*', 'icon' => '🔒', 'label' => 'BAA Vendor Registry', 'gate' => 'system_admin'],
                 ['id' => 'settings-backups', 'route' => 'admin.backups.index', 'route_is' => 'admin.backups.*', 'icon' => '💾', 'label' => 'Backup & Restore', 'gate' => 'system_admin'],
                 ['id' => 'settings-departments', 'route' => 'admin.departments.index', 'route_is' => 'admin.departments.*', 'icon' => '🗂️', 'label' => 'Departments', 'gate' => 'system_admin'],
-                ['id' => 'settings-documents-mgmt', 'route' => 'admin.upload-types.index', 'route_is' => ['admin.upload-types.*', 'admin.checklist-items.*', 'admin.position-document-requirements.*'], 'icon' => '📁', 'label' => 'Documents Management', 'gate' => 'documents_mgmt'],
+                ['id' => 'settings-documents-mgmt', 'route' => 'admin.upload-types.index', 'route_is' => ['admin.upload-types.*', 'admin.checklist-items.*', 'admin.position-document-requirements.*'], 'icon' => '📁', 'label' => 'Documents Settings', 'gate' => 'documents_mgmt'],
                 ['id' => 'settings-events', 'route' => 'admin.events.index', 'route_is' => 'admin.events.*', 'icon' => '📅', 'label' => 'Events', 'gate' => 'system_admin'],
                 ['id' => 'settings-hipaa', 'route' => 'admin.hipaa-checklist.index', 'route_is' => 'admin.hipaa-checklist.*', 'icon' => '✅', 'label' => 'HIPAA Checklist', 'gate' => 'system_admin'],
                 ['id' => 'settings-import-logs', 'route' => 'admin.import-logs.index', 'route_is' => 'admin.import-logs.*', 'icon' => '📜', 'label' => 'Import History', 'gate' => 'system_admin'],
@@ -345,6 +350,7 @@ return [
                 ['id' => 'help-center', 'route' => 'member.help.index', 'route_is' => ['member.help.index', 'member.help.show', 'member.help.confirmation'], 'icon' => '📬', 'label' => 'My Help Requests'],
                 ['id' => 'help-hr', 'route' => 'member.help.hr', 'route_is' => ['member.help.hr', 'member.help.hr.*'], 'icon' => '🎧', 'label' => 'Contact HR'],
                 ['id' => 'help-manuals', 'route' => 'member.help.manuals', 'route_is' => ['member.help.manuals', 'member.help.manuals.*'], 'icon' => '📚', 'label' => 'Manuals and Docs'],
+                ['id' => 'help-user-manual', 'route' => 'member.help.user-manual', 'route_is' => 'member.help.user-manual', 'icon' => '📕', 'label' => 'HR Portal User Manual (PDF)'],
                 ['id' => 'help-support', 'route' => 'member.help.support', 'route_is' => ['member.help.support', 'member.help.support.*'], 'icon' => '💻', 'label' => 'Technical Support'],
                 ['id' => 'feedback', 'route' => 'member.feedback.index', 'route_is' => ['member.feedback', 'member.feedback.*'], 'icon' => '💡', 'label' => 'Report Issue or Idea'],
             ],
@@ -387,7 +393,7 @@ return [
                     'id' => 'certifications',
                     'route' => 'member.certifications',
                     'route_is' => ['member.certifications', 'member.certifications.*'],
-                    'label' => 'Licenses and Certifications',
+                    'label' => 'My Credentials',
                 ],
             ],
         ],
@@ -580,7 +586,7 @@ return [
         ['id' => 'dashboard', 'route' => 'dashboard.index', 'icon' => '🏠', 'label' => 'Home'],
         ['id' => 'news', 'route' => 'member.news-events.index', 'icon' => '📰', 'label' => 'News'],
         ['id' => 'documents', 'route' => 'member.documents', 'icon' => '📄', 'label' => 'Docs'],
-            ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🏅', 'label' => 'Licenses'],
+            ['id' => 'certifications', 'route' => 'member.certifications', 'icon' => '🪪', 'label' => 'Credentials'],
         ['id' => 'trainings', 'route' => 'member.trainings', 'icon' => '🎓', 'label' => 'Training'],
         ['id' => 'profile', 'route' => 'settings.profile', 'icon' => '👤', 'label' => 'Profile'],
     ],

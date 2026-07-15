@@ -7,6 +7,16 @@
         <p class="text-gray-600 mt-2">Manage organizational departments and their types</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
+        @if(auth()->user()?->hasRole(['admin', 'super-admin']))
+        <form method="POST" action="{{ route('admin.departments.sync-seeder') }}"
+            onsubmit="return confirm('Export every department into database/seeders/data/departments.php?\n\nThis overwrites that file. Commit it to git so migrate:fresh --seed restores the current department catalog.');">
+            @csrf
+            <button type="submit"
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-amber-300 bg-amber-50 px-5 py-2 font-semibold text-amber-900 transition hover:bg-amber-100">
+                <i class="fas fa-database mr-2"></i> Update Seeder
+            </button>
+        </form>
+        @endif
         <a href="{{ route('admin.positions.index') }}"
             class="inline-flex items-center justify-center whitespace-nowrap bg-white text-gray-700 px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold">
             <i class="fas fa-briefcase mr-2"></i> Positions Management

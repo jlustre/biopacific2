@@ -21,6 +21,16 @@ class EmployeeTrainingItemsSeeder extends Seeder
 {
     public function run(): void
     {
+        $exportedDataPath = database_path('seeders/data/employee_training_items.php');
+        if (is_file($exportedDataPath)) {
+            $trainings = require $exportedDataPath;
+            if (is_array($trainings)) {
+                $this->seedExportedCatalog($trainings);
+
+                return;
+            }
+        }
+
         $byTitle = Position::query()
             ->orderBy('id')
             ->get(['id', 'title'])
@@ -631,6 +641,47 @@ class EmployeeTrainingItemsSeeder extends Seeder
         $activeCount = collect($trainings)->where('is_active', true)->count();
         $this->command?->info(
             'Seeded '.count($trainings).' employee training items ('.$activeCount.' active: CA state compliance + CDPH CNA in-service; legacy catalog inactive).'
+        );
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $trainings
+     */
+    protected function seedExportedCatalog(array $trainings): void
+    {
+        $positionIdsByTitle = Position::query()
+            ->orderBy('id')
+            ->pluck('id', 'title');
+
+        foreach ($trainings as $index => $training) {
+            $positionTitles = (array) ($training['position_titles'] ?? ['global']);
+            $positionIds = in_array('global', $positionTitles, true)
+                ? ['global']
+                : collect($positionTitles)
+                    ->map(fn ($title) => $positionIdsByTitle->get((string) $title))
+                    ->filter()
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+            EmployeeTrainingItem::query()->updateOrCreate(
+                ['name' => (string) ($training['name'] ?? '')],
+                [
+                    'description' => $training['description'] ?? null,
+                    'frequency' => $training['frequency'] ?? EmployeeTrainingItem::FREQUENCY_ANNUAL,
+                    'position_ids' => $positionIds,
+                    'content_url' => $training['content_url'] ?? null,
+                    'provider_label' => $training['provider_label'] ?? null,
+                    'order' => (int) ($training['order'] ?? ($index + 1)),
+                    'is_active' => (bool) ($training['is_active'] ?? true),
+                ]
+            );
+        }
+
+        $activeCount = collect($trainings)->where('is_active', true)->count();
+        $this->command?->info(
+            'Seeded '.count($trainings).' exported employee training items ('.$activeCount.' active).'
         );
     }
 }

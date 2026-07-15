@@ -19,6 +19,7 @@ class MemberMessagesService
                 app(PortalAlertMessageSource::class),
                 app(AssignedTaskMessageSource::class),
                 app(TrainingApprovalMessageSource::class),
+                app(DocumentVerificationMessageSource::class),
                 app(HelpRequestMessageSource::class),
                 app(FeedbackMessageSource::class),
             ];

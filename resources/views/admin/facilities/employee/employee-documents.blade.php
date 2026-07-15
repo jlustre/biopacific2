@@ -1,6 +1,7 @@
 @php
     $uploads = \App\Models\Upload::with(['user','uploadType'])
         ->where('employee_num', $employee->employee_num)
+        ->current()
         ->orderByDesc('uploaded_at')
         ->get();
     $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();

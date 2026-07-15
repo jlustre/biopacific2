@@ -16,6 +16,18 @@ if (! $selectedFacility && request('facility')) {
     $selectedFacility = $facilities[0];
 }
 $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityFilterId : '';
+$employeeImportPresetOptions = ($employeeImportPresets ?? collect())->map(fn ($preset) => [
+    'id' => $preset->id,
+    'name' => $preset->name,
+    'isGlobal' => $preset->isGlobal(),
+    'facilityId' => (int) $preset->facility_id,
+    'mappingsCount' => $preset->mappingsCount(),
+    'mappings' => $preset->mappings ?? [],
+    'primaryWorksheet' => $preset->mappings[0]['worksheet'] ?? '',
+    'runImportUrl' => route('admin.facility.mapping-presets.run-import', $preset->id),
+    'validateUrl' => route('admin.facility.mapping-presets.validate', $preset->id),
+    'defaultFacilityId' => $importTargetFacilityId ?? null,
+])->values();
 @endphp
 <div class="px-0 py-0">
     <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
@@ -26,7 +38,16 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
                 </a>
             @endif
         </div>
-        <div class="w-full sm:w-auto px-4 sm:px-0">
+        <div class="flex w-full flex-col gap-2 px-4 sm:w-auto sm:flex-row sm:px-0">
+            @if($canImportEmployees ?? false)
+                <button type="button"
+                    id="openEmployeeImportPresetChooser"
+                    @disabled($employeeImportPresetOptions->isEmpty())
+                    title="{{ $employeeImportPresetOptions->isEmpty() ? 'No usable import presets are available' : 'Import employees using an existing preset' }}"
+                    class="rounded-md block w-full sm:w-auto px-4 py-3 sm:py-2 bg-teal-600 text-white hover:bg-teal-700 transition text-center disabled:cursor-not-allowed disabled:opacity-50">
+                    <span class="font-semibold text-base"><i class="fas fa-file-import mr-1"></i> Import Employees</span>
+                </button>
+            @endif
             <a href="{{ route('admin.employees.create') }}"
                 class="rounded-md block w-full sm:w-auto px-4 py-3 sm:py-2 bg-green-600 text-white hover:bg-green-700 transition text-center">
                 <span class="font-semibold text-base w-full">+ Add Employee</span>
@@ -229,4 +250,91 @@ $employeesFacilityQuery = ! empty($facilityFilterId) ? '?facility=' . $facilityF
         </div>
     </div>
 </div>
+
+@if(($canImportEmployees ?? false) && $employeeImportPresetOptions->isNotEmpty())
+    <div id="employeeImportPresetChooser" class="fixed inset-0 z-40 hidden" role="dialog" aria-modal="true" aria-labelledby="employeeImportPresetChooserTitle">
+        <div class="absolute inset-0 bg-slate-900/50" data-employee-import-chooser-close></div>
+        <div class="relative flex min-h-full items-center justify-center p-4">
+            <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+                <div class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
+                    <div>
+                        <h2 id="employeeImportPresetChooserTitle" class="text-lg font-bold text-slate-900">Import employees</h2>
+                        <p class="mt-1 text-sm text-slate-600">
+                            Choose an existing mapping preset, then upload the employee workbook.
+                        </p>
+                    </div>
+                    <button type="button" data-employee-import-chooser-close
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+                            aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="px-6 py-5">
+                    @if(!empty($importTargetFacilityId))
+                        <div class="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+                            Import target: <strong>{{ $facilities->firstWhere('id', $importTargetFacilityId)?->name }}</strong>
+                        </div>
+                    @endif
+                    <label for="employeeImportPresetSelect" class="mb-1 block text-sm font-semibold text-slate-700">Import preset</label>
+                    <select id="employeeImportPresetSelect"
+                            class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-200">
+                        @foreach($employeeImportPresetOptions as $presetOption)
+                            <option value="{{ $presetOption['id'] }}">
+                                {{ $presetOption['name'] }}{{ $presetOption['isGlobal'] ? ' (All facilities)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
+                    <button type="button" data-employee-import-chooser-close
+                            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="button" id="continueEmployeeImport"
+                            class="rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('admin.import-mapping-presets.partials.import-modal', ['canImport' => true])
+
+    @push('scripts')
+    <script>
+    (function () {
+        const chooser = document.getElementById('employeeImportPresetChooser');
+        const openButton = document.getElementById('openEmployeeImportPresetChooser');
+        const continueButton = document.getElementById('continueEmployeeImport');
+        const presetSelect = document.getElementById('employeeImportPresetSelect');
+        const presets = @json($employeeImportPresetOptions);
+
+        if (!chooser || !openButton || !continueButton || !presetSelect) return;
+
+        const closeChooser = () => {
+            chooser.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        };
+
+        openButton.addEventListener('click', () => {
+            chooser.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        });
+
+        chooser.querySelectorAll('[data-employee-import-chooser-close]').forEach((element) => {
+            element.addEventListener('click', closeChooser);
+        });
+
+        continueButton.addEventListener('click', () => {
+            const preset = presets.find((item) => String(item.id) === String(presetSelect.value));
+            if (!preset || typeof window.openPresetImportModal !== 'function') return;
+
+            closeChooser();
+            window.openPresetImportModal(preset);
+        });
+    })();
+    </script>
+    @endpush
+@endif
 @endsection

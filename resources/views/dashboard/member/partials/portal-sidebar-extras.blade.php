@@ -50,7 +50,7 @@
             <a href="{{ route('admin.upload-types.index') }}"
                class="member-portal-nav-link flex items-center gap-3 rounded-xl px-4 py-3 {{ $extraClass(request()->routeIs(['admin.upload-types.*', 'admin.checklist-items.*'])) }}">
                 <span>📄</span>
-                <span>Documents Management</span>
+                <span>Documents Settings</span>
             </a>
         </div>
     @endif

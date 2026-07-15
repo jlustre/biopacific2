@@ -17,13 +17,13 @@
             "edit employee core tabs",
             "edit positions",
             "use import mapping presets",
-            "view web communications",
             "view content",
             "view facilities",
             "view positions",
             "view reports",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {
@@ -53,14 +53,14 @@
             "manage tour requests",
             "publish content",
             "use import mapping presets",
-            "view web communications",
             "view content",
             "view facilities",
             "view facility analytics",
             "view positions",
             "view reports",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {
@@ -73,13 +73,13 @@
             "edit employee core tabs",
             "edit positions",
             "use import mapping presets",
-            "view web communications",
             "view content",
             "view facilities",
             "view positions",
             "view reports",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {
@@ -91,13 +91,13 @@
             "create registration invitations",
             "edit positions",
             "use import mapping presets",
-            "view web communications",
             "view content",
             "view facilities",
             "view positions",
             "view reports",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {
@@ -106,12 +106,12 @@
             "access admin panel",
             "can invite member",
             "create registration invitations",
-            "view web communications",
             "view content",
             "view facilities",
             "view reports",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {
@@ -120,11 +120,11 @@
             "access admin panel",
             "can invite member",
             "create registration invitations",
-            "view web communications",
             "view content",
             "view facilities",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {
@@ -142,11 +142,11 @@
             "manage testimonials",
             "manage tour requests",
             "use import mapping presets",
-            "view web communications",
             "view content",
             "view facilities",
             "view user profiles",
-            "view users"
+            "view users",
+            "view web communications"
         ]
     },
     {

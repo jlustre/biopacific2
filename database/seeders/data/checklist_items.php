@@ -3,7 +3,7 @@
 /**
  * Employee file document type items (PART A–D) for ChecklistItemsSeeder.
  *
- * Auto-generated from Documents Management → Employee file items → Update items seeder on 2026-06-29 16:28:51.
+ * Auto-generated from Documents Management → Employee file items → Update items seeder on 2026-07-15 12:54:49.
  *
  * @return list<array{
  *     name: string,

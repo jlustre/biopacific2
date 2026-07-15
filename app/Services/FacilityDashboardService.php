@@ -250,6 +250,7 @@ class FacilityDashboardService
                 'value' => Upload::query()
                     ->where('facility_id', $facility->id)
                     ->whereIn('employee_num', $employeeNums)
+                    ->current()
                     ->where('verification_status', Upload::VERIFICATION_PENDING)
                     ->count(),
                 'hint' => 'Documents awaiting verification',

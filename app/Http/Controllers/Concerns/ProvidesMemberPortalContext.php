@@ -29,7 +29,7 @@ trait ProvidesMemberPortalContext
         $lastName = $nameParts[1] ?? '';
         $firstNameOnly = explode(' ', trim($displayName))[0] ?? $displayName;
         $portalAlerts = app(MemberDashboardService::class)->buildPortalAlerts($user);
-        $myTasksCount = \App\Models\PersonalTask::assignedOpenCountForUser($user);
+        $myTasksCount = app(\App\Services\PersonalTaskPageService::class)->openCountForUser($user);
         $myMessagesCount = app(\App\Services\MemberMessages\MemberMessagesService::class)->countFor($user);
 
         return [

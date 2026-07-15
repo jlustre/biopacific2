@@ -99,7 +99,7 @@
     </button>
     <div x-show="tablesOpen" x-cloak class="ml-2 space-y-1 border-l border-white/10 pl-3">
         <a href="{{ route('admin.positions.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.positions.*') }}">Positions</a>
-        <a href="{{ route('admin.upload-types.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.upload-types.*', 'admin.checklist-items.*']) }}">Documents Management</a>
+        <a href="{{ route('admin.upload-types.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.upload-types.*', 'admin.checklist-items.*']) }}">Documents Settings</a>
         <a href="{{ route('admin.departments.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.departments.*') }}">Departments</a>
         @if(\Illuminate\Support\Facades\Route::has('admin.events.index'))
         <a href="{{ route('admin.events.index') }}" class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass('admin.events.*') }}">Events</a>

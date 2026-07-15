@@ -9,11 +9,6 @@
 
     <p>You have been invited to create your Bio-Pacific applicant portal account.</p>
 
-    @if(!empty($sponsorName))
-        <p><strong>Your sponsor:</strong> {{ $sponsorName }}</p>
-        <p style="color:#374151;font-size:14px;">When you register, confirm this sponsor name is correct. If it is wrong, do not complete registration and contact your hiring contact.</p>
-    @endif
-
     <p><strong>Registration code:</strong> {{ $registrationCode }}</p>
 
     <p>

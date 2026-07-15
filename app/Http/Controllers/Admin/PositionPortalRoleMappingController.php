@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Position;
 use App\Models\PositionPortalRoleMapping;
+use App\Services\PositionPortalRoleMappingSeederExporter;
 use App\Support\PositionPortalRoleMappingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -125,6 +126,28 @@ class PositionPortalRoleMappingController extends Controller
         return redirect()
             ->route('admin.position-portal-roles.index')
             ->with('success', "Synced {$count} default position role mapping(s) from leadership configuration.");
+    }
+
+    public function syncSeeder(PositionPortalRoleMappingSeederExporter $exporter): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasRole(['admin', 'super-admin']), 403);
+
+        try {
+            $result = $exporter->writeSeederFile();
+
+            return redirect()->route('admin.position-portal-roles.index')
+                ->with(
+                    'success',
+                    'Seeder updated with '.$result['count'].' position portal role mapping(s). '
+                    .'File: database/seeders/data/position_portal_role_mappings.php. '
+                    .'Commit this file so migrate:fresh --seed restores the mappings.'
+                );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('admin.position-portal-roles.index')
+                ->with('error', 'Could not update the position portal roles seeder: '.$e->getMessage());
+        }
     }
 
     /**

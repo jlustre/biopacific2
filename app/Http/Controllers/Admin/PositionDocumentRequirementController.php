@@ -16,6 +16,26 @@ use Illuminate\Validation\Rule;
 
 class PositionDocumentRequirementController extends Controller
 {
+    public function syncPosition(Request $request, Position $position): RedirectResponse
+    {
+        $validated = $request->validate([
+            'upload_type_ids' => ['nullable', 'array'],
+            'upload_type_ids.*' => ['integer', 'exists:upload_types,id'],
+        ]);
+
+        app(EmployeeDocumentRequirementsService::class)->syncPositionRequirements(
+            $position,
+            $validated['upload_type_ids'] ?? [],
+        );
+
+        return redirect()
+            ->route('admin.upload-types.index', [
+                'tab' => 'requirements',
+                'position_id' => $position->id,
+            ])
+            ->with('success', "Document requirements saved for {$position->title}.");
+    }
+
     public function bulkUpdate(Request $request): RedirectResponse
     {
         $validated = $request->validate([

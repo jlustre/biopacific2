@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeTrainingItem;
 use App\Models\Position;
+use App\Services\EmployeeTrainingItemsSeederExporter;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -123,6 +125,28 @@ class EmployeeTrainingItemController extends Controller
 
         return redirect()->route('admin.training-items.index')
             ->with('success', 'Training position assignments updated.');
+    }
+
+    public function syncSeeder(EmployeeTrainingItemsSeederExporter $exporter): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasRole(['admin', 'super-admin']), 403);
+
+        try {
+            $result = $exporter->writeSeederFile();
+
+            return redirect()->route('admin.training-items.index')
+                ->with(
+                    'success',
+                    'Seeder updated with '.$result['count'].' training module(s). '
+                    .'File: database/seeders/data/employee_training_items.php. '
+                    .'Commit this file so migrate:fresh --seed restores the catalog and position assignments.'
+                );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('admin.training-items.index')
+                ->with('error', 'Could not update the training seeder: '.$e->getMessage());
+        }
     }
 
     /**

@@ -22,6 +22,7 @@ class EmployeeChecklistDocuments
             'checklist_item_id' => $item->id,
             'doc_type_id' => $item->doc_type_id,
             'on_file' => true,
+            'verified_dt' => null,
             'exp_dt' => $item->isExpiring ? $expiresAt : ($existing['exp_dt'] ?? null),
             'exp_dt_not_required' => $item->isExpiring ? 0 : 1,
         ]);

@@ -11,6 +11,14 @@
             class="inline-flex items-center justify-center whitespace-nowrap bg-white text-gray-700 px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold">
             <i class="fas fa-briefcase mr-2"></i> Positions
         </a>
+        <form method="POST" action="{{ route('admin.position-portal-roles.sync-seeder') }}" class="inline"
+            onsubmit="return confirm('Export every position portal role mapping into database/seeders/data/position_portal_role_mappings.php?\n\nThis overwrites that file. Commit it to git so migrate:fresh --seed restores the current mappings.');">
+            @csrf
+            <button type="submit"
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-amber-300 bg-amber-50 px-5 py-2 font-semibold text-amber-900 transition hover:bg-amber-100">
+                <i class="fas fa-database mr-2"></i> Update Seeder
+            </button>
+        </form>
         <form method="POST" action="{{ route('admin.position-portal-roles.sync-defaults') }}" class="inline">
             @csrf
             <button type="submit"
@@ -40,6 +48,12 @@
     @if (session('success'))
     <div class="bg-green-50 border border-green-200 rounded-lg p-4">
         <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i>{{ session('success') }}</p>
+    </div>
+    @endif
+
+    @if (session('error'))
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p class="text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}</p>
     </div>
     @endif
 

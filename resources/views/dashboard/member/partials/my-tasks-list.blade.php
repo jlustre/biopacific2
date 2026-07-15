@@ -6,7 +6,12 @@
     <li class="flex items-start gap-3 px-4 py-2.5 text-sm">
         <span class="mt-0.5 text-teal-600"><i class="fa-regular fa-circle"></i></span>
         <div class="min-w-0 flex-1">
-            <p class="font-semibold text-slate-900">{{ $task['title'] ?? 'Task' }}</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <p class="font-semibold text-slate-900">{{ $task['title'] ?? 'Task' }}</p>
+                @if(($task['priority'] ?? '') === 'high')
+                    <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700">High</span>
+                @endif
+            </div>
             @if(!empty($task['description']))
             <p class="text-xs text-slate-500">{{ $task['description'] }}</p>
             @endif

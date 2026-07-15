@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Support\AssessmentWorkflowStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class RoleMemberDashboardService
 {
@@ -262,6 +263,33 @@ class RoleMemberDashboardService
         $payload = $this->memberDashboard->build($user);
         $stats = $payload['stats'] ?? [];
         $todos = app(\App\Services\MemberPersonalTaskService::class)->buildStaffTasks($user, $payload);
+        $documentsCenter = $payload['documentsCenter'] ?? [];
+        $requiredDocuments = collect($documentsCenter['compliance_missing'] ?? [])
+            ->filter(fn ($item) => ($item['section'] ?? null) === 'Required for your position')
+            ->values()
+            ->all();
+        $completedRequiredDocuments = collect($documentsCenter['compliance_complete'] ?? [])
+            ->filter(fn ($item) => ($item['section'] ?? null) === 'Required for your position')
+            ->count();
+        $requiredTrainingItems = collect($payload['trainingsCenter']['groups'] ?? [])
+            ->whereIn('key', ['modules_annual', 'modules_hiring'])
+            ->flatMap(fn ($group) => $group['items'] ?? [])
+            ->values();
+        $outstandingRequiredTrainings = $requiredTrainingItems
+            ->reject(fn ($item) => ($item['status'] ?? '') === 'completed')
+            ->values()
+            ->all();
+        $completedRequiredTrainings = $requiredTrainingItems
+            ->where('status', 'completed')
+            ->count();
+        $requiredCredentialItems = collect($payload['certificationItems'] ?? [])->values();
+        $outstandingRequiredCredentials = $requiredCredentialItems
+            ->reject(fn ($item) => ($item['status'] ?? '') === 'valid')
+            ->values()
+            ->all();
+        $validRequiredCredentials = $requiredCredentialItems
+            ->where('status', 'valid')
+            ->count();
 
         return [
             'roleDashboardMode' => 'staff',
@@ -273,6 +301,18 @@ class RoleMemberDashboardService
             'dashboardActionQueue' => [],
             'dashboardMyTasks' => $todos,
             'dashboardQuickActions' => $this->staffQuickActions($user, $persona),
+            'dashboardRequiredDocuments' => $requiredDocuments,
+            'dashboardRequiredDocumentsTotal' => count($requiredDocuments) + $completedRequiredDocuments,
+            'dashboardRequiredDocumentsComplete' => $completedRequiredDocuments,
+            'dashboardRequiredDocumentsPositionTitle' => $documentsCenter['position_title'] ?? ($payload['positionTitle'] ?? null),
+            'dashboardRequiredTrainings' => $outstandingRequiredTrainings,
+            'dashboardRequiredTrainingsTotal' => $requiredTrainingItems->count(),
+            'dashboardRequiredTrainingsComplete' => $completedRequiredTrainings,
+            'dashboardRequiredTrainingsPositionTitle' => $payload['positionTitle'] ?? null,
+            'dashboardRequiredCredentials' => $outstandingRequiredCredentials,
+            'dashboardRequiredCredentialsTotal' => $requiredCredentialItems->count(),
+            'dashboardRequiredCredentialsValid' => $validRequiredCredentials,
+            'dashboardRequiredCredentialsPositionTitle' => $payload['positionTitle'] ?? null,
             'stats' => $stats,
         ];
     }
@@ -950,8 +990,11 @@ class RoleMemberDashboardService
     protected function staffQuickActions(User $user, string $persona): array
     {
         $actions = [
+            ['title' => 'My Employment', 'subtitle' => 'Job & employment record', 'route' => route('employment.portal'), 'icon' => 'fa-briefcase'],
+            ['title' => 'My Credentials', 'subtitle' => 'Credentials & expirations', 'route' => route('member.certifications'), 'icon' => 'fa-certificate'],
             ['title' => 'My documents', 'subtitle' => 'Documents & checklist', 'route' => route('member.documents'), 'icon' => 'fa-file-lines'],
             ['title' => 'My checklists', 'subtitle' => 'Required completion', 'route' => route('member.checklists'), 'icon' => 'fa-graduation-cap'],
+            ['title' => 'My Messages', 'subtitle' => 'Inbox & alerts', 'route' => route('member.messages'), 'icon' => 'fa-envelope'],
             ['title' => 'My profile', 'subtitle' => 'Contact & account', 'route' => route('settings.profile'), 'icon' => 'fa-user'],
         ];
 
@@ -987,6 +1030,12 @@ class RoleMemberDashboardService
             ->get()
             ->keyBy('employee_num');
 
+        $requiredEmployeeFileItems = ChecklistItem::query()
+            ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
+            ->where('is_required', true)
+            ->orderBy('order')
+            ->get();
+
         $credentialsByEmployee = BPEmpCredential::query()
             ->whereIn('employee_num', $employeeNums)
             ->whereNotNull('expiry_date')
@@ -999,9 +1048,30 @@ class RoleMemberDashboardService
             $employeeName = $employee->formalName();
             $position = $employee->currentAssignment?->position?->title ?? '—';
             $manageUrl = $this->memberDashboard->buildAdminEmployeeEditUrl($employee->id, 'documents');
+            $seenGapKeys = [];
 
             $compliance = $complianceService->forEmployee($employee);
             foreach ($compliance['items'] as $item) {
+                if (($item['status'] ?? '') === 'missing') {
+                    $gapKey = Str::lower(trim((string) ($item['name'] ?? 'Document')));
+                    $seenGapKeys[$gapKey] = true;
+
+                    $rows[] = array_merge([
+                        'employee_num' => $employee->employee_num,
+                        'employee_name' => $employeeName,
+                        'position' => $position,
+                        'document' => (string) ($item['name'] ?? 'Document'),
+                        'source' => !empty($item['is_license_or_certification'])
+                            ? 'Required license or certification'
+                            : 'Required document',
+                        'expires_on' => 'Not uploaded',
+                        'expires_on_sort' => '0000-00-00',
+                        'manage_url' => $manageUrl,
+                    ], $this->documentGapPresentation('Not on file'));
+
+                    continue;
+                }
+
                 if (empty($item['requires_expiry'])) {
                     continue;
                 }
@@ -1038,6 +1108,35 @@ class RoleMemberDashboardService
             $empItems = is_array($empItems) ? $empItems : [];
             $positionId = $employee->currentAssignment?->position_id
                 ?? $employee->currentAssignment?->position?->id;
+
+            foreach ($requiredEmployeeFileItems as $requiredItem) {
+                $applicablePositionIds = array_map('intval', (array) ($requiredItem->position_ids ?? []));
+                if ($positionId && $applicablePositionIds !== [] && !in_array((int) $positionId, $applicablePositionIds, true)) {
+                    continue;
+                }
+
+                $stored = $empItems['item_' . $requiredItem->id] ?? $empItems[$requiredItem->name] ?? null;
+                if (is_array($stored) && !empty($stored['on_file'])) {
+                    continue;
+                }
+
+                $gapKey = Str::lower(trim((string) ($requiredItem->name ?? 'Document')));
+                if (isset($seenGapKeys[$gapKey])) {
+                    continue;
+                }
+                $seenGapKeys[$gapKey] = true;
+
+                $rows[] = array_merge([
+                    'employee_num' => $employee->employee_num,
+                    'employee_name' => $employeeName,
+                    'position' => $position,
+                    'document' => (string) ($requiredItem->name ?? 'Document'),
+                    'source' => (string) ($requiredItem->section ?? 'Employee file checklist'),
+                    'expires_on' => 'Not uploaded',
+                    'expires_on_sort' => '0000-00-00',
+                    'manage_url' => $this->memberDashboard->buildAdminEmployeeEditUrl($employee->id, 'checklist'),
+                ], $this->documentGapPresentation('Not on file'));
+            }
 
             $expiringChecklistItems = ChecklistItem::query()
                 ->applicableToPosition($positionId)
@@ -1076,6 +1175,26 @@ class RoleMemberDashboardService
 
             foreach ($this->memberDashboard->evaluateCertificationItemsForEmployee($employee, $empItems) as $cert) {
                 $status = (string) ($cert['status'] ?? '');
+
+                if ($status === 'not_on_file') {
+                    $gapKey = Str::lower(trim((string) ($cert['title'] ?? 'License / certification')));
+                    if (!isset($seenGapKeys[$gapKey])) {
+                        $seenGapKeys[$gapKey] = true;
+                        $rows[] = array_merge([
+                            'employee_num' => $employee->employee_num,
+                            'employee_name' => $employeeName,
+                            'position' => $position,
+                            'document' => (string) ($cert['title'] ?? 'License / certification'),
+                            'source' => 'Required license or certification',
+                            'expires_on' => 'Not uploaded',
+                            'expires_on_sort' => '0000-00-00',
+                            'manage_url' => $manageUrl,
+                        ], $this->documentGapPresentation('Not on file'));
+                    }
+
+                    continue;
+                }
+
                 if (!in_array($status, ['expired', 'expires_today', 'expiring_urgent', 'expiring_soon'], true)) {
                     continue;
                 }
@@ -1135,7 +1254,17 @@ class RoleMemberDashboardService
         }
 
         usort($rows, function (array $a, array $b) {
-            return ($a['days_until'] ?? 999) <=> ($b['days_until'] ?? 999);
+            $urgency = ($a['days_until'] ?? 999) <=> ($b['days_until'] ?? 999);
+            if ($urgency !== 0) {
+                return $urgency;
+            }
+
+            $employee = strcasecmp((string) ($a['employee_name'] ?? ''), (string) ($b['employee_name'] ?? ''));
+            if ($employee !== 0) {
+                return $employee;
+            }
+
+            return strcasecmp((string) ($a['document'] ?? ''), (string) ($b['document'] ?? ''));
         });
 
         return ['items' => array_slice($rows, 0, 50), 'total' => count($rows)];
@@ -1153,19 +1282,75 @@ class RoleMemberDashboardService
         }
 
         $today = Carbon::today();
+        $recommendedWindows = collect();
+
+        foreach ($team as $employee) {
+            $window = \App\Support\EmployeeAssessmentPeriodCalculator::annualPeriodForAssessmentOn($employee, $today);
+            if (!$window || !$employee->employee_num) {
+                continue;
+            }
+
+            $recommendedWindows->put($employee->employee_num, [
+                'employee' => $employee,
+                'date_from' => $window['date_from'],
+                'date_to' => $window['date_to'],
+                'period_year' => $window['period_year'],
+            ]);
+        }
+
         $periodsDueSoon = EmployeeAssessmentPeriod::query()
             ->with(['employee.currentAssignment.position'])
             ->whereIn('employee_num', $employeeNums)
-            ->whereDate('date_to', '>=', $today)
+            ->whereDate('date_to', '>=', $today->copy()->subDays(370))
             ->whereDate('date_to', '<=', $today->copy()->addDays(30))
             ->orderBy('date_to')
-            ->get();
+            ->get()
+            ->filter(function (EmployeeAssessmentPeriod $period) use ($today, $recommendedWindows) {
+                if ($period->date_to?->gte($today)) {
+                    return true;
+                }
+
+                $recommended = $recommendedWindows->get($period->employee_num);
+
+                return $recommended
+                    && $period->date_from?->toDateString() === $recommended['date_from']
+                    && $period->date_to?->toDateString() === $recommended['date_to'];
+            })
+            ->values();
+
+        $existingRecommendedEmployees = $periodsDueSoon
+            ->filter(function (EmployeeAssessmentPeriod $period) use ($recommendedWindows) {
+                $recommended = $recommendedWindows->get($period->employee_num);
+
+                return $recommended
+                    && $period->date_from?->toDateString() === $recommended['date_from']
+                    && $period->date_to?->toDateString() === $recommended['date_to'];
+            })
+            ->pluck('employee_num')
+            ->flip();
+
+        foreach ($recommendedWindows as $employeeNum => $recommended) {
+            if ($existingRecommendedEmployees->has($employeeNum)) {
+                continue;
+            }
+
+            $period = new EmployeeAssessmentPeriod([
+                'employee_num' => $employeeNum,
+                'date_from' => $recommended['date_from'],
+                'date_to' => $recommended['date_to'],
+                'period_year' => $recommended['period_year'],
+                'period_sequence' => 0,
+                'review_type' => 'A',
+            ]);
+            $period->setRelation('employee', $recommended['employee']);
+            $periodsDueSoon->push($period);
+        }
 
         if ($periodsDueSoon->isEmpty()) {
             return ['items' => []];
         }
 
-        $periodIds = $periodsDueSoon->pluck('id')->unique()->values();
+        $periodIds = $periodsDueSoon->pluck('id')->filter()->unique()->values();
 
         $completedCompetencyKeys = EmployeeCompetencyAssessment::query()
             ->whereIn('assessment_period_id', $periodIds)
@@ -1254,6 +1439,20 @@ class RoleMemberDashboardService
     /**
      * @return array{days_until: int, status_label: string, row_class: string, badge_class: string, urgency: string}
      */
+    protected function documentGapPresentation(string $label): array
+    {
+        return [
+            'days_until' => PHP_INT_MIN,
+            'urgency' => 'missing',
+            'status_label' => $label,
+            'row_class' => 'bg-rose-50 border-l-4 border-rose-500',
+            'badge_class' => 'bg-rose-600 text-white',
+        ];
+    }
+
+    /**
+     * @return array{days_until: int, status_label: string, row_class: string, badge_class: string, urgency: string}
+     */
     protected function documentExpiryPresentation(int $daysUntil): array
     {
         if ($daysUntil < 0) {
@@ -1309,6 +1508,10 @@ class RoleMemberDashboardService
     {
         if ($daysUntil === null) {
             return 'Due soon';
+        }
+
+        if ($daysUntil < 0) {
+            return 'Overdue ' . abs($daysUntil) . ' day(s)';
         }
 
         if ($daysUntil === 0) {

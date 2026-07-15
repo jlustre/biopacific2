@@ -56,8 +56,10 @@ Route::get('/admin/test-competency-skills', [LnCompetencySkillsController::class
 
 // Temporarily remove middleware for debugging
 Route::get('/admin/facility/{facility}/uploads/{upload}/download', [UploadController::class, 'download'])
+    ->middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor|don'])
     ->name('admin.facility.uploads.download');
 Route::get('/admin/facility/{facility}/uploads/{upload}/view', [UploadController::class, 'view'])
+    ->middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor|don'])
     ->name('admin.facility.uploads.view');
 
 // Facility Files Import (Excel)
@@ -155,7 +157,13 @@ Route::middleware(['auth', 'permission:' . Permissions::ACCESS_HR_PORTAL])->grou
 Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-dsd|facility-editor'])->prefix('admin/facility/files')->group(function () {
     Route::get('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'index']);
     Route::post('mapping-presets', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'store']);
+    Route::post('mapping-presets/parse-workbook', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'parseWorkbook'])
+        ->name('admin.facility.mapping-presets.parse-workbook');
     Route::post('mapping-presets/sync-seeder', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'syncSeeder']);
+    Route::post('mapping-presets/{id}/validate', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'validatePreset'])
+        ->name('admin.facility.mapping-presets.validate');
+    Route::post('mapping-presets/{id}/run-import', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'runImport'])
+        ->name('admin.facility.mapping-presets.run-import');
     Route::post('mapping-presets/{id}/duplicate', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'duplicate']);
     Route::put('mapping-presets/{id}/details', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'updateDetails']);
     Route::put('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'update']);
@@ -506,6 +514,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::get('/role-assignments/{role}/users', [AdminRoleAssignmentController::class, 'getUsersForRole'])->name('role-assignments.users-for-role');
 
     Route::middleware(['role:admin|super-admin'])->group(function () {
+        Route::post('/position-portal-roles/sync-seeder', [\App\Http\Controllers\Admin\PositionPortalRoleMappingController::class, 'syncSeeder'])
+            ->name('position-portal-roles.sync-seeder');
         Route::post('/position-portal-roles/sync-defaults', [\App\Http\Controllers\Admin\PositionPortalRoleMappingController::class, 'syncDefaults'])
             ->name('position-portal-roles.sync-defaults');
         Route::resource('position-portal-roles', \App\Http\Controllers\Admin\PositionPortalRoleMappingController::class)
@@ -569,8 +579,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     // Documents Management (document types / UploadType model)
     Route::middleware(['role:' . implode('|', config('member-portal.documents_management_roles', ['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']))])->group(function () {
         Route::resource('upload-types', \App\Http\Controllers\Admin\UploadTypeController::class)
-            ->except(['destroy'])
             ->names('upload-types');
+        Route::post('position-document-requirements/{position}/sync', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'syncPosition'])
+            ->name('position-document-requirements.sync-position');
         Route::post('position-document-requirements/bulk', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'bulkUpdate'])
             ->name('position-document-requirements.bulk');
         Route::post('position-document-requirements/apply-defaults', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'applyDefaults'])
@@ -590,6 +601,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
     Route::middleware(['role:admin|super-admin'])->group(function () {
         Route::post('position-document-requirements/sync-seeder', [\App\Http\Controllers\Admin\PositionDocumentRequirementController::class, 'syncSeeder'])
             ->name('position-document-requirements.sync-seeder');
+        Route::post('training-items/sync-seeder', [\App\Http\Controllers\Admin\EmployeeTrainingItemController::class, 'syncSeeder'])
+            ->name('training-items.sync-seeder');
+        Route::post('departments/sync-seeder', [\App\Http\Controllers\Admin\DepartmentController::class, 'syncSeeder'])
+            ->name('departments.sync-seeder');
     });
 
     Route::middleware(['role:admin|super-admin'])->group(function () {
@@ -597,8 +612,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
             ->name('upload-types.sync-seeder');
         Route::post('upload-types/run-seeder', [\App\Http\Controllers\Admin\UploadTypeController::class, 'runSeeder'])
             ->name('upload-types.run-seeder');
-        Route::delete('upload-types/{upload_type}', [\App\Http\Controllers\Admin\UploadTypeController::class, 'destroy'])
-            ->name('upload-types.destroy');
         Route::post('checklist-items/sync-seeder', [\App\Http\Controllers\Admin\ChecklistItemController::class, 'syncSeeder'])
             ->name('checklist-items.sync-seeder');
     });
@@ -735,6 +748,10 @@ Route::prefix('admin/facilities/webcontents')->middleware(['auth', 'role:' . con
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::get('/dashboard/documents', [DashboardController::class, 'memberDocuments'])->name('member.documents');
+    Route::get('/dashboard/documents/team/{employee}/uploads/{upload}/view', [DashboardController::class, 'memberTeamDocumentView'])
+        ->name('member.documents.team.view');
+    Route::get('/dashboard/documents/team/{employee}/uploads/{upload}/download', [DashboardController::class, 'memberTeamDocumentDownload'])
+        ->name('member.documents.team.download');
     Route::get('/dashboard/tasks', [DashboardController::class, 'memberTasks'])->name('member.tasks');
     Route::get('/dashboard/messages', [DashboardController::class, 'memberMessages'])->name('member.messages');
     Route::get('/dashboard/certifications', [DashboardController::class, 'memberCertifications'])->name('member.certifications');
@@ -761,11 +778,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/help/support', [\App\Http\Controllers\MemberPortalHelpController::class, 'supportForm'])->name('member.help.support');
     Route::post('/dashboard/help/support', [\App\Http\Controllers\MemberPortalHelpController::class, 'storeSupport'])->name('member.help.support.store');
     Route::get('/dashboard/help/manuals', [\App\Http\Controllers\MemberPortalHelpController::class, 'manuals'])->name('member.help.manuals');
+    Route::get('/dashboard/help/manuals/hr-portal-user-manual', [\App\Http\Controllers\MemberPortalHelpController::class, 'userManual'])->name('member.help.user-manual');
+    Route::get('/dashboard/help/manuals/document/{document}', [\App\Http\Controllers\MemberPortalHelpController::class, 'portalDocumentPdf'])
+        ->whereIn('document', ['HR_PORTAL_USER_MANUAL.md', 'HR_PORTAL_WORKFLOWS.md', 'HR_PORTAL_BUSINESS_RULES.md', 'DEVELOPER_GUIDE.md', 'FEATURES.md'])
+        ->name('member.help.document');
     Route::get('/dashboard/help/{helpRequest}', [\App\Http\Controllers\MemberPortalHelpController::class, 'show'])->name('member.help.show');
     Route::get('/dashboard/help/{helpRequest}/confirmation', [\App\Http\Controllers\MemberPortalHelpController::class, 'confirmation'])->name('member.help.confirmation');
     Route::get('/dashboard/news-events', [DashboardController::class, 'memberNewsEvents'])->name('member.news-events.index');
     Route::get('/dashboard/galleries', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'index'])->name('member.galleries.index');
     Route::get('/dashboard/galleries/create', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'create'])->name('member.galleries.create');
+    Route::post('/dashboard/galleries/sync-seeder', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'syncSeeder'])->name('member.galleries.sync-seeder');
     Route::post('/dashboard/galleries', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'store'])->name('member.galleries.store');
     Route::get('/dashboard/galleries/{gallery}', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'show'])->name('member.galleries.show');
     Route::get('/dashboard/galleries/{gallery}/edit', [\App\Http\Controllers\MemberFacilityGalleryController::class, 'edit'])->name('member.galleries.edit');

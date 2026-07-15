@@ -3,7 +3,10 @@ namespace App\Http\Controllers\Admin\Facilities;
 
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
+use App\Services\ExcelWorkbookParser;
 use App\Services\ImportMappingPresetSeederExporter;
+use App\Services\ImportMappingPresetValidator;
+use App\Services\ImportPresetImportRunner;
 use App\Support\ImportMappingPresetAccess;
 use Illuminate\Http\Request;
 use App\Models\ImportMappingPreset;
@@ -33,6 +36,48 @@ class ImportMappingPresetController extends Controller
         }
 
         return $query->findOrFail($id);
+    }
+
+    protected function findUsablePreset(int $id, int $targetFacilityId): ImportMappingPreset
+    {
+        $globalId = $this->globalFacilityId();
+        $user = Auth::user();
+
+        $query = ImportMappingPreset::query()
+            ->whereKey($id)
+            ->where(function ($preset) use ($globalId, $targetFacilityId) {
+                $preset->where('facility_id', $globalId)
+                    ->orWhere('facility_id', $targetFacilityId);
+            });
+
+        if (! $user?->hasRole(['admin', 'super-admin', 'rdhr'])) {
+            $query->where(function ($preset) use ($globalId) {
+                $preset->where('facility_id', $globalId)
+                    ->orWhere('user_id', Auth::id());
+            });
+        }
+
+        return $query->firstOrFail();
+    }
+
+    protected function authorizeTargetFacility(int $targetFacilityId): Facility
+    {
+        $facility = Facility::query()->findOrFail($targetFacilityId);
+        $user = Auth::user();
+
+        if ($user?->hasRole(['admin', 'super-admin', 'rdhr'])) {
+            return $facility;
+        }
+
+        $userFacilityId = (int) ($user?->facility_id ?? 0);
+        if ($userFacilityId <= 0) {
+            $userFacilityId = (int) ($user?->resolvedBpEmployee(['currentAssignment'])
+                ?->currentAssignment?->facility_id ?? 0);
+        }
+
+        abort_unless($userFacilityId > 0 && $userFacilityId === $targetFacilityId, 403);
+
+        return $facility;
     }
 
     protected function denyPresetCreation()
@@ -127,6 +172,83 @@ class ImportMappingPresetController extends Controller
         $presets = $query->orderBy('name')->get();
 
         return response()->json(['presets' => $presets]);
+    }
+
+    public function parseWorkbook(Request $request, ExcelWorkbookParser $parser)
+    {
+        abort_unless(ImportMappingPresetAccess::canUse(), 403);
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+        ]);
+
+        try {
+            return response()->json($parser->parseUploadedFile($request->file('file')));
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to read workbook: '.$exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function validatePreset(
+        Request $request,
+        int $id,
+        ExcelWorkbookParser $parser,
+        ImportMappingPresetValidator $validator,
+    ) {
+        abort_unless(ImportMappingPresetAccess::canUse(), 403);
+
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+            'facility_id' => 'required|integer',
+        ]);
+
+        $targetFacilityId = (int) $validated['facility_id'];
+        $this->authorizeTargetFacility($targetFacilityId);
+        $preset = $this->findUsablePreset($id, $targetFacilityId);
+
+        try {
+            $parsed = $parser->parseUploadedFile($request->file('file'));
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'valid' => false,
+                'error' => 'Failed to read workbook',
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        return response()->json(
+            $validator->validate($parsed['worksheets'] ?? [], $preset->mappings ?? [])
+        );
+    }
+
+    public function runImport(
+        Request $request,
+        int $id,
+        ImportPresetImportRunner $runner,
+    ) {
+        abort_unless(ImportMappingPresetAccess::canUse(), 403);
+
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+            'facility_id' => 'required|integer',
+            'confirm_overwrite' => 'sometimes|boolean',
+            'primary_worksheet' => 'nullable|string|max:255',
+        ]);
+
+        $targetFacilityId = (int) $validated['facility_id'];
+        $this->authorizeTargetFacility($targetFacilityId);
+        $preset = $this->findUsablePreset($id, $targetFacilityId);
+
+        return $runner->run(
+            $preset,
+            $request->file('file'),
+            $targetFacilityId,
+            $request->boolean('confirm_overwrite'),
+            $validated['primary_worksheet'] ?? null,
+        );
     }
 
     public function update(Request $request, $id)

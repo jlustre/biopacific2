@@ -7,6 +7,7 @@ use App\Models\Facility;
 use App\Models\Gallery;
 use App\Models\GalleryImage;
 use App\Services\FacilityGalleryService;
+use App\Services\GallerySeederExporter;
 use App\Support\ContentVisibility;
 use App\Support\MemberPortalLayout;
 use App\Support\SelectedFacility;
@@ -21,7 +22,8 @@ class MemberFacilityGalleryController extends Controller
     use ProvidesMemberPortalContext;
 
     public function __construct(
-        protected FacilityGalleryService $galleries
+        protected FacilityGalleryService $galleries,
+        protected GallerySeederExporter $seederExporter
     ) {}
 
     public function index(Request $request)
@@ -62,6 +64,7 @@ class MemberFacilityGalleryController extends Controller
                 'year' => $yearFilter,
             ],
             'canManage' => $canManage,
+            'canUpdateSeeder' => MemberPortalLayout::userIsSystemAdmin($user),
             'portalActive' => 'facility-galleries',
             'portalTitle' => 'Photo Galleries | Bio Pacific',
             'portalEyebrow' => 'Facility',
@@ -202,6 +205,28 @@ class MemberFacilityGalleryController extends Controller
         return redirect()
             ->route('member.galleries.index')
             ->with('success', 'Gallery deleted.');
+    }
+
+    public function syncSeeder()
+    {
+        abort_unless(MemberPortalLayout::userIsSystemAdmin(Auth::user()), 403);
+
+        try {
+            $result = $this->seederExporter->writeSeederFiles();
+
+            return redirect()
+                ->route('member.galleries.index')
+                ->with(
+                    'success',
+                    "Gallery seeder updated with {$result['galleries']} galleries and {$result['photos']} photos."
+                );
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('member.galleries.index')
+                ->with('error', 'The gallery seeder could not be updated: '.$exception->getMessage());
+        }
     }
 
     public function storeImages(Request $request, Gallery $gallery)

@@ -516,7 +516,7 @@ class QuickActionsController extends Controller
         })->orderedByName()->get();
         $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
 
-        $query = \App\Models\Upload::with(['facility','user','uploadType']);
+        $query = \App\Models\Upload::with(['facility','user','uploadType'])->current();
         if ($request->facility_id) $query->where('facility_id', $request->facility_id);
         if ($request->search) $query->where('original_filename', 'like', '%'.$request->search.'%');
         $uploads = $query->latest()->paginate(15);
@@ -526,7 +526,17 @@ class QuickActionsController extends Controller
             $editUpload = \App\Models\Upload::find($request->input('edit'));
         }
 
-        return view('admin.facilities.documents', compact('facility', 'employees', 'uploadTypes', 'uploads', 'editUpload'));
+        $teamDocumentHistory = app(\App\Services\MemberDashboardService::class)
+            ->buildTeamDocumentHistory(Auth::user(), $request, $facility);
+
+        return view('admin.facilities.documents', compact(
+            'facility',
+            'employees',
+            'uploadTypes',
+            'uploads',
+            'editUpload',
+            'teamDocumentHistory'
+        ));
     }
 
     public function reports(Facility $facility)

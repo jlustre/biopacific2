@@ -61,7 +61,7 @@
         @if(\App\Support\MemberPortalLayout::userCanAccessDocumentsManagement($authUser))
         <a href="{{ route('admin.upload-types.index') }}"
            class="member-portal-nav-link block rounded-lg px-3 py-2 text-sm {{ $subLinkClass(['admin.upload-types.*', 'admin.checklist-items.*']) }}">
-            Documents Management
+            Documents Settings
         </a>
         @endif
 
