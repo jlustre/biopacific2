@@ -832,7 +832,9 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('[name=_token]').value
+                    'X-CSRF-TOKEN': document.querySelector('[name=_token]').value,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({
                     mappings,
@@ -853,7 +855,7 @@
                 result = await res.json();
             } else {
                 const text = await res.text();
-                alert('Import failed: Server returned invalid response.');
+                alert(importHttpErrorMessage(res, text));
                 console.error('Non-JSON response:', text);
                 return;
             }
@@ -995,6 +997,18 @@
     async function confirmDuplicateOverwrite() {
         hideDuplicateModal();
         if (window._pendingImport) {
+            if (window._pendingImport.mode === 'preset-file') {
+                const pending = window._pendingImport;
+                window._pendingImport = null;
+                await runPresetFileImport(
+                    pending.presetId,
+                    pending.file,
+                    pending.facilityId,
+                    true
+                );
+                return;
+            }
+
             const worksheets = Object.keys(window._excelWorksheetData || {}).map(name => ({
                 name,
                 data: window._excelWorksheetData[name]
@@ -1038,6 +1052,96 @@
         if (!msgDiv) return;
         msgDiv.classList.add('hidden');
         msgDiv.textContent = '';
+    }
+
+    function importHttpErrorMessage(response, responseText = '') {
+        const status = Number(response?.status || 0);
+        const text = String(responseText || '').toLowerCase();
+
+        if (status === 413 || text.includes('request entity too large') || text.includes('content too large')) {
+            return 'Import failed because the production server rejected the file as too large (HTTP 413). Increase the web server and PHP request limits, then try again.';
+        }
+        if (status === 419) {
+            return 'Your portal session expired before the import completed (HTTP 419). Refresh the page, sign in again if prompted, and retry.';
+        }
+        if (status === 502 || status === 504) {
+            return `The production server timed out while processing the import (HTTP ${status}). Check the proxy/PHP timeout and the Laravel log.`;
+        }
+        if (status >= 500) {
+            return `The production server encountered an error while importing (HTTP ${status}). Check storage/logs/laravel.log for the exception at this time.`;
+        }
+        if (status === 403) {
+            return 'Your account is not authorized to run this import (HTTP 403).';
+        }
+
+        return `Import failed because the server returned an unexpected response${status ? ` (HTTP ${status})` : ''}. Check the browser Network response and the Laravel log.`;
+    }
+
+    async function runPresetFileImport(presetId, file, facilityId, confirmOverwrite = false) {
+        const form = document.getElementById('excelUploadForm');
+        const csrf = form?.querySelector('[name=_token]')?.value;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('facility_id', String(facilityId));
+        formData.append('confirm_overwrite', confirmOverwrite ? '1' : '0');
+
+        window.showImportDataLoader?.('Importing employee data…');
+        try {
+            const response = await fetch(
+                `/admin/facility/files/mapping-presets/${encodeURIComponent(presetId)}/run-import`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                }
+            );
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const responseText = await response.text();
+                console.error('Non-JSON import response:', {
+                    status: response.status,
+                    responseText,
+                });
+                showImportPresetMessage('error', importHttpErrorMessage(response, responseText));
+                return;
+            }
+
+            const result = await response.json();
+            if (response.status === 409 && Array.isArray(result.duplicates)) {
+                window._pendingImport = {
+                    mode: 'preset-file',
+                    presetId,
+                    file,
+                    facilityId,
+                };
+                showDuplicateModal(result.duplicates);
+                return;
+            }
+
+            if (!response.ok || !result.success) {
+                showImportPresetMessage(
+                    'error',
+                    result.message || result.error || `Import failed (HTTP ${response.status}).`
+                );
+                return;
+            }
+
+            showImportPresetMessage('success', result.message || 'Employee records imported successfully.');
+            showImportSuccessModal();
+            window._pendingImport = null;
+        } catch (error) {
+            showImportPresetMessage(
+                'error',
+                'Import request failed: ' + (error?.message || 'Unable to contact the server.')
+            );
+        } finally {
+            window.hideImportDataLoader?.();
+        }
     }
 
     function toggleImportPresetBtn() {
@@ -1093,78 +1197,12 @@
             btn.textContent = 'Importing…';
         }
 
-        window.showImportDataLoader?.('Reading file and importing…');
         try {
-            const parseData = new FormData();
-            parseData.append('file', file);
-            parseData.append('_token', form.querySelector('[name=_token]').value);
-            parseData.append('facility_id', form.querySelector('[name=facility_id]').value);
-
-            const parseRes = await fetch(form.action, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value },
-                body: parseData,
-            });
-            const parsed = await parseRes.json();
-            if (!parseRes.ok || !parsed.worksheets) {
-                showImportPresetMessage('error', parsed.error || 'Failed to read the Excel file.');
-                return;
-            }
-
             const facilityId = form.querySelector('[name=facility_id]').value;
-            const presetsRes = await fetch(`/admin/facility/files/mapping-presets?facility_id=${facilityId}`);
-            const presetsPayload = await presetsRes.json();
-            const preset = (presetsPayload.presets || []).find(p => String(p.id) === String(presetId));
-
-            if (!preset) {
-                showImportPresetMessage('error', 'The selected preset could not be found. Refresh the page and try again.');
-                return;
-            }
-
-            if (!Array.isArray(preset.mappings) || !preset.mappings.length) {
-                showImportPresetMessage(
-                    'warning',
-                    window.canCreateMappingPreset
-                        ? 'This preset has no column mappings. Click "Create Preset" to upload your file and save a mapping.'
-                        : 'This preset has no column mappings. Please contact a Super Administrator to configure this preset.'
-                );
-                return;
-            }
-
-            window._lastImportPresetFacilityId = preset.facility_id || null;
-
-            window._excelWorksheets = parsed.worksheets.reduce((acc, ws) => {
-                acc[ws.name] = ws.columns;
-                return acc;
-            }, {});
-            window._excelWorksheetData = parsed.worksheets.reduce((acc, ws) => {
-                acc[ws.name] = ws.data;
-                return acc;
-            }, {});
-
-            const worksheets = parsed.worksheets.map(ws => ({ name: ws.name, data: ws.data }));
-            let primaryWs = preset.mappings[0].worksheet;
-            let dataRows = window._excelWorksheetData[primaryWs];
-
-            if (!Array.isArray(dataRows) || !dataRows.length) {
-                const fallback = parsed.worksheets.find(ws => Array.isArray(ws.data) && ws.data.length);
-                if (fallback) {
-                    primaryWs = fallback.name;
-                    dataRows = fallback.data;
-                }
-            }
-
-            if (!Array.isArray(dataRows) || !dataRows.length) {
-                showImportPresetMessage('error', 'No data rows were found in the Excel file for this preset.');
-                return;
-            }
-
-            await doImportMapping(preset.mappings, dataRows, false, worksheets);
-            clearImportPresetMessage();
+            await runPresetFileImport(presetId, file, facilityId, false);
         } catch (err) {
             showImportPresetMessage('error', 'Import failed: ' + (err?.message || 'Unknown error'));
         } finally {
-            window.hideImportDataLoader?.();
             if (btn) {
                 btn.textContent = prevLabel;
                 toggleImportPresetBtn();
