@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Http\Controllers\Admin\Facilities\FilesController;
+use App\Models\BPEmployee;
+use App\Models\ImportLog;
 use App\Models\ImportMappingPreset;
 use App\Support\ImportMappingPresetAccess;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +24,7 @@ class ImportPresetImportRunner
         int $importFacilityId,
         bool $confirmOverwrite = false,
         ?string $primaryWorksheet = null,
+        ?int $importLogId = null,
     ): JsonResponse {
         if (!ImportMappingPresetAccess::canUse()) {
             return response()->json([
@@ -77,6 +80,38 @@ class ImportPresetImportRunner
             }
         }
 
+        if ($importLogId) {
+            $log = ImportLog::query()->findOrFail($importLogId);
+            $log->update(['total_rows' => count($dataRows)]);
+
+            if ($log->cancel_requested_at) {
+                return response()->json([
+                    'success' => false,
+                    'cancelled' => true,
+                    'message' => 'Import cancelled before processing began.',
+                ], 409);
+            }
+
+            if (! $confirmOverwrite) {
+                $duplicates = $this->duplicateEmployeeNumbers($mappings, $dataRows);
+                if ($duplicates !== []) {
+                    $log->update([
+                        'status' => ImportLog::STATUS_AWAITING_CONFIRMATION,
+                        'summary' => array_merge($log->summary ?? [], [
+                            'duplicates' => $duplicates,
+                            'duplicates_found' => count($duplicates),
+                        ]),
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'duplicates' => $duplicates,
+                        'message' => 'Duplicate employee IDs found. Confirm overwrite?',
+                    ], 409);
+                }
+            }
+        }
+
         if (!is_array($dataRows) || count($dataRows) === 0) {
             $expected = $mappings[0]['worksheet'] ?? 'the mapped worksheet';
             return response()->json([
@@ -107,6 +142,7 @@ class ImportPresetImportRunner
                 'worksheets' => $worksheetPayload,
                 'confirm_overwrite' => $confirmOverwrite,
                 'import_log' => [
+                    'import_log_id' => $importLogId,
                     'preset_id' => $preset->id,
                     'preset_facility_id' => (int) $preset->facility_id,
                     'source' => 'admin_preset',
@@ -117,5 +153,46 @@ class ImportPresetImportRunner
         $importRequest->headers->set('Accept', 'application/json');
 
         return $this->filesController->importData($importRequest, $importFacilityId);
+    }
+
+    private function duplicateEmployeeNumbers(array $mappings, array $dataRows): array
+    {
+        $employeeNumberMapping = collect($mappings)->first(
+            fn (array $mapping) => ($mapping['table'] ?? null) === 'bp_employees'
+                && ($mapping['table_column'] ?? null) === 'employee_num'
+        );
+        $sourceColumn = $employeeNumberMapping['worksheet_column'] ?? null;
+
+        if (! $sourceColumn) {
+            return [];
+        }
+
+        $numbers = collect($dataRows)
+            ->map(function (array $row) use ($sourceColumn) {
+                if (array_key_exists($sourceColumn, $row)) {
+                    return trim((string) $row[$sourceColumn]);
+                }
+
+                $matchedKey = collect(array_keys($row))->first(
+                    fn ($key) => strcasecmp(trim((string) $key), trim((string) $sourceColumn)) === 0
+                );
+
+                return $matchedKey !== null ? trim((string) $row[$matchedKey]) : '';
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($numbers->isEmpty()) {
+            return [];
+        }
+
+        return BPEmployee::query()
+            ->whereIn('employee_num', $numbers->all())
+            ->pluck('employee_num')
+            ->map(fn ($number) => (string) $number)
+            ->sort()
+            ->values()
+            ->all();
     }
 }

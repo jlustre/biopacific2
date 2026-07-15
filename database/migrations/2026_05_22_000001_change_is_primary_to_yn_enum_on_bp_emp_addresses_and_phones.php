@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -24,6 +25,23 @@ return new class extends Migration
             return;
         }
 
+        if (DB::getDriverName() === 'sqlite') {
+            Schema::table($table, function (Blueprint $blueprint) {
+                $blueprint->string('is_primary_yn', 1)->default('N');
+            });
+            DB::table($table)->update([
+                'is_primary_yn' => DB::raw("CASE WHEN is_primary IN (1, '1') THEN 'Y' ELSE 'N' END"),
+            ]);
+            Schema::table($table, function (Blueprint $blueprint) {
+                $blueprint->dropColumn('is_primary');
+            });
+            Schema::table($table, function (Blueprint $blueprint) {
+                $blueprint->renameColumn('is_primary_yn', 'is_primary');
+            });
+
+            return;
+        }
+
         DB::statement("ALTER TABLE `{$table}` ADD COLUMN `is_primary_yn` ENUM('Y','N') NOT NULL DEFAULT 'N' AFTER `is_primary`");
 
         DB::statement("UPDATE `{$table}` SET `is_primary_yn` = CASE WHEN `is_primary` IN (1, '1') THEN 'Y' ELSE 'N' END");
@@ -35,6 +53,23 @@ return new class extends Migration
     protected function revertIsPrimaryColumn(string $table): void
     {
         if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'is_primary')) {
+            return;
+        }
+
+        if (DB::getDriverName() === 'sqlite') {
+            Schema::table($table, function (Blueprint $blueprint) {
+                $blueprint->boolean('is_primary_bool')->default(false);
+            });
+            DB::table($table)->update([
+                'is_primary_bool' => DB::raw("CASE WHEN is_primary = 'Y' THEN 1 ELSE 0 END"),
+            ]);
+            Schema::table($table, function (Blueprint $blueprint) {
+                $blueprint->dropColumn('is_primary');
+            });
+            Schema::table($table, function (Blueprint $blueprint) {
+                $blueprint->renameColumn('is_primary_bool', 'is_primary');
+            });
+
             return;
         }
 

@@ -970,6 +970,38 @@ try {
 }
 ```
 
+## Employee Import Queue Worker
+
+Employee imports run on the dedicated `imports` queue so the portal can report per-employee progress and honor cancellation requests. Production must keep a queue worker running continuously.
+
+Example Supervisor command:
+
+```ini
+command=php /var/www/biopacific/artisan queue:work database --queue=imports,default --sleep=1 --tries=1 --timeout=1800
+directory=/var/www/biopacific
+autostart=true
+autorestart=true
+stopwaitsecs=1830
+redirect_stderr=true
+stdout_logfile=/var/www/biopacific/storage/logs/queue-worker.log
+```
+
+After each deployment:
+
+```bash
+php artisan migrate --force
+php artisan queue:restart
+```
+
+Verify the worker by starting a small employee import and confirming that the progress counter advances. Monitor failed jobs and the queue log:
+
+```bash
+php artisan queue:failed
+tail -f storage/logs/queue-worker.log
+```
+
+Do not run the `imports` queue with more than one retry unless the import job's idempotency and audit-log behavior have been reviewed. A hard timeout should exceed the job's 1800-second timeout.
+
 ## Final Verification Checklist
 
 - [ ] All facility domains resolve correctly
@@ -985,6 +1017,7 @@ try {
 - [ ] Performance is optimized (caching, compression)
 - [ ] Security headers are configured
 - [ ] Backups are configured and tested
+- [ ] The `imports` queue worker is running and progress polling works
 
 ## Support & Maintenance
 

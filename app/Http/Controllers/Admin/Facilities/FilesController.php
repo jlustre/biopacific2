@@ -1571,6 +1571,7 @@ class FilesController extends Controller
         $preferredAssignmentWorksheets = $this->preferredAssignmentWorksheetsFromMappings($mappings);
 
         $this->importLogRecorder->begin($request, $routeFacilityId);
+        $this->importLogRecorder->setTotalRows(count($dataRows));
 
         $duplicates = [];
         $imported = [];
@@ -1596,7 +1597,18 @@ class FilesController extends Controller
         }
 
         foreach ($dataRows as $idx => $row) {
+            if ($this->importLogRecorder->cancellationRequested()) {
+                break;
+            }
+
             if ($this->isBlankImportRow($row)) {
+                $importResults[] = [
+                    'row' => $idx + 2,
+                    'employee_num' => null,
+                    'action' => 'skipped',
+                    'reason' => 'Blank row skipped',
+                ];
+                $this->importLogRecorder->recordProgress('skipped');
                 continue;
             }
 
@@ -1727,6 +1739,7 @@ class FilesController extends Controller
                     'action' => 'skipped',
                     'reason' => 'Missing or empty employee_num — row skipped',
                 ];
+                $this->importLogRecorder->recordProgress('skipped');
                 continue;
             }
             $employeeData['employee_num'] = $empNum;
@@ -1751,11 +1764,19 @@ class FilesController extends Controller
                         'action' => 'skipped',
                         'reason' => 'Invalid gender value: ' . $gender
                     ];
+                    $this->importLogRecorder->recordProgress('skipped');
                     continue;
                 }
             }
             if (!empty($rowFailures)) {
                 $detailedFailures[] = $rowFailures;
+                $importResults[] = [
+                    'row' => $idx + 2,
+                    'employee_num' => $employeeData['employee_num'] ?? null,
+                    'action' => 'error',
+                    'reason' => collect($rowFailures)->pluck('reason')->filter()->implode('; '),
+                ];
+                $this->importLogRecorder->recordProgress('error');
                 continue;
             }
 
@@ -1929,6 +1950,7 @@ class FilesController extends Controller
                     'has_assignment' => $existingAssignment,
                     'lookup_debug' => $lookupDebug,
                 ];
+                $this->importLogRecorder->recordProgress($existing ? 'updated' : 'inserted');
             } catch (\Throwable $e) {
                 $rowFailures[] = [
                     'row' => $idx + 2,
@@ -1943,6 +1965,7 @@ class FilesController extends Controller
                     'action' => 'error',
                     'reason' => 'DB error: ' . $e->getMessage(),
                 ];
+                $this->importLogRecorder->recordProgress('error');
             }
         }
 

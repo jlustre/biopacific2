@@ -14,6 +14,10 @@ return new class extends Migration
 
         DB::statement('UPDATE `bp_emp_addresses` SET `address_type` = UPPER(`address_type`)');
 
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement("ALTER TABLE `bp_emp_addresses` MODIFY `address_type` ENUM('H','W','O','M') NOT NULL DEFAULT 'H'");
     }
 
@@ -26,6 +30,10 @@ return new class extends Migration
         DB::table('bp_emp_addresses')
             ->where('address_type', 'M')
             ->update(['address_type' => 'H']);
+
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
 
         DB::statement("ALTER TABLE `bp_emp_addresses` MODIFY `address_type` ENUM('H','W','O') NOT NULL DEFAULT 'H'");
     }

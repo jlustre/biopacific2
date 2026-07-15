@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ImportLog extends Model
 {
+    public const STATUS_QUEUED = 'queued';
     public const STATUS_RUNNING = 'running';
+    public const STATUS_AWAITING_CONFIRMATION = 'awaiting_confirmation';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_PARTIAL = 'partial';
     public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REVERTED = 'reverted';
 
     protected $fillable = [
@@ -20,12 +23,20 @@ class ImportLog extends Model
         'import_mapping_preset_id',
         'source',
         'source_filename',
+        'import_file_path',
         'status',
+        'total_rows',
+        'processed_rows',
+        'imported_rows',
+        'skipped_rows',
+        'failed_rows',
         'tables_affected',
         'summary',
         'error_message',
         'started_at',
         'completed_at',
+        'cancel_requested_at',
+        'cancelled_at',
         'can_revert',
         'reverted_at',
         'reverted_by',
@@ -36,6 +47,8 @@ class ImportLog extends Model
         'summary' => 'array',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'cancel_requested_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'can_revert' => 'boolean',
         'reverted_at' => 'datetime',
     ];
@@ -76,7 +89,7 @@ class ImportLog extends Model
             return false;
         }
 
-        if (!in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_PARTIAL], true)) {
+        if (!in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_PARTIAL, self::STATUS_CANCELLED], true)) {
             return false;
         }
 
@@ -88,9 +101,12 @@ class ImportLog extends Model
     public function statusLabel(): string
     {
         return match ($this->status) {
+            self::STATUS_QUEUED => 'Queued',
+            self::STATUS_AWAITING_CONFIRMATION => 'Awaiting confirmation',
             self::STATUS_COMPLETED => 'Completed',
             self::STATUS_PARTIAL => 'Partial',
             self::STATUS_FAILED => 'Failed',
+            self::STATUS_CANCELLED => 'Cancelled',
             self::STATUS_REVERTED => 'Reverted',
             self::STATUS_RUNNING => 'Running',
             default => ucfirst($this->status),

@@ -997,6 +997,26 @@
     async function confirmDuplicateOverwrite() {
         hideDuplicateModal();
         if (window._pendingImport) {
+            if (window._pendingImport.mode === 'queued-preset') {
+                const pending = window._pendingImport;
+                window._pendingImport = null;
+                const response = await fetch(pending.confirmUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('[name=_token]')?.value || '',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                const payload = await response.json();
+                if (!response.ok || !payload.import) {
+                    showImportPresetMessage('error', payload.message || 'Could not resume the import.');
+                    return;
+                }
+                monitorPresetImport(payload.import);
+                return;
+            }
+
             if (window._pendingImport.mode === 'preset-file') {
                 const pending = window._pendingImport;
                 window._pendingImport = null;
@@ -1077,6 +1097,39 @@
         return `Import failed because the server returned an unexpected response${status ? ` (HTTP ${status})` : ''}. Check the browser Network response and the Laravel log.`;
     }
 
+    function monitorPresetImport(importInfo) {
+        window.monitorEmployeeImport?.(importInfo, {
+            onAwaitingConfirmation(progress) {
+                window._pendingImport = {
+                    mode: 'queued-preset',
+                    confirmUrl: progress.confirm_url,
+                };
+                showDuplicateModal(progress.duplicates || []);
+            },
+            onComplete(progress) {
+                if (progress.status === 'cancelled') {
+                    showImportPresetMessage(
+                        'warning',
+                        `Import cancelled. ${progress.imported} employee record(s) were retained.`
+                    );
+                    return;
+                }
+                if (progress.status === 'completed' || progress.status === 'partial') {
+                    showImportPresetMessage(
+                        progress.status === 'partial' ? 'warning' : 'success',
+                        `Import complete: ${progress.imported} imported, ${progress.skipped} skipped, ${progress.failed} failed.`
+                    );
+                    showImportSuccessModal();
+                    return;
+                }
+                showImportPresetMessage('error', progress.message || 'The employee import failed.');
+            },
+            onError(error) {
+                showImportPresetMessage('error', 'Could not read import progress: ' + (error?.message || 'Unknown error'));
+            },
+        });
+    }
+
     async function runPresetFileImport(presetId, file, facilityId, confirmOverwrite = false) {
         const form = document.getElementById('excelUploadForm');
         const csrf = form?.querySelector('[name=_token]')?.value;
@@ -1085,7 +1138,8 @@
         formData.append('facility_id', String(facilityId));
         formData.append('confirm_overwrite', confirmOverwrite ? '1' : '0');
 
-        window.showImportDataLoader?.('Importing employee data…');
+        let monitoringStarted = false;
+        window.showImportDataLoader?.('Uploading employee workbook…');
         try {
             const response = await fetch(
                 `/admin/facility/files/mapping-presets/${encodeURIComponent(presetId)}/run-import`,
@@ -1112,6 +1166,11 @@
             }
 
             const result = await response.json();
+            if (response.status === 202 && result.import) {
+                monitoringStarted = true;
+                monitorPresetImport(result.import);
+                return;
+            }
             if (response.status === 409 && Array.isArray(result.duplicates)) {
                 window._pendingImport = {
                     mode: 'preset-file',
@@ -1140,7 +1199,9 @@
                 'Import request failed: ' + (error?.message || 'Unable to contact the server.')
             );
         } finally {
-            window.hideImportDataLoader?.();
+            if (!monitoringStarted) {
+                window.hideImportDataLoader?.();
+            }
         }
     }
 

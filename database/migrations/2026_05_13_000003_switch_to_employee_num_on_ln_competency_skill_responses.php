@@ -8,6 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('ln_competency_skill_responses', function (Blueprint $table) {
+            $table->dropIndex(['user_id']);
+        });
+        Schema::table('ln_competency_skill_responses', function (Blueprint $table) {
             $table->dropColumn('user_id');
             $table->string('employee_num')->index()->after('id');
         });
@@ -15,6 +18,9 @@ return new class extends Migration {
 
     public function down(): void
     {
+        Schema::table('ln_competency_skill_responses', function (Blueprint $table) {
+            $table->dropIndex(['employee_num']);
+        });
         Schema::table('ln_competency_skill_responses', function (Blueprint $table) {
             $table->dropColumn('employee_num');
             $table->unsignedBigInteger('user_id')->index()->after('id');

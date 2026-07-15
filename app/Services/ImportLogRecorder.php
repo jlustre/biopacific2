@@ -29,6 +29,17 @@ class ImportLogRecorder
             $meta = [];
         }
 
+        $existingId = isset($meta['import_log_id']) ? (int) $meta['import_log_id'] : 0;
+        if ($existingId > 0) {
+            $this->log = ImportLog::query()->findOrFail($existingId);
+            $this->log->update([
+                'status' => ImportLog::STATUS_RUNNING,
+                'started_at' => $this->log->started_at ?? now(),
+            ]);
+
+            return $this->log;
+        }
+
         $this->log = ImportLog::create([
             'user_id' => Auth::id() ?? 1,
             'facility_id' => $facilityId,
@@ -40,6 +51,39 @@ class ImportLogRecorder
         ]);
 
         return $this->log;
+    }
+
+    public function setTotalRows(int $total): void
+    {
+        $this->log?->update(['total_rows' => max(0, $total)]);
+    }
+
+    public function cancellationRequested(): bool
+    {
+        if (! $this->log) {
+            return false;
+        }
+
+        $this->log->refresh();
+
+        return $this->log->cancel_requested_at !== null;
+    }
+
+    public function recordProgress(string $action): void
+    {
+        if (! $this->log) {
+            return;
+        }
+
+        $column = match ($action) {
+            'inserted', 'updated' => 'imported_rows',
+            'skipped' => 'skipped_rows',
+            default => 'failed_rows',
+        };
+
+        ImportLog::query()->whereKey($this->log->id)->increment('processed_rows');
+        ImportLog::query()->whereKey($this->log->id)->increment($column);
+        $this->log->refresh();
     }
 
     /**
@@ -125,10 +169,14 @@ class ImportLogRecorder
             ->values()
             ->all();
 
+        $cancelled = $this->log->fresh()->cancel_requested_at !== null;
         $status = ImportLog::STATUS_FAILED;
         $errorMessage = $payload['message'] ?? $payload['error'] ?? null;
 
-        if ($success) {
+        if ($cancelled) {
+            $status = ImportLog::STATUS_CANCELLED;
+            $errorMessage = 'Import cancelled by the user. Completed employee records were retained.';
+        } elseif ($success) {
             $status = ($errors > 0 || !empty($failures)) ? ImportLog::STATUS_PARTIAL : ImportLog::STATUS_COMPLETED;
         } elseif ($httpStatus === 409 && !empty($duplicates)) {
             $status = $hasChanges ? ImportLog::STATUS_PARTIAL : ImportLog::STATUS_FAILED;
@@ -137,12 +185,24 @@ class ImportLogRecorder
             $status = ImportLog::STATUS_PARTIAL;
         }
 
-        $canRevert = $hasChanges && in_array($status, [ImportLog::STATUS_COMPLETED, ImportLog::STATUS_PARTIAL], true);
+        $canRevert = $hasChanges && in_array($status, [
+            ImportLog::STATUS_COMPLETED,
+            ImportLog::STATUS_PARTIAL,
+            ImportLog::STATUS_CANCELLED,
+        ], true);
+
+        $progressSummary = [
+            'rows_processed' => (int) $this->log->processed_rows,
+            'rows_imported' => (int) $this->log->imported_rows,
+            'rows_skipped' => (int) $this->log->skipped_rows,
+            'rows_failed' => (int) $this->log->failed_rows,
+            'rows_total' => (int) $this->log->total_rows,
+        ];
 
         $this->log->update([
             'status' => $status,
             'tables_affected' => $tablesAffected,
-            'summary' => [
+            'summary' => array_merge([
                 'http_status' => $httpStatus,
                 'rows_inserted' => $inserted,
                 'rows_updated' => $updated,
@@ -151,9 +211,10 @@ class ImportLogRecorder
                 'rows_total' => count($importResults),
                 'changes_recorded' => $this->log->changes()->count(),
                 'duplicates_found' => count($duplicates),
-            ],
+            ], $progressSummary),
             'error_message' => $errorMessage,
             'completed_at' => now(),
+            'cancelled_at' => $cancelled ? now() : null,
             'can_revert' => $canRevert,
         ]);
 

@@ -164,6 +164,12 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
         ->name('admin.facility.mapping-presets.validate');
     Route::post('mapping-presets/{id}/run-import', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'runImport'])
         ->name('admin.facility.mapping-presets.run-import');
+    Route::get('mapping-presets/imports/{importLog}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'importStatus'])
+        ->name('admin.facility.mapping-presets.import-status');
+    Route::post('mapping-presets/imports/{importLog}/cancel', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'cancelImport'])
+        ->name('admin.facility.mapping-presets.cancel-import');
+    Route::post('mapping-presets/imports/{importLog}/confirm-overwrite', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'confirmImportOverwrite'])
+        ->name('admin.facility.mapping-presets.confirm-import');
     Route::post('mapping-presets/{id}/duplicate', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'duplicate']);
     Route::put('mapping-presets/{id}/details', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'updateDetails']);
     Route::put('mapping-presets/{id}', [\App\Http\Controllers\Admin\Facilities\ImportMappingPresetController::class, 'update']);

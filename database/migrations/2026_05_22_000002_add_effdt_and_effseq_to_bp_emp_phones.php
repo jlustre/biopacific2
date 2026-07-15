@@ -30,7 +30,13 @@ return new class extends Migration
             ]);
 
         if (Schema::hasColumn('bp_emp_phones', 'effdt')) {
-            DB::statement('ALTER TABLE `bp_emp_phones` MODIFY `effdt` DATE NOT NULL');
+            if (DB::getDriverName() === 'sqlite') {
+                Schema::table('bp_emp_phones', function (Blueprint $table) {
+                    $table->date('effdt')->nullable(false)->change();
+                });
+            } else {
+                DB::statement('ALTER TABLE `bp_emp_phones` MODIFY `effdt` DATE NOT NULL');
+            }
         }
 
         if (!$this->indexExists('bp_emp_phones', 'idx_bp_emp_phone_hist')) {

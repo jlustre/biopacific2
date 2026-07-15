@@ -163,6 +163,7 @@
     let currentPreset = null;
     let parsedWorksheets = [];
     let pendingConfirmOverwrite = false;
+    let pendingAsyncImport = null;
 
     const els = {
         name: document.getElementById('presetImportName'),
@@ -241,6 +242,7 @@
         els.worksheetWrap.classList.add('hidden');
         parsedWorksheets = [];
         pendingConfirmOverwrite = false;
+        pendingAsyncImport = null;
         setValidateEnabled(false);
         if (els.overwrite) els.overwrite.checked = false;
     }
@@ -574,6 +576,49 @@
         setStatus('error', data.message || data.error || 'Import failed for an unknown reason.');
     }
 
+    function monitorQueuedImport(importInfo) {
+        window.monitorEmployeeImport?.(importInfo, {
+            onAwaitingConfirmation(progress) {
+                pendingAsyncImport = progress;
+                els.results.classList.remove('hidden');
+                els.summary.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900';
+                els.summary.innerHTML = '<strong>Import paused.</strong> Duplicate employee IDs require confirmation.';
+                els.duplicatePanel.classList.remove('hidden');
+                els.duplicateList.innerHTML = (progress.duplicates || []).map(id => `<li>${escapeHtml(id)}</li>`).join('');
+                setStatus('warning', 'Confirm overwrite to resume this queued import.');
+            },
+            onComplete(progress) {
+                pendingAsyncImport = null;
+                els.results.classList.remove('hidden');
+                els.submitBtn.disabled = false;
+                els.submitBtn.textContent = 'Run import';
+
+                if (progress.status === 'cancelled') {
+                    els.summary.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900';
+                    els.summary.innerHTML = `<strong>Import cancelled.</strong> ${progress.imported} completed employee record(s) were retained.`;
+                    setStatus('warning', 'Import cancelled.');
+                    return;
+                }
+                if (progress.status === 'completed' || progress.status === 'partial') {
+                    els.summary.className = progress.status === 'partial'
+                        ? 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900'
+                        : 'rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800';
+                    els.summary.innerHTML = `<strong>Import completed.</strong> ${progress.imported} imported, ${progress.skipped} skipped, ${progress.failed} failed.`;
+                    setStatus(progress.status === 'partial' ? 'warning' : 'success', 'Employee import finished.');
+                    return;
+                }
+                els.summary.className = 'rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800';
+                els.summary.innerHTML = '<strong>Import failed.</strong> ' + escapeHtml(progress.message || 'The queue job failed.');
+                setStatus('error', progress.message || 'The employee import failed.');
+            },
+            onError(error) {
+                els.submitBtn.disabled = false;
+                els.submitBtn.textContent = 'Run import';
+                setStatus('error', 'Could not read import progress: ' + (error?.message || 'Unknown error'));
+            },
+        });
+    }
+
     async function runImport(confirmOverwrite) {
         if (!validateBeforeRun()) return;
 
@@ -595,6 +640,7 @@
         els.submitBtn.textContent = 'Importing…';
         setStatus('info', 'Import in progress — this may take a moment for large files…');
         window.showImportDataLoader?.('Importing employee data…');
+        let monitoringStarted = false;
 
         try {
             const url = currentPreset.runImportUrl;
@@ -617,6 +663,13 @@
                 return;
             }
 
+            if (res.status === 202 && data.import) {
+                monitoringStarted = true;
+                setStatus('info', 'Import queued. Progress will update automatically.');
+                monitorQueuedImport(data.import);
+                return;
+            }
+
             renderImportResponse(res, data);
         } catch (err) {
             setStatus('error', 'Import request failed: ' + (err?.message || 'Network error'));
@@ -624,16 +677,37 @@
             els.summary.innerHTML = '<strong>Import failed.</strong> Could not reach the server.';
             els.results.classList.remove('hidden');
         } finally {
-            window.hideImportDataLoader?.();
-            els.submitBtn.disabled = false;
-            els.submitBtn.textContent = 'Run import';
+            if (!monitoringStarted) {
+                window.hideImportDataLoader?.();
+                els.submitBtn.disabled = false;
+                els.submitBtn.textContent = 'Run import';
+            }
         }
     }
 
     els.loadBtn?.addEventListener('click', parseFilePreview);
     els.validateBtn?.addEventListener('click', validateMappings);
     els.submitBtn?.addEventListener('click', () => runImport(els.overwrite?.checked || pendingConfirmOverwrite));
-    els.confirmOverwrite?.addEventListener('click', () => {
+    els.confirmOverwrite?.addEventListener('click', async () => {
+        if (pendingAsyncImport?.confirm_url) {
+            const response = await fetch(pendingAsyncImport.confirm_url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await response.json();
+            if (!response.ok || !payload.import) {
+                setStatus('error', payload.message || 'Could not resume the import.');
+                return;
+            }
+            els.duplicatePanel.classList.add('hidden');
+            pendingAsyncImport = null;
+            monitorQueuedImport(payload.import);
+            return;
+        }
         pendingConfirmOverwrite = true;
         if (els.overwrite) els.overwrite.checked = true;
         runImport(true);

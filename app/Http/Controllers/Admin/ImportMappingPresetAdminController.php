@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessEmployeeImport;
 use App\Models\Facility;
+use App\Models\ImportLog;
 use App\Models\ImportMappingPreset;
 use App\Models\User;
 use App\Services\ExcelWorkbookParser;
 use App\Services\ImportMappingPresetSeederExporter;
 use App\Services\ImportMappingPresetValidator;
-use App\Services\ImportPresetImportRunner;
 use App\Support\ImportMappingPresetAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ImportMappingPresetAdminController extends Controller
@@ -270,7 +272,7 @@ class ImportMappingPresetAdminController extends Controller
         ));
     }
 
-    public function runImport(Request $request, ImportMappingPreset $importMappingPreset, ImportPresetImportRunner $runner)
+    public function runImport(Request $request, ImportMappingPreset $importMappingPreset)
     {
         if (!ImportMappingPresetAccess::canUse()) {
             return response()->json([
@@ -308,13 +310,56 @@ class ImportMappingPresetAdminController extends Controller
             $importFacilityId = (int) $importMappingPreset->facility_id;
         }
 
-        return $runner->run(
-            $importMappingPreset,
-            $request->file('file'),
-            $importFacilityId,
-            $request->boolean('confirm_overwrite'),
-            $validated['primary_worksheet'] ?? null,
+        $file = $request->file('file');
+        $storedPath = $file->storeAs(
+            'employee-imports',
+            Str::uuid().'.'.strtolower($file->getClientOriginalExtension() ?: 'xlsx'),
+            'local'
         );
+        $log = ImportLog::query()->create([
+            'user_id' => Auth::id(),
+            'facility_id' => $importFacilityId,
+            'import_mapping_preset_id' => $importMappingPreset->id,
+            'source' => 'admin_preset',
+            'source_filename' => $file->getClientOriginalName(),
+            'import_file_path' => $storedPath,
+            'status' => ImportLog::STATUS_QUEUED,
+            'started_at' => now(),
+        ]);
+        ProcessEmployeeImport::dispatch($log->id, $request->boolean('confirm_overwrite'));
+        $log->refresh();
+
+        return response()->json([
+            'success' => true,
+            'queued' => true,
+            'message' => 'Employee import queued.',
+            'import' => [
+                'id' => $log->id,
+                'status' => $log->status,
+                'status_label' => $log->statusLabel(),
+                'total' => (int) $log->total_rows,
+                'processed' => (int) $log->processed_rows,
+                'imported' => (int) $log->imported_rows,
+                'skipped' => (int) $log->skipped_rows,
+                'failed' => (int) $log->failed_rows,
+                'percent' => $log->total_rows > 0
+                    ? min(100, (int) floor(($log->processed_rows / $log->total_rows) * 100))
+                    : 0,
+                'duplicates' => array_values(($log->summary ?? [])['duplicates'] ?? []),
+                'message' => $log->error_message,
+                'cancel_requested' => $log->cancel_requested_at !== null,
+                'terminal' => in_array($log->status, [
+                    ImportLog::STATUS_COMPLETED,
+                    ImportLog::STATUS_PARTIAL,
+                    ImportLog::STATUS_FAILED,
+                    ImportLog::STATUS_CANCELLED,
+                    ImportLog::STATUS_REVERTED,
+                ], true),
+                'status_url' => route('admin.facility.mapping-presets.import-status', $log),
+                'cancel_url' => route('admin.facility.mapping-presets.cancel-import', $log),
+                'confirm_url' => route('admin.facility.mapping-presets.confirm-import', $log),
+            ],
+        ], 202);
     }
 
     public function edit(ImportMappingPreset $importMappingPreset)

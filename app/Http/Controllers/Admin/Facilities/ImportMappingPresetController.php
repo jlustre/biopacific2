@@ -2,15 +2,18 @@
 namespace App\Http\Controllers\Admin\Facilities;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessEmployeeImport;
 use App\Models\Facility;
+use App\Models\ImportLog;
 use App\Services\ExcelWorkbookParser;
 use App\Services\ImportMappingPresetSeederExporter;
 use App\Services\ImportMappingPresetValidator;
-use App\Services\ImportPresetImportRunner;
 use App\Support\ImportMappingPresetAccess;
 use Illuminate\Http\Request;
 use App\Models\ImportMappingPreset;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ImportMappingPresetController extends Controller
 {
@@ -227,7 +230,6 @@ class ImportMappingPresetController extends Controller
     public function runImport(
         Request $request,
         int $id,
-        ImportPresetImportRunner $runner,
     ) {
         abort_unless(ImportMappingPresetAccess::canUse(), 403);
 
@@ -242,13 +244,140 @@ class ImportMappingPresetController extends Controller
         $this->authorizeTargetFacility($targetFacilityId);
         $preset = $this->findUsablePreset($id, $targetFacilityId);
 
-        return $runner->run(
-            $preset,
-            $request->file('file'),
-            $targetFacilityId,
-            $request->boolean('confirm_overwrite'),
-            $validated['primary_worksheet'] ?? null,
+        $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension() ?: 'xlsx');
+        $fileName = Str::uuid().'.'.$extension;
+        $storedPath = $file->storeAs('employee-imports', $fileName, 'local');
+
+        $log = ImportLog::query()->create([
+            'user_id' => Auth::id(),
+            'facility_id' => $targetFacilityId,
+            'import_mapping_preset_id' => $preset->id,
+            'source' => 'admin_preset',
+            'source_filename' => $file->getClientOriginalName(),
+            'import_file_path' => $storedPath,
+            'status' => ImportLog::STATUS_QUEUED,
+            'started_at' => now(),
+        ]);
+
+        ProcessEmployeeImport::dispatch(
+            $log->id,
+            $request->boolean('confirm_overwrite')
         );
+
+        return response()->json([
+            'success' => true,
+            'queued' => true,
+            'message' => 'Employee import queued.',
+            'import' => $this->importProgressPayload($log->fresh()),
+        ], 202);
+    }
+
+    public function importStatus(Request $request, ImportLog $importLog)
+    {
+        $this->authorizeImportLog($request, $importLog);
+
+        return response()->json([
+            'success' => true,
+            'import' => $this->importProgressPayload($importLog->fresh()),
+        ]);
+    }
+
+    public function cancelImport(Request $request, ImportLog $importLog)
+    {
+        $this->authorizeImportLog($request, $importLog);
+
+        if (in_array($importLog->status, [
+            ImportLog::STATUS_COMPLETED,
+            ImportLog::STATUS_PARTIAL,
+            ImportLog::STATUS_FAILED,
+            ImportLog::STATUS_CANCELLED,
+            ImportLog::STATUS_REVERTED,
+        ], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This import has already finished.',
+                'import' => $this->importProgressPayload($importLog),
+            ], 409);
+        }
+
+        $updates = ['cancel_requested_at' => now()];
+        if (in_array($importLog->status, [ImportLog::STATUS_QUEUED, ImportLog::STATUS_AWAITING_CONFIRMATION], true)) {
+            $updates += [
+                'status' => ImportLog::STATUS_CANCELLED,
+                'cancelled_at' => now(),
+                'completed_at' => now(),
+                'error_message' => 'Import cancelled by the user. Completed employee records were retained.',
+            ];
+        }
+        $importLog->update($updates);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cancellation requested. The current employee will finish first.',
+            'import' => $this->importProgressPayload($importLog->fresh()),
+        ], 202);
+    }
+
+    public function confirmImportOverwrite(Request $request, ImportLog $importLog)
+    {
+        $this->authorizeImportLog($request, $importLog);
+        abort_unless($importLog->status === ImportLog::STATUS_AWAITING_CONFIRMATION, 409);
+        abort_unless($importLog->import_file_path && Storage::disk('local')->exists($importLog->import_file_path), 410);
+
+        $importLog->update([
+            'status' => ImportLog::STATUS_QUEUED,
+            'cancel_requested_at' => null,
+            'cancelled_at' => null,
+            'completed_at' => null,
+            'error_message' => null,
+        ]);
+        ProcessEmployeeImport::dispatch($importLog->id, true);
+
+        return response()->json([
+            'success' => true,
+            'queued' => true,
+            'message' => 'Overwrite confirmed. Import resumed.',
+            'import' => $this->importProgressPayload($importLog->fresh()),
+        ], 202);
+    }
+
+    private function authorizeImportLog(Request $request, ImportLog $importLog): void
+    {
+        abort_unless((int) $importLog->user_id === (int) $request->user()->id, 403);
+        $this->authorizeTargetFacility((int) $importLog->facility_id);
+    }
+
+    private function importProgressPayload(ImportLog $log): array
+    {
+        $summary = $log->summary ?? [];
+        $total = (int) $log->total_rows;
+        $processed = (int) $log->processed_rows;
+
+        return [
+            'id' => $log->id,
+            'status' => $log->status,
+            'status_label' => $log->statusLabel(),
+            'total' => $total,
+            'processed' => $processed,
+            'imported' => (int) $log->imported_rows,
+            'skipped' => (int) $log->skipped_rows,
+            'failed' => (int) $log->failed_rows,
+            'percent' => $total > 0 ? min(100, (int) floor(($processed / $total) * 100)) : 0,
+            'duplicates' => array_values($summary['duplicates'] ?? []),
+            'message' => $log->error_message,
+            'cancel_requested' => $log->cancel_requested_at !== null,
+            'terminal' => in_array($log->status, [
+                ImportLog::STATUS_COMPLETED,
+                ImportLog::STATUS_PARTIAL,
+                ImportLog::STATUS_FAILED,
+                ImportLog::STATUS_CANCELLED,
+                ImportLog::STATUS_REVERTED,
+            ], true),
+            'status_url' => route('admin.facility.mapping-presets.import-status', $log),
+            'cancel_url' => route('admin.facility.mapping-presets.cancel-import', $log),
+            'confirm_url' => route('admin.facility.mapping-presets.confirm-import', $log),
+        ];
     }
 
     public function update(Request $request, $id)

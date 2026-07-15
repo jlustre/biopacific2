@@ -17,7 +17,13 @@ return new class extends Migration
             $table->dropForeign(['facility_id']);
         });
 
-        DB::statement('ALTER TABLE audit_logs MODIFY facility_id BIGINT UNSIGNED NULL');
+        if (DB::getDriverName() === 'sqlite') {
+            Schema::table('audit_logs', function (Blueprint $table) {
+                $table->unsignedBigInteger('facility_id')->nullable()->change();
+            });
+        } else {
+            DB::statement('ALTER TABLE audit_logs MODIFY facility_id BIGINT UNSIGNED NULL');
+        }
 
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->foreign('facility_id')->references('id')->on('facilities')->nullOnDelete();
@@ -34,7 +40,13 @@ return new class extends Migration
             $table->dropForeign(['facility_id']);
         });
 
-        DB::statement('ALTER TABLE audit_logs MODIFY facility_id BIGINT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'sqlite') {
+            Schema::table('audit_logs', function (Blueprint $table) {
+                $table->unsignedBigInteger('facility_id')->nullable(false)->change();
+            });
+        } else {
+            DB::statement('ALTER TABLE audit_logs MODIFY facility_id BIGINT UNSIGNED NOT NULL');
+        }
 
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->foreign('facility_id')->references('id')->on('facilities')->cascadeOnDelete();

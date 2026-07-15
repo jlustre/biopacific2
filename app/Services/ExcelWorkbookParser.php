@@ -39,7 +39,12 @@ class ExcelWorkbookParser
                     $cellVal = array_values($row)[$idx] ?? null;
                     $assoc[$col] = $this->normalizeCellValue($cellVal);
                 }
-                $data[] = $assoc;
+                $hasData = collect($assoc)->contains(
+                    fn ($value) => $value !== null && $value !== ''
+                );
+                if ($hasData) {
+                    $data[] = $assoc;
+                }
             }
 
             $worksheets[] = [
