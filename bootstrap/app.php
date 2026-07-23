@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\EnsureEmailIsVerified::class,
+            \App\Http\Middleware\EnsureEmployeeIsActive::class,
             \App\Http\Middleware\PersistSelectedFacility::class,
         ]);
 

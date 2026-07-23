@@ -170,7 +170,7 @@ class EmployeeDocumentRequirementsService
      */
     public function fullCatalogUploadTypes(): Collection
     {
-        return UploadType::query()->orderedForDisplay()->get();
+        return UploadType::query()->orderBy('name')->get();
     }
 
     /**

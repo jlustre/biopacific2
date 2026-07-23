@@ -53,6 +53,16 @@ class AdminAuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
             return redirect('/admin/login')->withErrors(['email' => 'Access denied. Only admin users can log in here.']);
         }
+
+        if (method_exists($user, 'isBlockedDueToInactiveEmployee') && $user->isBlockedDueToInactiveEmployee()) {
+            Auth::guard('admin')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect('/admin/login')->withErrors([
+                'email' => 'Your employee account is inactive. Contact HR if you believe this is an error.',
+            ]);
+        }
         // Admin lands on user dashboard, can access admin dashboard from sidebar
         return redirect(url('/dashboard'));
     }

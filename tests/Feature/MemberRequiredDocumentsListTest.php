@@ -120,14 +120,49 @@ class MemberRequiredDocumentsListTest extends TestCase
         $this->assertTrue((bool) $required->firstWhere('title', 'Professional License')['is_uploaded']);
         $this->assertFalse((bool) $required->firstWhere('title', 'Background Check')['is_uploaded']);
 
-        // Uploaded requirements appear before missing ones.
-        $firstMissingIndex = $required->search(fn ($row) => empty($row['is_uploaded']));
-        $lastUploadedIndex = $required->keys()->last(
-            fn ($index) => ! empty($required[$index]['is_uploaded'])
+        // Default sort is alphabetical by document title.
+        $this->assertSame(
+            ['Background Check', 'Professional License', 'W-4 Form'],
+            $required->pluck('title')->all()
         );
-        $this->assertNotFalse($firstMissingIndex);
-        $this->assertNotFalse($lastUploadedIndex);
-        $this->assertLessThan($firstMissingIndex, $lastUploadedIndex);
+
+        $searchPage = app(MemberDashboardService::class)->buildDocumentsPage(
+            $user->fresh(),
+            Request::create('/dashboard/documents', 'GET', [
+                'rq' => 'license',
+                'rper_page' => 10,
+            ])
+        );
+        $this->assertSame(1, $searchPage['documentsCenter']['required_documents_total']);
+        $this->assertSame(
+            'Professional License',
+            $searchPage['documentsCenter']['required_documents'][0]['title'] ?? null
+        );
+
+        $statusPage = app(MemberDashboardService::class)->buildDocumentsPage(
+            $user->fresh(),
+            Request::create('/dashboard/documents', 'GET', [
+                'rstatus' => 'missing',
+            ])
+        );
+        $this->assertSame(1, $statusPage['documentsCenter']['required_documents_total']);
+        $this->assertSame(
+            'Background Check',
+            $statusPage['documentsCenter']['required_documents'][0]['title'] ?? null
+        );
+
+        $requiredFilterPage = app(MemberDashboardService::class)->buildDocumentsPage(
+            $user->fresh(),
+            Request::create('/dashboard/documents', 'GET', [
+                'rrequired' => 'all_employees',
+            ])
+        );
+        $requiredFilterTitles = collect($requiredFilterPage['documentsCenter']['required_documents'] ?? [])
+            ->pluck('title')
+            ->all();
+        $this->assertContains('W-4 Form', $requiredFilterTitles);
+        $this->assertContains('Background Check', $requiredFilterTitles);
+        $this->assertNotContains('Professional License', $requiredFilterTitles);
 
         $this->actingAs($user)
             ->get(route('member.documents'))
@@ -136,7 +171,8 @@ class MemberRequiredDocumentsListTest extends TestCase
             ->assertSee('W-4 Form', false)
             ->assertSee('Professional License', false)
             ->assertSee('Background Check', false)
-            ->assertSee('Uploaded documents are listed first', false)
+            ->assertSee('Sorted alphabetically', false)
+            ->assertSee('Search', false)
             ->assertDontSee('Cook Certificate', false);
     }
 

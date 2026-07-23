@@ -46,6 +46,16 @@ class EmployeeCompetencyItemsSeeder extends Seeder
 
     public function run(): void
     {
+        $exportedDataPath = database_path('seeders/data/employee_competency_items.php');
+        if (is_file($exportedDataPath)) {
+            $items = require $exportedDataPath;
+            if (is_array($items)) {
+                $this->seedExportedCatalog($items);
+
+                return;
+            }
+        }
+
         $directorOfStaffDevelopmentPositionIds = $this->getPositionIdsByTitles('Director of Staff Development');
         $dsdPositionIds = $directorOfStaffDevelopmentPositionIds !== [] ? $directorOfStaffDevelopmentPositionIds : ['global'];
         $sharedNurseAndCnaPositionTitles = [
@@ -1067,5 +1077,51 @@ class EmployeeCompetencyItemsSeeder extends Seeder
         if ($cnaPositionIds !== []) {
             $this->seedCompetencySet($cnaCompetencyItems, $cnaPositionIds, $order);
         }
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     */
+    protected function seedExportedCatalog(array $items): void
+    {
+        $positionIdsByTitle = DB::table('positions')
+            ->orderBy('id')
+            ->pluck('id', 'title');
+
+        foreach ($items as $index => $row) {
+            $section = trim((string) ($row['section'] ?? ''));
+            $item = (string) ($row['item'] ?? '');
+            if ($section === '' || $item === '') {
+                continue;
+            }
+
+            $positionTitles = (array) ($row['position_titles'] ?? ['global']);
+            $positionIds = in_array('global', $positionTitles, true)
+                ? ['global']
+                : collect($positionTitles)
+                    ->map(fn ($title) => $positionIdsByTitle->get((string) $title))
+                    ->filter()
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+            if ($positionIds === []) {
+                $positionIds = ['global'];
+            }
+
+            EmployeeCompetencyItem::query()->updateOrCreate(
+                [
+                    'section' => $section,
+                    'item' => $item,
+                    'order' => (int) ($row['order'] ?? $index),
+                ],
+                [
+                    'position_ids' => $positionIds,
+                ]
+            );
+        }
+
+        $this->command?->info('Seeded '.count($items).' exported employee competency items.');
     }
 }

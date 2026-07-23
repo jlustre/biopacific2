@@ -63,6 +63,8 @@ class DocumentComplianceService
                 'description' => $type->description,
                 'requires_expiry' => (bool) $type->requires_expiry,
                 'is_license_or_certification' => (bool) ($type->is_license_or_certification ?? false),
+                'required' => true,
+                'required_for' => $type->applies_to_all_positions ? 'All employees' : 'Position',
                 'status' => $status,
                 'latest_uploaded_at' => optional($latestUpload?->uploaded_at)->toDateString(),
                 'latest_expires_at' => optional($referenceUpload?->expires_at)->toDateString(),

@@ -11,7 +11,7 @@
             <p class="text-sm text-slate-500">Single document catalog: manage names once, assign by position (all or specific), and keep Checklist PART A–D in sync.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            @if($tab === 'types' && auth()->user()?->hasRole(['admin', 'super-admin']))
+            @if(auth()->user()?->hasRole(['admin', 'super-admin']))
                 <form method="POST" action="{{ route('admin.upload-types.run-seeder') }}"
                       onsubmit="return confirm('Apply document types from seeder files to the database?\n\nGeneral types come from database/seeders/data/documents_management_general_types.php.\nEmployee file items are synced from the Employee file items tab.');">
                     @csrf
@@ -21,7 +21,7 @@
                     </button>
                 </form>
                 <form method="POST" action="{{ route('admin.upload-types.sync-seeder') }}"
-                      onsubmit="return confirm('Export general document types into database/seeders/data/documents_management_general_types.php?\n\nThis overwrites that file. Commit it to git so migrate:fresh --seed restores your types.\n\nEmployee file items are not exported here (use Update items seeder on the Employee file items tab).');">
+                      onsubmit="return confirm('Export document types into database/seeders/data/documents_management_general_types.php?\n\nThis overwrites that file. Commit it to git so migrate:fresh --seed restores your types.\n\nEmployee file items are not exported here (use Update items seeder on the Employee file items tab).');">
                     @csrf
                     <button type="submit"
                             class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
@@ -45,7 +45,7 @@
                     @csrf
                     <button type="submit"
                             class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
-                        <i class="fa-solid fa-database mr-2"></i> Update seeder
+                        <i class="fa-solid fa-database mr-2"></i> Update requirements seeder
                     </button>
                 </form>
             @endif
@@ -53,7 +53,7 @@
                 <a href="{{ route('admin.upload-types.create') }}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
                     <i class="fa-solid fa-plus mr-2"></i> New document type
                 </a>
-            @else
+            @elseif($tab === 'items')
                 <a href="{{ route('admin.checklist-items.create') }}" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
                     <i class="fa-solid fa-plus mr-2"></i> New employee file item
                 </a>

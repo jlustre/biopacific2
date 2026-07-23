@@ -358,6 +358,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return null;
     }
 
+    /**
+     * Linked terminated/suspended employees may not use the portal.
+     */
+    public function isBlockedDueToInactiveEmployee(): bool
+    {
+        $employee = $this->resolvedBpEmployee();
+
+        return $employee !== null && ! $employee->isActiveForPortal();
+    }
+
     public static function bpEmployeesTableHasUserId(): bool
     {
         static $hasUserId = null;

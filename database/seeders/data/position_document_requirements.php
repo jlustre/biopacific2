@@ -6,7 +6,7 @@
  * Document type names must match general upload_types (Documents Management),
  * not checklist-synced PART A–D types.
  *
- * Auto-generated from Documents Management → Position requirements → Update seeder on 2026-07-22 14:35:11.
+ * Auto-generated from Documents Management → Position requirements → Update seeder on 2026-07-23 11:03:17.
  *
  * @return array{
  *     sets: array<string, list<string>>,
@@ -86,6 +86,24 @@ return [
                 6 => 'Proof of Age (18+)',
                 7 => 'Sexual Harassment Training Certificate',
                 8 => 'TB Test Result',
+            ],
+            'custom_cff27570' => [
+                0 => 'Abuse Reporting Acknowledgment (SOC 341)',
+                1 => 'Annual In-Service Training',
+                2 => 'Annual Influenza Vaccination',
+                3 => 'C.N.A. Certificate',
+                4 => 'COVID-19 Vaccination Record',
+                5 => 'Criminal Record Statement (LIC 508)',
+                6 => 'Dementia Care Training Record',
+                7 => 'HIPAA Training Certificate',
+                8 => 'Health Screening Declaration (Physician Statement)',
+                9 => 'Hepatitis B Vaccination Record or Declination',
+                10 => 'LGBTI Cultural Competency Training Certificate',
+                11 => 'MMR & Varicella Immunity Records',
+                12 => 'Physical Exam',
+                13 => 'Proof of Age (18+)',
+                14 => 'Sexual Harassment Training Certificate',
+                15 => 'TB Test Result',
             ],
             'custom_e77baa0c' => [
                 0 => 'Abuse Reporting Acknowledgment (SOC 341)',
@@ -190,10 +208,11 @@ return [
                 0 => 'custom_4633d7a9',
             ],
             'Certified Nursing Assistant' => [
-                0 => 'custom_68e14999',
+                0 => 'custom_cff27570',
             ],
             'Charge Nurse' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'Cook' => [
                 0 => 'custom_4633d7a9',
@@ -206,6 +225,7 @@ return [
             ],
             'Director of Nursing' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'Director of Staff Development' => [
                 0 => 'custom_4633d7a9',
@@ -221,6 +241,7 @@ return [
             ],
             'IP Nurse' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'IT Director' => [
                 0 => 'custom_bb3f2411',
@@ -233,12 +254,15 @@ return [
             ],
             'Licensed Nurse' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'Licensed Vocational Nurse' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'MDS Coordinator' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'Maintenance Director' => [
                 0 => 'custom_4633d7a9',
@@ -281,6 +305,7 @@ return [
             ],
             'Registered Nurse' => [
                 0 => 'custom_68e14999',
+                1 => 'lvn_license',
             ],
             'Rehab Manager' => [
                 0 => 'custom_68e14999',

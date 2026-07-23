@@ -275,6 +275,15 @@ class EmployeesController extends Controller
             && $user->can(\App\Support\Rbac\Permissions::EDIT_EMPLOYEE_CORE_TABS));
     }
 
+    /**
+     * Active Status (portal access) may only be changed by RDHR, Facility DSD, or Super Admin.
+     */
+    protected function canEditEmployeeActiveStatus($user): bool
+    {
+        return (bool) ($user && method_exists($user, 'hasRole')
+            && $user->hasRole(['rdhr', 'facility-dsd', 'super-admin']));
+    }
+
     protected function authorizeUploadModification(Upload $upload): void
     {
         $user = Auth::user();
@@ -1319,6 +1328,7 @@ class EmployeesController extends Controller
                 'military_status_id' => 'nullable|integer|exists:selectoptions,id',
                 'citizenship_status_id' => 'nullable|integer|exists:selectoptions,id',
                 'gender' => 'required|in:M,F,O,N',
+                'is_active' => 'sometimes|boolean',
                 'email' => [
                     'required',
                     'string',
@@ -1348,6 +1358,12 @@ class EmployeesController extends Controller
             $canUpdateSsn = ($isRdhr || $isAdmin || $isSelf) && $ssnIsAllDigits;
             if (!$canUpdateSsn) {
                 unset($validated['ssn']); // Prevent masked or unauthorized SSN update
+            }
+            // Active Status: RDHR / Facility DSD / Super Admin only.
+            if ($this->canEditEmployeeActiveStatus($user)) {
+                $validated['is_active'] = $request->boolean('is_active');
+            } else {
+                unset($validated['is_active']);
             }
             if (array_key_exists('dob', $validated)) {
                 $employee->dob = filled($validated['dob'])
@@ -3014,6 +3030,7 @@ class EmployeesController extends Controller
 
             $employee = new \App\Models\BPEmployee();
             $employee->user_id = $user ? $user->id : null;
+            $employee->is_active = true;
             $employee->employee_num = $validated['employee_num'] ?? null;
             $employee->ssn = $validated['ssn'] ?? null;
             $employee->original_hire_dt = $validated['original_hire_dt'] ?? null;
@@ -3132,8 +3149,17 @@ class EmployeesController extends Controller
             ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
-        $uploadTypes = \App\Models\UploadType::catalogForEmployee($employee);
+        $uploadTypes = \App\Models\UploadType::catalogForEmployee($employee)
+            ->sortBy(fn ($type) => mb_strtolower((string) $type->name))
+            ->values();
         $requiredDocumentChecklist = app(\App\Services\DocumentComplianceService::class)->forEmployee($employee);
+        $requiredDocumentsPage = app(\App\Services\MemberDashboardService::class)
+            ->paginateRequiredDocumentsFromRequest($requiredDocumentChecklist['items'] ?? [], $request);
+        $requiredDocumentChecklist['items'] = $requiredDocumentsPage['items'];
+        $requiredDocumentChecklist['paginator'] = $requiredDocumentsPage['paginator'];
+        $requiredDocumentChecklist['filters'] = $requiredDocumentsPage['filters'];
+        $requiredDocumentChecklist['catalog_total'] = $requiredDocumentsPage['catalog_total'];
+        $requiredDocumentChecklist['filtered_total'] = $requiredDocumentsPage['filtered_total'];
         $assessmentPeriods = $this->loadEmployeeAssessmentPeriods($employee);
         $requestedAssessmentPeriodId = filled(request('assessment_period_id'))
             ? (int) request('assessment_period_id')
@@ -3595,6 +3621,7 @@ class EmployeesController extends Controller
             $employee
         );
         $canEditCoreTabs = $this->canEditCoreEmployeeTabs(auth()->user());
+        $canEditActiveStatus = $this->canEditEmployeeActiveStatus(auth()->user());
 
         $editOptions = $request->attributes->get('employee_edit_options', []);
         $isSelfService = (bool) ($editOptions['isSelfService'] ?? false);
@@ -3654,6 +3681,7 @@ class EmployeesController extends Controller
             'isSelfService',
             'canManageJobData',
             'canEditCoreTabs',
+            'canEditActiveStatus',
             'employeeFormRoutes',
             'requiredDocumentChecklist',
         ));

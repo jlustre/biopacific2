@@ -49,6 +49,15 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        if ($user && method_exists($user, 'isBlockedDueToInactiveEmployee') && $user->isBlockedDueToInactiveEmployee()) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Your employee account is inactive. Contact HR if you believe this is an error.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

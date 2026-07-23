@@ -437,6 +437,8 @@ class MemberPortalLayout
             'admin.checklist-items.*',
             'admin.position-document-requirements.*',
             'admin.training-items.*',
+            'admin.competencies.*',
+            'admin.performances.*',
         ];
     }
 

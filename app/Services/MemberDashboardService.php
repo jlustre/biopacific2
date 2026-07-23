@@ -819,12 +819,22 @@ class MemberDashboardService
         $documentFilters = $this->documentFiltersFromRequest($request);
         $documentsPaginator = $this->paginateEmployeeDocuments($bpEmployee, $facility, $user, $documentFilters);
 
+        $requiredDocumentsPage = $this->paginateRequiredDocumentsFromRequest(
+            $documentsCenter['required_documents'] ?? [],
+            $request
+        );
+
         $documentsCenter['documents_paginator'] = $documentsPaginator;
         $documentsCenter['document_filters'] = $documentFilters;
         $documentsCenter['document_type_options'] = $this->documentTypeFilterOptions($bpEmployee);
         $documentsCenter['documents_total'] = $bpEmployee ? (int) $bpEmployee->uploads()->current()->count() : 0;
         $documentsCenter['documents'] = $documentsPaginator->items();
         $documentsCenter['uploads'] = $documentsPaginator->items();
+        $documentsCenter['required_documents'] = $requiredDocumentsPage['items']->all();
+        $documentsCenter['required_documents_paginator'] = $requiredDocumentsPage['paginator'];
+        $documentsCenter['required_documents_catalog_total'] = $requiredDocumentsPage['catalog_total'];
+        $documentsCenter['required_documents_total'] = $requiredDocumentsPage['filtered_total'];
+        $documentsCenter['required_document_filters'] = $requiredDocumentsPage['filters'];
         $documentsCenter['position_id'] = $documentCompliance['position_id'] ?? null;
         $documentsCenter['position_title'] = $documentCompliance['position_title'] ?? null;
 
@@ -3204,6 +3214,7 @@ class MemberDashboardService
                 'description' => null,
                 'section' => $section !== '' ? $section : 'Employee checklist',
                 'required' => true,
+                'required_for' => 'Position',
                 'status' => $item['status'] ?? 'not_on_file',
                 'status_label' => $item['status_label'] ?? 'Needs attention',
                 'priority' => $item['priority'] ?? 'high',
@@ -3331,7 +3342,8 @@ class MemberDashboardService
                     'title' => $item['name'] ?? 'Required document',
                     'description' => $item['description'] ?? null,
                     'section' => 'Required for your position',
-                    'required' => true,
+                    'required' => (bool) ($item['required'] ?? true),
+                    'required_for' => $item['required_for'] ?? 'Position',
                     'status' => $status,
                     'status_label' => $statusLabel,
                     'priority' => in_array($status, ['expired', 'pending_review'], true) ? 'medium' : ($status === 'complete' ? 'low' : 'high'),
@@ -3348,12 +3360,159 @@ class MemberDashboardService
                     'verification_badge_class' => $uploadRow['verification_badge_class'] ?? null,
                 ];
             })
-            ->sortBy([
-                fn ($row) => empty($row['is_uploaded']) ? 1 : 0,
-                fn ($row) => mb_strtolower((string) ($row['title'] ?? '')),
-            ])
+            ->sortBy(fn ($row) => mb_strtolower((string) ($row['title'] ?? '')))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array{search: string, status: string, sort: string, per_page: int}
+     */
+    protected function requiredDocumentFiltersFromRequest(?Request $request): array
+    {
+        $allowedSorts = ['name_asc', 'name_desc', 'uploaded_first'];
+        $allowedStatus = ['', 'complete', 'missing', 'pending_review', 'expired', 'rejected'];
+        $allowedRequired = ['', 'yes', 'no', 'all_employees', 'position'];
+        $sort = (string) ($request?->query('rsort') ?? 'name_asc');
+        $status = (string) ($request?->query('rstatus') ?? '');
+        $required = (string) ($request?->query('rrequired') ?? '');
+
+        return [
+            'search' => trim((string) ($request?->query('rq') ?? '')),
+            'status' => in_array($status, $allowedStatus, true) ? $status : '',
+            'required' => in_array($required, $allowedRequired, true) ? $required : '',
+            'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'name_asc',
+            'per_page' => min(50, max(5, (int) ($request?->query('rper_page') ?? 10))),
+        ];
+    }
+
+    /**
+     * Normalize compliance/required rows, then filter/sort/paginate for member or admin UIs.
+     *
+     * @param  iterable<int, array<string, mixed>>  $items
+     * @return array{
+     *     items: \Illuminate\Support\Collection<int, array<string, mixed>>,
+     *     paginator: LengthAwarePaginator,
+     *     filters: array{search: string, status: string, required: string, sort: string, per_page: int},
+     *     catalog_total: int,
+     *     filtered_total: int
+     * }
+     */
+    public function paginateRequiredDocumentsFromRequest(iterable $items, ?Request $request = null): array
+    {
+        $normalized = collect($items)
+            ->map(function ($item) {
+                $row = is_array($item) ? $item : (array) $item;
+                $row['title'] = $row['title'] ?? $row['name'] ?? 'Required document';
+                $row['name'] = $row['name'] ?? $row['title'];
+                $row['required'] = (bool) ($row['required'] ?? true);
+                $row['required_for'] = $row['required_for'] ?? 'Position';
+                $row['is_uploaded'] = (bool) ($row['is_uploaded']
+                    ?? (! empty($row['latest_upload_id']) || ! empty($row['valid_upload_id'])));
+
+                return $row;
+            })
+            ->values()
+            ->all();
+
+        $filters = $this->requiredDocumentFiltersFromRequest($request);
+        $paginator = $this->paginateRequiredDocuments($normalized, $filters, $request);
+
+        return [
+            'items' => collect($paginator->items()),
+            'paginator' => $paginator,
+            'filters' => $filters,
+            'catalog_total' => count($normalized),
+            'filtered_total' => $paginator->total(),
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $requiredDocuments
+     * @param  array{search?: string, status?: string, required?: string, sort?: string, per_page?: int}  $filters
+     */
+    public function paginateRequiredDocuments(
+        array $requiredDocuments,
+        array $filters = [],
+        ?Request $request = null
+    ): LengthAwarePaginator {
+        $filters = array_merge($this->requiredDocumentFiltersFromRequest(null), $filters);
+        $collection = collect($requiredDocuments);
+        $titleOf = static fn (array $row): string => mb_strtolower((string) ($row['title'] ?? $row['name'] ?? ''));
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $needle = mb_strtolower($search);
+            $collection = $collection->filter(function (array $row) use ($needle) {
+                $haystack = mb_strtolower(implode(' ', array_filter([
+                    $row['title'] ?? '',
+                    $row['name'] ?? '',
+                    $row['upload_name'] ?? '',
+                    $row['status_label'] ?? '',
+                    $row['description'] ?? '',
+                    $row['required_for'] ?? '',
+                ])));
+
+                return str_contains($haystack, $needle);
+            });
+        }
+
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '') {
+            $collection = $collection->filter(function (array $row) use ($status) {
+                $rowStatus = (string) ($row['status'] ?? 'missing');
+                if ($status === 'missing') {
+                    return in_array($rowStatus, ['missing', 'not_on_file'], true);
+                }
+
+                return $rowStatus === $status;
+            });
+        }
+
+        $required = (string) ($filters['required'] ?? '');
+        if ($required !== '') {
+            $collection = $collection->filter(function (array $row) use ($required) {
+                $isRequired = (bool) ($row['required'] ?? true);
+                $requiredFor = (string) ($row['required_for'] ?? 'Position');
+
+                return match ($required) {
+                    'yes' => $isRequired,
+                    'no' => ! $isRequired,
+                    'all_employees' => $isRequired && $requiredFor === 'All employees',
+                    'position' => $isRequired && $requiredFor === 'Position',
+                    default => true,
+                };
+            });
+        }
+
+        $sorted = match ((string) ($filters['sort'] ?? 'name_asc')) {
+            'name_desc' => $collection->sortByDesc($titleOf),
+            'uploaded_first' => $collection->sortBy([
+                fn (array $row) => empty($row['is_uploaded'])
+                    && empty($row['latest_upload_id'])
+                    && empty($row['valid_upload_id']) ? 1 : 0,
+                $titleOf,
+            ]),
+            default => $collection->sortBy($titleOf),
+        };
+
+        $page = max(1, (int) ($request?->query('rpage') ?? 1));
+        $perPage = (int) ($filters['per_page'] ?? 10);
+        $items = $sorted->values();
+        $total = $items->count();
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $slice->all(),
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => $request?->url() ?? request()->url(),
+                'pageName' => 'rpage',
+                'query' => $request?->query() ?? request()->query(),
+            ]
+        );
     }
 
     /**

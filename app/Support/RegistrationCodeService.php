@@ -103,6 +103,12 @@ class RegistrationCodeService
 
     public function generateForEmployee(BPEmployee $employee, User $generator): RegistrationCode
     {
+        if (! $employee->isActiveForPortal()) {
+            throw ValidationException::withMessages([
+                'employee' => 'Inactive employees cannot receive a portal registration code.',
+            ]);
+        }
+
         if ($this->employeeHasPortalUser($employee)) {
             throw ValidationException::withMessages([
                 'employee' => 'This employee already has a portal account.',
@@ -237,6 +243,12 @@ class RegistrationCodeService
                 ->with('currentAssignment.position')
                 ->first();
 
+            if ($employee && ! $employee->isActiveForPortal()) {
+                throw ValidationException::withMessages([
+                    'code' => 'This employee account is inactive and cannot be registered for portal access.',
+                ]);
+            }
+
             if ($employee) {
                 $payload = [
                     'email' => $user->email,
@@ -247,9 +259,6 @@ class RegistrationCodeService
                 }
 
                 $employee->fill($payload)->save();
-            }
-
-            if ($employee) {
                 app(EmployeePortalRoleService::class)->assignRegistrationRole($user, $employee);
             } else {
                 $this->assignDefaultMemberRole($user);

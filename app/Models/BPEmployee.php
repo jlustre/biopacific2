@@ -66,6 +66,7 @@ class BPEmployee extends Model
     protected $keyType = 'int';
 
     protected $casts = [
+        'is_active' => 'boolean',
         'original_hire_dt' => 'date',
         'rehire_dt' => 'date',
         'badge_eff_dt' => 'date',
@@ -74,6 +75,7 @@ class BPEmployee extends Model
 
     protected $fillable = [
         'user_id',
+        'is_active',
         'employee_num',
         'badge_num',
         'badge_eff_dt',
@@ -95,6 +97,14 @@ class BPEmployee extends Model
         'effdt_of_membership',
         'email',
     ];
+
+    /**
+     * Active employees may use the portal; terminated/suspended may not.
+     */
+    public function isActiveForPortal(): bool
+    {
+        return (bool) ($this->is_active ?? true);
+    }
 
     protected function dob(): Attribute
     {

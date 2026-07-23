@@ -609,6 +609,52 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
         Route::resource('training-items', \App\Http\Controllers\Admin\EmployeeTrainingItemController::class)
             ->except(['show'])
             ->names('training-items');
+
+        Route::post('competencies/bulk-positions', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'bulkUpdatePositions'])
+            ->name('competencies.bulk-positions');
+        Route::get('competencies', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'index'])
+            ->name('competencies.index');
+        Route::get('competencies/create', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'create'])
+            ->name('competencies.create');
+        Route::post('competencies', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'store'])
+            ->name('competencies.store');
+        Route::get('competencies/{sectionKey}', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'show'])
+            ->name('competencies.show');
+        Route::put('competencies/{sectionKey}', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'update'])
+            ->name('competencies.update');
+        Route::delete('competencies/{sectionKey}', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'destroy'])
+            ->name('competencies.destroy');
+        Route::post('competencies/{sectionKey}/items', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'storeItem'])
+            ->name('competencies.items.store');
+        Route::get('competencies/{sectionKey}/items/{item}/edit', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'editItem'])
+            ->name('competencies.items.edit');
+        Route::put('competencies/{sectionKey}/items/{item}', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'updateItem'])
+            ->name('competencies.items.update');
+        Route::delete('competencies/{sectionKey}/items/{item}', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'destroyItem'])
+            ->name('competencies.items.destroy');
+
+        Route::post('performances/bulk-positions', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'bulkUpdatePositions'])
+            ->name('performances.bulk-positions');
+        Route::get('performances', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'index'])
+            ->name('performances.index');
+        Route::get('performances/create', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'create'])
+            ->name('performances.create');
+        Route::post('performances', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'store'])
+            ->name('performances.store');
+        Route::get('performances/{sectionKey}', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'show'])
+            ->name('performances.show');
+        Route::put('performances/{sectionKey}', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'update'])
+            ->name('performances.update');
+        Route::delete('performances/{sectionKey}', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'destroy'])
+            ->name('performances.destroy');
+        Route::post('performances/{sectionKey}/items', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'storeItem'])
+            ->name('performances.items.store');
+        Route::get('performances/{sectionKey}/items/{item}/edit', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'editItem'])
+            ->name('performances.items.edit');
+        Route::put('performances/{sectionKey}/items/{item}', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'updateItem'])
+            ->name('performances.items.update');
+        Route::delete('performances/{sectionKey}/items/{item}', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'destroyItem'])
+            ->name('performances.items.destroy');
     });
 
     Route::middleware(['role:admin|super-admin'])->group(function () {
@@ -616,6 +662,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super-admin|facility-adm
             ->name('position-document-requirements.sync-seeder');
         Route::post('training-items/sync-seeder', [\App\Http\Controllers\Admin\EmployeeTrainingItemController::class, 'syncSeeder'])
             ->name('training-items.sync-seeder');
+        Route::post('competencies/sync-seeder', [\App\Http\Controllers\Admin\EmployeeCompetencyController::class, 'syncSeeder'])
+            ->name('competencies.sync-seeder');
+        Route::post('performances/sync-seeder', [\App\Http\Controllers\Admin\EmployeePerformanceController::class, 'syncSeeder'])
+            ->name('performances.sync-seeder');
         Route::post('departments/sync-seeder', [\App\Http\Controllers\Admin\DepartmentController::class, 'syncSeeder'])
             ->name('departments.sync-seeder');
     });

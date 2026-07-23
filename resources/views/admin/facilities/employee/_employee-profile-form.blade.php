@@ -12,12 +12,17 @@
         return (string) $value;
     };
 @endphp
-@php $canEditCoreTabs = $canEditCoreTabs ?? false; @endphp
+@php
+    $canEditCoreTabs = $canEditCoreTabs ?? false;
+    $canEditActiveStatus = $canEditActiveStatus ?? false;
+    $employeeIsActive = (bool) (isset($employee) ? ($employee->is_active ?? true) : true);
+@endphp
 @if(!$canEditCoreTabs)
 <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
     You have read-only access to Personal information.
 </div>
 @endif
+
 <fieldset {{ !$canEditCoreTabs ? 'disabled' : '' }}>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {{-- Employee Id --}}
@@ -261,6 +266,34 @@
         </select>
     </div>
 
+    {{-- Active Status: writable only for RDHR / Facility DSD / Super Admin --}}
+    @if(isset($employee))
+    <div class="mb-1">
+        <label class="block text-sm font-medium mb-2">Active Status</label>
+        @if($canEditActiveStatus)
+            <div class="flex items-start gap-2 rounded-lg border border-teal-200 bg-teal-50/50 px-2 py-1.5 min-h-[38px]">
+                <input type="hidden" name="is_active" value="0">
+                <input type="checkbox" id="is_active" name="is_active" value="1"
+                    @checked((string) old('is_active', $employeeIsActive ? '1' : '0') === '1')
+                    class="mt-1 rounded border-teal-300 text-teal-600 focus:ring-teal-500">
+                <div>
+                    <label for="is_active" class="text-sm font-semibold text-slate-800">Employee is active</label>
+                    <p class="text-[11px] leading-snug text-slate-600">Off = terminated/suspended (no portal access)</p>
+                </div>
+            </div>
+            @error('is_active')
+            <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+            @enderror
+        @else
+            <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 min-h-[38px]">
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold {{ $employeeIsActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
+                    {{ $employeeIsActive ? 'Active' : 'Inactive' }}
+                </span>
+                <span class="text-[11px] text-slate-500">RDHR / DSD / Super Admin only</span>
+            </div>
+        @endif
+    </div>
+    @endif
 
     <div class="mb-1" x-data="{ editingSsn: false }">
         <template x-if="editingSsn">
