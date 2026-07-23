@@ -183,6 +183,7 @@ class EmployeeTrainingItem extends Model
 
     /**
      * Whether this training is due based on the last approved completion.
+     * Recurring items become due 30 days before the renewal/anniversary date.
      *
      * @return array{due: bool, satisfied_until: ?Carbon, next_due_at: ?Carbon, status_hint: ?string}
      */
@@ -213,20 +214,21 @@ class EmployeeTrainingItem extends Model
         }
 
         $satisfiedUntil = Carbon::parse($lastCompletedAt)->startOfDay()->addYears($years);
+        $nextDueAt = \App\Support\ComplianceDueDate::before($satisfiedUntil) ?? $satisfiedUntil->copy();
 
-        if ($asOf->lt($satisfiedUntil)) {
+        if ($asOf->lt($nextDueAt)) {
             return [
                 'due' => false,
                 'satisfied_until' => $satisfiedUntil,
-                'next_due_at' => $satisfiedUntil->copy(),
-                'status_hint' => 'Current through '.$satisfiedUntil->toDateString(),
+                'next_due_at' => $nextDueAt,
+                'status_hint' => 'Current through '.$nextDueAt->toDateString().' (renewal due before '.$satisfiedUntil->toDateString().')',
             ];
         }
 
         return [
             'due' => true,
             'satisfied_until' => $satisfiedUntil,
-            'next_due_at' => $asOf->copy(),
+            'next_due_at' => $nextDueAt,
             'status_hint' => null,
         ];
     }

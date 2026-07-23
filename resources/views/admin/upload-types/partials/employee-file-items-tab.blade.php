@@ -2,6 +2,11 @@
     $positionLookup = $positions->keyBy('position_id');
 @endphp
 
+<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+    Showing <strong>PART A–D</strong> employee-file documents only.
+    PART E orientation checklist items are not documents and are managed in the employee checklist orientation workflow.
+</div>
+
 @include('admin.upload-types.partials.bulk-assign-positions')
 
 <form method="GET" action="{{ route('admin.upload-types.index') }}" class="rounded-2xl border border-slate-200 bg-white p-4">

@@ -104,15 +104,21 @@ class PersonalProfilePanelsService
     protected function mapExpirationRow(string $label, $expiresAt, Carbon $today): array
     {
         $expiry = Carbon::parse($expiresAt)->startOfDay();
+        $dueAt = \App\Support\ComplianceDueDate::forExpiration($expiry) ?? $expiry;
+        $daysUntilDue = (int) $today->diffInDays($dueAt, false);
         $daysLeft = (int) $today->diffInDays($expiry, false);
-        $tone = $this->toneForDaysLeft($daysLeft);
+        $tone = $this->toneForDaysLeft(max(0, $daysUntilDue));
 
         return [
             'label' => $label,
-            'days_left' => max(0, $daysLeft),
+            'days_left' => max(0, $daysUntilDue),
             'expires_at' => $expiry->toDateString(),
+            'due_at' => $dueAt->toDateString(),
             'tone' => $tone,
-            'tone_label' => $daysLeft . ' day' . ($daysLeft === 1 ? '' : 's') . ' left',
+            'tone_label' => $daysUntilDue < 0
+                ? 'Renewal past due'
+                : ($daysUntilDue.' day'.($daysUntilDue === 1 ? '' : 's').' until due'
+                    .($daysLeft >= 0 ? ' (expires in '.$daysLeft.')' : '')),
         ];
     }
 

@@ -4,7 +4,9 @@
         ->current()
         ->orderByDesc('uploaded_at')
         ->get();
-    $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
+    $uploadTypes = isset($uploadTypes) && $uploadTypes
+        ? $uploadTypes
+        : \App\Models\UploadType::catalogForEmployee($employee);
     $existingUploads = $uploads->map(function ($upload) {
         return [
             'id' => $upload->id,
@@ -114,17 +116,41 @@
                                         @endif
                                     </td>
                                     <td class="px-3 py-2">
-                                        @if(($requiredDoc['status'] ?? '') !== 'complete')
-                                            <button
-                                                type="button"
-                                                class="text-xs font-semibold text-teal-700 hover:text-teal-900 underline"
-                                                @click="openUploadModal('{{ $requiredDoc['upload_type_id'] }}')"
-                                            >
-                                                Upload now
-                                            </button>
-                                        @else
-                                            <span class="text-xs text-slate-400">Up to date</span>
-                                        @endif
+                                        @php
+                                            $viewUploadId = $requiredDoc['valid_upload_id']
+                                                ?? $requiredDoc['latest_upload_id']
+                                                ?? null;
+                                            $documentsViewTemplate = $employeeFormRoutes['documents_view']
+                                                ?? route('admin.employees.documents.view', [$employee->id, '__ID__']);
+                                            $requiredDocViewUrl = $viewUploadId
+                                                ? str_replace('__ID__', (string) $viewUploadId, $documentsViewTemplate)
+                                                : null;
+                                        @endphp
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            @if($requiredDocViewUrl)
+                                                <a
+                                                    href="{{ $requiredDocViewUrl }}"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 hover:text-rose-900 underline"
+                                                    title="View PDF"
+                                                >
+                                                    <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                                                    View PDF
+                                                </a>
+                                            @endif
+                                            @if(($requiredDoc['status'] ?? '') !== 'complete')
+                                                <button
+                                                    type="button"
+                                                    class="text-xs font-semibold text-teal-700 hover:text-teal-900 underline"
+                                                    @click="openUploadModal('{{ $requiredDoc['upload_type_id'] }}')"
+                                                >
+                                                    Upload now
+                                                </button>
+                                            @elseif(! $requiredDocViewUrl)
+                                                <span class="text-xs text-slate-400">Up to date</span>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

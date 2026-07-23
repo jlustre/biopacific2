@@ -419,4 +419,112 @@ class CompetencySectionWorkflowServiceTest extends TestCase
 
         $this->assertSame([], $service->sectionWorkflow($assessment, $sectionLabel));
     }
+
+    public function test_employee_acknowledge_does_not_flag_changed_when_only_volatile_fields_update(): void
+    {
+        $service = app(CompetencySectionWorkflowService::class);
+        $sectionLabel = 'LICENSED NURSE eMAR COMPETENCY';
+
+        $assessment = Mockery::mock(EmployeeCompetencyAssessment::class)->makePartial();
+        $assessment->employee_num = 'EMP-100';
+        $assessment->assessment_period_id = 12;
+        $assessment->status = AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
+        $assessment->snapshot_json = [
+            'section_summaries' => [
+                $sectionLabel => [
+                    'total_score' => 12,
+                    'average_score' => 3,
+                    'overall_rating' => 'Meets Standards',
+                    'submitted_at' => '2026-07-01 10:00:00',
+                ],
+            ],
+            'section_comments' => [
+                $sectionLabel => [
+                    'reviewer_comments' => 'Initial reviewer note',
+                    'employee_comments' => '',
+                ],
+            ],
+            'section_workflow' => [
+                $sectionLabel => [
+                    'status' => AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+                ],
+            ],
+        ];
+        $assessment->shouldReceive('save')->once()->andReturnTrue();
+
+        $service->employeeAcknowledgeSection(
+            $assessment,
+            $sectionLabel,
+            'competency-assessments/EMP-100/signatures/employee.png',
+            'I confirm these ratings.',
+        );
+
+        $this->assertSame(
+            AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL,
+            $service->sectionStatus($assessment, $sectionLabel),
+        );
+        $this->assertFalse(
+            $service->sectionHasChangedSinceEmployeeConfirmation($assessment, $sectionLabel),
+        );
+
+        $snapshot = $assessment->snapshot_json;
+        $snapshot['section_comments'][$sectionLabel]['reviewer_comments'] = 'Updated after employee signed';
+        $snapshot['section_summaries'][$sectionLabel]['submitted_at'] = '2026-07-15 12:00:00';
+        $snapshot['section_summaries'][$sectionLabel]['average_score'] = 3.0;
+        $assessment->snapshot_json = $snapshot;
+
+        $this->assertFalse(
+            $service->sectionHasChangedSinceEmployeeConfirmation($assessment, $sectionLabel),
+        );
+    }
+
+    public function test_section_has_changed_when_confirmed_scores_change(): void
+    {
+        $service = app(CompetencySectionWorkflowService::class);
+        $sectionLabel = 'LICENSED NURSE eMAR COMPETENCY';
+
+        $assessment = Mockery::mock(EmployeeCompetencyAssessment::class)->makePartial();
+        $assessment->employee_num = 'EMP-100';
+        $assessment->assessment_period_id = 12;
+        $assessment->status = AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
+        $assessment->snapshot_json = [
+            'section_summaries' => [
+                $sectionLabel => [
+                    'total_score' => 12,
+                    'average_score' => 3,
+                    'overall_rating' => 'Meets Standards',
+                ],
+            ],
+            'section_comments' => [
+                $sectionLabel => [
+                    'employee_comments' => '',
+                ],
+            ],
+            'section_workflow' => [
+                $sectionLabel => [
+                    'status' => AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION,
+                ],
+            ],
+        ];
+        $assessment->shouldReceive('save')->once()->andReturnTrue();
+        // Mismatch after score change should not silently heal without a DB check.
+        $assessment->shouldReceive('saveQuietly')->never();
+
+        $service->employeeAcknowledgeSection(
+            $assessment,
+            $sectionLabel,
+            'competency-assessments/EMP-100/signatures/employee.png',
+            'Confirmed',
+        );
+
+        $snapshot = $assessment->snapshot_json;
+        $snapshot['section_summaries'][$sectionLabel]['total_score'] = 9;
+        $snapshot['section_summaries'][$sectionLabel]['average_score'] = 2.25;
+        $snapshot['section_summaries'][$sectionLabel]['overall_rating'] = 'Needs Improvement';
+        $assessment->snapshot_json = $snapshot;
+
+        $this->assertTrue(
+            $service->sectionHasChangedSinceEmployeeConfirmation($assessment, $sectionLabel),
+        );
+    }
 }

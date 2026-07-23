@@ -5,20 +5,30 @@
     $initialDocsTab = request('docs_tab') === 'facility' && $showFacilityTab ? 'facility' : 'mine';
     $documentsPaginator = $documentsCenter['documents_paginator'] ?? null;
     $documents = $documentsPaginator ? $documentsPaginator->items() : ($documentsCenter['documents'] ?? $documentsCenter['uploads'] ?? []);
-    $documentFilters = $documentsCenter['document_filters'] ?? ['search' => '', 'type' => '', 'expiry' => '', 'sort' => 'uploaded_desc', 'per_page' => 10];
+    $documentFilters = $documentsCenter['document_filters'] ?? ['search' => '', 'type' => '', 'expiry' => '', 'status' => '', 'sort' => 'uploaded_desc', 'per_page' => 10];
     $documentTypeOptions = $documentsCenter['document_type_options'] ?? [];
     $complianceMissing = $documentsCenter['compliance_missing'] ?? [];
     $complianceComplete = $documentsCenter['compliance_complete'] ?? [];
+    $requiredDocuments = $documentsCenter['required_documents'] ?? [];
+    if ($requiredDocuments === [] && ($complianceMissing !== [] || $complianceComplete !== [])) {
+        $requiredDocuments = collect($complianceComplete)
+            ->map(fn ($doc) => array_merge($doc, ['is_uploaded' => true, 'title' => $doc['title'] ?? $doc['name'] ?? 'Required document']))
+            ->concat($complianceMissing)
+            ->values()
+            ->all();
+    }
     $signatures = $documentsCenter['signatures'] ?? [];
     $verifiedPercent = $documentsCenter['verified_percent'] ?? ($stats['employee_file_verified'] ?? null);
     $hasEmployeeRecord = $documentsCenter['has_employee_record'] ?? false;
     $missingCount = count($complianceMissing);
+    $requiredDocumentsCount = count($requiredDocuments);
     $signatureCount = count($signatures);
     $uploadCount = (int) ($documentsCenter['documents_total'] ?? ($documentsPaginator?->total() ?? count($documents)));
     $filteredCount = $documentsPaginator ? $documentsPaginator->total() : count($documents);
     $hasActiveDocumentFilters = !empty($documentFilters['search'])
         || !empty($documentFilters['type'])
         || !empty($documentFilters['expiry'])
+        || !empty($documentFilters['status'])
         || ($documentFilters['sort'] ?? 'uploaded_desc') !== 'uploaded_desc'
         || (int) ($documentFilters['per_page'] ?? 10) !== 10;
     $completeCount = count($complianceComplete);
@@ -53,9 +63,12 @@
                 <h2 class="mt-3 text-lg font-bold text-slate-950 sm:text-xl">Documents & compliance</h2>
                 <p class="mt-1 text-sm text-slate-500">
                     Your employee documents, file checklist, and signatures
-                    @if($positionTitle)
-                        <span class="block mt-1 text-xs text-teal-700">Requirements based on your position: <strong>{{ $positionTitle }}</strong></span>
-                    @endif
+                    <span class="block mt-1 text-xs text-teal-700">
+                        Shows documents required for all employees
+                        @if($positionTitle)
+                            and your position: <strong>{{ $positionTitle }}</strong>
+                        @endif
+                    </span>
                     <span class="block mt-1 text-xs text-slate-500">{{ config('documents.labels.upload_review_notice') }}
                         @if($certificationsUrl)
                             <a href="{{ $certificationsUrl }}" class="font-semibold text-brand-600 hover:text-brand-700">{{ config('documents.labels.certifications_subset_note') }}</a>
@@ -156,67 +169,113 @@
                 </div>
             @endif
 
-            @if($missingCount > 0)
+            @if($requiredDocumentsCount > 0)
                 <div class="mb-8">
-                    <h3 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-                        <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-                        Compliance gaps
-                    </h3>
+                    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <h3 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+                            <i class="fa-solid fa-clipboard-list text-brand-600"></i>
+                            Required documents
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            {{ $requiredDocumentsCount }} required
+                            @if($completeCount > 0)
+                                · {{ $completeCount }} on file
+                            @endif
+                            @if($missingCount > 0)
+                                · {{ $missingCount }} need attention
+                            @endif
+                            <span class="block sm:inline sm:before:content-['·_']">Uploaded documents are listed first</span>
+                        </p>
+                    </div>
                     <div class="overflow-x-auto rounded-2xl border border-slate-200">
-                        <table class="w-full min-w-[560px] text-left text-sm">
+                        <table class="w-full min-w-[720px] text-left text-sm">
                             <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                                 <tr>
-                                    <th class="px-3 py-2">Item</th>
-                                    <th class="px-3 py-2">Required</th>
-                                    <th class="w-44 min-w-[11rem] whitespace-nowrap px-3 py-2">Status</th>
-                                    <th class="w-20 whitespace-nowrap px-3 py-2 text-right">Action</th>
+                                    <th class="px-3 py-2">Document</th>
+                                    <th class="w-40 min-w-[9rem] whitespace-nowrap px-3 py-2">Status</th>
+                                    <th class="px-3 py-2">Uploaded</th>
+                                    <th class="px-3 py-2">Expires</th>
+                                    <th class="w-28 whitespace-nowrap px-3 py-2 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                @foreach($complianceMissing as $doc)
+                                @foreach($requiredDocuments as $doc)
                                     @php
                                         $badgeClass = match ($doc['status'] ?? '') {
-                                            'not_on_file' => 'bg-rose-50 text-rose-700',
-                                            'missing' => 'bg-rose-50 text-rose-700',
+                                            'complete' => 'bg-emerald-50 text-emerald-700',
+                                            'not_on_file', 'missing' => 'bg-rose-50 text-rose-700',
                                             'rejected' => 'bg-rose-100 text-rose-800',
-                                            'expired' => 'bg-amber-50 text-amber-700',
-                                            'expiry_missing' => 'bg-amber-50 text-amber-700',
+                                            'expired', 'expiry_missing' => 'bg-amber-50 text-amber-700',
                                             'pending_review' => 'bg-sky-50 text-sky-700',
                                             default => 'bg-slate-100 text-slate-700',
                                         };
+                                        $isUploaded = !empty($doc['is_uploaded']);
                                     @endphp
-                                    <tr>
+                                    <tr class="{{ $isUploaded ? 'bg-white' : 'bg-rose-50/20' }}">
                                         <td class="px-3 py-2 font-semibold text-slate-950">
                                             {{ $doc['title'] ?? '—' }}
+                                            @if(!empty($doc['upload_name']))
+                                                <span class="mt-0.5 block text-xs font-normal text-slate-500">{{ $doc['upload_name'] }}</span>
+                                            @endif
                                             @if(!empty($doc['verification_notes']))
                                                 <span class="mt-0.5 block text-xs font-normal text-rose-700">{{ $doc['verification_notes'] }}</span>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-2 text-slate-500">{{ !empty($doc['required']) ? 'Yes' : 'No' }}</td>
                                         <td class="whitespace-nowrap px-3 py-2">
                                             <span class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold {{ $badgeClass }}">{{ $doc['status_label'] ?? 'Needs attention' }}</span>
                                         </td>
-                                        <td class="px-3 py-2 text-right">
-                                            @if($employmentPortalUrl !== '#' && !in_array($doc['status'] ?? '', ['pending_review'], true))
-                                                <button type="button" @click="openUploadModal(@js($doc['upload_type_id'] ?? null))" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="Upload document" aria-label="Upload document">
-                                                    <i class="fa-solid fa-upload"></i>
-                                                </button>
+                                        <td class="px-3 py-2 text-slate-500">
+                                            @if(!empty($doc['latest_uploaded_at']))
+                                                {{ \Carbon\Carbon::parse($doc['latest_uploaded_at'])->format('M j, Y') }}
                                             @else
-                                                <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="{{ ($doc['status'] ?? '') === 'pending_review' ? 'Awaiting leadership review' : 'Upload unavailable' }}" aria-label="Upload unavailable">
-                                                    <i class="fa-solid fa-upload"></i>
-                                                </span>
+                                                <span class="text-slate-400">—</span>
                                             @endif
+                                        </td>
+                                        <td class="px-3 py-2 text-slate-500">
+                                            @if(!empty($doc['latest_expires_at']))
+                                                {{ \Carbon\Carbon::parse($doc['latest_expires_at'])->format('M j, Y') }}
+                                            @else
+                                                <span class="text-slate-400">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 text-right">
+                                            <div class="inline-flex items-center justify-end gap-2">
+                                                @if(!empty($doc['view_url']))
+                                                    <a href="{{ $doc['view_url'] }}" target="_blank" rel="noopener" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="View document" aria-label="View document">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </a>
+                                                @endif
+                                                @if(($doc['status'] ?? '') !== 'pending_review' && ($doc['status'] ?? '') !== 'complete')
+                                                    <button type="button" @click="openUploadModal(@js($doc['upload_type_id'] ?? null))" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50 hover:text-brand-700" title="Upload document" aria-label="Upload document">
+                                                        <i class="fa-solid fa-upload"></i>
+                                                    </button>
+                                                @elseif(($doc['status'] ?? '') === 'complete' && empty($doc['view_url']))
+                                                    <span class="text-xs font-semibold text-emerald-700">Up to date</span>
+                                                @elseif(($doc['status'] ?? '') === 'pending_review')
+                                                    <span class="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 text-slate-300" title="Awaiting leadership review" aria-label="Upload unavailable">
+                                                        <i class="fa-solid fa-upload"></i>
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
+                    @if($missingCount === 0 && $completeCount > 0)
+                        <p class="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                            <i class="fa-solid fa-circle-check mr-1"></i>
+                            All applicable required documents are on file and verified.
+                        </p>
+                    @endif
                 </div>
-            @elseif($completeCount > 0)
-                <p class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-                    <i class="fa-solid fa-circle-check mr-1"></i>
-                    All applicable employee file items are on file and verified.
+            @elseif($hasEmployeeRecord)
+                <p class="mb-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    No required document types are configured yet
+                    @if($positionTitle)
+                        for position <span class="font-semibold text-slate-900">{{ $positionTitle }}</span>
+                    @endif.
                 </p>
             @endif
 
@@ -238,8 +297,8 @@
                     @endif
                 </div>
 
-                @if($uploadCount > 0)
-                    <form method="GET" action="{{ route('member.documents') }}" class="mb-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-6">
+                @if($hasEmployeeRecord)
+                    <form method="GET" action="{{ route('member.documents') }}" class="mb-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-6" id="documents-filter-form">
                         <div class="lg:col-span-2">
                             <label for="documents-search" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Search</label>
                             <input type="search" id="documents-search" name="q" value="{{ $documentFilters['search'] ?? '' }}"
@@ -248,7 +307,7 @@
                         </div>
                         <div>
                             <label for="documents-type" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Type</label>
-                            <select id="documents-type" name="type" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
+                            <select id="documents-type" name="type" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
                                 <option value="">All types</option>
                                 @foreach($documentTypeOptions as $option)
                                     <option value="{{ $option['value'] }}" @selected(($documentFilters['type'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
@@ -256,8 +315,17 @@
                             </select>
                         </div>
                         <div>
+                            <label for="documents-status" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
+                            <select id="documents-status" name="status" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
+                                <option value="" @selected(empty($documentFilters['status']))>All statuses</option>
+                                <option value="pending" @selected(($documentFilters['status'] ?? '') === 'pending')>Pending review</option>
+                                <option value="approved" @selected(($documentFilters['status'] ?? '') === 'approved')>Approved</option>
+                                <option value="rejected" @selected(($documentFilters['status'] ?? '') === 'rejected')>Rejected</option>
+                            </select>
+                        </div>
+                        <div>
                             <label for="documents-expiry" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Expiry</label>
-                            <select id="documents-expiry" name="expiry" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
+                            <select id="documents-expiry" name="expiry" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
                                 <option value="" @selected(empty($documentFilters['expiry']))>All</option>
                                 <option value="valid" @selected(($documentFilters['expiry'] ?? '') === 'valid')>Valid</option>
                                 <option value="expiring" @selected(($documentFilters['expiry'] ?? '') === 'expiring')>Expiring soon (30 days)</option>
@@ -267,7 +335,7 @@
                         </div>
                         <div>
                             <label for="documents-sort" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Sort by</label>
-                            <select id="documents-sort" name="sort" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
+                            <select id="documents-sort" name="sort" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
                                 <option value="uploaded_desc" @selected(($documentFilters['sort'] ?? 'uploaded_desc') === 'uploaded_desc')>Uploaded (newest)</option>
                                 <option value="uploaded_asc" @selected(($documentFilters['sort'] ?? '') === 'uploaded_asc')>Uploaded (oldest)</option>
                                 <option value="name_asc" @selected(($documentFilters['sort'] ?? '') === 'name_asc')>File name (A–Z)</option>
@@ -278,7 +346,7 @@
                         </div>
                         <div>
                             <label for="documents-per-page" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Per page</label>
-                            <select id="documents-per-page" name="per_page" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
+                            <select id="documents-per-page" name="per_page" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
                                 @foreach([10, 25, 50] as $size)
                                     <option value="{{ $size }}" @selected((int) ($documentFilters['per_page'] ?? 10) === $size)>{{ $size }}</option>
                                 @endforeach
@@ -291,6 +359,17 @@
                             </button>
                             @if($hasActiveDocumentFilters)
                                 <a href="{{ route('member.documents') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Reset</a>
+                            @endif
+                            @if($documentsPaginator && $filteredCount > 0)
+                                <p class="text-xs text-slate-500 sm:ml-auto">
+                                    Showing {{ $documentsPaginator->firstItem() }}–{{ $documentsPaginator->lastItem() }} of {{ $filteredCount }}
+                                    @if($hasActiveDocumentFilters)
+                                        matching
+                                    @endif
+                                    @if($uploadCount > 0 && $hasActiveDocumentFilters)
+                                        ({{ $uploadCount }} total)
+                                    @endif
+                                </p>
                             @endif
                         </div>
                     </form>
@@ -430,9 +509,26 @@
                         </table>
                     </div>
 
-                    @if($documentsPaginator && $documentsPaginator->hasPages())
-                        <div class="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                            {{ $documentsPaginator->links() }}
+                    @if($documentsPaginator)
+                        <div class="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-sm text-slate-600">
+                                @if($filteredCount > 0)
+                                    Showing
+                                    <span class="font-semibold text-slate-900">{{ $documentsPaginator->firstItem() }}</span>
+                                    –
+                                    <span class="font-semibold text-slate-900">{{ $documentsPaginator->lastItem() }}</span>
+                                    of
+                                    <span class="font-semibold text-slate-900">{{ $filteredCount }}</span>
+                                    documents
+                                @else
+                                    No documents on this page
+                                @endif
+                            </p>
+                            @if($documentsPaginator->hasPages())
+                                <div class="documents-pagination">
+                                    {{ $documentsPaginator->onEachSide(1)->links() }}
+                                </div>
+                            @endif
                         </div>
                     @endif
                 @endif

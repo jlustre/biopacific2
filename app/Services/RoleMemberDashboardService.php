@@ -277,11 +277,15 @@ class RoleMemberDashboardService
             ->values();
         $outstandingRequiredTrainings = $requiredTrainingItems
             ->reject(fn ($item) => ($item['status'] ?? '') === 'completed')
+            ->values();
+        $completedRequiredTrainingItems = $requiredTrainingItems
+            ->where('status', 'completed')
+            ->values();
+        $dashboardRequiredTrainings = $outstandingRequiredTrainings
+            ->concat($completedRequiredTrainingItems)
             ->values()
             ->all();
-        $completedRequiredTrainings = $requiredTrainingItems
-            ->where('status', 'completed')
-            ->count();
+        $completedRequiredTrainings = $completedRequiredTrainingItems->count();
         $requiredCredentialItems = collect($payload['certificationItems'] ?? [])->values();
         $outstandingRequiredCredentials = $requiredCredentialItems
             ->reject(fn ($item) => ($item['status'] ?? '') === 'valid')
@@ -305,7 +309,7 @@ class RoleMemberDashboardService
             'dashboardRequiredDocumentsTotal' => count($requiredDocuments) + $completedRequiredDocuments,
             'dashboardRequiredDocumentsComplete' => $completedRequiredDocuments,
             'dashboardRequiredDocumentsPositionTitle' => $documentsCenter['position_title'] ?? ($payload['positionTitle'] ?? null),
-            'dashboardRequiredTrainings' => $outstandingRequiredTrainings,
+            'dashboardRequiredTrainings' => $dashboardRequiredTrainings,
             'dashboardRequiredTrainingsTotal' => $requiredTrainingItems->count(),
             'dashboardRequiredTrainingsComplete' => $completedRequiredTrainings,
             'dashboardRequiredTrainingsPositionTitle' => $payload['positionTitle'] ?? null,
@@ -1076,21 +1080,28 @@ class RoleMemberDashboardService
                     continue;
                 }
 
-                $daysUntil = isset($item['days_to_expiry']) ? (int) $item['days_to_expiry'] : null;
+                $daysUntil = isset($item['days_until_due'])
+                    ? (int) $item['days_until_due']
+                    : (isset($item['days_to_expiry']) ? (int) $item['days_to_expiry'] - \App\Support\ComplianceDueDate::offsetDays() : null);
                 if ($daysUntil === null && ($item['status'] ?? '') === 'expired') {
                     $expiry = !empty($item['latest_expires_at'])
                         ? Carbon::parse($item['latest_expires_at'])->startOfDay()
                         : null;
-                    $daysUntil = $expiry ? (int) $today->diffInDays($expiry, false) : -1;
+                    $dueDate = \App\Support\ComplianceDueDate::forExpiration($expiry);
+                    $daysUntil = $dueDate ? (int) $today->diffInDays($dueDate, false) : -1;
                 }
 
-                if ($daysUntil === null || $daysUntil > 60) {
+                $expiringWindow = (int) config('facility-dashboard.expiring_window_days', 60);
+                if ($daysUntil === null || $daysUntil > $expiringWindow) {
                     continue;
                 }
 
                 $expiryDate = !empty($item['latest_expires_at'])
                     ? Carbon::parse($item['latest_expires_at'])->startOfDay()
                     : null;
+                $dueDate = !empty($item['due_at'])
+                    ? Carbon::parse($item['due_at'])->startOfDay()
+                    : \App\Support\ComplianceDueDate::forExpiration($expiryDate);
 
                 $rows[] = array_merge([
                     'employee_num' => $employee->employee_num,
@@ -1098,8 +1109,8 @@ class RoleMemberDashboardService
                     'position' => $position,
                     'document' => (string) ($item['name'] ?? 'Document'),
                     'source' => 'Required document',
-                    'expires_on' => $expiryDate?->format('M j, Y') ?? '—',
-                    'expires_on_sort' => $expiryDate?->toDateString() ?? '9999-12-31',
+                    'expires_on' => $dueDate?->format('M j, Y') ?? ($expiryDate?->format('M j, Y') ?? '—'),
+                    'expires_on_sort' => $dueDate?->toDateString() ?? ($expiryDate?->toDateString() ?? '9999-12-31'),
                     'manage_url' => $manageUrl,
                 ], $this->documentExpiryPresentation($daysUntil));
             }
@@ -1282,6 +1293,8 @@ class RoleMemberDashboardService
         }
 
         $today = Carbon::today();
+        $dueOffset = \App\Support\ComplianceDueDate::offsetDays();
+        $dueSoonWindow = (int) config('facility-dashboard.assessments_due_window_days', 30);
         $recommendedWindows = collect();
 
         foreach ($team as $employee) {
@@ -1302,12 +1315,26 @@ class RoleMemberDashboardService
             ->with(['employee.currentAssignment.position'])
             ->whereIn('employee_num', $employeeNums)
             ->whereDate('date_to', '>=', $today->copy()->subDays(370))
-            ->whereDate('date_to', '<=', $today->copy()->addDays(30))
+            ->whereDate('date_to', '<=', $today->copy()->addDays($dueSoonWindow + max(0, $dueOffset - 1)))
             ->orderBy('date_to')
             ->get()
-            ->filter(function (EmployeeAssessmentPeriod $period) use ($today, $recommendedWindows) {
+            ->filter(function (EmployeeAssessmentPeriod $period) use ($today, $recommendedWindows, $dueSoonWindow) {
+                $dueDate = \App\Support\ComplianceDueDate::forPeriod($period);
+                if ($dueDate) {
+                    $daysUntilDue = (int) $today->diffInDays($dueDate, false);
+
+                    // Include overdue through the period end, and upcoming dues in the window.
+                    if ($daysUntilDue <= $dueSoonWindow) {
+                        if ($daysUntilDue >= 0) {
+                            return true;
+                        }
+
+                        return $period->date_to?->gte($today) ?? false;
+                    }
+                }
+
                 if ($period->date_to?->gte($today)) {
-                    return true;
+                    return false;
                 }
 
                 $recommended = $recommendedWindows->get($period->employee_num);
@@ -1377,7 +1404,8 @@ class RoleMemberDashboardService
                 ? $employee->formalName()
                 : (string) $period->employee_num;
             $position = $employee?->currentAssignment?->position?->title ?? '—';
-            $dueDate = $period->date_to ? Carbon::parse($period->date_to)->startOfDay() : null;
+            $dueDate = \App\Support\ComplianceDueDate::forPeriod($period)
+                ?? ($period->date_to ? Carbon::parse($period->date_to)->startOfDay() : null);
             $daysUntil = $dueDate ? (int) $today->diffInDays($dueDate, false) : null;
             $dueLabel = $dueDate?->format('M j, Y') ?? '—';
 

@@ -56,6 +56,8 @@ class PersonalTaskPageService
      */
     public function collectRows(User $user, array $filters = []): Collection
     {
+        app(EmployeeTrainingWorkflowService::class)->syncCompletedAssignmentTasksForUser($user);
+
         $rows = collect();
 
         if (($filters['source'] ?? 'all') !== 'manual') {
@@ -138,7 +140,7 @@ class PersonalTaskPageService
     protected function personalRows(User $user): Collection
     {
         return PersonalTask::query()
-            ->visibleTo($user)
+            ->listedForUser($user)
             ->with(['creator:id,name', 'assignee:id,name'])
             ->whereNot('status', PersonalTask::STATUS_CANCELLED)
             ->latest('updated_at')
@@ -159,6 +161,11 @@ class PersonalTaskPageService
             '/^\[(?:training_completion_id|upload_verification_id|upload_correction_id):\d+\]\s*/',
             '',
             $rawDescription
+        ));
+        $description = trim((string) preg_replace(
+            '/^\[training_assignment:\d+:[^\]]+\]\s*/',
+            '',
+            $description
         ));
         $title = (string) $task->title;
         $isDocumentReview = str_contains($rawDescription, '[upload_verification_id:')

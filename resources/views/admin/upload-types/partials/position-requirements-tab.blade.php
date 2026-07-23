@@ -10,12 +10,12 @@
         <div class="max-w-2xl">
             <h2 class="text-lg font-bold text-slate-900">Position document requirements</h2>
             <p class="mt-1 text-sm text-slate-600">
-                Assign <strong>general compliance documents</strong> (I-9, licenses, CPR, etc.) to positions.
-                Use presets for common groups like all staff, nurses, or CNAs — or pick individual documents and positions.
+                Assign documents from the <strong>single catalog</strong> (including PART A–D) to positions.
+                Documents marked “Required for all positions” on the document type apply to every employee automatically.
             </p>
             <p class="mt-2 text-xs text-slate-500">
-                Employee file items (PART A–D) are managed on the
-                <a href="{{ route('admin.upload-types.index', ['tab' => 'items']) }}" class="font-semibold text-brand-600 hover:text-brand-700">Employee file items</a> tab.
+                Manage names and “all positions” on
+                <a href="{{ route('admin.upload-types.index', ['tab' => 'types']) }}" class="font-semibold text-brand-600 hover:text-brand-700">All document types</a>.
                 Per-position fine-tuning is also available on each
                 <a href="{{ route('admin.positions.index') }}" class="font-semibold text-brand-600 hover:text-brand-700">position record</a>.
             </p>
@@ -95,6 +95,7 @@
                         <tr>
                             <th class="w-24 px-4 py-3 text-center">Required</th>
                             <th class="px-4 py-3">Document</th>
+                            <th class="px-4 py-3">Section</th>
                             <th class="px-4 py-3">Department scope</th>
                             <th class="px-4 py-3 text-center">Tracks expiry</th>
                             <th class="px-4 py-3 text-center">License / certification</th>
@@ -105,10 +106,17 @@
                             <tr class="hover:bg-slate-50/80">
                                 <td class="px-4 py-3 text-center">
                                     <input type="checkbox" name="upload_type_ids[]" value="{{ $type->id }}"
-                                           @checked($selectedRequirementIds->contains((int) $type->id))
-                                           class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                           @checked($selectedRequirementIds->contains((int) $type->id) || $type->applies_to_all_positions)
+                                           class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                           @if($type->applies_to_all_positions) title="Required for all positions" @endif>
                                 </td>
-                                <td class="px-4 py-3 font-semibold text-slate-900">{{ $type->name }}</td>
+                                <td class="px-4 py-3 font-semibold text-slate-900">
+                                    {{ $type->name }}
+                                    @if($type->applies_to_all_positions)
+                                        <span class="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">All positions</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-xs text-slate-600">{{ $type->checklist_section ?: 'General' }}</td>
                                 <td class="px-4 py-3 text-xs text-slate-600">
                                     @if(empty($type->department_ids))
                                         Organization-wide
@@ -128,7 +136,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No document types are available for this position.</td></tr>
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No document types are available for this position.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

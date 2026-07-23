@@ -237,9 +237,13 @@ class FacilityDashboardService
                     ->whereIn('employee_num', $employeeNums)
                     ->whereNotNull('expiry_date')
                     ->whereDate('expiry_date', '>=', $today)
-                    ->whereDate('expiry_date', '<=', $today->copy()->addDays(30))
+                    ->whereDate(
+                        'expiry_date',
+                        '<=',
+                        $today->copy()->addDays(30 + \App\Support\ComplianceDueDate::offsetDays())
+                    )
                     ->count(),
-                'hint' => 'Due within 30 days',
+                'hint' => 'Renewal due within 30 days of anniversary/expiry',
                 'route' => route('admin.facility.documents', ['facility' => $facilityKey]),
                 'icon' => 'fa-id-badge',
                 'tone' => 'rose',
@@ -306,11 +310,24 @@ class FacilityDashboardService
         }
 
         $today = Carbon::today();
+        $dueOffset = \App\Support\ComplianceDueDate::offsetDays();
+        $dueSoonWindow = (int) config('facility-dashboard.assessments_due_window_days', 30);
         $periodsDueSoon = EmployeeAssessmentPeriod::query()
             ->whereIn('employee_num', $employeeNums)
             ->whereDate('date_to', '>=', $today)
-            ->whereDate('date_to', '<=', $today->copy()->addDays(30))
-            ->get(['id', 'employee_num']);
+            ->whereDate('date_to', '<=', $today->copy()->addDays($dueSoonWindow + max(0, $dueOffset - 1)))
+            ->get(['id', 'employee_num', 'date_to'])
+            ->filter(function (EmployeeAssessmentPeriod $period) use ($today, $dueSoonWindow) {
+                $dueDate = \App\Support\ComplianceDueDate::forPeriod($period);
+                if (! $dueDate) {
+                    return false;
+                }
+
+                $daysUntilDue = (int) $today->diffInDays($dueDate, false);
+
+                return $daysUntilDue >= 0 && $daysUntilDue <= $dueSoonWindow;
+            })
+            ->values();
 
         if ($periodsDueSoon->isEmpty()) {
             return 0;

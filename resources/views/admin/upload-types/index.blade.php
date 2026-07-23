@@ -8,7 +8,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-black text-slate-900">Documents Settings</h1>
-            <p class="text-sm text-slate-500">Assign required documents to positions, manage employee file items, and maintain document types.</p>
+            <p class="text-sm text-slate-500">Single document catalog: manage names once, assign by position (all or specific), and keep Checklist PART A–D in sync.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             @if($tab === 'types' && auth()->user()?->hasRole(['admin', 'super-admin']))
@@ -277,29 +277,21 @@
                                     <a href="{{ route('admin.upload-types.show', $uploadType) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900" title="View" aria-label="View">
                                         <i class="fa-solid fa-eye"></i>
                                     </a>
-                                    @if($uploadType->isEmployeeFileChecklistType() && $uploadType->checklist_item_id)
-                                        <a href="{{ route('admin.checklist-items.edit', $uploadType->checklist_item_id) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50" title="Edit employee file item" aria-label="Edit">
-                                            <i class="fa-solid fa-pen"></i>
-                                        </a>
-                                    @else
-                                        <a href="{{ route('admin.upload-types.edit', $uploadType) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50" title="Edit" aria-label="Edit">
-                                            <i class="fa-solid fa-pen"></i>
-                                        </a>
-                                    @endif
-                                    @if(! $uploadType->isEmployeeFileChecklistType())
-                                        <form method="POST" action="{{ route('admin.upload-types.destroy', $uploadType) }}"
-                                              onsubmit="return confirm('{{ $permanentDelete ? 'Permanently delete this document type? This cannot be undone.' : 'Archive this document type? It will no longer be available for new requirements or uploads.' }}');"
-                                              class="inline-flex">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border {{ $permanentDelete ? 'border-rose-200 text-rose-600 hover:bg-rose-50' : 'border-amber-200 text-amber-700 hover:bg-amber-50' }}"
-                                                    title="{{ $permanentDelete ? 'Permanently delete' : 'Archive document type' }}"
-                                                    aria-label="{{ $permanentDelete ? 'Permanently delete' : 'Archive document type' }}">
-                                                <i class="fa-solid {{ $permanentDelete ? 'fa-trash' : 'fa-box-archive' }}"></i>
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <a href="{{ route('admin.upload-types.edit', $uploadType) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-200 text-brand-600 hover:bg-brand-50" title="Edit" aria-label="Edit">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.upload-types.destroy', $uploadType) }}"
+                                          onsubmit="return confirm('{{ $permanentDelete ? 'Permanently delete this document type? This cannot be undone.' : 'Archive this document type? It will no longer be available for new requirements or uploads.' }}');"
+                                          class="inline-flex">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border {{ $permanentDelete ? 'border-rose-200 text-rose-600 hover:bg-rose-50' : 'border-amber-200 text-amber-700 hover:bg-amber-50' }}"
+                                                title="{{ $permanentDelete ? 'Permanently delete' : 'Archive document type' }}"
+                                                aria-label="{{ $permanentDelete ? 'Permanently delete' : 'Archive document type' }}">
+                                            <i class="fa-solid {{ $permanentDelete ? 'fa-trash' : 'fa-box-archive' }}"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

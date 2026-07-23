@@ -5,11 +5,13 @@ namespace App\Support;
 use App\Models\BPEmployee;
 use App\Models\EmployeeAssessmentPeriod;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 /**
  * Annual assessment windows are anchored to original_hire_dt, or rehire_dt when
- * Action is Rehire. Default assessment period = prior completed annual cycle.
+ * Action is Rehire. The assessment year identifies the calendar year in which
+ * the anniversary-based annual cycle ends.
  */
 class EmployeeAssessmentPeriodCalculator
 {
@@ -28,10 +30,48 @@ class EmployeeAssessmentPeriodCalculator
         return null;
     }
 
+    public static function firstAssessmentDueDate(BPEmployee $employee): ?Carbon
+    {
+        $anchor = self::resolveAnchorDate($employee);
+        if (! $anchor) {
+            return null;
+        }
+
+        $firstAnniversary = self::anniversaryInYear($anchor, $anchor->year + 1);
+
+        return ComplianceDueDate::before($firstAnniversary);
+    }
+
+    /**
+     * Due date for an annual assessment period (30 days before the hire anniversary
+     * that ends the cycle).
+     *
+     * @param  EmployeeAssessmentPeriod|array{date_to?: mixed}|null  $period
+     */
+    public static function dueDateForPeriod(EmployeeAssessmentPeriod|array|null $period): ?Carbon
+    {
+        return ComplianceDueDate::forPeriod($period);
+    }
+
+    public static function dueDateForPeriodEnd(CarbonInterface|string|null $dateTo): ?Carbon
+    {
+        return ComplianceDueDate::forPeriodEnd($dateTo);
+    }
+
+    public static function isAssessmentDue(BPEmployee $employee, ?Carbon $on = null): bool
+    {
+        $dueDate = self::firstAssessmentDueDate($employee);
+        if (! $dueDate) {
+            return false;
+        }
+
+        return ($on ?? now())->copy()->startOfDay()->gte($dueDate);
+    }
+
     public static function containingPeriodStartYear(Carbon $anchor, Carbon $on): int
     {
         $startYear = $on->year;
-        $anniversaryOn = Carbon::create($on->year, $anchor->month, $anchor->day)->startOfDay();
+        $anniversaryOn = self::anniversaryInYear($anchor, $on->year);
 
         if ($on->lt($anniversaryOn)) {
             $startYear = $on->year - 1;
@@ -45,14 +85,31 @@ class EmployeeAssessmentPeriodCalculator
      */
     public static function annualPeriodForStartYear(Carbon $anchor, int $startYear): array
     {
-        $from = Carbon::create($startYear, $anchor->month, $anchor->day)->startOfDay();
-        $to = Carbon::create($startYear + 1, $anchor->month, $anchor->day)->subDay()->startOfDay();
+        $from = self::anniversaryInYear($anchor, $startYear);
+        $to = self::anniversaryInYear($anchor, $startYear + 1)->subDay();
 
         return [
             'date_from' => $from->toDateString(),
             'date_to' => $to->toDateString(),
             'period_year' => $startYear,
         ];
+    }
+
+    /**
+     * The assessment year is the year in which the annual cycle ends.
+     *
+     * @return array{date_from: string, date_to: string, period_year: int}|null
+     */
+    public static function annualPeriodForAssessmentYear(BPEmployee $employee, int $assessmentYear): ?array
+    {
+        $anchor = self::resolveAnchorDate($employee);
+        $startYear = $assessmentYear - 1;
+
+        if (! $anchor || $startYear < $anchor->year) {
+            return null;
+        }
+
+        return self::annualPeriodForStartYear($anchor, $startYear);
     }
 
     /**
@@ -75,19 +132,16 @@ class EmployeeAssessmentPeriodCalculator
      */
     public static function annualPeriodForAssessmentOn(BPEmployee $employee, ?Carbon $on = null): ?array
     {
+        $on = ($on ?? now())->copy()->startOfDay();
         $anchor = self::resolveAnchorDate($employee);
         if (! $anchor) {
             return null;
         }
-
-        $on = ($on ?? now())->copy()->startOfDay();
-        $priorStart = self::containingPeriodStartYear($anchor, $on) - 1;
-
-        if ($priorStart < $anchor->year) {
-            return null;
+        if (! self::isAssessmentDue($employee, $on)) {
+            return self::annualPeriodForStartYear($anchor, $anchor->year);
         }
 
-        return self::annualPeriodForStartYear($anchor, $priorStart);
+        return self::annualPeriodForAssessmentYear($employee, $on->year);
     }
 
     public static function syncEndYear(BPEmployee $employee, ?Carbon $on = null): ?int
@@ -190,5 +244,13 @@ class EmployeeAssessmentPeriodCalculator
         $range = self::loadableYearRange($currentYear);
 
         return $year >= $range['min'] && $year <= $range['max'];
+    }
+
+    private static function anniversaryInYear(Carbon $anchor, int $year): Carbon
+    {
+        $monthStart = Carbon::create($year, $anchor->month, 1)->startOfDay();
+        $day = min($anchor->day, $monthStart->daysInMonth);
+
+        return $monthStart->day($day);
     }
 }

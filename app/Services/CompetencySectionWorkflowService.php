@@ -6,6 +6,7 @@ use App\Models\BPEmployee;
 use App\Models\EmployeeAssessmentItemEntry;
 use App\Models\EmployeeCompetencyAssessment;
 use App\Support\AssessmentWorkflowStatus;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -441,10 +442,13 @@ class CompetencySectionWorkflowService
         $workflow['employee_signed_at'] = now()->toDateTimeString();
         $workflow['employee_comments'] = $employeeComments ?? (string) ($workflow['employee_comments'] ?? '');
         $workflow['status'] = AssessmentWorkflowStatus::FOR_REVIEWER_APPROVAL;
+
+        // Persist comments before fingerprinting so the snapshot matches what
+        // sectionHasChangedSinceEmployeeConfirmation will compare against later.
+        $this->updateSectionComments($assessment, $sectionLabel, employeeComments: $workflow['employee_comments']);
         $workflow['employee_confirmation_snapshot'] = $this->buildSectionSnapshotFingerprint($assessment, $sectionLabel);
 
         $this->writeSectionWorkflow($assessment, $sectionLabel, $workflow);
-        $this->updateSectionComments($assessment, $sectionLabel, employeeComments: $workflow['employee_comments']);
         $this->syncAggregateAssessmentStatus($assessment);
         $assessment->save();
     }
@@ -534,7 +538,24 @@ class CompetencySectionWorkflowService
             return false;
         }
 
-        return $stored !== $this->buildSectionSnapshotFingerprint($assessment, $sectionLabel);
+        $current = $this->buildSectionSnapshotFingerprint($assessment, $sectionLabel);
+        if ($stored === $current) {
+            return false;
+        }
+
+        // Heal legacy / ordering mismatches when ratings have not actually changed
+        // after the employee signed — otherwise Complete Section stays hidden.
+        $signedAt = $workflow['employee_signed_at'] ?? null;
+        if (filled($signedAt) && ! $this->sectionRatingsChangedAfter($assessment, $signedAt)) {
+            $this->writeSectionWorkflow($assessment, $sectionLabel, [
+                'employee_confirmation_snapshot' => $current,
+            ]);
+            $assessment->saveQuietly();
+
+            return false;
+        }
+
+        return true;
     }
 
     public function syncSubmittedSectionsWithoutWorkflow(EmployeeCompetencyAssessment $assessment): void
@@ -880,12 +901,61 @@ class CompetencySectionWorkflowService
         string $sectionLabel,
     ): string {
         $snapshot = is_array($assessment->snapshot_json) ? $assessment->snapshot_json : [];
-        $summary = $snapshot['section_summaries'][$sectionLabel] ?? [];
-        $comments = $snapshot['section_comments'][$sectionLabel] ?? [];
+        $summary = is_array($snapshot['section_summaries'][$sectionLabel] ?? null)
+            ? $snapshot['section_summaries'][$sectionLabel]
+            : [];
+        $comments = is_array($snapshot['section_comments'][$sectionLabel] ?? null)
+            ? $snapshot['section_comments'][$sectionLabel]
+            : [];
 
-        return hash('sha256', json_encode([
-            'summary' => $summary,
-            'comments' => $comments,
-        ]));
+        // Only fingerprint employee-confirmed competency content. Volatile fields
+        // (reviewer comments, review_date, submitted_at) must not hide Approve.
+        $payload = [
+            'summary' => [
+                'total_score' => $this->normalizeFingerprintNumber($summary['total_score'] ?? null),
+                'average_score' => $this->normalizeFingerprintNumber($summary['average_score'] ?? null),
+                'overall_rating' => (string) ($summary['overall_rating'] ?? ''),
+            ],
+            'employee_comments' => trim((string) ($comments['employee_comments'] ?? '')),
+        ];
+
+        return hash('sha256', json_encode($payload));
+    }
+
+    protected function normalizeFingerprintNumber(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return (string) $value;
+        }
+
+        return number_format((float) $value, 4, '.', '');
+    }
+
+    protected function sectionRatingsChangedAfter(
+        EmployeeCompetencyAssessment $assessment,
+        string $signedAt,
+    ): bool {
+        try {
+            $signed = Carbon::parse($signedAt);
+        } catch (\Throwable) {
+            return true;
+        }
+
+        try {
+            return EmployeeAssessmentItemEntry::query()
+                ->where('employee_num', $assessment->employee_num)
+                ->where('assessment_period_id', $assessment->assessment_period_id)
+                ->where('assessment_type', 'competency')
+                ->whereNull('revoked_at')
+                ->where('created_at', '>', $signed)
+                ->exists();
+        } catch (\Throwable) {
+            // Without a usable DB connection, do not heal mismatched fingerprints.
+            return true;
+        }
     }
 }

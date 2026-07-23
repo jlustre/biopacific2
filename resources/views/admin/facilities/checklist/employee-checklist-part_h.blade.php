@@ -11,8 +11,7 @@
     $workflow = app(\App\Services\EmployeeTrainingWorkflowService::class);
     $isSelf = $actor ? $workflow->actorIsEmployee($actor, $employee) : false;
     $canReview = $actor ? $workflow->actorCanReview($actor, $employee) : false;
-    $canActAsEmployee = $isSelf
-        || ($actor && $actor->hasRole(['admin', 'super-admin', 'rdhr', 'facility-admin', 'facility-dsd', 'don']));
+    $canActAsEmployee = $isSelf;
 
     $statusBadge = function (?\App\Models\EmployeeTrainingCompletion $completion, ?array $due = null, bool $satisfiedFromPrior = false): array {
         if ($satisfiedFromPrior) {
@@ -95,6 +94,7 @@
                         $canStart = $canActAsEmployee && (! $completion || $completion->employeeCanStart());
                         $canSubmit = $canActAsEmployee && $completion && $completion->employeeCanSubmit();
                         $canDecide = $canReview && $completion && $completion->reviewerCanDecide();
+                        $canAssignTask = $canReview && (! $completion || $completion->status === \App\Models\EmployeeTrainingCompletion::STATUS_NOT_STARTED);
                         $actionsLocked = false;
                     @endphp
                     @include('admin.facilities.checklist.partials.training-workflow-row', [
@@ -108,6 +108,7 @@
                         'canStart' => $canStart,
                         'canSubmit' => $canSubmit,
                         'canDecide' => $canDecide,
+                        'canAssignTask' => $canAssignTask,
                         'actionsLocked' => $actionsLocked,
                         'rowEven' => $loop->even,
                     ])
@@ -149,6 +150,8 @@
                         $canStart = ! $actionsLocked && ! $satisfiedFromPrior && $canActAsEmployee && (! $completion || $completion->employeeCanStart());
                         $canSubmit = ! $actionsLocked && ! $satisfiedFromPrior && $canActAsEmployee && $completion && $completion->employeeCanSubmit();
                         $canDecide = ! $actionsLocked && $canReview && $completion && $completion->reviewerCanDecide();
+                        $canAssignTask = ! $actionsLocked && ! $satisfiedFromPrior && $canReview
+                            && (! $completion || $completion->status === \App\Models\EmployeeTrainingCompletion::STATUS_NOT_STARTED);
                     @endphp
                     @include('admin.facilities.checklist.partials.training-workflow-row', [
                         'item' => $item,
@@ -161,10 +164,16 @@
                         'canStart' => $canStart,
                         'canSubmit' => $canSubmit,
                         'canDecide' => $canDecide,
+                        'canAssignTask' => $canAssignTask,
                         'actionsLocked' => $actionsLocked,
                         'satisfiedFromPrior' => $satisfiedFromPrior,
                         'frequencyLabel' => $item->frequencyShortLabel(),
                         'rowEven' => $loop->even,
+                        'defaultDueDate' => ($due['next_due_at'] ?? null)?->format('Y-m-d')
+                            ?? (! empty($selectedAssessmentPeriod)
+                                ? \App\Support\ComplianceDueDate::forPeriod($selectedAssessmentPeriod)?->format('Y-m-d')
+                                : null)
+                            ?? now()->addDays(\App\Support\ComplianceDueDate::offsetDays())->format('Y-m-d'),
                     ])
                 @empty
                     <tr><td colspan="5" class="px-3 py-4 text-center text-slate-500">No recurring trainings assigned to this position.</td></tr>
@@ -172,4 +181,91 @@
             </tbody>
         </table>
     </div>
+
+    @if($canReview)
+    <div id="trainingTaskModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="trainingTaskModalTitle">
+        <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-slate-200 px-5 py-4">
+                <div>
+                    <h3 id="trainingTaskModalTitle" class="text-lg font-bold text-slate-900">Assign training task</h3>
+                    <p class="mt-1 text-xs text-slate-600">
+                        Assign to {{ $employee->formalName() }} and send the same message by email.
+                    </p>
+                </div>
+                <button type="button" class="js-close-training-task-modal text-2xl leading-none text-slate-400 hover:text-slate-700" aria-label="Close">&times;</button>
+            </div>
+            <form id="trainingTaskForm" method="POST" class="space-y-4 px-5 py-4">
+                @csrf
+                <input type="hidden" name="assessment_period_id" id="trainingTaskPeriodId">
+                <div>
+                    <label for="trainingTaskTitle" class="block text-xs font-semibold uppercase tracking-wide text-slate-700">Task title</label>
+                    <input id="trainingTaskTitle" name="title" type="text" maxlength="255" required
+                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label for="trainingTaskMessage" class="block text-xs font-semibold uppercase tracking-wide text-slate-700">Message</label>
+                    <textarea id="trainingTaskMessage" name="message" rows="5" maxlength="2000" required
+                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label for="trainingTaskPriority" class="block text-xs font-semibold uppercase tracking-wide text-slate-700">Priority</label>
+                        <select id="trainingTaskPriority" name="priority" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high" selected>High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="trainingTaskDueDate" class="block text-xs font-semibold uppercase tracking-wide text-slate-700">Due date</label>
+                        <input id="trainingTaskDueDate" name="due_date" type="date"
+                            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                    <button type="button" class="js-close-training-task-modal rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800">
+                        Assign task &amp; send message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('trainingTaskModal');
+        const form = document.getElementById('trainingTaskForm');
+        if (!modal || !form) return;
+
+        const closeModal = function () {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        document.querySelectorAll('.js-open-training-task-modal').forEach(function (button) {
+            button.addEventListener('click', function () {
+                form.action = button.dataset.action;
+                document.getElementById('trainingTaskTitle').value = button.dataset.defaultTitle || '';
+                document.getElementById('trainingTaskMessage').value = button.dataset.defaultMessage || '';
+                document.getElementById('trainingTaskDueDate').value = button.dataset.defaultDueDate || '';
+                document.getElementById('trainingTaskPeriodId').value = button.dataset.periodId || '';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.getElementById('trainingTaskTitle').focus();
+            });
+        });
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) closeModal();
+        });
+        document.querySelectorAll('.js-close-training-task-modal').forEach(function (button) {
+            button.addEventListener('click', closeModal);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+    });
+    </script>
+    @endif
 </div>

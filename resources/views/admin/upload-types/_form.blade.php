@@ -3,6 +3,11 @@
     @method($method)
 @endif
 
+@php
+    $employeeFileSections = $employeeFileSections ?? \App\Services\ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS;
+    $docTypes = $docTypes ?? collect();
+@endphp
+
 <div class="space-y-6">
     <div class="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 class="text-lg font-bold text-slate-900">Document Type Details</h2>
@@ -17,6 +22,7 @@
                     required
                     class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
                 >
+                <p class="mt-1 text-xs text-slate-500">This exact name is used on Documents pages and Checklist PART A–D.</p>
             </div>
 
             <div class="md:col-span-2">
@@ -27,6 +33,51 @@
                     rows="3"
                     class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
                 >{{ old('description', $uploadType->description ?? '') }}</textarea>
+            </div>
+
+            <div>
+                <label for="checklist_section" class="mb-1 block text-sm font-semibold text-slate-700">Checklist section</label>
+                <select
+                    id="checklist_section"
+                    name="checklist_section"
+                    class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                >
+                    <option value="">General (not on PART A–D)</option>
+                    @foreach($employeeFileSections as $section)
+                        <option value="{{ $section }}" @selected(old('checklist_section', $uploadType->checklist_section ?? '') === $section)>
+                            {{ $section }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label for="doc_type_id" class="mb-1 block text-sm font-semibold text-slate-700">Part A category</label>
+                <select
+                    id="doc_type_id"
+                    name="doc_type_id"
+                    class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                >
+                    <option value="">None</option>
+                    @foreach($docTypes as $docType)
+                        <option value="{{ $docType->id }}" @selected((int) old('doc_type_id', $uploadType->doc_type_id ?? 0) === (int) $docType->id)>
+                            {{ $docType->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Used for PART A groupings (Applicant / Identifications / Verifications).</p>
+            </div>
+
+            <div>
+                <label for="sort_order" class="mb-1 block text-sm font-semibold text-slate-700">Sort order</label>
+                <input
+                    type="number"
+                    id="sort_order"
+                    name="sort_order"
+                    min="0"
+                    value="{{ old('sort_order', $uploadType->sort_order ?? 0) }}"
+                    class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                >
             </div>
 
             <div class="md:col-span-2">
@@ -48,8 +99,7 @@
                         </option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-xs text-slate-500">Hold Ctrl while clicking to select multiple departments.</p>
-                <p class="mt-1 text-xs text-slate-500">Leave empty to make this document type available to all departments.</p>
+                <p class="mt-1 text-xs text-slate-500">Hold Ctrl while clicking to select multiple departments. Leave empty for all departments.</p>
             </div>
 
             <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -60,6 +110,14 @@
             <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <input type="checkbox" name="is_license_or_certification" value="1" {{ old('is_license_or_certification', $uploadType->is_license_or_certification ?? false) ? 'checked' : '' }} class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
                 License / Certification
+            </label>
+
+            <label class="md:col-span-2 inline-flex items-start gap-2 text-sm font-semibold text-slate-700">
+                <input type="checkbox" name="applies_to_all_positions" value="1" {{ old('applies_to_all_positions', $uploadType->applies_to_all_positions ?? false) ? 'checked' : '' }} class="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                <span>
+                    Required for all positions
+                    <span class="block text-xs font-normal text-slate-500">When checked, this document is required for every employee. Otherwise assign it under Position requirements.</span>
+                </span>
             </label>
         </div>
     </div>

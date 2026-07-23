@@ -8,6 +8,8 @@
         $partFEmployeeCanConfirm = \App\Support\AssessmentWorkflowStatus::employeeCanConfirm($partFWorkflowStatus);
         $partFReviewerCanApprove = \App\Support\AssessmentWorkflowStatus::reviewerCanApprove($partFWorkflowStatus);
         $partFWaitingEmployeeConfirmation = $partFWorkflowStatus === \App\Support\AssessmentWorkflowStatus::FOR_EMPLOYEE_CONFIRMATION;
+        $partFPerformanceDue = \App\Support\EmployeeAssessmentPeriodCalculator::isAssessmentDue($employee);
+        $partFFirstDueDate = \App\Support\EmployeeAssessmentPeriodCalculator::firstAssessmentDueDate($employee);
         $partFConfirmationService = app(\App\Services\PerformanceAssessmentConfirmationService::class);
         $partFContentChangedSinceEmployeeConfirmation = $partFSelectedAssessment
             && $partFReviewerCanApprove
@@ -16,7 +18,8 @@
             && empty($evaluatorActionsDisabled)
             && ! $partFContentChangedSinceEmployeeConfirmation
             && filled($partFSelectedAssessment?->employee_signature_path);
-        $partFSummaryReadOnly = $partFAssessmentLocked
+        $partFSummaryReadOnly = ! $partFPerformanceDue
+            || $partFAssessmentLocked
             || ($partFWaitingEmployeeConfirmation && empty($evaluatorActionsDisabled))
             || ($partFReviewerCanApprove && !empty($evaluatorActionsDisabled));
         $partFCurrentReviewerId = auth()->id();
@@ -49,9 +52,16 @@
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <h2 class="text-xl font-bold">PART F - EMPLOYEE PERFORMANCE APPRAISAL</h2>
             @if($partFStatusLabel)
-            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $partFAssessmentLocked ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}">{{ $partFAssessmentLocked ? 'Read Only' : $partFStatusLabel }}</span>
+            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ ($partFAssessmentLocked || ! $partFPerformanceDue) ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}">{{ ! $partFPerformanceDue ? 'Not Due' : ($partFAssessmentLocked ? 'Read Only' : $partFStatusLabel) }}</span>
             @endif
         </div>
+        @if(! $partFPerformanceDue && $partFFirstDueDate)
+        <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 shadow-sm">
+            <strong>Performance appraisal not yet due.</strong>
+            This employee completes one year of service on {{ $partFFirstDueDate->format('F j, Y') }}.
+            Continue with the competency evaluation in Part G during the first year.
+        </div>
+        @endif
 
         <div class="mb-4 grid gap-3 xl:grid-cols-2 xl:items-stretch">
             <div>
@@ -118,7 +128,8 @@
         @livewire('admin.facilities.checklist.part-f-sections.performance-appraisal-areas', [
             'employeeNum' => $employee->employee_num,
             'assessmentPeriodId' => $selectedAssessmentPeriodId,
-            'assessmentLocked' => $partFAssessmentLocked
+            'assessmentLocked' => ! $partFPerformanceDue
+                || $partFAssessmentLocked
                 || $partFEmployeeCanConfirm
                 || ($partFReviewerCanApprove && !empty($evaluatorActionsDisabled))
                 || (!empty($evaluatorActionsDisabled) && ! $partFEmployeeCanConfirm),

@@ -15,9 +15,19 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
     <div>
-        <label for="section" class="block text-sm font-semibold text-gray-900 mb-2">Section</label>
-        <input type="text" name="section" id="section" value="{{ old('section', $checklistItem->section) }}" placeholder="e.g., PART E"
+        <label for="section" class="block text-sm font-semibold text-gray-900 mb-2">Section <span class="text-red-500">*</span></label>
+        @php
+            $employeeFileSections = \App\Services\ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS;
+            $selectedSection = old('section', $checklistItem->section);
+        @endphp
+        <select name="section" id="section" required
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">Select PART A–D…</option>
+            @foreach ($employeeFileSections as $section)
+                <option value="{{ $section }}" @selected($selectedSection === $section)>{{ $section }}</option>
+            @endforeach
+        </select>
+        <p class="mt-1 text-xs text-slate-500">PART E orientation items are not documents and are managed separately.</p>
         @error('section')
         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
         @enderror

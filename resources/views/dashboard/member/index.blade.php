@@ -200,7 +200,7 @@
             </div>
 
             <div x-show="expanded" x-cloak>
-                @if(count($requiredTrainings) === 0)
+                @if($requiredTrainingsComplete === $requiredTrainingsTotal && count($requiredTrainings) === 0)
                     <p class="px-4 py-4 text-sm font-semibold text-emerald-700">
                         <i class="fa-solid fa-circle-check mr-1"></i> All required position training is complete and current.
                     </p>
@@ -209,7 +209,9 @@
                         @foreach($requiredTrainings as $training)
                         @php
                             $status = $training['status'] ?? 'not_started';
+                            $isCompleted = $status === 'completed';
                             $statusClass = $training['badge_class'] ?? match ($status) {
+                                'completed' => 'bg-emerald-50 text-emerald-800',
                                 'submitted', 'pending_signature' => 'bg-sky-50 text-sky-700',
                                 'in_progress' => 'bg-amber-50 text-amber-800',
                                 'overdue', 'rejected' => 'bg-rose-100 text-rose-800',
@@ -233,7 +235,11 @@
                                 <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide {{ $statusClass }}">
                                     {{ $training['status_label'] ?? 'Not started' }}
                                 </span>
-                                @if(in_array($status, ['submitted', 'pending_signature'], true))
+                                @if($isCompleted)
+                                    <span class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
+                                        <i class="fa-solid fa-check mr-1"></i>Completed
+                                    </span>
+                                @elseif(in_array($status, ['submitted', 'pending_signature'], true))
                                     <span class="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-400">Awaiting review</span>
                                 @else
                                     <a href="{{ $trainingUrl }}" class="rounded-lg bg-amber-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-amber-700">

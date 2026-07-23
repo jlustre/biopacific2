@@ -126,6 +126,9 @@ Route::middleware(['auth', 'role:admin|super-admin|rdhr|facility-admin|facility-
     Route::post('/', [\App\Http\Controllers\Admin\ReportController::class, 'store'])->name('store');
     Route::post('/sync-seeder', [\App\Http\Controllers\Admin\ReportController::class, 'syncSeeder'])->name('sync-seeder');
     Route::post('/validate-sql', [\App\Http\Controllers\Admin\ReportController::class, 'validateSql'])->name('validate-sql');
+    Route::get('/exports/{reportExport}', [\App\Http\Controllers\Admin\ReportExportController::class, 'show'])->name('exports.show');
+    Route::get('/exports/{reportExport}/status', [\App\Http\Controllers\Admin\ReportExportController::class, 'status'])->name('exports.status');
+    Route::get('/exports/{reportExport}/download', [\App\Http\Controllers\Admin\ReportExportController::class, 'download'])->name('exports.download');
 
     Route::get('/{report}/edit', [\App\Http\Controllers\Admin\ReportController::class, 'edit'])->name('edit')->missing($missingReport);
     Route::put('/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('update')->missing($missingReport);
@@ -209,6 +212,8 @@ Route::middleware(['auth', 'permission:' . Permissions::VIEW_POSITIONS])->get('/
 Route::post('admin/employees/{employee}/areas-development', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveAreasDevelopment'])->name('admin.employees.areas_development.save');
 Route::post('admin/employees/{employee}/competency-workflow', [\App\Http\Controllers\Admin\EmployeesController::class, 'saveCompetencyWorkflow'])->name('admin.employees.competency-workflow.save');
 Route::middleware(['auth'])->prefix('admin/employees/{employee}/training-completions')->name('admin.employees.training-completions.')->group(function () {
+    Route::post('{trainingItem}/assign-task', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'assignTask'])
+        ->name('assign-task');
     Route::post('{trainingItem}/start', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'start'])
         ->name('start');
     Route::post('{trainingItem}/submit', [\App\Http\Controllers\Admin\EmployeeTrainingCompletionController::class, 'submit'])
@@ -230,7 +235,9 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('employees/performance-assessment/reviewed-employees', [App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'getReviewedEmployees'])->name('admin.employees.performance-assessment.reviewed-employees');
 });
 // Delete assessment period (PART F)
-Route::delete('/admin/employees/performance-assessment/period/{id}', [App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'destroyPeriod'])->name('admin.employees.performance-assessment.period.destroy');
+Route::delete('/admin/employees/performance-assessment/period/{id}', [App\Http\Controllers\EmployeePerformanceAssessmentController::class, 'destroyPeriod'])
+    ->middleware('auth')
+    ->name('admin.employees.performance-assessment.period.destroy');
 
 
 // PART F: Section Comments (AJAX endpoints)
@@ -786,7 +793,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/help/manuals', [\App\Http\Controllers\MemberPortalHelpController::class, 'manuals'])->name('member.help.manuals');
     Route::get('/dashboard/help/manuals/hr-portal-user-manual', [\App\Http\Controllers\MemberPortalHelpController::class, 'userManual'])->name('member.help.user-manual');
     Route::get('/dashboard/help/manuals/document/{document}', [\App\Http\Controllers\MemberPortalHelpController::class, 'portalDocumentPdf'])
-        ->whereIn('document', ['HR_PORTAL_USER_MANUAL.md', 'HR_PORTAL_WORKFLOWS.md', 'HR_PORTAL_BUSINESS_RULES.md', 'DEVELOPER_GUIDE.md', 'FEATURES.md'])
+        ->where('document', '[A-Za-z0-9_.-]+\.md')
         ->name('member.help.document');
     Route::get('/dashboard/help/{helpRequest}', [\App\Http\Controllers\MemberPortalHelpController::class, 'show'])->name('member.help.show');
     Route::get('/dashboard/help/{helpRequest}/confirmation', [\App\Http\Controllers\MemberPortalHelpController::class, 'confirmation'])->name('member.help.confirmation');

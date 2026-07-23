@@ -127,6 +127,14 @@
             font-weight: bold;
         }
 
+        mark.search-hit,
+        .search-hit {
+            background: #fef08c;
+            color: #713f12;
+            font-weight: bold;
+            padding: 0 1px;
+        }
+
         a {
             color: #0f766e;
             text-decoration: none;
@@ -144,6 +152,11 @@
         <div class="brand">Bio-Pacific · HR Employee Portal</div>
         <div class="document-title">{{ $documentTitle }}</div>
         <div class="document-meta">Generated from the maintained portal documentation · Updated {{ $updatedAt }}</div>
+        @if(! empty($searchQuery))
+            <div class="document-meta" style="margin-top: 4px;">
+                Showing first match for “{{ $searchQuery }}” (highlighted below).
+            </div>
+        @endif
     </header>
 
     <main>

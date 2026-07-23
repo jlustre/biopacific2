@@ -101,6 +101,32 @@ class PersonalTask extends Model
     }
 
     /**
+     * Tasks that belong on My Tasks for this user.
+     *
+     * Action-routed handoffs (training open/review, document verify/correct, etc.)
+     * only appear for the assignee. Creators still see manual tasks they own and
+     * tasks awaiting their confirmation.
+     *
+     * @param  Builder<PersonalTask>  $query
+     * @return Builder<PersonalTask>
+     */
+    public function scopeListedForUser(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $nested) use ($user) {
+            $nested->where('assigned_to', $user->id)
+                ->orWhere(function (Builder $created) use ($user) {
+                    $created->where('created_by', $user->id)
+                        ->where(function (Builder $owned) {
+                            $owned->where(function (Builder $manual) {
+                                $manual->whereNull('action_url')
+                                    ->orWhere('action_url', '');
+                            })->orWhere('status', self::STATUS_COMPLETED);
+                        });
+                });
+        });
+    }
+
+    /**
      * Open tasks currently assigned to the user (pending action).
      */
     public static function assignedOpenCountForUser(User $user): int

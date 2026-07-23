@@ -54,7 +54,7 @@
             <button type="button" id="partGEmployeeSignatureCancel" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Cancel</button>
             <button type="button" id="partGEmployeeSignatureConfirm" class="inline-flex min-w-[12rem] items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-70">
                 <span data-signature-confirm-label>Confirm Signature &amp; Acknowledge</span>
-                <span data-signature-confirm-loading class="hidden inline-flex items-center gap-2">
+                <span data-signature-confirm-loading class="hidden items-center gap-2">
                     <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -121,7 +121,7 @@
             <button type="button" id="partGReviewerSignatureCancel" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Cancel</button>
             <button type="button" id="partGReviewerSignatureConfirm" class="inline-flex min-w-[12rem] items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-70">
                 <span data-signature-confirm-label>Confirm Signature &amp; Complete</span>
-                <span data-signature-confirm-loading class="hidden inline-flex items-center gap-2">
+                <span data-signature-confirm-loading class="hidden items-center gap-2">
                     <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -144,18 +144,22 @@
 
             var label = confirmBtn.querySelector('[data-signature-confirm-label]');
             var spinner = confirmBtn.querySelector('[data-signature-confirm-loading]');
+            var isLoading = Boolean(loading);
 
-            confirmBtn.disabled = Boolean(loading);
+            confirmBtn.disabled = isLoading;
             if (label) {
-                label.classList.toggle('hidden', loading);
+                // Do not pair hidden with a display utility on the same node —
+                // Tailwind's inline-flex can win over hidden and leave both labels visible.
+                label.classList.toggle('hidden', isLoading);
             }
             if (spinner) {
-                spinner.classList.toggle('hidden', !loading);
+                spinner.classList.toggle('hidden', !isLoading);
+                spinner.classList.toggle('inline-flex', isLoading);
             }
 
             (relatedButtons || []).forEach(function(button) {
                 if (button) {
-                    button.disabled = Boolean(loading);
+                    button.disabled = isLoading;
                 }
             });
         }
@@ -808,17 +812,35 @@
                 var approveBtn = container.querySelector('.partg-open-reviewer-signature-modal');
                 var resubmitBtn = container.querySelector('.partg-resubmit-for-employee-btn');
                 if (!approveBtn || !resubmitBtn) return;
+                // Reviewer edited competency content — require reconfirmation.
+                container.setAttribute('data-partg-content-dirty', '1');
                 approveBtn.classList.add('hidden');
                 resubmitBtn.classList.remove('hidden');
             });
         }
 
-        document.addEventListener('partg-summary-updated', markReviewerFormsChanged);
-
-        document.addEventListener('livewire:init', function() {
-            if (window.Livewire && typeof window.Livewire.on === 'function') {
-                window.Livewire.on('partg-summary-updated', markReviewerFormsChanged);
+        // Score recalculation alone must not hide Complete Section. Only treat
+        // explicit reviewer edits (rating/input changes) as content changes.
+        document.addEventListener('input', function(event) {
+            var target = event.target;
+            if (!target || !target.closest) return;
+            if (!target.closest('[wire\\:id]')) return;
+            if (target.closest('.partg-reviewer-approval-actions, #partGReviewerSignatureModal, #partGEmployeeSignatureModal')) {
+                return;
             }
+            if (target.matches('textarea[name="employee_comments"]')) {
+                return;
+            }
+            markReviewerFormsChanged();
+        });
+        document.addEventListener('change', function(event) {
+            var target = event.target;
+            if (!target || !target.closest) return;
+            if (!target.closest('[wire\\:id]')) return;
+            if (target.closest('.partg-reviewer-approval-actions, #partGReviewerSignatureModal, #partGEmployeeSignatureModal')) {
+                return;
+            }
+            markReviewerFormsChanged();
         });
     });
 </script>

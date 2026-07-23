@@ -83,7 +83,20 @@
             </div>
             @endif
 
-            @if(! $canStart && ! $canSubmit && ! $canDecide)
+            @if(! empty($canAssignTask))
+            <button type="button"
+                class="js-open-training-task-modal rounded-md bg-violet-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-violet-800"
+                data-action="{{ route('admin.employees.training-completions.assign-task', ['employee' => $employee->id, 'trainingItem' => $item->id]) }}"
+                data-training-name="{{ $item->name }}"
+                data-period-id="{{ $periodId }}"
+                data-default-title="Required training: {{ $item->name }}"
+                data-default-message="Please start the required training &quot;{{ $item->name }}&quot; and submit it for completion review."
+                data-default-due-date="{{ $defaultDueDate ?? now()->addDays(\App\Support\ComplianceDueDate::offsetDays())->format('Y-m-d') }}">
+                Assign task
+            </button>
+            @endif
+
+            @if(! $canStart && ! $canSubmit && ! $canDecide && empty($canAssignTask))
                 @if(! empty($actionsLocked))
                 <span class="text-xs text-slate-400">Select a period first</span>
                 @elseif(! empty($satisfiedFromPrior))

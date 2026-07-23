@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ChecklistItem;
 use App\Models\UploadType;
 
 class DocumentsManagementSeedService
@@ -26,27 +27,20 @@ class DocumentsManagementSeedService
                 'checklist_section' => null,
             ];
 
-            $existing = UploadType::query()
-                ->where('name', $name)
-                ->whereNull('checklist_item_id')
-                ->first();
+            // Prefer an existing catalog row of any kind (including PART A–D) so seeders never recreate duplicates.
+            $existing = UploadType::withoutGlobalScopes()->where('name', $name)->first();
 
             if ($existing) {
+                if ($existing->checklist_item_id) {
+                    continue;
+                }
+
                 $existing->fill($attributes);
                 if ($existing->isDirty()) {
                     $existing->save();
                     $updated++;
                 }
 
-                continue;
-            }
-
-            $conflict = UploadType::query()
-                ->where('name', $name)
-                ->whereNotNull('checklist_item_id')
-                ->exists();
-
-            if ($conflict) {
                 continue;
             }
 
@@ -61,9 +55,34 @@ class DocumentsManagementSeedService
         ];
     }
 
+    /**
+     * Bootstrap missing PART A–D upload_types from checklist_items (used by seeders),
+     * then project catalog names back onto checklist_items.
+     */
     public function syncChecklistDocumentTypes(): int
     {
-        return app(ChecklistUploadTypeSyncService::class)->syncAll();
+        $sync = app(ChecklistUploadTypeSyncService::class);
+        $bootstrapped = 0;
+
+        ChecklistItem::query()
+            ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->each(function (ChecklistItem $item) use ($sync, &$bootstrapped): void {
+                $exists = UploadType::withoutGlobalScopes()
+                    ->where('checklist_item_id', $item->id)
+                    ->exists();
+
+                $sync->syncChecklistItem($item);
+
+                if (! $exists) {
+                    $bootstrapped++;
+                }
+            });
+
+        $sync->syncAll();
+
+        return $bootstrapped;
     }
 
     /**

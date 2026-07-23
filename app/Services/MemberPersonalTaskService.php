@@ -70,6 +70,8 @@ class MemberPersonalTaskService
      */
     public function buildAssignedPersonalTasks(User $user): Collection
     {
+        app(EmployeeTrainingWorkflowService::class)->syncCompletedAssignmentTasksForUser($user);
+
         return PersonalTask::query()
             ->where('assigned_to', $user->id)
             ->where('status', PersonalTask::STATUS_PENDING)
@@ -83,6 +85,11 @@ class MemberPersonalTaskService
                     '/^\[(?:training_completion_id|upload_verification_id|upload_correction_id):\d+\]\s*/',
                     '',
                     $rawDescription
+                ));
+                $description = trim((string) preg_replace(
+                    '/^\[training_assignment:\d+:[^\]]+\]\s*/',
+                    '',
+                    $description
                 ));
                 $route = filled($task->action_url)
                     ? (string) $task->action_url

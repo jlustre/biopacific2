@@ -207,9 +207,27 @@ class UploadController extends Controller {
             $upload->verification_notes = null;
         }
 
+        $checklistItem = $uploadType?->checklistItem;
+        if ($checklistItem) {
+            $upload->checklist_item_id = $checklistItem->id;
+        }
+
         $upload->save();
         $lifecycle->preservePreviousVersionBeforeUpdate($upload, $previousAttributes);
         $lifecycle->supersedePriorCurrents($upload);
+
+        if ($checklistItem && $upload->verification_status === Upload::VERIFICATION_APPROVED) {
+            $employee = BPEmployee::query()->where('employee_num', $upload->employee_num)->first();
+            if ($employee) {
+                \App\Support\EmployeeChecklistDocuments::markVerified(
+                    $employee,
+                    $checklistItem,
+                    now()->toDateString(),
+                    optional($upload->expires_at)->toDateString(),
+                    Auth::id()
+                );
+            }
+        }
 
         return redirect()->route('admin.facility.documents', ['facility' => $facility])->with('success', config('documents.messages.updated'));
     }
@@ -223,7 +241,7 @@ class UploadController extends Controller {
         if ($request->search) $query->where('original_filename', 'like', '%'.$request->search.'%');
         $uploads = $query->latest()->paginate(15);
         $facilities = Facility::orderBy('name')->get();
-        $uploadTypes = UploadType::query()->orderedForDisplay()->get();
+        $uploadTypes = app(\App\Services\EmployeeDocumentRequirementsService::class)->fullCatalogUploadTypes();
         $editUpload = null;
         if ($editUploadId) {
             $editUpload = Upload::find($editUploadId);
@@ -262,11 +280,13 @@ class UploadController extends Controller {
             ->firstOrFail();
         $file = $request->file('file');
         $path = Upload::storeEmployeeFile($file, $request->employee_num);
+        $checklistItem = $uploadType?->checklistItem;
             $upload = Upload::create([
                 'facility_id' => $facility->id,
                 'employee_num' => $request->employee_num,
                 'user_id' => Auth::id(),
                 'upload_type_id' => $request->upload_type_id,
+                'checklist_item_id' => $checklistItem?->id,
                 'file_path' => $path,
                 'original_filename' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
@@ -280,6 +300,17 @@ class UploadController extends Controller {
                 'verified_at' => now(),
             ]);
             app(\App\Services\DocumentUploadLifecycleService::class)->supersedePriorCurrents($upload);
+
+        if ($checklistItem) {
+            \App\Support\EmployeeChecklistDocuments::markVerified(
+                $employee,
+                $checklistItem,
+                now()->toDateString(),
+                $request->expires_at ? (string) $request->expires_at : null,
+                Auth::id()
+            );
+        }
+
         return redirect()->back()->with('success', config('documents.messages.created'));
     }
 

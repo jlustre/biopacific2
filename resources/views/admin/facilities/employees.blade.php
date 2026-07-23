@@ -176,22 +176,18 @@ $employeeImportPresetOptions = ($employeeImportPresets ?? collect())->map(fn ($p
             <table class="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">EMP_NUM</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Name</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Email</th>
+                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Original Hire Date</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Position</th>
                         <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Department</th>
-                        <th class="px-2 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($employees as $employee)
                     <tr class="sm:text-sm">
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->formalName() }}</td>
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ filled($employee->email) ? $employee->email : '—' }}</td>
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->title ?? '-' }}</td>
-                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->name ?? '-' }}</td>
                         <td class="px-2 sm:px-4 py-2 whitespace-nowrap text-center">
                             <div class="inline-flex items-center gap-2">
                                 <a href="{{ route('admin.employees.edit', $employee->id) }}{{ $employeesFacilityQuery }}" class="text-blue-600 hover:text-blue-800 transition" title="View/Edit">
@@ -236,10 +232,16 @@ $employeeImportPresetOptions = ($employeeImportPresets ?? collect())->map(fn ($p
                                 @endif
                             </div>
                         </td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->employee_num ?? '-' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->formalName() }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ filled($employee->email) ? $employee->email : '—' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->original_hire_dt?->format('m/d/Y') ?? '—' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_position?->title ?? '-' }}</td>
+                        <td class="px-2 sm:px-4 py-2 whitespace-nowrap">{{ $employee->current_department?->name ?? '-' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-4 text-center text-gray-500">No employees found.</td>
+                        <td colspan="7" class="px-4 py-4 text-center text-gray-500">No employees found.</td>
                     </tr>
                     @endforelse
                 </tbody>

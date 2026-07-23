@@ -60,7 +60,7 @@
         <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             onclick="closeAllAssessmentPeriodsModal()">&times;</button>
         <h3 class="text-lg font-bold mb-2">Assessment Periods</h3>
-        <p id="allAssessmentPeriodsDescription" class="mb-4 text-sm text-gray-600">Annual periods follow this employee&rsquo;s hire or rehire anniversary. Assessments default to the prior-year window for the review date (e.g. review in 2026 uses the cycle ending the year before).</p>
+        <p id="allAssessmentPeriodsDescription" class="mb-4 text-sm text-gray-600">Annual periods follow this employee&rsquo;s hire or rehire anniversary. The current assessment year is generated automatically (e.g. assessment year 2026 runs from the employee&rsquo;s 2025 anniversary through the day before the 2026 anniversary).</p>
         <div id="allAssessmentPeriodsList" class="mb-4 text-sm max-h-96 overflow-y-auto"></div>
         <div class="flex justify-end">
             <button class="px-4 py-2 bg-gray-300 rounded"
@@ -68,6 +68,22 @@
         </div>
     </div>
 </div>
+
+@php
+    $assessmentAnchor = isset($employee)
+        ? \App\Support\EmployeeAssessmentPeriodCalculator::resolveAnchorDate($employee)
+        : null;
+    $assessmentLoadableYears = \App\Support\EmployeeAssessmentPeriodCalculator::loadableYearRange();
+    $assessmentYearMin = max(
+        $assessmentAnchor ? $assessmentAnchor->year + 1 : $assessmentLoadableYears['current'],
+        $assessmentLoadableYears['min'] + 1
+    );
+    $assessmentYearMax = max($assessmentYearMin, $assessmentLoadableYears['max'] + 1);
+    $defaultAssessmentYear = min(
+        $assessmentYearMax,
+        max($assessmentYearMin, $assessmentLoadableYears['current'])
+    );
+@endphp
 
 <div id="newPeriodModal" class="fixed inset-0 bg-black bg-opacity-40 items-center justify-center z-50 hidden p-3">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[85vh] overflow-y-auto relative">
@@ -81,7 +97,7 @@
                 Periods are unique to this employee. Annual windows follow the
                 <strong>Original Hire Date</strong> on the Personal tab, or <strong>Rehire Date</strong> when Action is Rehire
                 (each year runs from that anniversary through the day before the next anniversary&mdash;e.g. May 18 to May 17).
-                For the <strong>review date</strong>, the system selects the prior completed year by default, not the employment year still in progress.
+                The current <strong>assessment year</strong> is generated and selected automatically.
                 Use the dropdown to change periods, or <strong>View Periods</strong> to browse history and load a period.
             </p>
         </div>
@@ -100,12 +116,41 @@
                 <p id="periodModalAnchorInfo" class="text-[11px] text-slate-600 flex-1 min-w-0"></p>
             </div>
 
+            @if(empty($evaluatorActionsDisabled))
+            <section class="rounded border border-emerald-200 bg-emerald-50 p-2.5">
+                <div class="flex flex-wrap items-end gap-2">
+                    <div class="min-w-40">
+                        <label for="periodModalAssessmentYear" class="block text-[10px] font-semibold uppercase text-emerald-900">
+                            Assessment year
+                        </label>
+                        <select id="periodModalAssessmentYear"
+                            class="mt-0.5 w-full rounded border border-emerald-300 bg-white px-2 py-1 text-xs"
+                            data-anchor-date="{{ $assessmentAnchor?->toDateString() }}"
+                            @disabled(! $assessmentAnchor)>
+                            @for($year = $assessmentYearMax; $year >= $assessmentYearMin; $year--)
+                                <option value="{{ $year }}" @selected($year === $defaultAssessmentYear)>{{ $year }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                    <button type="button" id="periodModalCreateByYearBtn"
+                        class="rounded bg-emerald-700 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        @disabled(! $assessmentAnchor)>
+                        Create &amp; load
+                    </button>
+                    <p id="periodModalAssessmentYearPreview" class="min-w-0 flex-1 text-[11px] text-emerald-950"></p>
+                </div>
+                @if(! $assessmentAnchor)
+                    <p class="mt-1 text-[11px] text-amber-800">Add the employee&rsquo;s Original Hire Date or applicable Rehire Date first.</p>
+                @endif
+            </section>
+            @endif
+
             <div id="periodModalLoading" class="hidden text-xs text-slate-500">Loading…</div>
             <div id="periodModalError" class="hidden rounded border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-700"></div>
 
             <div id="periodModalBrowseContent" class="space-y-3">
             <section id="periodModalRecommendedSection" class="hidden rounded border border-teal-200 bg-teal-50 p-2.5">
-                <p class="text-[11px] font-semibold text-teal-900">Recommended (prior-year)</p>
+                <p class="text-[11px] font-semibold text-teal-900">Current assessment year</p>
                 <div class="mt-1.5 flex flex-wrap items-center justify-between gap-2">
                     <p id="periodModalRecommendedRange" class="text-xs font-semibold text-slate-900"></p>
                     <div class="flex flex-wrap gap-1.5">
@@ -113,10 +158,12 @@
                             class="hidden rounded bg-teal-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-teal-800">
                             Load
                         </button>
-                        <button type="button" id="periodModalCreateRecommendedBtn"
-                            class="hidden rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700">
-                            Create &amp; load
-                        </button>
+                        @if(empty($evaluatorActionsDisabled))
+                            <button type="button" id="periodModalCreateRecommendedBtn"
+                                class="hidden rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700">
+                                Create &amp; load
+                            </button>
+                        @endif
                     </div>
                 </div>
                 <p id="periodModalRecommendedMissing" class="mt-1.5 hidden text-[11px] text-amber-800"></p>
@@ -126,10 +173,12 @@
             <section>
                 <div class="mb-1 flex items-center justify-between gap-2">
                     <h4 class="text-xs font-bold text-slate-800">History</h4>
-                    <button type="button" id="periodModalShowCustomBtn"
-                        class="rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
-                        Create custom period
-                    </button>
+                    @if(empty($evaluatorActionsDisabled))
+                        <button type="button" id="periodModalShowCustomBtn"
+                            class="rounded border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                            Create custom period
+                        </button>
+                    @endif
                 </div>
                 <div id="periodModalHistoryEmpty" class="hidden text-xs text-slate-500 py-2">No periods yet.</div>
                 <div id="periodModalHistoryWrap" class="hidden overflow-x-auto max-h-44 border border-slate-200 rounded">
@@ -137,7 +186,7 @@
                         <thead class="bg-slate-100 sticky top-0">
                             <tr>
                                 <th class="border-b border-slate-200 px-2 py-1.5 text-left">Period</th>
-                                <th class="border-b border-slate-200 px-2 py-1.5 text-left">Yr</th>
+                                <th class="border-b border-slate-200 px-2 py-1.5 text-left">Assessment year</th>
                                 <th class="border-b border-slate-200 px-2 py-1.5 text-left">Type</th>
                                 <th class="border-b border-slate-200 px-2 py-1.5 text-center">Perf</th>
                                 <th class="border-b border-slate-200 px-2 py-1.5 text-center">Comp</th>
@@ -150,6 +199,7 @@
             </section>
             </div>
 
+            @if(empty($evaluatorActionsDisabled))
             <section id="periodModalCustomSection" class="hidden rounded border border-slate-300 bg-slate-50 p-2.5">
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <h4 class="text-xs font-bold text-slate-800">Custom period</h4>
@@ -188,6 +238,7 @@
                     </div>
                 </form>
             </section>
+            @endif
 
             <div class="flex justify-end pt-1">
                 <button type="button" onclick="closeNewPeriodModal()"

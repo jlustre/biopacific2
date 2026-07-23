@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\BPEmployee;
-use App\Models\ChecklistItem;
 use App\Models\Position;
 use App\Models\UploadType;
 use App\Models\User;
@@ -13,37 +12,37 @@ use Illuminate\Support\Collection;
 class EmployeeDocumentRequirementsService
 {
     /**
-     * General document types that can be assigned to positions (not employee-file checklist sync types).
+     * Document types that can be assigned to positions (full catalog).
      */
     public function generalUploadTypesForDepartment(?int $departmentId): Collection
     {
         return UploadType::query()
-            ->generalPositionAssignable()
+            ->catalogPositionAssignable()
             ->when(
                 $departmentId,
                 fn (Builder $query) => $this->applyDepartmentScope($query, $departmentId),
                 fn (Builder $query) => $this->applyOrganizationWideScope($query)
             )
-            ->orderBy('name')
+            ->orderedForDisplay()
             ->get();
     }
 
     /**
-     * Required general upload types for a position (pivot), scoped to department when provided.
+     * Required upload types for a position (applies_to_all + pivot), scoped to department when provided.
      */
     public function requiredGeneralUploadTypesForPosition(Position $position, ?int $departmentId = null): Collection
     {
         $departmentId ??= $position->department_id ? (int) $position->department_id : null;
+        $positionId = (int) $position->id;
 
-        return $position->requiredUploadTypes()
-            ->wherePivot('is_required', true)
-            ->generalPositionAssignable()
+        return UploadType::query()
+            ->applicableToPosition($positionId)
             ->when(
                 $departmentId,
                 fn (Builder $query) => $this->applyDepartmentScope($query, $departmentId),
                 fn (Builder $query) => $this->applyOrganizationWideScope($query)
             )
-            ->orderBy('name')
+            ->orderedForDisplay()
             ->get();
     }
 
@@ -62,29 +61,12 @@ class EmployeeDocumentRequirementsService
     public function isGeneralTypeRequiredForPosition(int $positionId, int $uploadTypeId, ?int $departmentId = null): bool
     {
         $position = Position::query()->find($positionId);
-        if (!$position) {
+        if (! $position) {
             return false;
         }
 
         return $this->requiredGeneralUploadTypesForPosition($position, $departmentId)
             ->contains(fn (UploadType $type) => (int) $type->id === $uploadTypeId);
-    }
-
-    public function isChecklistUploadTypeApplicable(BPEmployee $employee, UploadType $uploadType): bool
-    {
-        $checklistItem = $uploadType->checklistItem;
-        if (!$checklistItem) {
-            return false;
-        }
-
-        $positionId = $employee->currentAssignment?->position_id
-            ?? $employee->currentAssignment?->position?->id;
-
-        return ChecklistItem::query()
-            ->whereKey($checklistItem->id)
-            ->applicableToPosition($positionId)
-            ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
-            ->exists();
     }
 
     public function isTypeAvailableForDepartment(UploadType $uploadType, ?int $departmentId): bool
@@ -95,45 +77,100 @@ class EmployeeDocumentRequirementsService
             return true;
         }
 
-        if (!$departmentId) {
+        if (! $departmentId) {
             return false;
         }
 
         return in_array((int) $departmentId, array_map('intval', (array) $departmentIds), true);
     }
 
-    /**
-     * Whether the given user may upload this document type for the employee.
-     * Admins may upload any department-scoped general type; members only position-required types.
-     */
-    public function canUploadTypeForEmployee(?User $user, BPEmployee $employee, UploadType $uploadType): bool
+    public function isUploadTypeApplicableToEmployee(BPEmployee $employee, UploadType $uploadType): bool
     {
-        $uploadType->loadMissing('checklistItem');
-
-        if ($uploadType->checklist_item_id) {
-            return $this->isChecklistUploadTypeApplicable($employee, $uploadType);
-        }
-
         $departmentId = $employee->currentAssignment?->dept_id
             ? (int) $employee->currentAssignment->dept_id
             : null;
 
-        if (!$this->isTypeAvailableForDepartment($uploadType, $departmentId)) {
+        if (! $this->isTypeAvailableForDepartment($uploadType, $departmentId)) {
             return false;
-        }
-
-        if ($this->userCanBypassPositionRequirements($user, $employee)) {
-            return true;
         }
 
         $positionId = $employee->currentAssignment?->position_id
             ?? $employee->currentAssignment?->position?->id;
 
-        if (!$positionId) {
+        if ($uploadType->applies_to_all_positions) {
+            return true;
+        }
+
+        if (! $positionId) {
             return false;
         }
 
-        return $this->isGeneralTypeRequiredForPosition((int) $positionId, (int) $uploadType->id, $departmentId);
+        return $uploadType->positions()
+            ->where('positions.id', $positionId)
+            ->wherePivot('is_required', true)
+            ->exists();
+    }
+
+    /**
+     * @deprecated Use isUploadTypeApplicableToEmployee
+     */
+    public function isChecklistUploadTypeApplicable(BPEmployee $employee, UploadType $uploadType): bool
+    {
+        return $this->isUploadTypeApplicableToEmployee($employee, $uploadType);
+    }
+
+    /**
+     * Whether the given user may upload this document type for the employee.
+     */
+    public function canUploadTypeForEmployee(?User $user, BPEmployee $employee, UploadType $uploadType): bool
+    {
+        if ($this->isUploadTypeApplicableToEmployee($employee, $uploadType)) {
+            return true;
+        }
+
+        return $this->userCanBypassPositionRequirements($user, $employee)
+            && $this->isTypeAvailableForDepartment(
+                $uploadType,
+                $employee->currentAssignment?->dept_id ? (int) $employee->currentAssignment->dept_id : null
+            );
+    }
+
+    /**
+     * Position-aware catalog collection for admin/facility employee document UIs.
+     */
+    public function catalogUploadTypesForEmployee(?BPEmployee $employee): Collection
+    {
+        if (! $employee) {
+            return UploadType::query()->orderedForDisplay()->get();
+        }
+
+        $positionId = $employee->currentAssignment?->position_id
+            ?? $employee->currentAssignment?->position?->id;
+        $departmentId = $employee->currentAssignment?->dept_id
+            ? (int) $employee->currentAssignment->dept_id
+            : null;
+
+        if (! $positionId) {
+            return UploadType::query()
+                ->where('applies_to_all_positions', true)
+                ->when($departmentId, fn (Builder $q) => $this->applyDepartmentScope($q, $departmentId))
+                ->orderedForDisplay()
+                ->get();
+        }
+
+        return UploadType::query()
+            ->applicableToPosition((int) $positionId)
+            ->when($departmentId, fn (Builder $q) => $this->applyDepartmentScope($q, $departmentId))
+            ->orderedForDisplay()
+            ->get();
+    }
+
+    /**
+     * Full catalog for facility upload forms when no employee is selected.
+     */
+    public function fullCatalogUploadTypes(): Collection
+    {
+        return UploadType::query()->orderedForDisplay()->get();
     }
 
     /**
@@ -144,56 +181,32 @@ class EmployeeDocumentRequirementsService
      */
     public function uploadOptionsForEmployee(?BPEmployee $employee, array $documentComplianceItems = []): array
     {
-        if (!$employee) {
+        if (! $employee) {
             return [];
         }
 
-        $positionId = $employee->currentAssignment?->position_id
-            ?? $employee->currentAssignment?->position?->id;
+        $types = $this->catalogUploadTypesForEmployee($employee);
 
-        $options = collect($documentComplianceItems)
-            ->map(fn ($item) => [
-                'id' => (int) ($item['upload_type_id'] ?? 0),
-                'name' => $item['name'] ?? 'Document',
-                'requires_expiry' => (bool) ($item['requires_expiry'] ?? false),
-                'section' => 'Required for your position',
-                'kind' => 'upload_type',
-            ])
-            ->filter(fn ($item) => $item['id'] > 0);
+        $sectionOrder = [
+            'PART A' => 1,
+            'PART B' => 2,
+            'PART C' => 3,
+            'PART D' => 4,
+            'Required for your position' => 5,
+            'General' => 6,
+        ];
 
-        $checklistTypes = UploadType::query()
-            ->whereNotNull('checklist_item_id')
-            ->employeeFileSections()
-            ->when($positionId, function (Builder $query) use ($positionId): void {
-                $query->whereHas('checklistItem', function (Builder $checklistQuery) use ($positionId): void {
-                    $checklistQuery->applicableToPosition($positionId);
-                });
-            }, fn (Builder $query) => $query->whereRaw('1 = 0'))
-            ->orderedForDisplay()
-            ->get(['id', 'name', 'requires_expiry', 'checklist_section']);
-
-        foreach ($checklistTypes as $type) {
-            $options->push([
+        return $types
+            ->map(fn (UploadType $type) => [
                 'id' => (int) $type->id,
                 'name' => $type->name,
                 'requires_expiry' => (bool) $type->requires_expiry,
-                'section' => $type->checklist_section ?? 'Employee file',
+                'section' => $type->checklist_section ?: 'General',
                 'kind' => 'upload_type',
-            ]);
-        }
-
-        $sectionOrder = [
-            'Required for your position' => 1,
-            'PART A' => 2,
-            'PART B' => 3,
-            'PART C' => 4,
-            'PART D' => 5,
-        ];
-
-        return $options
+            ])
             ->unique('id')
             ->sortBy(fn ($item) => [
-                $sectionOrder[$item['section'] ?? 'Required for your position'] ?? 99,
+                $sectionOrder[$item['section'] ?? 'General'] ?? 99,
                 $item['name'] ?? '',
             ])
             ->values()
@@ -222,19 +235,59 @@ class EmployeeDocumentRequirementsService
             $position->department_id ? (int) $position->department_id : null
         )->pluck('id')->map(fn ($id) => (int) $id);
 
-        $payload = collect($uploadTypeIds)
+        $selectedIds = collect($uploadTypeIds)
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->intersect($allowedIds)
-            ->mapWithKeys(fn ($id) => [$id => ['is_required' => true]])
-            ->all();
+            ->values();
 
-        $position->requiredUploadTypes()->sync($payload);
+        $allPositionsIds = UploadType::query()
+            ->whereIn('id', $allowedIds)
+            ->where('applies_to_all_positions', true)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id);
+
+        // Unchecking a previously "all positions" type clears the global flag.
+        $deselectedAll = $allPositionsIds->diff($selectedIds);
+        if ($deselectedAll->isNotEmpty()) {
+            UploadType::query()
+                ->whereIn('id', $deselectedAll->all())
+                ->update(['applies_to_all_positions' => false]);
+        }
+
+        // Keep globally-required types off the per-position pivot.
+        $stillAll = $allPositionsIds->intersect($selectedIds);
+        $pivotIds = $selectedIds->diff($stillAll);
+
+        $position->requiredUploadTypes()->sync(
+            $pivotIds->mapWithKeys(fn ($id) => [$id => ['is_required' => true]])->all()
+        );
+
+        $sync = app(ChecklistUploadTypeSyncService::class);
+        UploadType::query()
+            ->whereIn('id', $deselectedAll->merge($pivotIds)->merge($stillAll)->unique()->all())
+            ->employeeFileSections()
+            ->each(fn (UploadType $type) => $sync->syncUploadType($type));
     }
 
     /**
-     * Add document requirements without removing existing assignments.
-     *
+     * Mark a document type as required for all positions.
+     */
+    public function setAppliesToAllPositions(UploadType $uploadType, bool $applies): void
+    {
+        $uploadType->applies_to_all_positions = $applies;
+        $uploadType->save();
+
+        if ($applies) {
+            $uploadType->positions()->detach();
+        }
+
+        if ($uploadType->isEmployeeFileChecklistType()) {
+            app(ChecklistUploadTypeSyncService::class)->syncUploadType($uploadType->fresh());
+        }
+    }
+
+    /**
      * @param  list<int>  $positionIds
      * @param  list<int>  $uploadTypeIds
      */
@@ -243,11 +296,7 @@ class EmployeeDocumentRequirementsService
         $pairs = 0;
 
         foreach (Position::query()->whereIn('id', $positionIds)->get() as $position) {
-            $existingIds = $position->requiredUploadTypes()
-                ->pluck('upload_types.id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
+            $existingIds = $this->requiredGeneralUploadTypeIdsForPosition($position);
             $merged = array_values(array_unique(array_merge($existingIds, $uploadTypeIds)));
             $this->syncPositionRequirements($position, $merged);
             $pairs += count($uploadTypeIds);
@@ -257,8 +306,6 @@ class EmployeeDocumentRequirementsService
     }
 
     /**
-     * Remove selected document requirements from positions.
-     *
      * @param  list<int>  $positionIds
      * @param  list<int>  $uploadTypeIds
      */
@@ -268,9 +315,7 @@ class EmployeeDocumentRequirementsService
         $removeIds = collect($uploadTypeIds)->map(fn ($id) => (int) $id)->unique()->values();
 
         foreach (Position::query()->whereIn('id', $positionIds)->get() as $position) {
-            $remaining = $position->requiredUploadTypes()
-                ->pluck('upload_types.id')
-                ->map(fn ($id) => (int) $id)
+            $remaining = collect($this->requiredGeneralUploadTypeIdsForPosition($position))
                 ->diff($removeIds)
                 ->values()
                 ->all();
@@ -279,12 +324,18 @@ class EmployeeDocumentRequirementsService
             $removed += $removeIds->count();
         }
 
+        // Also clear applies_to_all when removing those types from "all".
+        UploadType::query()
+            ->whereIn('id', $removeIds->all())
+            ->where('applies_to_all_positions', true)
+            ->each(function (UploadType $type): void {
+                $this->setAppliesToAllPositions($type, false);
+            });
+
         return $removed;
     }
 
     /**
-     * Replace all requirements on each position with the given document set.
-     *
      * @param  list<int>  $positionIds
      * @param  list<int>  $uploadTypeIds
      */
@@ -302,12 +353,7 @@ class EmployeeDocumentRequirementsService
 
     public function copyRequirementsToPositions(Position $source, iterable $targetPositions): int
     {
-        $sourceIds = $source->requiredUploadTypes()
-            ->wherePivot('is_required', true)
-            ->pluck('upload_types.id')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
+        $sourceIds = collect($this->requiredGeneralUploadTypeIdsForPosition($source));
 
         $count = 0;
 
@@ -316,17 +362,7 @@ class EmployeeDocumentRequirementsService
                 continue;
             }
 
-            $allowedIds = $this->generalUploadTypesForDepartment(
-                $target->department_id ? (int) $target->department_id : null
-            )->pluck('id')->map(fn ($id) => (int) $id);
-
-            $target->requiredUploadTypes()->sync(
-                $sourceIds
-                    ->intersect($allowedIds)
-                    ->mapWithKeys(fn ($id) => [$id => ['is_required' => true]])
-                    ->all()
-            );
-
+            $this->syncPositionRequirements($target, $sourceIds->all());
             $count++;
         }
 
@@ -335,7 +371,7 @@ class EmployeeDocumentRequirementsService
 
     protected function userCanBypassPositionRequirements(?User $user, BPEmployee $employee): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 

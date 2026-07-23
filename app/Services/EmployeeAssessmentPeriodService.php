@@ -66,8 +66,8 @@ class EmployeeAssessmentPeriodService
 
         return EmployeeAssessmentPeriod::query()
             ->where('employee_num', $employee->employee_num)
-            ->where('date_from', $suggested['date_from'])
-            ->where('date_to', $suggested['date_to'])
+            ->whereDate('date_from', $suggested['date_from'])
+            ->whereDate('date_to', $suggested['date_to'])
             ->value('id');
     }
 
@@ -181,6 +181,8 @@ class EmployeeAssessmentPeriodService
         $recommended = EmployeeAssessmentPeriodCalculator::annualPeriodForAssessmentOn($employee, $on);
         $containing = EmployeeAssessmentPeriodCalculator::annualPeriodContaining($employee, $on);
         $anchor = EmployeeAssessmentPeriodCalculator::resolveAnchorDate($employee);
+        $firstAssessmentDueDate = EmployeeAssessmentPeriodCalculator::firstAssessmentDueDate($employee);
+        $assessmentDue = EmployeeAssessmentPeriodCalculator::isAssessmentDue($employee, $on);
 
         $recommendedRow = null;
         if ($recommended) {
@@ -222,6 +224,9 @@ class EmployeeAssessmentPeriodService
                 'date_from' => $period->date_from?->format('Y-m-d'),
                 'date_to' => $period->date_to?->format('Y-m-d'),
                 'period_year' => $period->period_year,
+                'assessment_year' => $period->review_type === 'A'
+                    ? $period->date_to?->year
+                    : $period->period_year,
                 'review_type' => $period->review_type,
                 'review_type_label' => $period->review_type === 'Q' ? 'Quarterly' : 'Annual',
                 'can_load' => EmployeeAssessmentPeriodCalculator::isPeriodLoadable($period),
@@ -245,6 +250,7 @@ class EmployeeAssessmentPeriodService
                 'date_from' => $recommended['date_from'],
                 'date_to' => $recommended['date_to'],
                 'period_year' => $recommended['period_year'],
+                'assessment_year' => (int) Carbon::parse($recommended['date_to'])->year,
                 'can_load' => EmployeeAssessmentPeriodCalculator::isPeriodLoadable([
                     'period_year' => $recommended['period_year'],
                     'date_from' => $recommended['date_from'],
@@ -263,6 +269,8 @@ class EmployeeAssessmentPeriodService
             'has_anchor' => $anchor !== null,
             'anchor_source' => $usesRehire ? 'Rehire Date' : 'Original Hire Date',
             'anchor_label' => $anchor?->format('Y-m-d') ?? '',
+            'assessment_due' => $assessmentDue,
+            'first_assessment_due_date' => $firstAssessmentDueDate?->format('Y-m-d') ?? '',
             'recommended' => $recommendedPayload,
             'containing' => $containing,
             'history' => $history,

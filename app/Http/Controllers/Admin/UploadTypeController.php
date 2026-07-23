@@ -16,6 +16,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class UploadTypeController extends Controller
@@ -48,7 +49,7 @@ class UploadTypeController extends Controller
             $departmentFilter = $request->filled('department_id') ? (int) $request->input('department_id') : null;
             $overviewSearch = trim((string) $request->input('search', ''));
             $generalUploadTypes = UploadType::query()
-                ->generalPositionAssignable()
+                ->catalogPositionAssignable()
                 ->when(
                     $departmentFilter,
                     fn ($query) => $query->where(function ($scope) use ($departmentFilter) {
@@ -57,8 +58,16 @@ class UploadTypeController extends Controller
                             ->orWhereJsonContains('department_ids', $departmentFilter);
                     })
                 )
-                ->orderBy('name')
-                ->get(['id', 'name', 'requires_expiry', 'is_license_or_certification', 'department_ids']);
+                ->orderedForDisplay()
+                ->get([
+                    'id',
+                    'name',
+                    'requires_expiry',
+                    'is_license_or_certification',
+                    'department_ids',
+                    'checklist_section',
+                    'applies_to_all_positions',
+                ]);
             $requirementOverview = $presetService->paginatePositionRequirementOverview(
                 $departmentFilter,
                 $overviewSearch !== '' ? $overviewSearch : null,
@@ -72,14 +81,21 @@ class UploadTypeController extends Controller
                     ->requiredGeneralUploadTypeIdsForPosition($selectedRequirementPosition);
             }
         } elseif ($tab === 'items') {
-            $itemsQuery = ChecklistItem::query()->with('docType');
+            // Documents Management only manages PART A–D employee-file items.
+            // PART E orientation rows are not documents and stay out of this catalog.
+            $itemsQuery = ChecklistItem::query()
+                ->with('docType')
+                ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS);
 
             if ($request->filled('search')) {
                 $itemsQuery->where('name', 'like', '%' . $request->search . '%');
             }
 
             if ($request->filled('section')) {
-                $itemsQuery->where('section', $request->section);
+                $section = (string) $request->section;
+                if (in_array($section, ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS, true)) {
+                    $itemsQuery->where('section', $section);
+                }
             }
 
             if ($request->filled('doc_type_id')) {
@@ -93,12 +109,7 @@ class UploadTypeController extends Controller
                 ->withQueryString();
 
             $docTypes = DocType::query()->orderBy('name')->get();
-            $itemSections = ChecklistItem::query()
-                ->select('section')
-                ->distinct()
-                ->whereNotNull('section')
-                ->orderBy('section')
-                ->pluck('section');
+            $itemSections = collect(ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS);
         } else {
             $query = UploadType::query()->with('checklistItem')->orderedForDisplay();
 
@@ -158,31 +169,23 @@ class UploadTypeController extends Controller
     public function create(): View
     {
         $departments = Department::query()->orderBy('name')->get(['id', 'name']);
+        $docTypes = DocType::query()->orderBy('name')->get();
+        $employeeFileSections = ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS;
 
-        return view('admin.upload-types.create', compact('departments'));
+        return view('admin.upload-types.create', compact('departments', 'docTypes', 'employeeFileSections'));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:upload_types,name',
-            'description' => 'nullable|string',
-            'department_ids' => 'nullable|array',
-            'department_ids.*' => 'integer|exists:departments,id',
-        ]);
+        $validated = $this->validateUploadType($request);
+        $uploadType = UploadType::query()->create($validated);
 
-        $validated['requires_expiry'] = $request->boolean('requires_expiry');
-        $validated['is_license_or_certification'] = $request->boolean('is_license_or_certification');
-        $validated['department_ids'] = collect($request->input('department_ids', []))
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
-        UploadType::query()->create($validated);
+        if ($uploadType->applies_to_all_positions) {
+            $uploadType->positions()->detach();
+        }
 
         return redirect()
-            ->route('admin.upload-types.index')
+            ->route('admin.upload-types.index', ['tab' => 'types'])
             ->with('success', config('documents.messages.type_created'));
     }
 
@@ -205,42 +208,30 @@ class UploadTypeController extends Controller
 
     public function edit(UploadType $uploadType): View
     {
-        if ($uploadType->isEmployeeFileChecklistType()) {
-            abort(403, 'Employee file document types are managed under Documents Management → Employee file items.');
-        }
-
         $departments = Department::query()->orderBy('name')->get(['id', 'name']);
+        $docTypes = DocType::query()->orderBy('name')->get();
+        $employeeFileSections = ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS;
 
-        return view('admin.upload-types.edit', compact('uploadType', 'departments'));
+        return view('admin.upload-types.edit', compact('uploadType', 'departments', 'docTypes', 'employeeFileSections'));
     }
 
     public function update(Request $request, UploadType $uploadType): RedirectResponse
     {
-        if ($uploadType->isEmployeeFileChecklistType()) {
-            return redirect()
-                ->route('admin.upload-types.index')
-                ->with('error', 'Employee file document types are managed under Documents Management → Employee file items. Edit the employee file item to change the name or expiry rules.');
-        }
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:upload_types,name,' . $uploadType->id,
-            'description' => 'nullable|string',
-            'department_ids' => 'nullable|array',
-            'department_ids.*' => 'integer|exists:departments,id',
-        ]);
-
-        $validated['requires_expiry'] = $request->boolean('requires_expiry');
-        $validated['is_license_or_certification'] = $request->boolean('is_license_or_certification');
-        $validated['department_ids'] = collect($request->input('department_ids', []))
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
+        $validated = $this->validateUploadType($request, $uploadType);
         $uploadType->update($validated);
 
+        if ($uploadType->applies_to_all_positions) {
+            $uploadType->positions()->detach();
+        }
+
+        if (! $uploadType->checklist_section) {
+            UploadType::withoutEvents(function () use ($uploadType): void {
+                $uploadType->forceFill(['checklist_item_id' => null])->save();
+            });
+        }
+
         return redirect()
-            ->route('admin.upload-types.index')
+            ->route('admin.upload-types.index', ['tab' => 'types'])
             ->with('success', config('documents.messages.type_updated'));
     }
 
@@ -258,37 +249,70 @@ class UploadTypeController extends Controller
             abort(403, 'You do not have permission to remove document types.');
         }
 
-        if ($uploadType->isEmployeeFileChecklistType()) {
-            return redirect()
-                ->route('admin.upload-types.index')
-                ->with('error', 'Employee file document types cannot be deleted here. Remove or update the employee file item instead.');
-        }
-
         $permanent = $user->hasRole(['admin', 'super-admin']);
 
         try {
             if ($permanent) {
                 DB::transaction(function () use ($uploadType): void {
-                    $uploadType->uploads()->update(['upload_type_id' => null]);
+                    $checklistItemId = $uploadType->checklist_item_id;
+                    $uploadType->uploads()->update(['upload_type_id' => null, 'checklist_item_id' => null]);
+                    $uploadType->positions()->detach();
                     $uploadType->forceDelete();
+                    if ($checklistItemId) {
+                        \App\Models\ChecklistItem::query()->whereKey($checklistItemId)->delete();
+                    }
                 });
             } else {
                 $uploadType->delete();
             }
         } catch (QueryException) {
             return redirect()
-                ->route('admin.upload-types.index')
+                ->route('admin.upload-types.index', ['tab' => 'types'])
                 ->with('error', 'Cannot delete this document type because it is in use.');
         }
 
         return redirect()
-            ->route('admin.upload-types.index')
+            ->route('admin.upload-types.index', ['tab' => 'types'])
             ->with(
                 'success',
                 $permanent
                     ? 'Document type permanently deleted.'
                     : 'Document type archived. Existing document history is preserved.'
             );
+    }
+
+    protected function validateUploadType(Request $request, ?UploadType $uploadType = null): array
+    {
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('upload_types', 'name')
+                    ->whereNull('deleted_at')
+                    ->ignore($uploadType?->id),
+            ],
+            'description' => 'nullable|string',
+            'department_ids' => 'nullable|array',
+            'department_ids.*' => 'integer|exists:departments,id',
+            'checklist_section' => 'nullable|string|in:' . implode(',', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS),
+            'doc_type_id' => 'nullable|integer|exists:doc_types,id',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        $validated['requires_expiry'] = $request->boolean('requires_expiry');
+        $validated['is_license_or_certification'] = $request->boolean('is_license_or_certification');
+        $validated['applies_to_all_positions'] = $request->boolean('applies_to_all_positions');
+        $validated['checklist_section'] = $validated['checklist_section'] ?? null;
+        $validated['doc_type_id'] = $validated['doc_type_id'] ?? null;
+        $validated['sort_order'] = (int) ($validated['sort_order'] ?? 0);
+        $validated['department_ids'] = collect($request->input('department_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return $validated;
     }
 
     public function syncSeeder(DocumentsManagementSeederExporter $exporter): RedirectResponse

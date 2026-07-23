@@ -1301,17 +1301,26 @@ class MemberDashboardService
             && ! $due['due'];
 
         $status = $completion?->status ?? \App\Models\EmployeeTrainingCompletion::STATUS_NOT_STARTED;
+        $trainingDueAt = $due['next_due_at']?->toDateString();
         if ($satisfiedFromPrior) {
-            $statusMeta = $this->trainingStatusRow('completed', $due['status_hint'] ?? 'Current', $today, null);
+            $statusMeta = $this->trainingStatusRow('completed', $due['status_hint'] ?? 'Current', $today, $trainingDueAt);
             $statusMeta['badge_class'] = 'bg-emerald-50 text-emerald-800';
         } else {
-            $statusMeta = match ($status) {
-                \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED => $this->trainingStatusRow('completed', 'Completed', $today, null),
-                \App\Models\EmployeeTrainingCompletion::STATUS_IN_PROGRESS => $this->trainingStatusRow('in_progress', 'In progress', $today, null),
-                \App\Models\EmployeeTrainingCompletion::STATUS_SUBMITTED => $this->trainingStatusRow('in_progress', 'Submitted for review', $today, null),
-                \App\Models\EmployeeTrainingCompletion::STATUS_REJECTED => $this->trainingStatusRow('overdue', 'Returned — revise', $today, null),
-                \App\Models\EmployeeTrainingCompletion::STATUS_NA => $this->trainingStatusRow('completed', 'N/A', $today, null),
-                default => $this->trainingStatusRow('not_started', 'Not started', $today, null),
+            $isPastDue = $due['due'] && $due['next_due_at'] && $due['next_due_at']->lt($today)
+                && in_array($status, [
+                    \App\Models\EmployeeTrainingCompletion::STATUS_NOT_STARTED,
+                    \App\Models\EmployeeTrainingCompletion::STATUS_IN_PROGRESS,
+                    \App\Models\EmployeeTrainingCompletion::STATUS_REJECTED,
+                ], true);
+
+            $statusMeta = match (true) {
+                $status === \App\Models\EmployeeTrainingCompletion::STATUS_COMPLETED => $this->trainingStatusRow('completed', 'Completed', $today, $trainingDueAt),
+                $isPastDue => $this->trainingStatusRow('overdue', 'Past due', $today, $trainingDueAt),
+                $status === \App\Models\EmployeeTrainingCompletion::STATUS_IN_PROGRESS => $this->trainingStatusRow('in_progress', 'In progress', $today, $trainingDueAt),
+                $status === \App\Models\EmployeeTrainingCompletion::STATUS_SUBMITTED => $this->trainingStatusRow('in_progress', 'Submitted for review', $today, $trainingDueAt),
+                $status === \App\Models\EmployeeTrainingCompletion::STATUS_REJECTED => $this->trainingStatusRow('overdue', 'Returned — revise', $today, $trainingDueAt),
+                $status === \App\Models\EmployeeTrainingCompletion::STATUS_NA => $this->trainingStatusRow('completed', 'N/A', $today, $trainingDueAt),
+                default => $this->trainingStatusRow('not_started', 'Not started', $today, $trainingDueAt),
             };
         }
 
@@ -1357,6 +1366,7 @@ class MemberDashboardService
             'frequency_label' => $item->frequencyShortLabel(),
             'due' => $due['due'] || $hasOpenPeriodWork,
             'satisfied_until' => $due['satisfied_until']?->toDateString(),
+            'next_due_at' => $due['next_due_at']?->toDateString(),
             'rejection_reason' => $completion?->rejection_reason,
             'notes' => $completion?->notes,
             'action_url' => $moduleUrl ?: '#',
@@ -2243,7 +2253,9 @@ class MemberDashboardService
     protected function resolveCompetencyTrainingStatus(EmployeeCompetencyAssessment $assessment, Carbon $today): array
     {
         $periodEnd = $this->parseDate($assessment->period?->date_to);
-        $dueAt = $periodEnd?->toDateString();
+        $dueDate = \App\Support\ComplianceDueDate::forPeriodEnd($periodEnd);
+        $dueAt = $dueDate?->toDateString();
+        $isPastDue = $dueDate && $dueDate->lt($today);
 
         if ($assessment->employee_signed_at) {
             return $this->trainingStatusRow('completed', 'Signed & complete', $today, $dueAt);
@@ -2262,7 +2274,7 @@ class MemberDashboardService
         $rawStatus = (string) ($assessment->status ?? '');
 
         if (in_array($rawStatus, ['submitted', 'completed'], true)) {
-            if ($periodEnd && $periodEnd->lt($today)) {
+            if ($isPastDue) {
                 return $this->trainingStatusRow('overdue', 'Signature overdue', $today, $dueAt);
             }
 
@@ -2270,15 +2282,15 @@ class MemberDashboardService
         }
 
         if ($rawStatus === 'draft') {
-            if ($periodEnd && $periodEnd->lt($today)) {
+            if ($isPastDue) {
                 return $this->trainingStatusRow('overdue', 'Assessment overdue', $today, $dueAt);
             }
 
             return $this->trainingStatusRow('in_progress', 'Draft in progress', $today, $dueAt);
         }
 
-        if ($periodEnd && $periodEnd->lt($today)) {
-            return $this->trainingStatusRow('overdue', 'Period ended — not complete', $today, $dueAt);
+        if ($isPastDue) {
+            return $this->trainingStatusRow('overdue', 'Past due — not complete', $today, $dueAt);
         }
 
         return $this->trainingStatusRow('not_started', 'Not started', $today, $dueAt);
@@ -2287,7 +2299,9 @@ class MemberDashboardService
     protected function resolvePerformanceChecklistStatus(EmployeePerformanceAssessment $assessment, Carbon $today): array
     {
         $periodEnd = $this->parseDate($assessment->period?->date_to);
-        $dueAt = $periodEnd?->toDateString();
+        $dueDate = \App\Support\ComplianceDueDate::forPeriodEnd($periodEnd);
+        $dueAt = $dueDate?->toDateString();
+        $isPastDue = $dueDate && $dueDate->lt($today);
         $workflowStatus = AssessmentWorkflowStatus::normalize($assessment->workflowStatus());
 
         if ($workflowStatus === AssessmentWorkflowStatus::COMPLETED || $assessment->finalized) {
@@ -2302,8 +2316,8 @@ class MemberDashboardService
             return $this->trainingStatusRow('in_progress', 'Awaiting reviewer approval', $today, $dueAt);
         }
 
-        if ($periodEnd && $periodEnd->lt($today)) {
-            return $this->trainingStatusRow('overdue', 'Period ended — not complete', $today, $dueAt);
+        if ($isPastDue) {
+            return $this->trainingStatusRow('overdue', 'Past due — not complete', $today, $dueAt);
         }
 
         if ($workflowStatus === AssessmentWorkflowStatus::DRAFT) {
@@ -2576,22 +2590,49 @@ class MemberDashboardService
         $status = (string) ($item['status'] ?? 'missing');
         $latestExpiry = $this->parseDate($item['latest_expires_at'] ?? null);
         $daysUntil = isset($item['days_to_expiry']) ? (int) $item['days_to_expiry'] : null;
+        $daysUntilDue = isset($item['days_until_due'])
+            ? (int) $item['days_until_due']
+            : ($daysUntil !== null
+                ? $daysUntil - \App\Support\ComplianceDueDate::offsetDays()
+                : null);
+        $dueAt = $this->parseDate($item['due_at'] ?? null)
+            ?? \App\Support\ComplianceDueDate::forExpiration($latestExpiry);
 
         if ($status === 'complete') {
             if (($item['requires_expiry'] ?? false) && $daysUntil !== null) {
                 if ($daysUntil < 0) {
                     $statusMeta = $this->certificationStatusRow('expired', 'Expired', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                } elseif ($daysUntil === 0) {
-                    $statusMeta = $this->certificationStatusRow('expires_today', 'Expires today', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                } elseif ($daysUntil <= 30) {
-                    $statusMeta = $this->certificationStatusRow('expiring_urgent', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
-                } elseif ($daysUntil <= 60) {
-                    $statusMeta = $this->certificationStatusRow('expiring_soon', "Expires in {$daysUntil} day(s)", $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                } elseif ($daysUntilDue !== null && $daysUntilDue < 0) {
+                    $statusMeta = $this->certificationStatusRow(
+                        'expiring_urgent',
+                        'Renewal past due (expires '.$latestExpiry?->format('M j, Y').')',
+                        $dueAt?->toDateString() ?? $latestExpiry?->toDateString(),
+                        $daysUntilDue,
+                        $dueAt?->format('M j, Y') ?? $latestExpiry?->format('M j, Y')
+                    );
+                } elseif ($daysUntilDue !== null && $daysUntilDue === 0) {
+                    $statusMeta = $this->certificationStatusRow('expiring_urgent', 'Renewal due today', $dueAt?->toDateString(), 0, $dueAt?->format('M j, Y'));
+                } elseif ($daysUntilDue !== null && $daysUntilDue <= 30) {
+                    $statusMeta = $this->certificationStatusRow(
+                        'expiring_urgent',
+                        "Renewal due in {$daysUntilDue} day(s)",
+                        $dueAt?->toDateString(),
+                        $daysUntilDue,
+                        $dueAt?->format('M j, Y')
+                    );
+                } elseif ($daysUntilDue !== null && $daysUntilDue <= 60) {
+                    $statusMeta = $this->certificationStatusRow(
+                        'expiring_soon',
+                        "Renewal due in {$daysUntilDue} day(s)",
+                        $dueAt?->toDateString(),
+                        $daysUntilDue,
+                        $dueAt?->format('M j, Y')
+                    );
                 } else {
-                    $statusMeta = $this->certificationStatusRow('valid', 'Valid', $latestExpiry?->toDateString(), $daysUntil, $latestExpiry?->format('M j, Y'));
+                    $statusMeta = $this->certificationStatusRow('valid', 'Current', $latestExpiry?->toDateString(), $daysUntilDue ?? $daysUntil, $latestExpiry?->format('M j, Y'));
                 }
             } else {
-                $statusMeta = $this->certificationStatusRow('valid', 'On file', null, null);
+                $statusMeta = $this->certificationStatusRow('valid', 'Current', null, null, null);
             }
         } elseif ($status === 'expired') {
             $expiredDays = $latestExpiry ? (int) $today->diffInDays($latestExpiry, false) : null;
@@ -2615,6 +2656,8 @@ class MemberDashboardService
             'verified' => $status === 'complete',
             'is_license_or_certification' => true,
             'verification_notes' => $item['verification_notes'] ?? null,
+            'due_at' => $dueAt?->toDateString(),
+            'days_until_due' => $daysUntilDue,
         ], $statusMeta);
     }
 
@@ -2906,8 +2949,10 @@ class MemberDashboardService
         $positionId = $employee->currentAssignment?->position_id
             ?? $employee->currentAssignment?->position?->id;
 
+        // PART E orientation/skills are not employee-file documents.
         $applicableItems = ChecklistItem::query()
             ->applicableToPosition($positionId)
+            ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
             ->where('is_required', true)
             ->orderBy('order')
             ->get();
@@ -3114,32 +3159,18 @@ class MemberDashboardService
         $checklistEvaluation = $this->evaluateEmployeeChecklistCompliance($bpEmployee, $empChecklistItems);
         $requiredUploadTypes = $this->buildEmployeeUploadTypeOptions($bpEmployee, $complianceItems->all());
 
-        $complianceMissing = $complianceItems
-            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'rejected', 'expired', 'pending_review'], true))
-            ->map(function ($item) {
-                $status = (string) ($item['status'] ?? 'missing');
-                $statusLabel = match ($status) {
-                    'expired' => 'Expired',
-                    'rejected' => 'Rejected — re-upload required',
-                    'pending_review' => 'Pending for Approval',
-                    default => 'Not on file',
-                };
+        $facility = $bpEmployee?->currentAssignment?->facility ?? $user->facility;
 
-                return [
-                    'id' => 'upload-type-' . ($item['upload_type_id'] ?? uniqid()),
-                    'upload_type_id' => $item['upload_type_id'] ?? null,
-                    'checklist_item_id' => null,
-                    'title' => $item['name'] ?? 'Required document',
-                    'section' => 'Required for your position',
-                    'required' => true,
-                    'status' => $status,
-                    'status_label' => $statusLabel,
-                    'priority' => in_array($status, ['expired', 'pending_review'], true) ? 'medium' : 'high',
-                    'due_at' => null,
-                    'verification_notes' => $item['verification_notes'] ?? null,
-                ];
-            })
-            ->values();
+        if (!$facility && $user->facility_id) {
+            $facility = Facility::find($user->facility_id);
+        }
+
+        $requiredDocuments = $this->buildRequiredDocumentsList(
+            $complianceItems,
+            $bpEmployee,
+            $facility,
+            $user
+        );
 
         foreach ($checklistEvaluation['missing'] as $item) {
             $checklistItemId = null;
@@ -3151,21 +3182,49 @@ class MemberDashboardService
                 ? UploadType::query()->where('checklist_item_id', $checklistItemId)->value('id')
                 : null;
 
-            $complianceMissing->push([
+            $section = (string) ($item['section'] ?? '');
+            if ($section !== '' && ! in_array($section, ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS, true)) {
+                continue;
+            }
+
+            // Checklist-only gaps that are not already represented by catalog types.
+            $alreadyListed = collect($requiredDocuments)->contains(
+                fn ($row) => $uploadTypeId && (int) ($row['upload_type_id'] ?? 0) === (int) $uploadTypeId
+            );
+
+            if ($alreadyListed) {
+                continue;
+            }
+
+            $requiredDocuments[] = [
                 'id' => $item['id'] ?? ('checklist-' . ($checklistItemId ?? uniqid())),
                 'upload_type_id' => $uploadTypeId,
                 'checklist_item_id' => $checklistItemId,
                 'title' => $item['title'] ?? 'Checklist document',
-                'section' => $item['section'] ?? 'Employee checklist',
+                'description' => null,
+                'section' => $section !== '' ? $section : 'Employee checklist',
                 'required' => true,
                 'status' => $item['status'] ?? 'not_on_file',
                 'status_label' => $item['status_label'] ?? 'Needs attention',
                 'priority' => $item['priority'] ?? 'high',
                 'due_at' => $item['due_at'] ?? null,
-            ]);
+                'verification_notes' => null,
+                'is_uploaded' => false,
+                'latest_uploaded_at' => null,
+                'latest_expires_at' => null,
+                'days_to_expiry' => null,
+                'view_url' => null,
+                'download_url' => null,
+                'upload_name' => null,
+                'verification_status_label' => null,
+                'verification_badge_class' => null,
+            ];
         }
 
-        $complianceMissing = $complianceMissing->values()->all();
+        $complianceMissing = collect($requiredDocuments)
+            ->filter(fn ($item) => in_array(($item['status'] ?? ''), ['missing', 'rejected', 'expired', 'pending_review', 'not_on_file'], true))
+            ->values()
+            ->all();
 
         $requiredNotOnFileCount = collect($complianceMissing)
             ->filter(fn ($item) => in_array($item['status'] ?? '', ['missing', 'not_on_file'], true))
@@ -3177,18 +3236,8 @@ class MemberDashboardService
             $complianceItems
         );
 
-        $complianceComplete = $complianceItems
+        $complianceComplete = collect($requiredDocuments)
             ->filter(fn ($item) => ($item['status'] ?? '') === 'complete')
-            ->map(function ($item) {
-                return [
-                    'id' => 'upload-type-ok-' . ($item['upload_type_id'] ?? uniqid()),
-                    'title' => $item['name'] ?? 'Required document',
-                    'section' => 'Required for your position',
-                    'required' => true,
-                    'status' => 'complete',
-                    'status_label' => 'Approved',
-                ];
-            })
             ->values()
             ->all();
 
@@ -3203,12 +3252,6 @@ class MemberDashboardService
             ? (int) round(($combinedComplete / $combinedTotal) * 100)
             : ($checklistEvaluation['verified_percent'] ?? null);
 
-        $facility = $bpEmployee?->currentAssignment?->facility ?? $user->facility;
-
-        if (!$facility && $user->facility_id) {
-            $facility = Facility::find($user->facility_id);
-        }
-
         $documentsList = $skipDocumentsList
             ? []
             : $this->mapEmployeeDocuments($bpEmployee, $facility, $user);
@@ -3216,6 +3259,7 @@ class MemberDashboardService
         return [
             'uploads' => $documentsList,
             'documents' => $documentsList,
+            'required_documents' => $requiredDocuments,
             'compliance_missing' => $complianceMissing,
             'compliance_complete' => $complianceComplete,
             'required_not_on_file_count' => $requiredNotOnFileCount,
@@ -3224,8 +3268,92 @@ class MemberDashboardService
             'signatures' => $this->buildSignaturesNeeded($bpEmployee, $empChecklistItems),
             'verified_percent' => $verifiedPercent,
             'has_employee_record' => (bool) $bpEmployee,
+            'position_title' => $documentCompliance['position_title'] ?? null,
             'submission_reason_options' => \App\Support\UploadSubmissionReason::options(),
         ];
+    }
+
+    /**
+     * All required catalog documents (all-employees + position), uploaded first.
+     *
+     * @param  Collection<int, array<string, mixed>>|iterable<int, array<string, mixed>>  $complianceItems
+     * @return list<array<string, mixed>>
+     */
+    protected function buildRequiredDocumentsList(
+        iterable $complianceItems,
+        ?BPEmployee $employee,
+        ?Facility $facility,
+        User $user
+    ): array {
+        $uploadsById = collect();
+        if ($employee) {
+            $uploadIds = collect($complianceItems)
+                ->flatMap(fn ($item) => array_filter([
+                    $item['valid_upload_id'] ?? null,
+                    $item['latest_upload_id'] ?? null,
+                ]))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($uploadIds !== []) {
+                $uploadsById = Upload::query()
+                    ->whereIn('id', $uploadIds)
+                    ->with(['uploadType', 'checklistItem'])
+                    ->get()
+                    ->keyBy('id');
+            }
+        }
+
+        return collect($complianceItems)
+            ->map(function (array $item) use ($uploadsById, $employee, $facility, $user) {
+                $status = (string) ($item['status'] ?? 'missing');
+                $statusLabel = match ($status) {
+                    'complete' => 'On file',
+                    'expired' => 'Expired',
+                    'rejected' => 'Rejected — re-upload required',
+                    'pending_review' => 'Pending for Approval',
+                    default => 'Not on file',
+                };
+
+                $uploadId = $item['valid_upload_id'] ?? $item['latest_upload_id'] ?? null;
+                $upload = $uploadId ? $uploadsById->get((int) $uploadId) : null;
+                $uploadRow = ($upload && $employee)
+                    ? $this->formatUploadRow($upload, $employee, $facility, $user)
+                    : null;
+                $isUploaded = $upload !== null || ! empty($item['latest_upload_id']);
+
+                return [
+                    'id' => 'upload-type-' . ($item['upload_type_id'] ?? uniqid()),
+                    'upload_type_id' => $item['upload_type_id'] ?? null,
+                    'checklist_item_id' => null,
+                    'title' => $item['name'] ?? 'Required document',
+                    'description' => $item['description'] ?? null,
+                    'section' => 'Required for your position',
+                    'required' => true,
+                    'status' => $status,
+                    'status_label' => $statusLabel,
+                    'priority' => in_array($status, ['expired', 'pending_review'], true) ? 'medium' : ($status === 'complete' ? 'low' : 'high'),
+                    'due_at' => $item['due_at'] ?? null,
+                    'verification_notes' => $item['verification_notes'] ?? null,
+                    'is_uploaded' => $isUploaded,
+                    'latest_uploaded_at' => $item['latest_uploaded_at'] ?? null,
+                    'latest_expires_at' => $item['latest_expires_at'] ?? null,
+                    'days_to_expiry' => $item['days_to_expiry'] ?? null,
+                    'view_url' => $uploadRow['view_url'] ?? null,
+                    'download_url' => $uploadRow['download_url'] ?? null,
+                    'upload_name' => $uploadRow['name'] ?? null,
+                    'verification_status_label' => $uploadRow['verification_status_label'] ?? null,
+                    'verification_badge_class' => $uploadRow['verification_badge_class'] ?? null,
+                ];
+            })
+            ->sortBy([
+                fn ($row) => empty($row['is_uploaded']) ? 1 : 0,
+                fn ($row) => mb_strtolower((string) ($row['title'] ?? '')),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -3338,7 +3466,7 @@ class MemberDashboardService
     }
 
     /**
-     * @param  array{search?: string, type?: string, expiry?: string, sort?: string, per_page?: int}  $filters
+     * @param  array{search?: string, type?: string, expiry?: string, status?: string, sort?: string, per_page?: int}  $filters
      */
     public function paginateEmployeeDocuments(
         ?BPEmployee $employee,
@@ -3364,7 +3492,7 @@ class MemberDashboardService
     }
 
     /**
-     * @param  array{search?: string, type?: string, expiry?: string, sort?: string}  $filters
+     * @param  array{search?: string, type?: string, expiry?: string, status?: string, sort?: string}  $filters
      */
     protected function employeeDocumentsQuery(BPEmployee $employee, array $filters): HasMany
     {
@@ -3394,6 +3522,15 @@ class MemberDashboardService
             }
         }
 
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '' && in_array($status, [
+            Upload::VERIFICATION_PENDING,
+            Upload::VERIFICATION_APPROVED,
+            Upload::VERIFICATION_REJECTED,
+        ], true)) {
+            $query->where('verification_status', $status);
+        }
+
         match ((string) ($filters['expiry'] ?? '')) {
             'valid' => $query->where(function ($scope) use ($today) {
                 $scope->whereNull('expires_at')->orWhereDate('expires_at', '>=', $today);
@@ -3419,7 +3556,7 @@ class MemberDashboardService
     }
 
     /**
-     * @return array{search: string, type: string, expiry: string, sort: string, per_page: int}
+     * @return array{search: string, type: string, expiry: string, status: string, sort: string, per_page: int}
      */
     protected function documentFiltersFromRequest(?Request $request): array
     {
@@ -3433,13 +3570,21 @@ class MemberDashboardService
         ];
 
         $allowedExpiry = ['', 'valid', 'expired', 'none', 'expiring'];
+        $allowedStatus = [
+            '',
+            Upload::VERIFICATION_PENDING,
+            Upload::VERIFICATION_APPROVED,
+            Upload::VERIFICATION_REJECTED,
+        ];
         $sort = (string) ($request?->query('sort') ?? 'uploaded_desc');
         $expiry = (string) ($request?->query('expiry') ?? '');
+        $status = (string) ($request?->query('status') ?? '');
 
         return [
             'search' => trim((string) ($request?->query('q') ?? '')),
             'type' => (string) ($request?->query('type') ?? ''),
             'expiry' => in_array($expiry, $allowedExpiry, true) ? $expiry : '',
+            'status' => in_array($status, $allowedStatus, true) ? $status : '',
             'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'uploaded_desc',
             'per_page' => min(50, max(5, (int) ($request?->query('per_page') ?? 10))),
         ];
@@ -3923,7 +4068,7 @@ class MemberDashboardService
                     . '. Review and sign to complete this section.',
                 'type' => 'competency-review',
                 'priority' => 'high',
-                'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
+                'due_at' => \App\Support\ComplianceDueDate::forPeriod($assessment->period)?->format('Y-m-d'),
                 'action_url' => $sectionWorkflow->buildReviewerSectionChecklistUrl(
                     $employee,
                     (int) $assessment->assessment_period_id,
@@ -3952,7 +4097,7 @@ class MemberDashboardService
                     . '.',
                 'type' => 'competency-review',
                 'priority' => 'high',
-                'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
+                'due_at' => \App\Support\ComplianceDueDate::forPeriod($assessment->period)?->format('Y-m-d'),
                 'action_url' => $sectionWorkflow->buildReviewerSectionChecklistUrl(
                     $employee,
                     (int) $assessment->assessment_period_id,
@@ -4007,7 +4152,7 @@ class MemberDashboardService
                     : ($employeeLabel . ' sent their performance appraisal back for updates' . ($periodLabel ? " ({$periodLabel})" : '') . '.'),
                 'type' => 'performance-review',
                 'priority' => 'high',
-                'due_at' => $this->parseDate($assessment->period?->date_to)?->format('Y-m-d'),
+                'due_at' => \App\Support\ComplianceDueDate::forPeriod($assessment->period)?->format('Y-m-d'),
                 'action_url' => $notificationService->buildReviewerChecklistUrl(
                     $employee,
                     'partF',
@@ -4239,12 +4384,21 @@ class MemberDashboardService
                 ];
             }
             if ($dateTo) {
+                $dueDate = \App\Support\ComplianceDueDate::forPeriodEnd($dateTo);
+                $events[] = [
+                    'id' => 'cal-period-due-' . $period->id,
+                    'title' => 'Assessment due',
+                    'date' => ($dueDate ?? $dateTo)->toDateString(),
+                    'type' => 'deadline',
+                    'description' => ($this->formatPeriodLabel($period) ?: 'Review period')
+                        .' — due 30 days before anniversary',
+                ];
                 $events[] = [
                     'id' => 'cal-period-end-' . $period->id,
-                    'title' => 'Assessment period due',
+                    'title' => 'Assessment period ends',
                     'date' => $dateTo->toDateString(),
-                    'type' => 'deadline',
-                    'description' => $this->formatPeriodLabel($period) ?: 'Review period deadline',
+                    'type' => 'period',
+                    'description' => $this->formatPeriodLabel($period) ?: 'Review period end',
                 ];
             }
         }

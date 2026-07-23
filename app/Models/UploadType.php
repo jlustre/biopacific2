@@ -21,15 +21,57 @@ class UploadType extends Model
         'department_ids',
         'checklist_item_id',
         'checklist_section',
+        'doc_type_id',
+        'sort_order',
+        'applies_to_all_positions',
     ];
 
     protected $casts = [
         'requires_expiry' => 'boolean',
         'is_license_or_certification' => 'boolean',
+        'applies_to_all_positions' => 'boolean',
         'department_ids' => 'array',
+        'sort_order' => 'integer',
     ];
 
     public $timestamps = false;
+
+    protected static bool $syncingChecklistProjection = false;
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $uploadType): void {
+            if (static::$syncingChecklistProjection) {
+                return;
+            }
+
+            if (! in_array((string) $uploadType->checklist_section, ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS, true)) {
+                return;
+            }
+
+            if (! $uploadType->wasRecentlyCreated && ! $uploadType->wasChanged([
+                'name',
+                'requires_expiry',
+                'is_license_or_certification',
+                'checklist_section',
+                'doc_type_id',
+                'sort_order',
+                'applies_to_all_positions',
+            ])) {
+                return;
+            }
+
+            static::$syncingChecklistProjection = true;
+            try {
+                $fresh = static::withoutGlobalScopes()->find($uploadType->id);
+                if ($fresh) {
+                    app(ChecklistUploadTypeSyncService::class)->syncUploadType($fresh);
+                }
+            } finally {
+                static::$syncingChecklistProjection = false;
+            }
+        });
+    }
 
     public function uploads()
     {
@@ -53,9 +95,15 @@ class UploadType extends Model
         return $this->belongsTo(ChecklistItem::class);
     }
 
+    public function docType()
+    {
+        return $this->belongsTo(DocType::class, 'doc_type_id');
+    }
+
     public function isEmployeeFileChecklistType(): bool
     {
-        return $this->checklist_item_id !== null;
+        return $this->checklist_item_id !== null
+            || in_array((string) $this->checklist_section, ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS, true);
     }
 
     public function scopeGeneralDocumentTypes(Builder $query): Builder
@@ -64,11 +112,16 @@ class UploadType extends Model
     }
 
     /**
-     * Types assignable via position required-documents UI (excludes checklist-synced types).
+     * @deprecated Use catalogPositionAssignable — all catalog types can be assigned to positions.
      */
     public function scopeGeneralPositionAssignable(Builder $query): Builder
     {
-        return $query->whereNull('checklist_item_id');
+        return $query->catalogPositionAssignable();
+    }
+
+    public function scopeCatalogPositionAssignable(Builder $query): Builder
+    {
+        return $query;
     }
 
     public function scopeEmployeeFileSections(Builder $query): Builder
@@ -77,6 +130,21 @@ class UploadType extends Model
             'checklist_section',
             ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS
         );
+    }
+
+    public function scopeApplicableToPosition(Builder $query, ?int $positionId): Builder
+    {
+        if (! $positionId) {
+            return $query->where('applies_to_all_positions', true);
+        }
+
+        return $query->where(function (Builder $scope) use ($positionId) {
+            $scope->where('applies_to_all_positions', true)
+                ->orWhereHas('positions', function (Builder $positions) use ($positionId) {
+                    $positions->where('positions.id', $positionId)
+                        ->where('position_upload_type_requirements.is_required', true);
+                });
+        });
     }
 
     public function scopeOrderedForDisplay(Builder $query): Builder
@@ -89,7 +157,15 @@ class UploadType extends Model
                 WHEN 'PART D' THEN 4
                 ELSE 5
             END"
-        )->orderBy('name');
+        )->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
+     * Collection of UploadType models for an employee (position-aware).
+     */
+    public static function catalogForEmployee(?BPEmployee $employee): \Illuminate\Support\Collection
+    {
+        return app(EmployeeDocumentRequirementsService::class)->catalogUploadTypesForEmployee($employee);
     }
 
     /**

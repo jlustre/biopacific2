@@ -5,7 +5,7 @@
  *
  * Position titles are used instead of IDs so mappings survive migrate:fresh.
  *
- * Auto-generated from Position Portal Roles → Update seeder on 2026-07-15 09:44:10.
+ * Auto-generated from Position Portal Roles → Update seeder on 2026-07-22 13:40:00.
  *
  * @return list<array{position_title: string, role_name: string, is_active: bool}>
  */

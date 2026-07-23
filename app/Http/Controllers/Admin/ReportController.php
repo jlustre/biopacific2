@@ -1,16 +1,17 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Jobs\GenerateReportPdf;
 use App\Models\Report;
+use App\Models\ReportExport;
 use App\Models\User;
 use App\Services\ReportSeederExporter;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Barryvdh\DomPDF\Facade\Pdf;
-    
 
 class ReportController extends Controller
 {
@@ -203,7 +204,7 @@ class ReportController extends Controller
             return 'System';
         }
 
-        return trim($user->name . ' (' . $user->email . ')');
+        return trim($user->name.' ('.$user->email.')');
     }
 
     protected function reportDateScope(Request $request, Report $report, array $results): string
@@ -222,11 +223,11 @@ class ReportController extends Controller
             ?? null;
 
         if ($from || $to) {
-            return trim(($from ?: 'Beginning') . ' to ' . ($to ?: 'Present'));
+            return trim(($from ?: 'Beginning').' to '.($to ?: 'Present'));
         }
 
         if (str_contains($report->name, 'Expiring Licenses & Certifications')) {
-            return 'Expired items and items expiring through ' . now()->addDays(120)->format('M j, Y');
+            return 'Expired items and items expiring through '.now()->addDays(120)->format('M j, Y');
         }
 
         $dateValues = collect($results)
@@ -248,7 +249,7 @@ class ReportController extends Controller
             ->values();
 
         if ($dateValues->isNotEmpty()) {
-            return $dateValues->first()->format('M j, Y') . ' to ' . $dateValues->last()->format('M j, Y');
+            return $dateValues->first()->format('M j, Y').' to '.$dateValues->last()->format('M j, Y');
         }
 
         return 'All available records';
@@ -262,9 +263,9 @@ class ReportController extends Controller
         // Search by name or description
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
-                  ->orWhere('description', 'like', "%$search%") ;
+                    ->orWhere('description', 'like', "%$search%");
             });
         }
 
@@ -368,7 +369,7 @@ class ReportController extends Controller
         if ($request->has('download')) {
             // Try to get params from query string or session, fallback to empty
             $params = $request->query('params', session('last_params', []));
-            if (!is_array($params)) {
+            if (! is_array($params)) {
                 $params = [];
             }
             $params = $this->scopedRunParameters($request, $params);
@@ -377,24 +378,31 @@ class ReportController extends Controller
                 $sql = str_replace(':'.$key, DB::getPdo()->quote($value), $sql);
             }
             $results = DB::select($sql);
-            $results = array_map(function($row) { return (array)$row; }, $results);
+            $results = array_map(function ($row) {
+                return (array) $row;
+            }, $results);
             if ($request->download === 'csv') {
                 $csv = '';
-                if (!empty($results)) {
-                    $csv .= implode(',', array_keys($results[0])) . "\n";
+                if (! empty($results)) {
+                    $csv .= implode(',', array_keys($results[0]))."\n";
                     foreach ($results as $row) {
-                        $csv .= implode(',', array_map(function($v) {
-                            return '"' . str_replace('"', '""', $v) . '"';
-                        }, $row)) . "\n";
+                        $csv .= implode(',', array_map(function ($v) {
+                            return '"'.str_replace('"', '""', $v).'"';
+                        }, $row))."\n";
                     }
                 }
+
                 return response($csv)
                     ->header('Content-Type', 'text/csv')
                     ->header('Content-Disposition', 'attachment; filename="report.csv"');
             } elseif ($request->download === 'pdf') {
                 $pdfOrientation = $this->pdfOrientation($request, $report);
+                if ($queuedExport = $this->queueOversizedPdf($request, $report, $params, $results, $pdfOrientation)) {
+                    return $queuedExport;
+                }
                 $pdf = Pdf::loadView('admin.reports.pdf', $this->pdfViewData($request, $report, $results, $pdfOrientation))
                     ->setPaper('a4', $pdfOrientation);
+
                 return $pdf->stream('report.pdf');
             }
         }
@@ -409,7 +417,7 @@ class ReportController extends Controller
 
         $data = $request->validate([
             'category_id' => 'required|exists:report_categories,id',
-                'name' => 'required|string|max:255|unique:reports,name',
+            'name' => 'required|string|max:255|unique:reports,name',
             'description' => 'nullable',
             'sql_template' => 'required',
             'parameters' => 'nullable',
@@ -434,6 +442,7 @@ class ReportController extends Controller
             $data['visible_facilities'] = $request->input('visible_facilities', []);
         }
         Report::create($data);
+
         return redirect()->route('admin.reports.index')->with('success', 'Report created.');
     }
 
@@ -450,7 +459,7 @@ class ReportController extends Controller
 
         $data = $request->validate([
             'category_id' => 'required|exists:report_categories,id',
-                'name' => 'required|string|max:255|unique:reports,name,' . $report->id,
+            'name' => 'required|string|max:255|unique:reports,name,'.$report->id,
             'description' => 'nullable',
             'sql_template' => 'required',
             'parameters' => 'nullable',
@@ -474,6 +483,7 @@ class ReportController extends Controller
             $data['visible_facilities'] = $request->input('visible_facilities', []);
         }
         $report->update($data);
+
         return redirect()->route('admin.reports.index')->with('success', 'Report updated.');
     }
 
@@ -482,6 +492,7 @@ class ReportController extends Controller
         $this->ensureCanManageReports($request);
 
         $report->delete();
+
         return redirect()->route('admin.reports.index')->with('success', 'Report deleted.');
     }
 
@@ -496,18 +507,17 @@ class ReportController extends Controller
                 ->route('admin.reports.index')
                 ->with(
                     'success',
-                    'Report seeder updated with ' . $result['count'] . ' report(s).'
+                    'Report seeder updated with '.$result['count'].' report(s).'
                 );
         } catch (\Throwable $e) {
             report($e);
 
             return redirect()
                 ->route('admin.reports.index')
-                ->with('error', 'Failed to update report seeder: ' . $e->getMessage());
+                ->with('error', 'Failed to update report seeder: '.$e->getMessage());
         }
     }
 
- 
     public function run(Request $request, Report $report)
     {
         $this->authorizeReportAccess($request, $report);
@@ -519,17 +529,20 @@ class ReportController extends Controller
         foreach ($params as $key => $value) {
             // Cast numeric values to int/float for SQL
             if (is_numeric($value)) {
-                $value = strpos($value, '.') !== false ? (float)$value : (int)$value;
+                $value = strpos($value, '.') !== false ? (float) $value : (int) $value;
             }
             $sql = str_replace(':'.$key, DB::getPdo()->quote($value), $sql);
         }
         try {
             $results = DB::select($sql);
-            $results = array_map(function($row) { return (array)$row; }, $results);
+            $results = array_map(function ($row) {
+                return (array) $row;
+            }, $results);
         } catch (\Throwable $e) {
             if ($request->expectsJson() || $request->wantsJson()) {
                 return response()->json(['results' => [], 'error' => $e->getMessage()], 500);
             }
+
             return back()->withErrors(['sql' => $e->getMessage()]);
         }
 
@@ -543,14 +556,15 @@ class ReportController extends Controller
 
         if ($outputFormat === 'csv') {
             $csv = '';
-            if (!empty($results)) {
-                $csv .= implode(',', array_keys($results[0])) . "\n";
+            if (! empty($results)) {
+                $csv .= implode(',', array_keys($results[0]))."\n";
                 foreach ($results as $row) {
-                    $csv .= implode(',', array_map(function($v) {
-                        return '"' . str_replace('"', '""', $v) . '"';
-                    }, $row)) . "\n";
+                    $csv .= implode(',', array_map(function ($v) {
+                        return '"'.str_replace('"', '""', $v).'"';
+                    }, $row))."\n";
                 }
             }
+
             return redirect()
                 ->route('admin.reports.show', $report->id)
                 ->with(['results' => $results, 'output_format' => 'csv', 'csv' => $csv]);
@@ -559,6 +573,10 @@ class ReportController extends Controller
                 ->route('admin.reports.show', $report->id)
                 ->with(['results' => $results, 'output_format' => 'json']);
         } elseif ($outputFormat === 'pdf') {
+            if ($queuedExport = $this->queueOversizedPdf($request, $report, $params, $results, $pdfOrientation)) {
+                return $queuedExport;
+            }
+
             return redirect()
                 ->route('admin.reports.show', $report->id)
                 ->with(['results' => $results, 'output_format' => 'pdf', 'pdf_orientation' => $pdfOrientation]);
@@ -583,7 +601,7 @@ class ReportController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Validate SQL syntax for the report form (AJAX)
      */
     public function validateSql(Request $request)
@@ -596,10 +614,11 @@ class ReportController extends Controller
         try {
             // Use DB::select with LIMIT 0 to check syntax only (no data returned)
             $testSql = $sqlForValidation;
-            if (!preg_match('/limit\s+\d+/i', $testSql)) {
+            if (! preg_match('/limit\s+\d+/i', $testSql)) {
                 $testSql .= ' LIMIT 0';
             }
             DB::select($testSql);
+
             return response()->json(['valid' => true]);
         } catch (\Throwable $e) {
             return response()->json(['valid' => false, 'error' => $e->getMessage()]);
@@ -614,7 +633,7 @@ class ReportController extends Controller
         $this->authorizeReportAccess($request, $report);
 
         $params = $request->query('params', []);
-        if (!is_array($params)) {
+        if (! is_array($params)) {
             $params = [];
         }
         $params = $this->scopedRunParameters($request, $params);
@@ -623,25 +642,32 @@ class ReportController extends Controller
             $sql = str_replace(':'.$key, DB::getPdo()->quote($value), $sql);
         }
         $results = DB::select($sql);
-        $results = array_map(function($row) { return (array)$row; }, $results);
+        $results = array_map(function ($row) {
+            return (array) $row;
+        }, $results);
         $outputFormat = $request->query('download', 'table');
         if ($outputFormat === 'csv') {
             $csv = '';
-            if (!empty($results)) {
-                $csv .= implode(',', array_keys($results[0])) . "\n";
+            if (! empty($results)) {
+                $csv .= implode(',', array_keys($results[0]))."\n";
                 foreach ($results as $row) {
-                    $csv .= implode(',', array_map(function($v) {
-                        return '"' . str_replace('"', '""', $v) . '"';
-                    }, $row)) . "\n";
+                    $csv .= implode(',', array_map(function ($v) {
+                        return '"'.str_replace('"', '""', $v).'"';
+                    }, $row))."\n";
                 }
             }
+
             return response($csv)
                 ->header('Content-Type', 'text/csv')
                 ->header('Content-Disposition', 'attachment; filename="report.csv"');
         } elseif ($outputFormat === 'pdf') {
             $pdfOrientation = $this->pdfOrientation($request, $report);
+            if ($queuedExport = $this->queueOversizedPdf($request, $report, $params, $results, $pdfOrientation)) {
+                return $queuedExport;
+            }
             $pdf = Pdf::loadView('admin.reports.pdf', $this->pdfViewData($request, $report, $results, $pdfOrientation))
                 ->setPaper('a4', $pdfOrientation);
+
             return $pdf->stream('report.pdf');
         } elseif ($outputFormat === 'json') {
             return response()->json($results);
@@ -651,7 +677,33 @@ class ReportController extends Controller
         }
     }
 
-       /**
+    protected function queueOversizedPdf(
+        Request $request,
+        Report $report,
+        array $params,
+        array $results,
+        string $pdfOrientation
+    ) {
+        $rowLimit = max(1, (int) config('reports.synchronous_pdf_row_limit', 750));
+        if (count($results) <= $rowLimit) {
+            return null;
+        }
+
+        $export = ReportExport::query()->create([
+            'report_id' => $report->id,
+            'user_id' => $request->user()->id,
+            'status' => ReportExport::STATUS_QUEUED,
+            'parameters' => $params,
+            'pdf_orientation' => $pdfOrientation,
+            'row_count' => count($results),
+        ]);
+
+        GenerateReportPdf::dispatch($export->id);
+
+        return redirect()->route('admin.reports.exports.show', $export);
+    }
+
+    /**
      * Handle report requisition requests from non-admin users.
      */
     public function requestReport(Request $request)
@@ -674,20 +726,20 @@ class ReportController extends Controller
             $message->to($adminEmails)
                 ->subject('New Report Template Request')
                 ->setBody(
-                    "A user has requested a new report template.\n\n" .
-                    "Name: {$data['user_name']}\n" .
-                    "Email: {$data['user_email']}\n" .
-                    "Report Title: {$data['report_title']}\n" .
-                    "Description: {$data['report_description']}\n" .
-                    "Sample Columns: " . ($data['sample_columns'] ?? '-') . "\n" .
-                    "Notes: " . ($data['notes'] ?? '-') . "\n",
+                    "A user has requested a new report template.\n\n".
+                    "Name: {$data['user_name']}\n".
+                    "Email: {$data['user_email']}\n".
+                    "Report Title: {$data['report_title']}\n".
+                    "Description: {$data['report_description']}\n".
+                    'Sample Columns: '.($data['sample_columns'] ?? '-')."\n".
+                    'Notes: '.($data['notes'] ?? '-')."\n",
                     'text/plain'
                 );
         });
 
         return response()->json([
             'success' => true,
-            'message' => 'Your request has been sent to the admin.'
+            'message' => 'Your request has been sent to the admin.',
         ]);
     }
 }

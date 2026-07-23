@@ -514,7 +514,8 @@ class QuickActionsController extends Controller
         $employees = \App\Models\BPEmployee::whereHas('assignments', function($q) use ($facility) {
             $q->where('facility_id', $facility->id);
         })->orderedByName()->get();
-        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
+        // Full catalog when no employee is selected; employee tab uses position-aware catalog.
+        $uploadTypes = app(\App\Services\EmployeeDocumentRequirementsService::class)->fullCatalogUploadTypes();
 
         $query = \App\Models\Upload::with(['facility','user','uploadType'])->current();
         if ($request->facility_id) $query->where('facility_id', $request->facility_id);

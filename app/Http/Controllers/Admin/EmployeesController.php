@@ -374,6 +374,17 @@ class EmployeesController extends Controller
         $this->authorizeEmployeeFacilityAccess($request, $employee);
     }
 
+    protected function resolveChecklistItemForUpload(Upload $upload): ?\App\Models\ChecklistItem
+    {
+        if ($upload->checklist_item_id) {
+            return \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
+        }
+
+        $upload->loadMissing('uploadType.checklistItem');
+
+        return $upload->uploadType?->checklistItem;
+    }
+
     /**
      * Resolve route {employee} by primary key or employee_num (e.g. EMP022).
      */
@@ -517,7 +528,8 @@ class EmployeesController extends Controller
                     $employee,
                     $checklistItem,
                     now()->toDateString(),
-                    isset($validated['expires_at']) ? (string) $validated['expires_at'] : null
+                    isset($validated['expires_at']) ? (string) $validated['expires_at'] : null,
+                    Auth::id()
                 );
             }
         }
@@ -702,7 +714,7 @@ class EmployeesController extends Controller
             ->firstOrFail();
         $this->authorizeUploadModification($upload);
         // You may want to pass upload types or other data as needed
-        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
+        $uploadTypes = \App\Models\UploadType::catalogForEmployee($employee);
         return view('admin.facilities.employee.edit_document', compact('employee', 'upload', 'uploadTypes'));
     }
 
@@ -921,26 +933,26 @@ class EmployeesController extends Controller
             'verification_notes' => 'nullable|string|max:1000',
         ]);
 
+        $checklistItem = $this->resolveChecklistItemForUpload($upload);
         $upload->update([
             'verification_status' => Upload::VERIFICATION_APPROVED,
             'verified_by_user_id' => Auth::id(),
             'verified_at' => now(),
             'verification_notes' => $validated['verification_notes'] ?? null,
+            'checklist_item_id' => $checklistItem?->id ?? $upload->checklist_item_id,
         ]);
 
         $verification = app(\App\Services\EmployeeDocumentVerificationService::class);
         $verification->completeOpenReviewTasks($upload->fresh(), Auth::user());
 
-        if ($upload->checklist_item_id) {
-            $checklistItem = \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
-            if ($checklistItem) {
-                \App\Support\EmployeeChecklistDocuments::markVerified(
-                    $employee,
-                    $checklistItem,
-                    now()->toDateString(),
-                    optional($upload->expires_at)->toDateString()
-                );
-            }
+        if ($checklistItem) {
+            \App\Support\EmployeeChecklistDocuments::markVerified(
+                $employee,
+                $checklistItem,
+                now()->toDateString(),
+                optional($upload->expires_at)->toDateString(),
+                Auth::id()
+            );
         }
 
         $mailSent = $verification->notifyEmployeeApproved($upload->fresh(['uploadType', 'checklistItem', 'verifiedBy']), $employee);
@@ -974,22 +986,21 @@ class EmployeesController extends Controller
             'verification_notes.required' => 'Please provide a reason for rejection.',
         ]);
 
+        $checklistItem = $this->resolveChecklistItemForUpload($upload);
         $upload->update([
             'verification_status' => Upload::VERIFICATION_REJECTED,
             'verified_by_user_id' => Auth::id(),
             'verified_at' => now(),
             'verification_notes' => $validated['verification_notes'],
+            'checklist_item_id' => $checklistItem?->id ?? $upload->checklist_item_id,
         ]);
 
-        if ($upload->checklist_item_id) {
-            $checklistItem = \App\Models\ChecklistItem::query()->find($upload->checklist_item_id);
-            if ($checklistItem) {
-                \App\Support\EmployeeChecklistDocuments::markOnFile(
-                    $employee,
-                    $checklistItem,
-                    optional($upload->expires_at)->toDateString(),
-                );
-            }
+        if ($checklistItem) {
+            \App\Support\EmployeeChecklistDocuments::markOnFile(
+                $employee,
+                $checklistItem,
+                optional($upload->expires_at)->toDateString(),
+            );
         }
 
         $verification = app(\App\Services\EmployeeDocumentVerificationService::class);
@@ -2186,6 +2197,13 @@ class EmployeesController extends Controller
         }
 
         $employee = $this->employeeFromRouteKey($employee_num);
+        $firstPerformanceDueDate = EmployeeAssessmentPeriodCalculator::firstAssessmentDueDate($employee);
+        if ($firstPerformanceDueDate && ! EmployeeAssessmentPeriodCalculator::isAssessmentDue($employee)) {
+            return back()->with(
+                'error',
+                'Performance appraisal is not due until '.$firstPerformanceDueDate->format('F j, Y').'. Competency evaluation may be completed during the first year.'
+            );
+        }
         $isSelfAssessment = \App\Support\PreventsSelfAssessment::isSelfAssessment($request->user(), $employee);
 
         $assessment = EmployeePerformanceAssessment::firstOrCreate(
@@ -3105,14 +3123,16 @@ class EmployeesController extends Controller
         $departments = \App\Models\Department::all();
         $positions = \App\Models\Position::all();
         $facilities = \App\Models\Facility::all();
-        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->position_id)->get();
+        $positionIdForChecklist = $employee->currentAssignment?->position_id
+            ?? $employee->currentAssignment?->position?->id;
+        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($positionIdForChecklist)->get();
         $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
-            ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
+            ->applicableToPosition($positionIdForChecklist)
             ->orderBy('order')
             ->get();
         $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
         $users = \App\Models\User::all();
-        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
+        $uploadTypes = \App\Models\UploadType::catalogForEmployee($employee);
         $requiredDocumentChecklist = app(\App\Services\DocumentComplianceService::class)->forEmployee($employee);
         $assessmentPeriods = $this->loadEmployeeAssessmentPeriods($employee);
         $requestedAssessmentPeriodId = filled(request('assessment_period_id'))
@@ -3156,14 +3176,6 @@ class EmployeesController extends Controller
                 }
             }
         }
-        $departments = \App\Models\Department::all();
-        $positions = \App\Models\Position::all();
-        $facilities = \App\Models\Facility::all();
-        $checklistItems = \App\Models\ChecklistItem::applicableToPosition($employee->currentAssignment?->job_code_id)->get();
-        $employeeCompetencyItems = \App\Models\EmployeeCompetencyItem::query()
-            ->applicableToPosition($employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id)
-            ->orderBy('order')
-            ->get();
         $positionIdForTrainings = $employee->currentAssignment?->position_id ?? $employee->currentAssignment?->position?->id;
         $employeeTrainingItems = \App\Models\EmployeeTrainingItem::query()
             ->active()
@@ -3171,12 +3183,6 @@ class EmployeesController extends Controller
             ->orderBy('order')
             ->orderBy('name')
             ->get();
-        $empChecklists = \App\Models\BPEmpChecklist::where('employee_num', $employee->employee_num)->get(); // employee_num is FK
-        $users = \App\Models\User::all();
-        $uploadTypes = \App\Models\UploadType::query()->orderedForDisplay()->get();
-
-
-        // --- END: Load draft competency responses for Part G ---
 
         // --- END: Load draft competency responses for Part G ---
 

@@ -76,6 +76,8 @@ return [
 
     'expiring_window_days' => 60,
     'assessments_due_window_days' => 30,
+    // Renewal/assessment due dates themselves are calculated in config/compliance.php
+    // (due_before_days = 30 days before hire anniversary or document expiration).
     'staff_directory_limit' => 200,
     'expiring_list_limit' => 50,
     'action_queue_limit' => 10,

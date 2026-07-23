@@ -10,6 +10,8 @@ use App\Support\SelectedFacility;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -17,14 +19,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class MemberPortalHelpController extends Controller
 {
     use ProvidesMemberPortalContext;
-
-    private const PORTAL_DOCUMENTS = [
-        'HR_PORTAL_USER_MANUAL.md' => 'HR Portal User Manual',
-        'HR_PORTAL_WORKFLOWS.md' => 'HR Portal Workflow Reference',
-        'HR_PORTAL_BUSINESS_RULES.md' => 'HR Portal Business Rules',
-        'DEVELOPER_GUIDE.md' => 'Developer Guide',
-        'FEATURES.md' => 'Application Features',
-    ];
 
     public function index(Request $request): View
     {
@@ -63,9 +57,57 @@ class MemberPortalHelpController extends Controller
     public function manuals(Request $request): View
     {
         $user = $request->user();
+        $manuals = $this->manualCatalog();
+
+        $search = trim((string) $request->query('q', ''));
+        $category = trim((string) $request->query('category', ''));
+        $perPage = (int) $request->query('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
+        $filtered = $manuals
+            ->when($category !== '', fn (Collection $rows) => $rows->where('category', $category)->values())
+            ->when($search !== '', function (Collection $rows) use ($search) {
+                $needle = mb_strtolower($search);
+
+                return $rows
+                    ->map(function (array $manual) use ($needle) {
+                        $match = $this->manualSearchMatch($manual, $needle);
+                        if ($match === null) {
+                            return null;
+                        }
+
+                        return array_merge($manual, [
+                            'match_in_content' => $match['in_content'],
+                            'match_snippet' => $match['snippet'],
+                        ]);
+                    })
+                    ->filter()
+                    ->values();
+            });
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $paginator = new LengthAwarePaginator(
+            $filtered->forPage($page, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         return view('dashboard.member.help.manuals', array_merge($this->memberPortalContext($user), [
-            'userGuides' => config('portal-help.user_guides', []),
+            'manuals' => $paginator,
+            'manualCategories' => $manuals->pluck('category')->unique()->sort()->values(),
+            'manualFilters' => [
+                'q' => $search,
+                'category' => $category,
+                'per_page' => $perPage,
+            ],
+            'manualTotalCount' => $manuals->count(),
             'portalActive' => 'help-manuals',
             'portalTitle' => 'Manuals and Docs | Bio Pacific',
             'portalEyebrow' => 'Help & Support',
@@ -75,17 +117,20 @@ class MemberPortalHelpController extends Controller
         ]));
     }
 
-    public function userManual()
+    public function userManual(Request $request)
     {
-        return $this->portalDocumentPdf('HR_PORTAL_USER_MANUAL.md');
+        return $this->portalDocumentPdf($request, 'HR_PORTAL_USER_MANUAL.md');
     }
 
-    public function portalDocumentPdf(string $document)
+    public function portalDocumentPdf(Request $request, string $document)
     {
-        abort_unless(array_key_exists($document, self::PORTAL_DOCUMENTS), 404);
+        $meta = $this->portalDocumentMeta($document);
+        abort_unless($meta !== null, 404);
 
-        $path = base_path('docs/'.$document);
+        $path = base_path('docs/'.$meta['path']);
         abort_unless(is_file($path), 404);
+
+        $search = trim((string) $request->query('q', ''));
 
         $markdown = $this->rewritePortalDocumentLinks((string) file_get_contents($path));
         $content = Str::markdown($markdown, [
@@ -94,29 +139,234 @@ class MemberPortalHelpController extends Controller
         ]);
         $content = $this->addHeadingAnchors($content);
 
-        return Pdf::loadView('dashboard.member.help.user-manual-pdf', [
+        if ($search !== '') {
+            $content = $this->highlightFirstSearchMatch($content, $search);
+        }
+
+        $pdf = Pdf::loadView('dashboard.member.help.user-manual-pdf', [
             'content' => $content,
-            'documentTitle' => self::PORTAL_DOCUMENTS[$document],
+            'documentTitle' => $meta['title'],
             'updatedAt' => date('F j, Y', (int) filemtime($path)),
+            'searchQuery' => $search,
         ])
-            ->setPaper('letter')
-            ->stream(Str::replaceEnd('.md', '.pdf', $document));
+            ->setPaper('letter');
+
+        $filename = Str::replaceEnd('.md', '.pdf', basename($meta['path']));
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * @return Collection<int, array{key: string, path: string, title: string, description: string, category: string, icon: string}>
+     */
+    protected function manualCatalog(): Collection
+    {
+        return collect(config('portal-help.manuals', []))
+            ->filter(fn ($manual) => is_array($manual) && filled($manual['key'] ?? null) && filled($manual['path'] ?? null))
+            ->map(fn (array $manual) => [
+                'key' => (string) $manual['key'],
+                'path' => (string) $manual['path'],
+                'title' => (string) ($manual['title'] ?? $manual['key']),
+                'description' => (string) ($manual['description'] ?? ''),
+                'category' => (string) ($manual['category'] ?? 'Reference'),
+                'icon' => (string) ($manual['icon'] ?? 'fa-book'),
+            ])
+            ->values();
+    }
+
+    /**
+     * @param  array{key: string, path: string, title: string, description: string, category: string, icon: string}  $manual
+     * @return array{in_content: bool, snippet: ?string}|null
+     */
+    protected function manualSearchMatch(array $manual, string $needle): ?array
+    {
+        if ($needle === '') {
+            return ['in_content' => false, 'snippet' => null];
+        }
+
+        $meta = mb_strtolower(implode(' ', [
+            $manual['title'] ?? '',
+            $manual['description'] ?? '',
+            $manual['category'] ?? '',
+        ]));
+        $body = $this->manualSearchableBody($manual);
+        $haystack = trim($meta.' '.$body);
+
+        if ($haystack === '' || ! $this->textMatchesSearchNeedle($haystack, $needle)) {
+            return null;
+        }
+
+        $inContent = $body !== '' && $this->textMatchesSearchNeedle($body, $needle);
+        $metaMatched = $this->textMatchesSearchNeedle($meta, $needle);
+
+        return [
+            'in_content' => $inContent && ! $metaMatched,
+            'snippet' => ($inContent && ! $metaMatched)
+                ? $this->manualContentSnippet($body, $needle)
+                : null,
+        ];
+    }
+
+    protected function manualSearchableBody(array $manual): string
+    {
+        $relative = str_replace('\\', '/', (string) ($manual['path'] ?? ''));
+        if ($relative === '' || str_contains($relative, '..')) {
+            return '';
+        }
+
+        $path = base_path('docs/'.$relative);
+        if (! is_file($path) || ! is_readable($path)) {
+            return '';
+        }
+
+        $markdown = (string) file_get_contents($path);
+        // Keep searchable text close to what readers see in the PDF.
+        $plain = html_entity_decode(strip_tags(Str::markdown($markdown, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ])), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return mb_strtolower(preg_replace('/\s+/u', ' ', $plain) ?? $plain);
+    }
+
+    protected function textMatchesSearchNeedle(string $haystack, string $needle): bool
+    {
+        if (str_contains($haystack, $needle)) {
+            return true;
+        }
+
+        $tokens = preg_split('/\s+/u', $needle, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (count($tokens) <= 1) {
+            return false;
+        }
+
+        foreach ($tokens as $token) {
+            if (! str_contains($haystack, $token)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected function manualContentSnippet(string $body, string $needle): ?string
+    {
+        $tokens = preg_split('/\s+/u', $needle, -1, PREG_SPLIT_NO_EMPTY) ?: [$needle];
+        $anchor = $tokens[0] ?? $needle;
+        $position = mb_stripos($body, $anchor);
+        if ($position === false) {
+            return null;
+        }
+
+        $start = max(0, $position - 60);
+        $snippet = trim(mb_substr($body, $start, 160));
+        if ($start > 0) {
+            $snippet = '…'.$snippet;
+        }
+        if (($start + 160) < mb_strlen($body)) {
+            $snippet .= '…';
+        }
+
+        return $snippet;
+    }
+
+    /**
+     * Wrap the first searchable occurrence so the PDF can open at that location
+     * (#search=… in Chromium, #search-match named destination fallback).
+     */
+    protected function highlightFirstSearchMatch(string $html, string $query): string
+    {
+        $needle = $this->resolveHighlightNeedle($html, $query);
+        if ($needle === null) {
+            return $html;
+        }
+
+        $parts = preg_split('/(<[^>]+>)/u', $html, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$html];
+        $highlighted = false;
+
+        foreach ($parts as $index => $part) {
+            if ($highlighted || $part === '' || str_starts_with($part, '<')) {
+                continue;
+            }
+
+            $position = mb_stripos($part, $needle);
+            if ($position === false) {
+                continue;
+            }
+
+            $length = mb_strlen($needle);
+            $match = mb_substr($part, $position, $length);
+            $parts[$index] = mb_substr($part, 0, $position)
+                .'<a id="search-match" name="search-match"></a>'
+                .'<mark class="search-hit">'.$match.'</mark>'
+                .mb_substr($part, $position + $length);
+            $highlighted = true;
+        }
+
+        return implode('', $parts);
+    }
+
+    protected function resolveHighlightNeedle(string $html, string $query): ?string
+    {
+        $plain = mb_strtolower(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $query = trim($query);
+        if ($query === '' || $plain === '') {
+            return null;
+        }
+
+        if (mb_stripos($plain, mb_strtolower($query)) !== false) {
+            return $query;
+        }
+
+        $tokens = preg_split('/\s+/u', $query, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        foreach ($tokens as $token) {
+            if (mb_strlen($token) < 2) {
+                continue;
+            }
+            if (mb_stripos($plain, mb_strtolower($token)) !== false) {
+                return $token;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{key: string, path: string, title: string, description: string, category: string, icon: string}|null
+     */
+    protected function portalDocumentMeta(string $document): ?array
+    {
+        return $this->manualCatalog()->firstWhere('key', $document);
     }
 
     private function rewritePortalDocumentLinks(string $markdown): string
     {
         return (string) preg_replace_callback(
-            '/(?<=\]\()([A-Za-z0-9_-]+\.md)(#[^)]+)?(?=\))/',
+            '/(?<=\]\()((?:\.\.\/)*(?:workflows\/)?[A-Za-z0-9_-]+\.md)(#[^)]+)?(?=\))/',
             function (array $matches): string {
-                if (! array_key_exists($matches[1], self::PORTAL_DOCUMENTS)) {
+                $key = $this->resolvePortalDocumentKey($matches[1]);
+                if ($key === null) {
                     return $matches[0];
                 }
 
-                return route('member.help.document', ['document' => $matches[1]])
+                return route('member.help.document', ['document' => $key])
                     .($matches[2] ?? '');
             },
             $markdown
         );
+    }
+
+    private function resolvePortalDocumentKey(string $relativePath): ?string
+    {
+        $basename = basename(str_replace('\\', '/', $relativePath));
+
+        $match = $this->manualCatalog()->first(function (array $manual) use ($basename, $relativePath) {
+            return $manual['key'] === $basename
+                || basename($manual['path']) === $basename
+                || $manual['path'] === ltrim(str_replace('\\', '/', $relativePath), './');
+        });
+
+        return $match['key'] ?? null;
     }
 
     private function addHeadingAnchors(string $html): string

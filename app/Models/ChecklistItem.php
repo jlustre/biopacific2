@@ -29,10 +29,11 @@ class ChecklistItem extends Model
 
     public function scopeApplicableToPosition($query, ?int $positionId)
     {
-        if (!$positionId) {
+        if (! $positionId) {
             return $query;
         }
 
+        // null = all positions; [] = none (matches neither clause); otherwise must contain id.
         return $query->where(function ($subquery) use ($positionId) {
             $subquery->whereNull('position_ids')
                 ->orWhereJsonContains('position_ids', $positionId);

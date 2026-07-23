@@ -143,6 +143,86 @@ return [
         ],
     ],
 
+    /**
+     * Manuals & Docs library (Support → Manuals and Docs).
+     * Each entry with a `path` under /docs can be opened as PDF.
+     *
+     * @var list<array{
+     *     key: string,
+     *     path: string,
+     *     title: string,
+     *     description: string,
+     *     category: string,
+     *     icon: string
+     * }>
+     */
+    'manuals' => [
+        [
+            'key' => 'COMPETENCY_ASSESSMENT_WORKFLOW.md',
+            'path' => 'workflows/COMPETENCY_ASSESSMENT_WORKFLOW.md',
+            'title' => 'Competency Assessment Workflow (Part G)',
+            'description' => 'End-to-end Part G guide: select an employee, choose a period, rate sections, employee Sign & Acknowledge, reviewer Complete Section, send-back and resubmit loops.',
+            'category' => 'Workflows',
+            'icon' => 'fa-clipboard-check',
+        ],
+        [
+            'key' => 'PERFORMANCE_APPRAISAL_WORKFLOW.md',
+            'path' => 'workflows/PERFORMANCE_APPRAISAL_WORKFLOW.md',
+            'title' => 'Performance Appraisal Workflow (Part F)',
+            'description' => 'End-to-end Part F guide: select an employee, choose a due period, rate performance areas, employee Sign & Acknowledge, reviewer Approve Assessment, send-back and reopen.',
+            'category' => 'Workflows',
+            'icon' => 'fa-chart-simple',
+        ],
+        [
+            'key' => 'TRAINING_COMPLETION_WORKFLOW.md',
+            'path' => 'workflows/TRAINING_COMPLETION_WORKFLOW.md',
+            'title' => 'Training Completion Workflow (Part H)',
+            'description' => 'End-to-end Part H guide: employee Start and Submit for completion, DSD/supervisor Approve or Reject, hiring vs recurring periods, optional Assign task and notifications.',
+            'category' => 'Workflows',
+            'icon' => 'fa-graduation-cap',
+        ],
+        [
+            'key' => 'HR_PORTAL_WORKFLOWS.md',
+            'path' => 'HR_PORTAL_WORKFLOWS.md',
+            'title' => 'HR Portal Workflow Reference',
+            'description' => 'Master index of HR Portal workflows from hiring through assessments, documents, and administration.',
+            'category' => 'Workflows',
+            'icon' => 'fa-diagram-project',
+        ],
+        [
+            'key' => 'HR_PORTAL_USER_MANUAL.md',
+            'path' => 'HR_PORTAL_USER_MANUAL.md',
+            'title' => 'HR Portal User Manual',
+            'description' => 'How-to reference for staff using the Bio Pacific HR and employee portals.',
+            'category' => 'Reference',
+            'icon' => 'fa-book',
+        ],
+        [
+            'key' => 'HR_PORTAL_BUSINESS_RULES.md',
+            'path' => 'HR_PORTAL_BUSINESS_RULES.md',
+            'title' => 'HR Portal Business Rules',
+            'description' => 'Assessment periods, due dates, authorization, and Part F / Part G status rules.',
+            'category' => 'Reference',
+            'icon' => 'fa-scale-balanced',
+        ],
+        [
+            'key' => 'FEATURES.md',
+            'path' => 'FEATURES.md',
+            'title' => 'Application Features',
+            'description' => 'Overview of major portal and facility website features.',
+            'category' => 'Reference',
+            'icon' => 'fa-list',
+        ],
+        [
+            'key' => 'DEVELOPER_GUIDE.md',
+            'path' => 'DEVELOPER_GUIDE.md',
+            'title' => 'Developer Guide',
+            'description' => 'Technical architecture and code locations for developers.',
+            'category' => 'Technical',
+            'icon' => 'fa-code',
+        ],
+    ],
+
     'preferred_contact_options' => [
         'email' => 'Email',
         'phone' => 'Phone call',

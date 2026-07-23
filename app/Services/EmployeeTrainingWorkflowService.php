@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Mail\TrainingTaskAssignedMail;
 use App\Mail\TrainingCompletionApprovedMail;
 use App\Models\BPEmployee;
 use App\Models\EmployeeTrainingCompletion;
 use App\Models\EmployeeTrainingItem;
 use App\Models\PersonalTask;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -42,6 +45,9 @@ class EmployeeTrainingWorkflowService
 
     public function start(EmployeeTrainingCompletion $completion, User $actor): EmployeeTrainingCompletion
     {
+        $employee = BPEmployee::query()->where('employee_num', $completion->employee_num)->firstOrFail();
+        $this->assertEmployeeSelfService($actor, $employee);
+
         if (! in_array($completion->status, [
             EmployeeTrainingCompletion::STATUS_NOT_STARTED,
             EmployeeTrainingCompletion::STATUS_REJECTED,
@@ -66,6 +72,7 @@ class EmployeeTrainingWorkflowService
         }
 
         $employee = BPEmployee::query()->where('employee_num', $completion->employee_num)->firstOrFail();
+        $this->assertEmployeeSelfService($actor, $employee);
         $item = $completion->trainingItem ?? EmployeeTrainingItem::query()->findOrFail($completion->employee_training_item_id);
 
         return DB::transaction(function () use ($completion, $actor, $notes, $employee, $item) {
@@ -136,7 +143,7 @@ class EmployeeTrainingWorkflowService
             ->firstOrFail();
         $item = $completion->trainingItem ?? EmployeeTrainingItem::query()->findOrFail($completion->employee_training_item_id);
 
-        $completion = DB::transaction(function () use ($completion, $reviewer) {
+        $completion = DB::transaction(function () use ($completion, $reviewer, $employee, $item) {
             $completion->fill([
                 'status' => EmployeeTrainingCompletion::STATUS_COMPLETED,
                 'completed_at' => now(),
@@ -147,6 +154,7 @@ class EmployeeTrainingWorkflowService
             ])->save();
 
             $this->completeOpenReviewTasks($completion, $reviewer);
+            $this->completeEmployeeAssignmentTasks($employee, $item, $completion, $reviewer);
 
             return $completion->fresh(['reviewedByUser', 'completedByUser', 'trainingItem', 'assessmentPeriod']);
         });
@@ -253,6 +261,13 @@ class EmployeeTrainingWorkflowService
             && (string) $actorEmployee->employee_num === (string) $employee->employee_num;
     }
 
+    private function assertEmployeeSelfService(User $actor, BPEmployee $employee): void
+    {
+        if (! $this->actorIsEmployee($actor, $employee)) {
+            throw new AuthorizationException('Only the employee can start or submit their own training.');
+        }
+    }
+
     public function actorCanReview(User $actor, BPEmployee $employee): bool
     {
         if ($this->actorIsEmployee($actor, $employee)) {
@@ -264,6 +279,84 @@ class EmployeeTrainingWorkflowService
         }
 
         return $this->resolveReviewers($employee)->contains(fn (User $user) => (int) $user->id === (int) $actor->id);
+    }
+
+    /**
+     * @return array{task: PersonalTask, email_sent: bool}
+     */
+    public function assignTaskToEmployee(
+        BPEmployee $employee,
+        EmployeeTrainingItem $item,
+        User $reviewer,
+        string $title,
+        string $message,
+        string $priority,
+        ?Carbon $dueAt,
+        ?int $assessmentPeriodId
+    ): array {
+        $employee->loadMissing('user');
+        if (! $employee->user) {
+            throw new RuntimeException('This employee does not have a linked portal account.');
+        }
+        if (! $this->actorCanReview($reviewer, $employee)) {
+            throw new AuthorizationException('You are not authorized to assign training tasks to this employee.');
+        }
+
+        $periodKey = EmployeeTrainingCompletion::periodKeyFor($assessmentPeriodId, $item->isHiring());
+        $marker = $this->assignmentTaskMarker($item->id, $periodKey);
+        $actionUrl = route('admin.employees.edit', $employee->id).'?'.http_build_query(array_filter([
+            'tab' => 'checklist',
+            'checklist_tab' => 'partH',
+            'assessment_period_id' => $assessmentPeriodId,
+            'training_item_id' => $item->id,
+        ]));
+
+        $task = PersonalTask::query()
+            ->where('assigned_to', $employee->user->id)
+            ->where('status', PersonalTask::STATUS_PENDING)
+            ->where(function ($query) use ($title, $actionUrl, $marker) {
+                $query->where(function ($exact) use ($title, $actionUrl) {
+                    $exact->where('title', $title)->where('action_url', $actionUrl);
+                })->orWhere('description', 'like', '%'.$marker.'%');
+            })
+            ->first() ?? new PersonalTask;
+
+        $task->fill([
+            'created_by' => $reviewer->id,
+            'assigned_to' => $employee->user->id,
+            'title' => $title,
+            'description' => trim($marker."\n".$message),
+            'action_url' => $actionUrl,
+            'action_label' => 'Open training',
+            'priority' => $priority,
+            'status' => PersonalTask::STATUS_PENDING,
+            'due_at' => $dueAt,
+        ])->save();
+
+        $email = trim((string) ($employee->email ?: $employee->user->email ?: ''));
+        $emailSent = false;
+        if ($email !== '') {
+            try {
+                Mail::to($email)->send(new TrainingTaskAssignedMail(
+                    $employee,
+                    $item,
+                    $reviewer,
+                    $title,
+                    $message,
+                    $actionUrl,
+                    $dueAt?->format('F j, Y'),
+                ));
+                $emailSent = true;
+            } catch (\Throwable $exception) {
+                Log::warning('Training task email could not be sent.', [
+                    'employee_num' => $employee->employee_num,
+                    'training_item_id' => $item->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return ['task' => $task->fresh(), 'email_sent' => $emailSent];
     }
 
     protected function reviewTaskUrl(BPEmployee $employee, EmployeeTrainingCompletion $completion): string
@@ -329,6 +422,125 @@ class EmployeeTrainingWorkflowService
                 $task->update(['status' => PersonalTask::STATUS_CANCELLED]);
             }
         }
+    }
+
+    protected function assignmentTaskMarker(int $trainingItemId, string $periodKey): string
+    {
+        return '[training_assignment:'.$trainingItemId.':'.$periodKey.']';
+    }
+
+    protected function completeEmployeeAssignmentTasks(
+        BPEmployee $employee,
+        EmployeeTrainingItem $item,
+        EmployeeTrainingCompletion $completion,
+        User $reviewer
+    ): void {
+        $employee->loadMissing('user');
+        if (! $employee->user) {
+            return;
+        }
+
+        $periodKey = EmployeeTrainingCompletion::periodKeyFor(
+            $completion->assessment_period_id,
+            $item->isHiring()
+        );
+        $marker = $this->assignmentTaskMarker((int) $item->id, $periodKey);
+        $trainingQuery = 'training_item_id='.(int) $item->id;
+
+        $tasks = PersonalTask::query()
+            ->where('assigned_to', $employee->user->id)
+            ->where('status', PersonalTask::STATUS_PENDING)
+            ->where(function ($query) use ($marker, $trainingQuery, $completion, $item) {
+                $query->where('description', 'like', '%'.$marker.'%')
+                    ->orWhere(function ($urlQuery) use ($trainingQuery, $completion, $item) {
+                        $urlQuery->where('action_url', 'like', '%'.$trainingQuery.'%');
+                        if ($item->isHiring()) {
+                            $urlQuery->where(function ($hireQuery) {
+                                $hireQuery->where('action_url', 'not like', '%assessment_period_id=%')
+                                    ->orWhere('action_url', 'like', '%assessment_period_id=&%');
+                            });
+                        } elseif ($completion->assessment_period_id) {
+                            $urlQuery->where('action_url', 'like', '%assessment_period_id='.(int) $completion->assessment_period_id.'%');
+                        }
+                    });
+            })
+            ->get();
+
+        foreach ($tasks as $task) {
+            $task->update([
+                'status' => PersonalTask::STATUS_CONFIRMED,
+                'completed_at' => $task->completed_at ?? now(),
+                'completed_by' => $task->completed_by ?? $employee->user->id,
+                'confirmed_at' => now(),
+                'confirmed_by' => $reviewer->id,
+            ]);
+        }
+    }
+
+    /**
+     * Close orphaned employee training-assignment tasks whose training is already completed.
+     */
+    public function syncCompletedAssignmentTasksForUser(User $user): int
+    {
+        $employee = method_exists($user, 'resolvedBpEmployee')
+            ? $user->resolvedBpEmployee()
+            : null;
+        if (! $employee?->employee_num) {
+            return 0;
+        }
+
+        $pendingTasks = PersonalTask::query()
+            ->where('assigned_to', $user->id)
+            ->where('status', PersonalTask::STATUS_PENDING)
+            ->where(function ($query) {
+                $query->where('description', 'like', '%[training_assignment:%')
+                    ->orWhere('action_url', 'like', '%training_item_id=%');
+            })
+            ->get();
+
+        $closed = 0;
+        foreach ($pendingTasks as $task) {
+            $trainingItemId = null;
+            $periodKey = null;
+
+            if (preg_match('/\[training_assignment:(\d+):([^\]]+)\]/', (string) $task->description, $matches)) {
+                $trainingItemId = (int) $matches[1];
+                $periodKey = (string) $matches[2];
+            } elseif (preg_match('/[?&]training_item_id=(\d+)/', (string) $task->action_url, $matches)) {
+                $trainingItemId = (int) $matches[1];
+                if (preg_match('/[?&]assessment_period_id=(\d+)/', (string) $task->action_url, $periodMatches)) {
+                    $periodKey = (string) (int) $periodMatches[1];
+                } else {
+                    $periodKey = EmployeeTrainingCompletion::PERIOD_KEY_HIRE;
+                }
+            }
+
+            if (! $trainingItemId || ! $periodKey) {
+                continue;
+            }
+
+            $isCompleted = EmployeeTrainingCompletion::query()
+                ->where('employee_num', $employee->employee_num)
+                ->where('employee_training_item_id', $trainingItemId)
+                ->where('period_key', $periodKey)
+                ->where('status', EmployeeTrainingCompletion::STATUS_COMPLETED)
+                ->exists();
+
+            if (! $isCompleted) {
+                continue;
+            }
+
+            $task->update([
+                'status' => PersonalTask::STATUS_CONFIRMED,
+                'completed_at' => $task->completed_at ?? now(),
+                'completed_by' => $task->completed_by ?? $user->id,
+                'confirmed_at' => now(),
+                'confirmed_by' => $task->confirmed_by ?? $user->id,
+            ]);
+            $closed++;
+        }
+
+        return $closed;
     }
 
     /**

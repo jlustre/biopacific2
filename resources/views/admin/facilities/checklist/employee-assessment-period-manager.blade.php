@@ -8,14 +8,29 @@
     $facilityId = $employee->currentAssignment && $employee->currentAssignment->facility
         ? $employee->currentAssignment->facility->id
         : '';
-    $years = collect($assessmentPeriods)->pluck('period_year')->filter()->unique()->sort()->values();
-    $currentYear = date('Y');
+    $currentYear = (int) date('Y');
+    $assessmentYearFor = static function ($period) {
+        if (! $period) {
+            return null;
+        }
+
+        return $period->review_type === 'A' && $period->date_to
+            ? (int) $period->date_to->year
+            : (int) $period->period_year;
+    };
+    $years = collect($assessmentPeriods)
+        ->map($assessmentYearFor)
+        ->filter()
+        ->push($currentYear)
+        ->unique()
+        ->sort()
+        ->values();
     $selectedPeriodYear = $selectedAssessmentPeriodId
-        ? optional(collect($assessmentPeriods)->firstWhere('id', $selectedAssessmentPeriodId))->period_year
+        ? $assessmentYearFor(collect($assessmentPeriods)->firstWhere('id', $selectedAssessmentPeriodId))
         : null;
     $selectedYear = request('assessment_year')
         ?? $selectedPeriodYear
-        ?? ($years->contains($currentYear) ? $currentYear : $years->last());
+        ?? $currentYear;
 @endphp
 
 <div class="assessment-period-manager h-full rounded-md border border-slate-400 bg-slate-50 p-3 shadow-sm" data-manager-id="{{ $managerId }}" data-context-label="{{ $contextLabel }}">
@@ -25,7 +40,6 @@
     @if(session('assessment_period_notice'))
         <p class="mb-2 rounded border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] text-sky-900">{{ session('assessment_period_notice') }}</p>
     @endif
-
     <div class="flex flex-col gap-2.5">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_9.75rem] md:items-end">
             <div class="min-w-0">
@@ -50,8 +64,9 @@
                             @php
                                 $periodLoadable = \App\Support\EmployeeAssessmentPeriodCalculator::isPeriodLoadable($period);
                                 $periodDeletable = $period->canBeDeleted();
+                                $periodAssessmentYear = $assessmentYearFor($period);
                             @endphp
-                            <option value="{{ $period->id }}" data-year="{{ $period->period_year }}"
+                            <option value="{{ $period->id }}" data-year="{{ $periodAssessmentYear }}"
                                 data-loadable="{{ $periodLoadable ? '1' : '0' }}"
                                 data-can-delete="{{ $periodDeletable ? '1' : '0' }}"
                                 @if((int) $selectedAssessmentPeriodId === (int) $period->id) selected @endif>

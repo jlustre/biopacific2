@@ -3,7 +3,7 @@
 /**
  * Employee file document type items (PART A–D) for ChecklistItemsSeeder.
  *
- * Auto-generated from Documents Management → Employee file items → Update items seeder on 2026-07-15 12:54:49.
+ * Auto-generated from Documents Management → Employee file items → Update items seeder on 2026-07-22 16:04:28.
  *
  * @return list<array{
  *     name: string,
@@ -106,7 +106,7 @@ return array (
   ),
   8 => 
   array (
-    'name' => 'I - 9*',
+    'name' => 'I - 9',
     'section' => 'PART A',
     'doc_type_id' => 2,
     'isExpiring' => true,
@@ -117,7 +117,7 @@ return array (
   ),
   9 => 
   array (
-    'name' => 'Social Security Card - Copy',
+    'name' => 'Social Security Card',
     'section' => 'PART A',
     'doc_type_id' => 2,
     'isExpiring' => false,
@@ -128,18 +128,7 @@ return array (
   ),
   10 => 
   array (
-    'name' => 'Driver\'s License - Copy*',
-    'section' => 'PART A',
-    'doc_type_id' => 2,
-    'isExpiring' => true,
-    'is_required' => true,
-    'is_license_or_certification' => false,
-    'position_ids' => NULL,
-    'order' => 11,
-  ),
-  11 => 
-  array (
-    'name' => 'Green Card or Work Permit Autho. - Copy*',
+    'name' => 'Green Card or Work Permit Autho.',
     'section' => 'PART A',
     'doc_type_id' => 2,
     'isExpiring' => true,
@@ -148,9 +137,9 @@ return array (
     'position_ids' => NULL,
     'order' => 12,
   ),
-  12 => 
+  11 => 
   array (
-    'name' => 'Passport - Copy*',
+    'name' => 'Passport',
     'section' => 'PART A',
     'doc_type_id' => 2,
     'isExpiring' => true,
@@ -159,9 +148,9 @@ return array (
     'position_ids' => NULL,
     'order' => 13,
   ),
-  13 => 
+  12 => 
   array (
-    'name' => 'Professional License - Copy*',
+    'name' => 'Professional License',
     'section' => 'PART A',
     'doc_type_id' => 2,
     'isExpiring' => true,
@@ -170,20 +159,9 @@ return array (
     'position_ids' => NULL,
     'order' => 14,
   ),
-  14 => 
+  13 => 
   array (
-    'name' => 'CPR Card (License Nurses)*',
-    'section' => 'PART A',
-    'doc_type_id' => 3,
-    'isExpiring' => true,
-    'is_required' => true,
-    'is_license_or_certification' => false,
-    'position_ids' => NULL,
-    'order' => 15,
-  ),
-  15 => 
-  array (
-    'name' => 'C.N.A. Certificate*',
+    'name' => 'CPR Card',
     'section' => 'PART A',
     'doc_type_id' => 3,
     'isExpiring' => true,
@@ -192,23 +170,38 @@ return array (
     'position_ids' => 
     array (
       0 => 11,
+      1 => 12,
+      2 => 14,
+      3 => 15,
+      4 => 16,
+      5 => 36,
+      6 => 18,
     ),
-    'order' => 16,
+    'order' => 15,
   ),
-  16 => 
+  14 => 
   array (
-    'name' => 'Professional License*',
+    'name' => 'C.N.A. Certificate',
     'section' => 'PART A',
     'doc_type_id' => 3,
     'isExpiring' => true,
     'is_required' => true,
     'is_license_or_certification' => false,
-    'position_ids' => NULL,
-    'order' => 17,
+    'position_ids' => 
+    array (
+      0 => 11,
+      1 => 12,
+      2 => 14,
+      3 => 15,
+      4 => 16,
+      5 => 36,
+      6 => 18,
+    ),
+    'order' => 16,
   ),
-  17 => 
+  15 => 
   array (
-    'name' => 'Background Check*',
+    'name' => 'Background Check',
     'section' => 'PART A',
     'doc_type_id' => 3,
     'isExpiring' => true,
@@ -217,9 +210,9 @@ return array (
     'position_ids' => NULL,
     'order' => 18,
   ),
-  18 => 
+  16 => 
   array (
-    'name' => 'OIG Verification*',
+    'name' => 'OIG Verification',
     'section' => 'PART A',
     'doc_type_id' => 3,
     'isExpiring' => true,
@@ -228,9 +221,9 @@ return array (
     'position_ids' => NULL,
     'order' => 19,
   ),
-  19 => 
+  17 => 
   array (
-    'name' => 'SAM Verification*',
+    'name' => 'SAM Verification',
     'section' => 'PART A',
     'doc_type_id' => 3,
     'isExpiring' => true,
@@ -239,7 +232,7 @@ return array (
     'position_ids' => NULL,
     'order' => 20,
   ),
-  20 => 
+  18 => 
   array (
     'name' => 'Medical Exclusion/Ineligible Provider List*',
     'section' => 'PART A',
@@ -250,7 +243,7 @@ return array (
     'position_ids' => NULL,
     'order' => 21,
   ),
-  21 => 
+  19 => 
   array (
     'name' => 'Abuse, Neglect and Exploitation',
     'section' => 'PART B',
@@ -261,7 +254,7 @@ return array (
     'position_ids' => NULL,
     'order' => 22,
   ),
-  22 => 
+  20 => 
   array (
     'name' => 'Resident Rights',
     'section' => 'PART B',
@@ -272,7 +265,7 @@ return array (
     'position_ids' => NULL,
     'order' => 23,
   ),
-  23 => 
+  21 => 
   array (
     'name' => 'Employee Handbook',
     'section' => 'PART B',
@@ -283,7 +276,7 @@ return array (
     'position_ids' => NULL,
     'order' => 24,
   ),
-  24 => 
+  22 => 
   array (
     'name' => 'Code of Conduct',
     'section' => 'PART B',
@@ -294,7 +287,7 @@ return array (
     'position_ids' => NULL,
     'order' => 25,
   ),
-  25 => 
+  23 => 
   array (
     'name' => 'Spoken Language',
     'section' => 'PART B',
@@ -305,7 +298,7 @@ return array (
     'position_ids' => NULL,
     'order' => 26,
   ),
-  26 => 
+  24 => 
   array (
     'name' => 'Missed Punch Policy',
     'section' => 'PART B',
@@ -316,7 +309,7 @@ return array (
     'position_ids' => NULL,
     'order' => 27,
   ),
-  27 => 
+  25 => 
   array (
     'name' => 'Rest and Meal Break Policy: Hydration Program',
     'section' => 'PART B',
@@ -327,7 +320,7 @@ return array (
     'position_ids' => NULL,
     'order' => 28,
   ),
-  28 => 
+  26 => 
   array (
     'name' => 'Use of ID Badge Policy: Second meal period waiver',
     'section' => 'PART B',
@@ -338,7 +331,7 @@ return array (
     'position_ids' => NULL,
     'order' => 29,
   ),
-  29 => 
+  27 => 
   array (
     'name' => 'Six-hour meal period waiver',
     'section' => 'PART B',
@@ -349,7 +342,7 @@ return array (
     'position_ids' => NULL,
     'order' => 30,
   ),
-  30 => 
+  28 => 
   array (
     'name' => 'Facility Organizational Chart',
     'section' => 'PART C',
@@ -360,7 +353,7 @@ return array (
     'position_ids' => NULL,
     'order' => 31,
   ),
-  31 => 
+  29 => 
   array (
     'name' => 'Facility Department Heads\' Information',
     'section' => 'PART C',
@@ -371,7 +364,7 @@ return array (
     'position_ids' => NULL,
     'order' => 32,
   ),
-  32 => 
+  30 => 
   array (
     'name' => 'Facility Floor Plan',
     'section' => 'PART C',
@@ -382,7 +375,7 @@ return array (
     'position_ids' => NULL,
     'order' => 33,
   ),
-  33 => 
+  31 => 
   array (
     'name' => 'Facility Tour and General Orientation',
     'section' => 'PART C',
@@ -393,7 +386,7 @@ return array (
     'position_ids' => NULL,
     'order' => 34,
   ),
-  34 => 
+  32 => 
   array (
     'name' => 'Mariner Health Savings Plan / 401K',
     'section' => 'PART C',
@@ -404,7 +397,7 @@ return array (
     'position_ids' => NULL,
     'order' => 35,
   ),
-  35 => 
+  33 => 
   array (
     'name' => 'W-4',
     'section' => 'PART C',
@@ -415,7 +408,7 @@ return array (
     'position_ids' => NULL,
     'order' => 36,
   ),
-  36 => 
+  34 => 
   array (
     'name' => 'EDD',
     'section' => 'PART C',
@@ -426,7 +419,7 @@ return array (
     'position_ids' => NULL,
     'order' => 37,
   ),
-  37 => 
+  35 => 
   array (
     'name' => 'Direct Deposit Authorization (Voided Check)',
     'section' => 'PART C',
@@ -437,7 +430,7 @@ return array (
     'position_ids' => NULL,
     'order' => 38,
   ),
-  38 => 
+  36 => 
   array (
     'name' => 'Orientation Time Sheet',
     'section' => 'PART C',
@@ -448,7 +441,7 @@ return array (
     'position_ids' => NULL,
     'order' => 39,
   ),
-  39 => 
+  37 => 
   array (
     'name' => 'Medical Insurance Premium Acknowledged',
     'section' => 'PART C',
@@ -459,7 +452,7 @@ return array (
     'position_ids' => NULL,
     'order' => 40,
   ),
-  40 => 
+  38 => 
   array (
     'name' => 'WC - Workplace and Ergonomics Safety',
     'section' => 'PART C',
@@ -470,7 +463,7 @@ return array (
     'position_ids' => NULL,
     'order' => 41,
   ),
-  41 => 
+  39 => 
   array (
     'name' => 'Illness and Injury Prevention Program',
     'section' => 'PART C',
@@ -481,7 +474,7 @@ return array (
     'position_ids' => NULL,
     'order' => 42,
   ),
-  42 => 
+  40 => 
   array (
     'name' => 'Individual Safety Responsibility',
     'section' => 'PART C',
@@ -492,7 +485,7 @@ return array (
     'position_ids' => NULL,
     'order' => 43,
   ),
-  43 => 
+  41 => 
   array (
     'name' => 'Hazard Communication Training',
     'section' => 'PART C',
@@ -503,7 +496,7 @@ return array (
     'position_ids' => NULL,
     'order' => 44,
   ),
-  44 => 
+  42 => 
   array (
     'name' => 'Notice to Employee (Labor Code Sec 2810.5)',
     'section' => 'PART C',
@@ -514,7 +507,7 @@ return array (
     'position_ids' => NULL,
     'order' => 45,
   ),
-  45 => 
+  43 => 
   array (
     'name' => 'Environmental Care Questionnaire',
     'section' => 'PART C',
@@ -525,7 +518,7 @@ return array (
     'position_ids' => NULL,
     'order' => 46,
   ),
-  46 => 
+  44 => 
   array (
     'name' => 'Required State Notice Acknowledgement Form',
     'section' => 'PART C',
@@ -536,7 +529,7 @@ return array (
     'position_ids' => NULL,
     'order' => 47,
   ),
-  47 => 
+  45 => 
   array (
     'name' => 'Accuracy, Notice of',
     'section' => 'PART D',
@@ -547,7 +540,7 @@ return array (
     'position_ids' => NULL,
     'order' => 48,
   ),
-  48 => 
+  46 => 
   array (
     'name' => 'Affirmative, Notice of',
     'section' => 'PART D',
@@ -558,7 +551,7 @@ return array (
     'position_ids' => NULL,
     'order' => 49,
   ),
-  49 => 
+  47 => 
   array (
     'name' => 'Blood Borne Pathogen',
     'section' => 'PART D',
@@ -569,7 +562,7 @@ return array (
     'position_ids' => NULL,
     'order' => 50,
   ),
-  50 => 
+  48 => 
   array (
     'name' => 'Confidentiality',
     'section' => 'PART D',
@@ -580,7 +573,7 @@ return array (
     'position_ids' => NULL,
     'order' => 51,
   ),
-  51 => 
+  49 => 
   array (
     'name' => 'Deficit Reduction Act',
     'section' => 'PART D',
@@ -591,7 +584,7 @@ return array (
     'position_ids' => NULL,
     'order' => 52,
   ),
-  52 => 
+  50 => 
   array (
     'name' => 'First Aid for Choking',
     'section' => 'PART D',
@@ -602,7 +595,7 @@ return array (
     'position_ids' => NULL,
     'order' => 53,
   ),
-  53 => 
+  51 => 
   array (
     'name' => 'Gait Belt Utilization',
     'section' => 'PART D',
@@ -613,7 +606,7 @@ return array (
     'position_ids' => NULL,
     'order' => 54,
   ),
-  54 => 
+  52 => 
   array (
     'name' => 'HIPAA & Compliance',
     'section' => 'PART D',
@@ -624,7 +617,7 @@ return array (
     'position_ids' => NULL,
     'order' => 55,
   ),
-  55 => 
+  53 => 
   array (
     'name' => 'Infection Control',
     'section' => 'PART D',
@@ -635,7 +628,7 @@ return array (
     'position_ids' => NULL,
     'order' => 56,
   ),
-  56 => 
+  54 => 
   array (
     'name' => 'No Solicitation, Distribution and Access',
     'section' => 'PART D',
@@ -646,7 +639,7 @@ return array (
     'position_ids' => NULL,
     'order' => 57,
   ),
-  57 => 
+  55 => 
   array (
     'name' => 'Private Duty',
     'section' => 'PART D',
@@ -657,7 +650,7 @@ return array (
     'position_ids' => NULL,
     'order' => 58,
   ),
-  58 => 
+  56 => 
   array (
     'name' => 'Pulmonary Tuberculosis',
     'section' => 'PART D',
@@ -668,7 +661,7 @@ return array (
     'position_ids' => NULL,
     'order' => 59,
   ),
-  59 => 
+  57 => 
   array (
     'name' => 'Substance Abuse and Testing',
     'section' => 'PART D',
@@ -679,7 +672,7 @@ return array (
     'position_ids' => NULL,
     'order' => 60,
   ),
-  60 => 
+  58 => 
   array (
     'name' => 'Workplace Violence Prevention',
     'section' => 'PART D',

@@ -92,8 +92,11 @@
             var url = new URL(window.location.href);
             url.searchParams.set('assessment_period_id', periodId);
             url.searchParams.set('view_period', '1');
-            if (periodYear) {
-                url.searchParams.set('assessment_year', periodYear);
+            var assessmentYear = dateTo
+                ? parseInt(String(dateTo).slice(0, 4), 10)
+                : periodYear;
+            if (assessmentYear) {
+                url.searchParams.set('assessment_year', assessmentYear);
             }
             window.location.href = url.toString();
         }
@@ -140,6 +143,40 @@
 
         function formatPeriodRange(from, to) {
             return formatDateOnly(from) + ' to ' + formatDateOnly(to);
+        }
+
+        function assessmentPeriodForYear(anchorDate, assessmentYear) {
+            var parts = String(anchorDate || '').split('-').map(Number);
+            var year = Number(assessmentYear);
+            if (parts.length !== 3 || !parts[1] || !parts[2] || !year) {
+                return null;
+            }
+
+            function anniversary(targetYear) {
+                var lastDay = new Date(Date.UTC(targetYear, parts[1], 0)).getUTCDate();
+                return new Date(Date.UTC(targetYear, parts[1] - 1, Math.min(parts[2], lastDay)));
+            }
+
+            var from = anniversary(year - 1);
+            var to = anniversary(year);
+            to.setUTCDate(to.getUTCDate() - 1);
+
+            return {
+                date_from: from.toISOString().slice(0, 10),
+                date_to: to.toISOString().slice(0, 10)
+            };
+        }
+
+        function updateAssessmentYearPreview() {
+            var select = document.getElementById('periodModalAssessmentYear');
+            var preview = document.getElementById('periodModalAssessmentYearPreview');
+            if (!select || !preview) {
+                return;
+            }
+            var period = assessmentPeriodForYear(select.dataset.anchorDate, select.value);
+            preview.textContent = period
+                ? formatPeriodRange(period.date_from, period.date_to) + ' — based on the employee anniversary.'
+                : 'A hire or rehire date is required.';
         }
 
         function getAssessmentPeriodsList() {
@@ -198,6 +235,7 @@
                     anchorInfo.textContent = 'Set Original Hire Date (or Rehire Date when Action is Rehire) on the Personal tab.';
                 }
             }
+            updateAssessmentYearPreview();
 
             var recommended = data.recommended || null;
             if (recommendedSection) {
@@ -205,7 +243,7 @@
                     recommendedSection.classList.remove('hidden');
                     if (recommendedRange) {
                         recommendedRange.textContent = formatPeriodRange(recommended.date_from, recommended.date_to)
-                            + ' (Year ' + (recommended.period_year || '') + ')';
+                            + ' (Assessment year ' + (recommended.assessment_year || recommended.period_year || '') + ')';
                     }
                     var recommendedLoadable = recommended.can_load !== false && isPeriodYearLoadable(recommended.period_year);
                     if (loadRecommendedBtn) {
@@ -228,7 +266,7 @@
                     if (recommendedMissing) {
                         recommendedMissing.classList.remove('hidden');
                         recommendedMissing.textContent = data.has_anchor
-                            ? 'No prior completed year for this review date. Pick from history or use Create custom period.'
+                            ? 'No assessment cycle is available for this year. Pick from history or use Create custom period.'
                             : 'Add hire or rehire dates on the Personal tab first.';
                     }
                 }
@@ -238,9 +276,9 @@
                 var containing = data.containing || null;
                 if (containing && recommended && containing.date_from !== recommended.date_from) {
                     containingNote.classList.remove('hidden');
-                    containingNote.textContent = 'Note: The employment year containing this review date is '
+                    containingNote.textContent = 'The employment cycle containing this review date is '
                         + formatPeriodRange(containing.date_from, containing.date_to)
-                        + ' (in progress). Assessments use the prior completed year above.';
+                        + '. The assessment year remains the anniversary cycle shown above.';
                 } else {
                     containingNote.classList.add('hidden');
                     containingNote.textContent = '';
@@ -262,7 +300,7 @@
                             : '';
                         return '<tr class="' + (row.is_recommended ? 'bg-teal-50' : '') + '">' +
                             '<td class="border-b border-slate-200 px-3 py-2">' + formatPeriodRange(row.date_from, row.date_to) + badge + '</td>' +
-                            '<td class="border-b border-slate-200 px-3 py-2">' + (row.period_year || '') + '</td>' +
+                            '<td class="border-b border-slate-200 px-3 py-2">' + (row.assessment_year || row.period_year || '') + '</td>' +
                             '<td class="border-b border-slate-200 px-3 py-2">' + (row.review_type_label || '') + '</td>' +
                             '<td class="border-b border-slate-200 px-3 py-2 text-center">' + (row.performance_status || '') + '</td>' +
                             '<td class="border-b border-slate-200 px-3 py-2 text-center">' + (row.competency_status || '') + '</td>' +
@@ -426,7 +464,9 @@
             if (loadBtn) {
                 actions.push(loadBtn);
             }
-            var deleteBtn = renderPeriodDeleteAction(row.id, row.can_delete);
+            var deleteBtn = window.bpEvaluatorActionsDisabled
+                ? ''
+                : renderPeriodDeleteAction(row.id, row.can_delete);
             if (deleteBtn) {
                 actions.push(deleteBtn);
             }
@@ -911,6 +951,45 @@
                         use_rule: true
                     }, token, function() {
                         createRecommendedBtn.disabled = false;
+                    });
+                });
+            }
+
+            var assessmentYearSelect = document.getElementById('periodModalAssessmentYear');
+            if (assessmentYearSelect) {
+                assessmentYearSelect.addEventListener('change', updateAssessmentYearPreview);
+                updateAssessmentYearPreview();
+            }
+
+            var createByYearBtn = document.getElementById('periodModalCreateByYearBtn');
+            if (createByYearBtn) {
+                createByYearBtn.addEventListener('click', function() {
+                    var assessmentYear = Number(assessmentYearSelect && assessmentYearSelect.value);
+                    if (!assessmentYear) {
+                        alert('Select an assessment year.');
+                        return;
+                    }
+                    if (!isPeriodYearLoadable(assessmentYear - 1)) {
+                        alert(periodLoadBlockedMessage(assessmentYear - 1));
+                        return;
+                    }
+                    var token = getCsrfToken();
+                    if (!token) {
+                        alert('CSRF token missing.');
+                        return;
+                    }
+                    if (!window.currentEmployeeNum) {
+                        alert('Employee number is missing. Save the employee profile first.');
+                        return;
+                    }
+
+                    createByYearBtn.disabled = true;
+                    postPeriodWithConfirm({
+                        employee_num: window.currentEmployeeNum,
+                        assessment_year: assessmentYear,
+                        review_type: 'A'
+                    }, token, function() {
+                        createByYearBtn.disabled = false;
                     });
                 });
             }

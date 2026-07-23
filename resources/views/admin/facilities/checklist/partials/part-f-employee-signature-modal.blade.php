@@ -48,7 +48,7 @@
             <button type="button" id="partFEmployeeSignatureCancel" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Cancel</button>
             <button type="button" id="partFEmployeeSignatureConfirm" class="inline-flex min-w-[12rem] items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-70">
                 <span data-signature-confirm-label>Confirm Signature &amp; Acknowledge</span>
-                <span data-signature-confirm-loading class="hidden inline-flex items-center gap-2">
+                <span data-signature-confirm-loading class="hidden items-center gap-2">
                     <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -91,6 +91,7 @@
             }
             if (spinner) {
                 spinner.classList.toggle('hidden', !loading);
+                spinner.classList.toggle('inline-flex', loading);
             }
 
             [cancelBtn, closeBtn].forEach(function(button) {

@@ -23,22 +23,10 @@ class DocumentComplianceService
         $position = $assignment?->position;
         $departmentId = $assignment?->dept_id ? (int) $assignment->dept_id : null;
 
-        if (! $position) {
-            return [
-                'position_id' => null,
-                'position_title' => null,
-                'department_id' => $departmentId,
-                'items' => collect(),
-                'summary' => [
-                    'total' => 0,
-                    'complete' => 0,
-                    'expired' => 0,
-                    'missing' => 0,
-                ],
-            ];
-        }
-
-        $requiredTypes = $this->requirements->requiredGeneralUploadTypesForPosition($position, $departmentId);
+        // All-employees types always apply; position-specific types need an assignment position.
+        $requiredTypes = $position
+            ? $this->requirements->requiredGeneralUploadTypesForPosition($position, $departmentId)
+            : $this->requirements->catalogUploadTypesForEmployee($employee);
 
         $uploadsByType = Upload::query()
             ->where('employee_num', $employee->employee_num)
@@ -58,8 +46,13 @@ class DocumentComplianceService
             $status = $evaluation['status'];
 
             $daysToExpiry = null;
+            $dueAt = null;
+            $daysUntilDue = null;
             if ($validApprovedUpload && $validApprovedUpload->expires_at) {
-                $daysToExpiry = $today->diffInDays(Carbon::parse($validApprovedUpload->expires_at)->startOfDay(), false);
+                $expiresAt = Carbon::parse($validApprovedUpload->expires_at)->startOfDay();
+                $daysToExpiry = $today->diffInDays($expiresAt, false);
+                $dueAt = \App\Support\ComplianceDueDate::forExpiration($expiresAt);
+                $daysUntilDue = $dueAt ? $today->diffInDays($dueAt, false) : null;
             }
 
             $referenceUpload = $validApprovedUpload ?? $latestUpload;
@@ -73,16 +66,18 @@ class DocumentComplianceService
                 'status' => $status,
                 'latest_uploaded_at' => optional($latestUpload?->uploaded_at)->toDateString(),
                 'latest_expires_at' => optional($referenceUpload?->expires_at)->toDateString(),
+                'due_at' => $dueAt?->toDateString(),
                 'valid_upload_id' => $validApprovedUpload?->id,
                 'latest_upload_id' => $latestUpload?->id,
                 'verification_notes' => $latestUpload?->verification_notes,
                 'days_to_expiry' => $daysToExpiry,
+                'days_until_due' => $daysUntilDue,
             ];
         })->values();
 
         return [
-            'position_id' => (int) $position->id,
-            'position_title' => $position->title,
+            'position_id' => $position ? (int) $position->id : null,
+            'position_title' => $position?->title,
             'department_id' => $departmentId,
             'items' => $items,
             'summary' => [

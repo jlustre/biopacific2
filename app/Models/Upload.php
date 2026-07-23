@@ -238,7 +238,8 @@ class Upload extends Model
     }
 
     /**
-     * Expiry tier for notification emails: expired, urgent (≤30 days), soon (31–120 days), or null if not eligible.
+     * Expiry tier for notification emails.
+     * Urgent starts at the renewal due date (30 days before expiration).
      */
     public function expiryNotificationTier(): ?string
     {
@@ -248,18 +249,19 @@ class Upload extends Model
 
         $expires = Carbon::parse($this->expires_at)->startOfDay();
         $today = now()->startOfDay();
-        $windowEnd = $today->copy()->addDays(self::EXPIRY_NOTIFICATION_WINDOW_DAYS);
-
-        if ($expires->gt($windowEnd)) {
-            return null;
-        }
+        $dueAt = \App\Support\ComplianceDueDate::forExpiration($expires)
+            ?? $expires->copy()->subDays(self::EXPIRY_NOTIFICATION_URGENT_DAYS);
+        $soonStart = $dueAt->copy()->subDays(self::EXPIRY_NOTIFICATION_WINDOW_DAYS - self::EXPIRY_NOTIFICATION_URGENT_DAYS);
 
         if ($expires->lt($today)) {
             return 'expired';
         }
 
-        $urgentEnd = $today->copy()->addDays(self::EXPIRY_NOTIFICATION_URGENT_DAYS);
-        if ($expires->lte($urgentEnd)) {
+        if ($today->lt($soonStart)) {
+            return null;
+        }
+
+        if ($today->gte($dueAt)) {
             return 'urgent';
         }
 

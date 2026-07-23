@@ -8,6 +8,10 @@ This document describes **every HR workflow** implemented or planned in the Bio 
 
 | Document | Purpose |
 |----------|---------|
+| [Workflow Guides](workflows/README.md) | Deep end-to-end guides (Part F / G / H and more) |
+| [Competency Assessment Workflow](workflows/COMPETENCY_ASSESSMENT_WORKFLOW.md) | Full Part G path: employee → section → sign → approve → completed |
+| [Performance Appraisal Workflow](workflows/PERFORMANCE_APPRAISAL_WORKFLOW.md) | Full Part F path: rate → Sign & Acknowledge → Approve Assessment |
+| [Training Completion Workflow](workflows/TRAINING_COMPLETION_WORKFLOW.md) | Full Part H path: Start → Submit → Approve/Reject |
 | [HR Portal Business Rules](HR_PORTAL_BUSINESS_RULES.md) | Assessment periods, hire dates, dashboard rules |
 | [Developer Guide](DEVELOPER_GUIDE.md) | Technical architecture and code locations |
 | [Features](FEATURES.md) | Broader application feature list |
@@ -35,22 +39,23 @@ This document describes **every HR workflow** implemented or planned in the Bio 
 15. [Part E — Orientation Checklist](#15-part-e--orientation-checklist)
 16. [Part F — Performance Appraisal](#16-part-f--performance-appraisal)
 17. [Part G — Competency Assessment](#17-part-g--competency-assessment)
-18. [Assessment Period Management](#18-assessment-period-management)
-19. [Job Openings Management](#19-job-openings-management)
-20. [Facility Hiring Hub](#20-facility-hiring-hub)
-21. [Employee Data Import (Excel)](#21-employee-data-import-excel)
-22. [HR Reports & Scheduled Reports](#22-hr-reports--scheduled-reports)
-23. [Positions, Departments & Checklist Configuration](#23-positions-departments--checklist-configuration)
-24. [Employee Email Mappings (Communications)](#24-employee-email-mappings-communications)
-25. [Member Dashboard (Employee Hub)](#25-member-dashboard-employee-hub)
-26. [User, Role & Permission Administration](#26-user-role--permission-administration)
-27. [Secure Staff Access to Sensitive Applicant Data](#27-secure-staff-access-to-sensitive-applicant-data)
-28. [Arbitration Templates](#28-arbitration-templates)
-29. [Termination Management](#29-termination-management)
-30. [Attendance Tracking](#30-attendance-tracking)
-31. [HIPAA Facility Checklist](#31-hipaa-facility-checklist)
-32. [End-to-End Hiring Pipeline Summary](#32-end-to-end-hiring-pipeline-summary)
-33. [Implementation Status Matrix](#33-implementation-status-matrix)
+18. [Part H — Training Completion](#18-part-h--training-completion)
+19. [Assessment Period Management](#19-assessment-period-management)
+20. [Job Openings Management](#20-job-openings-management)
+21. [Facility Hiring Hub](#21-facility-hiring-hub)
+22. [Employee Data Import (Excel)](#22-employee-data-import-excel)
+23. [HR Reports & Scheduled Reports](#23-hr-reports--scheduled-reports)
+24. [Positions, Departments & Checklist Configuration](#24-positions-departments--checklist-configuration)
+25. [Employee Email Mappings (Communications)](#25-employee-email-mappings-communications)
+26. [Member Dashboard (Employee Hub)](#26-member-dashboard-employee-hub)
+27. [User, Role & Permission Administration](#27-user-role--permission-administration)
+28. [Secure Staff Access to Sensitive Applicant Data](#28-secure-staff-access-to-sensitive-applicant-data)
+29. [Arbitration Templates](#29-arbitration-templates)
+30. [Termination Management](#30-termination-management)
+31. [Attendance Tracking](#31-attendance-tracking)
+32. [HIPAA Facility Checklist](#32-hipaa-facility-checklist)
+33. [End-to-End Hiring Pipeline Summary](#33-end-to-end-hiring-pipeline-summary)
+34. [Implementation Status Matrix](#34-implementation-status-matrix)
 
 ---
 
@@ -582,18 +587,19 @@ HR reviewers; employee completes orientation acknowledgements
 
 ## 16. Part F — Performance Appraisal
 
-**Status:** Complete
+**Status:** Complete  
+**Full guide:** [Performance Appraisal Workflow (Part F)](workflows/PERFORMANCE_APPRAISAL_WORKFLOW.md) — extensive end-to-end documentation (trainer script, statuses, send-back, resubmit, PDF, troubleshooting).
 
 ### Purpose
 
-Conduct annual (or period-based) performance evaluations with scored areas, development narratives, employee acknowledgement, reviewer approval, and PDF export.
+Conduct annual (or period-based) performance evaluations with scored areas, development narratives, employee acknowledgement, reviewer approval, and PDF export. **Part F is a whole-assessment workflow** (one status for the entire appraisal), unlike Part G’s per-section cycle.
 
 ### Roles
 
 | Role | Responsibilities |
 |------|------------------|
-| **Reviewer** (admin, rdhr, facility-admin, facility-dsd) | Rate performance areas, enter development notes, submit for employee confirmation, approve after employee acknowledgement, reopen completed assessments |
-| **Employee** | When status is *For Employee confirmation*: enter employee comments, save acknowledgement (date auto-filled), or send back to reviewer |
+| **Reviewer** (admin, rdhr, facility-admin, facility-dsd, or supervisor-role position) | Rate performance areas, enter development notes, submit for employee confirmation, approve after employee acknowledgement, reopen completed assessments |
+| **Employee** | When status is *For Employee confirmation*: enter employee comments, **Sign & Acknowledge** (signature required), or **Send Back to Reviewer** |
 
 Reviewers **cannot** perform ratings or submission on their own employee record (see business rules §5).
 
@@ -603,104 +609,140 @@ Part F uses the shared four-stage workflow documented in [HR Portal Business Rul
 
 1. **In Progress** — reviewer work in progress  
 2. **For Employee confirmation** — waiting for employee  
-3. **For Reviewer approval** — waiting for reviewer sign-off  
-4. **Completed** — read-only (reopen / send-back available)
+3. **For Reviewer approval** — waiting for reviewer Approve Assessment  
+4. **Completed** — read-only (**Reopen for Editing** available)
 
-### Steps
+### Steps (summary)
 
-1. HR selects or creates an **assessment period** for the employee (Workflow 18).
-2. HR opens **Part F** on the employee checklist.
-3. Reviewer rates all applicable performance areas (Livewire `PerformanceAppraisalAreas`; E / M / B per item).
-4. Reviewer completes **Performance Evaluation Summary**:
-   - Areas requiring further development (required before submit)
-   - Development plans
-   - Supervisor name and review date
-5. Reviewer clicks **Save as Draft** (keeps *In Progress*) or **Submit for Employee Confirmation**.
-6. Employee opens Part F (self-service or admin view on own record):
-   - Enters **Employee Comments**
-   - Acknowledgement date is **pre-filled to today**
-   - Clicks **Save Acknowledgement** → status becomes *For Reviewer approval*
-   - Optionally **Send Back to Reviewer** if changes are needed
-7. Reviewer reviews, may edit ratings/notes, then clicks **Approve Assessment** → **Completed**.
-8. HR downloads performance assessment PDF from history when items exist.
-9. HR may **revoke** individual item ratings (audit trail) while assessment is not locked.
-10. If corrections are needed after completion:
-    - Reviewer: **Reopen for Editing** → *In Progress*
-    - Employee: **Send Back to Reviewer** → *For Reviewer approval*
+1. Select employee → Checklist → **Part F** → select/create a **due** assessment period.
+2. Rate all applicable performance areas (Livewire `PerformanceAppraisalAreas`; E / M / B).
+3. Complete **Performance Evaluation Summary** (Areas requiring further development required before submit; supervisor name; review date).
+4. **Save as Draft** or **Submit for Employee Confirmation**.
+5. Employee: **Sign & Acknowledge** or **Send Back to Reviewer**.
+6. Reviewer: **Approve Assessment** (or Save/Resubmit if content changed after the employee signed).
+7. Download the performance assessment PDF from history when available.
+8. After completion, reviewer may **Reopen for Editing** if corrections are required.
 
 ### Business rules
 
-- Reviewers cannot perform self-assessment ratings or submit on their own record; employees may only acknowledge when status is *For Employee confirmation*.
-- All scorable items must be rated before **Submit for Employee Confirmation**.
-- Scoring uses `PartFPerformanceScoring` templates aligned to position.
-- Assessment must reference a valid `assessment_period_id` for that employee.
-- `employee_performance_assessments.status` drives UI; `finalized = 1` when **Completed**.
+- Part F may show **Not Due** until the first performance due date; competency (Part G) can still proceed in year one.
+- All scorable items must be rated before submit; Areas for Development is required on submit.
+- After employee sign, changing confirmation-tracked content requires resubmit before Approve.
+- Self-assessment guards apply; employees may only acknowledge when confirming themselves.
+- `employee_performance_assessments.status` drives UI; `finalized = 1` when Completed.
 
 ### Key locations
 
-- Controller: `EmployeesController@saveAreasDevelopment`, `EmployeePerformanceAssessmentController` (item save/revoke/PDF)
+- Controller: `EmployeesController@saveAreasDevelopment`, `EmployeePerformanceAssessmentController` (item save/revoke/PDF/periods)
 - Livewire: `PerformanceAppraisalAreas`
-- Support: `AssessmentWorkflowStatus`, `PartFPerformanceScoring`, `PartFPerformancePdfItemsBuilder`, `PerformanceAppraisalTemplate`, `PreventsSelfAssessment`
+- Support: `AssessmentWorkflowStatus`, `PartFPerformanceScoring`, `PerformanceAppraisalTemplate`, `PreventsSelfAssessment`
+- Services: `PerformanceAssessmentConfirmationService`, `AssessmentConfirmationNotificationService`
 - Views: `employee-checklist-part_f.blade.php`, `employee-assessment-summary-form.blade.php`
-- See [HR Portal Business Rules](HR_PORTAL_BUSINESS_RULES.md) for period dates and workflow transitions.
 
 ---
 
 ## 17. Part G — Competency Assessment
 
-**Status:** Complete
+**Status:** Complete  
+**Full guide:** [Competency Assessment Workflow (Part G)](workflows/COMPETENCY_ASSESSMENT_WORKFLOW.md) — extensive end-to-end documentation (trainer script, statuses, send-back, resubmit, PDFs, troubleshooting).
 
 ### Purpose
 
-Evaluate clinical and operational competencies by position (nursing skills, medication administration, CNA skills, DSD competencies, etc.) with the same acknowledgement and approval workflow as Part F.
+Evaluate clinical and operational competencies by position (nursing skills, eMAR, medication administration, CNA skills, DSD competencies, etc.). **Each competency section runs its own confirmation/approval cycle** (rate → submit → employee sign → reviewer Complete Section).
 
 ### Roles
 
-Same as Part F (Workflow 16): reviewer completes sections; employee confirms; reviewer approves. Self-assessment rules apply to item reviews and ratings.
+Same as Part F (Workflow 16): reviewer rates and submits sections; employee confirms or sends back; reviewer Completes Section (sign & approve). Self-assessment rules apply to item reviews and ratings.
 
 ### Workflow status
 
-Same four statuses as Part F (`AssessmentWorkflowStatus` on `employee_competency_assessments.status`). See [Business Rules §4](HR_PORTAL_BUSINESS_RULES.md#4-part-f--part-g-assessment-workflow).
+Same four status codes as Part F (`AssessmentWorkflowStatus`), stored **per section** in `snapshot_json.section_workflow` and rolled up onto `employee_competency_assessments.status`. See [Business Rules §4](HR_PORTAL_BUSINESS_RULES.md#4-part-f--part-g-assessment-workflow) and the [full Part G guide](workflows/COMPETENCY_ASSESSMENT_WORKFLOW.md).
 
-### Steps
+### Steps (summary)
 
-1. HR selects assessment period and opens **Part G**.
-2. Reviewer completes position-specific competency sections (15+ Livewire components under `PartGSections/`).
-3. Reviewer saves section drafts; addresses below-expectations ratings with item-level review notes in the review modal.
-4. Reviewer uses **Competency Assessment Acknowledgement** panel:
-   - **Submit for Employee Confirmation** when section work is ready
-5. Employee (when status is *For Employee confirmation*):
-   - Enters **Employee Comments**
-   - Acknowledgement date auto-filled
-   - **Save Acknowledgement** or **Send Back to Reviewer**
-6. Reviewer **Approve Assessment** when status is *For Reviewer approval* → **Completed**.
-7. HR downloads full assessment PDF or individual section PDFs (when generated).
-8. Competency history table shows prior assessments with workflow status labels.
-9. **Reopen** / **Send Back** paths match Part F (Workflow 16).
+1. Select employee → Checklist → **Part G** → select/create **assessment period**.
+2. Open a position-applicable section (15+ Livewire components under `PartGSections/`).
+3. Rate items (E/M/B), save draft, optionally Exclude non-applicable sections.
+4. **Submit Assessment** on that section → *For Employee confirmation* (email + My Tasks).
+5. Employee: **Sign & Acknowledge** or **Send Back to Reviewer**.
+6. Reviewer: **Complete Section** (or **Resubmit for Employee Confirmation** if content changed after the employee signed).
+7. Section → *Completed*; section PDF regenerates with both signatures. Repeat for other sections.
+8. When all submitted/excluded sections are done, aggregate assessment status becomes *Completed*.
 
 ### Business rules
 
 - Sections shown depend on employee position (RN, LVN, CNA, DSD, etc.).
-- Draft responses persist per assessment period until submitted for employee confirmation.
-- Reviewers cannot rate or review items on their own record; alert shown on Review button or radio selection.
-- Legacy JSON routes (`competency-assessment/employee-sign`, `reviewer-sign`, `submit`) accept the same status values for API integrations.
+- Sections are independent — one section can be Completed while another is still In Progress.
+- After employee sign, changing scores requires resubmit before Complete Section.
+- Returned sections require reviewer **Update** before Resubmit.
+- Reviewers cannot rate or approve their own record; employees may only acknowledge when confirming themselves.
+- Legacy JSON routes (`competency-assessment/employee-sign`, `reviewer-sign`, `submit`) remain for API clients.
 
 ### Key locations
 
-- Controller: `EmployeesController@saveCompetencyWorkflow`, `EmployeePerformanceAssessmentController` (competency methods)
+- Controller: `EmployeesController@saveCompetencyWorkflow`, `EmployeePerformanceAssessmentController` (competency / PDF methods)
+- Service: `CompetencySectionWorkflowService`, `AssessmentConfirmationNotificationService`
 - Livewire: `app/Livewire/Admin/Facilities/Checklist/PartGSections/*`
-- Support: `AssessmentWorkflowStatus`, `PartGCompetencyScoring`, `CompetencyAssessmentHistoryBuilder`, `PreventsSelfAssessment`
-- Views: `employee-checklist-part_g.blade.php`, `part-g-competency-workflow-form.blade.php`
+- Support: `AssessmentWorkflowStatus`, `PartGAcknowledgementViewData`, `PartGCompetencyScoring`, `PreventsSelfAssessment`
+- Views: `employee-checklist-part_g.blade.php`, `partials/part-g-section-acknowledgement-form.blade.php`
 
 ---
 
-## 18. Assessment Period Management
+## 18. Part H — Training Completion
+
+**Status:** Complete  
+**Full guide:** [Training Completion Workflow (Part H)](workflows/TRAINING_COMPLETION_WORKFLOW.md) — extensive end-to-end documentation (hiring vs recurring, Assign task, Start/Submit, Approve/Reject, due dates, troubleshooting).
+
+### Purpose
+
+Track required training modules for an employee’s position. The **employee** starts and submits each module; a **DSD / supervisor / facility leader** approves or returns it. Hiring trainings complete once; recurring trainings complete per assessment period and come due again by frequency.
+
+### Roles
+
+| Role | Responsibilities |
+|------|------------------|
+| **Employee** | Open module, **Start**, **Submit for completion**; revise after reject |
+| **Reviewer** (facility-dsd preferred; also don, facility-admin, rdhr/admin, supervisory position) | Optional **Assign task**; **Approve** or **Reject / return** submitted trainings |
+
+### Workflow status
+
+1. **Not started** → employee **Start**  
+2. **In progress** → employee **Submit for completion**  
+3. **Submitted for review** → reviewer **Approve** or **Reject / return**  
+4. **Completed** (or **Rejected — revise** then employee retries)
+
+### Steps (summary)
+
+1. Select employee → Checklist → **Part H**.  
+2. For recurring trainings, select/create an **assessment period**.  
+3. (Optional) Reviewer **Assign task** while still Not started.  
+4. Employee **Open** module → **Start** → **Submit for completion**.  
+5. Reviewer **Approve** (complete) or **Reject / return** with reason.  
+6. Hiring = permanently complete; recurring = complete for the period until next due (~30 days before anniversary/interval end).
+
+### Business rules
+
+- Only the employee can start/submit; reviewers cannot do it for them.  
+- Assign task requires a linked portal account and only while Not started.  
+- Submit creates review tasks for resolved reviewers; fails if none exist.  
+- No e-signature or completion PDF (unlike Part F/G).
+
+### Key locations
+
+- Service: `EmployeeTrainingWorkflowService`
+- Controllers: `EmployeeTrainingCompletionController`, `MemberTrainingController`
+- Views: `employee-checklist-part_h.blade.php`, `partials/training-workflow-row.blade.php`
+- Models: `EmployeeTrainingItem`, `EmployeeTrainingCompletion`
+
+---
+
+## 19. Assessment Period Management
 
 **Status:** Complete
 
 ### Purpose
 
-Define the time window for Part F and Part G assessments tied to hire anniversaries or manual dates.
+Define the time window for Part F, Part G, and recurring Part H trainings tied to hire anniversaries or manual dates.
 
 ### Roles
 
@@ -727,7 +769,7 @@ Authenticated HR staff on employee record
 
 ---
 
-## 19. Job Openings Management
+## 20. Job Openings Management
 
 **Status:** Complete
 
@@ -754,7 +796,7 @@ admin, super-admin, rdhr, facility-admin, facility-dsd, facility-editor
 
 ---
 
-## 20. Facility Hiring Hub
+## 21. Facility Hiring Hub
 
 **Status:** Complete
 
@@ -780,7 +822,7 @@ Facility HR roles (admin, rdhr, facility-admin, facility-dsd, facility-editor)
 
 ---
 
-## 21. Employee Data Import (Excel)
+## 22. Employee Data Import (Excel)
 
 **Status:** Complete
 
@@ -809,7 +851,7 @@ Bulk import employee records from Excel workbooks with column mapping and duplic
 
 ---
 
-## 22. HR Reports & Scheduled Reports
+## 23. HR Reports & Scheduled Reports
 
 **Status:** Complete
 
@@ -840,7 +882,7 @@ Run ad-hoc SQL-based reports and schedule recurring report delivery to HR roles/
 
 ---
 
-## 23. Positions, Departments & Checklist Configuration
+## 24. Positions, Departments & Checklist Configuration
 
 **Status:** Complete
 
@@ -866,7 +908,7 @@ admin, super-admin, rdhr, facility-admin, facility-dsd
 
 ---
 
-## 24. Employee Email Mappings (Communications)
+## 25. Employee Email Mappings (Communications)
 
 **Status:** Complete
 
@@ -890,7 +932,7 @@ admin, facility-admin, rdhr, facility-dsd
 
 ---
 
-## 25. Member Dashboard (Employee Hub)
+## 26. Member Dashboard (Employee Hub)
 
 **Status:** Complete
 
@@ -917,7 +959,7 @@ regular-user (employees/applicants)
 
 ---
 
-## 26. User, Role & Permission Administration
+## 27. User, Role & Permission Administration
 
 **Status:** Complete
 
@@ -943,7 +985,7 @@ admin, super-admin (primary); facility-admin for facility user lists
 
 ---
 
-## 27. Secure Staff Access to Sensitive Applicant Data
+## 28. Secure Staff Access to Sensitive Applicant Data
 
 **Status:** Complete
 
@@ -969,7 +1011,7 @@ Protect PHI/PII in job applications and inquiries via tokenized secure links and
 
 ---
 
-## 28. Arbitration Templates
+## 29. Arbitration Templates
 
 **Status:** Partial
 
@@ -994,7 +1036,7 @@ admin, super-admin
 
 ---
 
-## 29. Termination Management
+## 30. Termination Management
 
 **Status:** Partial (placeholder)
 
@@ -1019,7 +1061,7 @@ Planned: facility-admin, rdhr, admin
 
 ---
 
-## 30. Attendance Tracking
+## 31. Attendance Tracking
 
 **Status:** Not implemented
 
@@ -1033,7 +1075,7 @@ Route commented out in `routes/web.php` (`admin.facility.attendance`). No UI or 
 
 ---
 
-## 31. HIPAA Facility Checklist
+## 32. HIPAA Facility Checklist
 
 **Status:** Partial
 
@@ -1062,7 +1104,7 @@ Views and routes exist; some controller TODOs remain on index presentation.
 
 ---
 
-## 32. End-to-End Hiring Pipeline Summary
+## 33. End-to-End Hiring Pipeline Summary
 
 ```
 Public Apply
@@ -1081,17 +1123,18 @@ Employee Registration (code E-XXXXXX) → My Employment
     ↓
 Onboarding Checklists (C → D → E → F → G)
     ↓
-Part F / Part G (per assessment period):
-    Reviewer: In Progress → Submit → For Employee confirmation
-    Employee: Save Acknowledgement → For Reviewer approval
-    Reviewer: Approve → Completed  (Reopen / Send Back as needed)
+Part F / Part G / Part H (per assessment period where applicable):
+    Part F: Rate → Submit → Employee Sign & Acknowledge → Approve Assessment → Completed
+    Part G (per section): Rate → Submit → Employee Sign & Acknowledge → Complete Section
+    Part H: Employee Start → Submit for completion → Reviewer Approve/Reject
+    (Send Back / Resubmit / revise loops as needed; see docs/workflows/)
     ↓
 Document Upload → DSD Submit for Review → Approve/Reject
 ```
 
 ---
 
-## 33. Implementation Status Matrix
+## 34. Implementation Status Matrix
 
 | # | Workflow | Status |
 |---|----------|--------|
@@ -1111,20 +1154,21 @@ Document Upload → DSD Submit for Review → Approve/Reject
 | 15 | Part E orientation | Complete |
 | 16 | Part F performance appraisal | Complete |
 | 17 | Part G competency assessment | Complete |
-| 18 | Assessment period management | Complete |
-| 19 | Job openings | Complete |
-| 20 | Hiring hub | Complete |
-| 21 | Excel employee import | Complete |
-| 22 | Reports & scheduled reports | Complete |
-| 23 | Positions & checklist config | Complete |
-| 24 | Email mappings | Complete |
-| 25 | Member dashboard | Complete |
-| 26 | User/role admin | Complete |
-| 27 | Secure applicant access | Complete |
-| 28 | Arbitration templates | Partial |
-| 29 | Termination | Placeholder |
-| 30 | Attendance | Not implemented |
-| 31 | HIPAA facility checklist | Partial |
+| 18 | Part H training completion | Complete |
+| 19 | Assessment period management | Complete |
+| 20 | Job openings | Complete |
+| 21 | Hiring hub | Complete |
+| 22 | Excel employee import | Complete |
+| 23 | Reports & scheduled reports | Complete |
+| 24 | Positions & checklist config | Complete |
+| 25 | Email mappings | Complete |
+| 26 | Member dashboard | Complete |
+| 27 | User/role admin | Complete |
+| 28 | Secure applicant access | Complete |
+| 29 | Arbitration templates | Partial |
+| 30 | Termination | Placeholder |
+| 31 | Attendance | Not implemented |
+| 32 | HIPAA facility checklist | Partial |
 
 ---
 
@@ -1133,8 +1177,8 @@ Document Upload → DSD Submit for Review → Approve/Reject
 When adding a new HR workflow to the portal:
 
 1. Add a numbered section to this file (title, purpose, roles, steps, rules, status, key locations).
-2. Update the [Implementation Status Matrix](#33-implementation-status-matrix).
+2. Update the [Implementation Status Matrix](#34-implementation-status-matrix).
 3. Add cross-references in [HR_PORTAL_BUSINESS_RULES.md](HR_PORTAL_BUSINESS_RULES.md) if new business rules apply.
 4. Update the end-to-end diagram if the workflow affects hiring or onboarding.
 
-*Last updated: May 2026 — reflects Part F/Part G acknowledgement workflow (employee confirmation → reviewer approval → completed), self-assessment guards, document DSD verification, registration codes, and employee self-service rules.*
+*Last updated: July 2026 — Part F / Part G / Part H deep guides under `docs/workflows/`; Manuals & Docs PDF library; per-section competency, whole-assessment performance, employee-led training completion.*

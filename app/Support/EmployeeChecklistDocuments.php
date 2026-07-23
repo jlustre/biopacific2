@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\BPEmpChecklist;
 use App\Models\BPEmployee;
 use App\Models\ChecklistItem;
+use Illuminate\Support\Facades\Auth;
 
 class EmployeeChecklistDocuments
 {
@@ -23,6 +24,7 @@ class EmployeeChecklistDocuments
             'doc_type_id' => $item->doc_type_id,
             'on_file' => true,
             'verified_dt' => null,
+            'verified_by' => null,
             'exp_dt' => $item->isExpiring ? $expiresAt : ($existing['exp_dt'] ?? null),
             'exp_dt_not_required' => $item->isExpiring ? 0 : 1,
         ]);
@@ -35,7 +37,8 @@ class EmployeeChecklistDocuments
         BPEmployee $employee,
         ChecklistItem $item,
         ?string $verifiedAt = null,
-        ?string $expiresAt = null
+        ?string $expiresAt = null,
+        ?int $verifiedBy = null
     ): void {
         $checklist = BPEmpChecklist::firstOrNew(['employee_num' => $employee->employee_num]);
         $items = $checklist->items ?? [];
@@ -47,6 +50,7 @@ class EmployeeChecklistDocuments
             'doc_type_id' => $item->doc_type_id,
             'on_file' => true,
             'verified_dt' => $verifiedAt ?? now()->toDateString(),
+            'verified_by' => $verifiedBy ?? Auth::id(),
             'exp_dt' => $item->isExpiring
                 ? ($expiresAt ?? ($existing['exp_dt'] ?? null))
                 : ($existing['exp_dt'] ?? null),

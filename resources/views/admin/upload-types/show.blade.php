@@ -12,25 +12,18 @@
             <p class="text-sm text-slate-500">Document type details and usage</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            @if($uploadType->isEmployeeFileChecklistType() && $uploadType->checklist_item_id)
-                <a href="{{ route('admin.checklist-items.edit', $uploadType->checklist_item_id) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                    <i class="fa-solid fa-pen"></i>
-                    Edit employee file item
-                </a>
-            @else
-                <a href="{{ route('admin.upload-types.edit', $uploadType) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                    <i class="fa-solid fa-pen"></i>
-                    Edit
-                </a>
-            @endif
+            <a href="{{ route('admin.upload-types.edit', $uploadType) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                <i class="fa-solid fa-pen"></i>
+                Edit
+            </a>
         </div>
     </div>
 
     @if($uploadType->isEmployeeFileChecklistType())
         <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
             <i class="fa-solid fa-link mr-1"></i>
-            This type is synced from an employee file item.
-            Name, expiry rules, and license/certification flags are managed on the Employee file items tab.
+            This document type is part of the unified catalog and syncs to Checklist {{ $uploadType->checklist_section }}.
+            Edit the name here so Documents pages and the checklist stay identical.
         </div>
     @endif
 

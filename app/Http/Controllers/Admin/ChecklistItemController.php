@@ -53,12 +53,36 @@ class ChecklistItemController extends Controller
             default => $positionIds,
         };
 
+        $sync = app(ChecklistUploadTypeSyncService::class);
+        $requirements = app(\App\Services\EmployeeDocumentRequirementsService::class);
+
         ChecklistItem::query()
             ->whereIn('id', $checklistItemIds)
+            ->whereIn('section', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)
+            ->with('uploadType')
             ->get()
-            ->each(function (ChecklistItem $item) use ($positionIdsValue): void {
+            ->each(function (ChecklistItem $item) use ($positionIdsValue, $sync, $requirements): void {
                 $item->position_ids = $positionIdsValue;
                 $item->save();
+
+                $uploadType = $item->uploadType ?: $sync->syncChecklistItem($item);
+                if (! $uploadType) {
+                    return;
+                }
+
+                if ($positionIdsValue === null) {
+                    $requirements->setAppliesToAllPositions($uploadType, true);
+                } elseif ($positionIdsValue === []) {
+                    $requirements->setAppliesToAllPositions($uploadType, false);
+                    $uploadType->positions()->detach();
+                    $sync->syncUploadType($uploadType->fresh());
+                } else {
+                    $requirements->setAppliesToAllPositions($uploadType, false);
+                    $uploadType->positions()->sync(
+                        collect($positionIdsValue)->mapWithKeys(fn ($id) => [(int) $id => ['is_required' => true]])->all()
+                    );
+                    $sync->syncUploadType($uploadType->fresh());
+                }
             });
 
         $successMessage = match (true) {
@@ -96,6 +120,8 @@ class ChecklistItemController extends Controller
 
     public function edit(ChecklistItem $checklistItem)
     {
+        $this->ensureEmployeeFileDocumentItem($checklistItem);
+
         $docTypes = DocType::query()->orderBy('name')->get();
         $positions = Position::query()->where('is_active', true)->orderBy('title')->get();
 
@@ -104,6 +130,8 @@ class ChecklistItemController extends Controller
 
     public function update(Request $request, ChecklistItem $checklistItem)
     {
+        $this->ensureEmployeeFileDocumentItem($checklistItem);
+
         $validated = $this->validateChecklistItem($request);
 
         $checklistItem->update($validated);
@@ -114,9 +142,26 @@ class ChecklistItemController extends Controller
 
     public function destroy(ChecklistItem $checklistItem)
     {
+        $this->ensureEmployeeFileDocumentItem($checklistItem);
+
+        $uploadType = $checklistItem->uploadType;
+        if ($uploadType) {
+            $uploadType->forceFill([
+                'checklist_item_id' => null,
+                'checklist_section' => null,
+            ])->save();
+        }
+
         $checklistItem->delete();
 
         return redirect()->route('admin.upload-types.index', ['tab' => 'items'])->with('success', 'Employee file item deleted successfully.');
+    }
+
+    protected function ensureEmployeeFileDocumentItem(ChecklistItem $checklistItem): void
+    {
+        if (! in_array((string) $checklistItem->section, ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS, true)) {
+            abort(404, 'PART E orientation items are not documents and cannot be managed here.');
+        }
     }
 
     public function syncSeeder(ChecklistItemsSeederExporter $exporter): RedirectResponse
@@ -154,7 +199,7 @@ class ChecklistItemController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'section' => ['nullable', 'string', 'max:50'],
+            'section' => ['required', 'string', 'in:' . implode(',', ChecklistUploadTypeSyncService::EMPLOYEE_FILE_SECTIONS)],
             'doc_type_id' => ['required', 'integer', 'exists:doc_types,id'],
             'order' => ['nullable', 'integer', 'min:1'],
             'isExpiring' => ['nullable', 'boolean'],

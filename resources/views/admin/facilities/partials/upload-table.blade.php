@@ -520,11 +520,25 @@
                 </td>
                 <td class="px-2 py-2 border text-xs flex items-center space-x-2">
                     @if($isEmployeeTable && isset($employee))
+                    @php
+                        $employeeDocumentViewUrl = str_replace(
+                            '__ID__',
+                            (string) $upload->id,
+                            $documentsViewTemplate
+                                ?? route('admin.employees.documents.view', [$employee->id, '__ID__'])
+                        );
+                        $isPdfDocument = str_ends_with(strtolower((string) ($upload->original_filename ?? '')), '.pdf');
+                    @endphp
                     <a href="{{ ($isSelfService ?? false) ? route('employment.documents.download', ['document' => $upload->id]) : route('admin.employees.documents.download', [$employee->id, $upload->id]) }}" title="Download" class="text-blue-600 hover:text-blue-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
                     </a>
-                    <a href="{{ str_replace('__ID__', (string) $upload->id, $documentsViewTemplate ?? '#') }}" title="View" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    <a href="{{ $employeeDocumentViewUrl }}" title="{{ $isPdfDocument ? 'View PDF' : 'View' }}" target="_blank" rel="noopener noreferrer" class="{{ $isPdfDocument ? 'text-rose-600 hover:text-rose-800' : 'text-green-600 hover:text-green-800' }}">
+                        @if($isPdfDocument)
+                            <i class="fas fa-file-pdf text-lg leading-none" aria-hidden="true"></i>
+                            <span class="sr-only">View PDF</span>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        @endif
                     </a>
                     @if($upload->isOwnedBy($user) && ((!($isSelfService ?? false)) || $upload->employeeCanModify($user)))
                     <button type="button" title="Edit" class="text-green-600 hover:text-green-800 bg-transparent border-none p-0 m-0" @click="startEdit({

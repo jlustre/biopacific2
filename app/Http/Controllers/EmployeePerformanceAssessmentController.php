@@ -594,6 +594,12 @@ class EmployeePerformanceAssessmentController extends Controller {
             return response()->json(['success' => false, 'message' => 'Assessment period not found.'], 404);
         }
 
+        if ($period->employee_num) {
+            AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $period->employee_num);
+        } else {
+            abort_unless(AssessmentEvaluatorAuthorization::canEvaluate($request->user()), 403);
+        }
+
         $assignedEmployeeNums = $period->assignedEmployeeNums();
         if ($assignedEmployeeNums->isNotEmpty()) {
             $employeesByNum = \App\Models\BPEmployee::query()
@@ -638,7 +644,21 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'assessment_period_id' => 'required|integer|exists:employee_assessment_periods,id',
             ]);
 
-            if ($this->inferAssessmentType((string) $validated['item_key']) === 'performance'
+            $assessmentType = $this->inferAssessmentType((string) $validated['item_key']);
+            if ($assessmentType === 'performance') {
+                $employee = BPEmployee::query()
+                    ->where('employee_num', $validated['employee_num'])
+                    ->firstOrFail();
+                $firstDueDate = EmployeeAssessmentPeriodCalculator::firstAssessmentDueDate($employee);
+                if ($firstDueDate && ! EmployeeAssessmentPeriodCalculator::isAssessmentDue($employee)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Performance appraisal is not due until '.$firstDueDate->format('F j, Y').'. Competency evaluation may be completed during the first year.',
+                    ], 422);
+                }
+            }
+
+            if ($assessmentType === 'performance'
                 && $this->finalizedPerformanceAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
                 return response()->json([
                     'success' => false,
@@ -646,7 +666,7 @@ class EmployeePerformanceAssessmentController extends Controller {
                 ], 422);
             }
 
-            if ($this->inferAssessmentType((string) $validated['item_key']) === 'competency'
+            if ($assessmentType === 'competency'
                 && $this->completedCompetencyAssessment((string) $validated['employee_num'], (int) $validated['assessment_period_id'])) {
                 return response()->json([
                     'success' => false,
@@ -2354,6 +2374,7 @@ class EmployeePerformanceAssessmentController extends Controller {
 
         $validated = $request->validate([
             'employee_num' => 'required|string|exists:bp_employees,employee_num',
+            'assessment_year' => 'nullable|integer|min:1901|max:2100',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
             'review_type' => 'required|string|in:A,Q',
@@ -2365,12 +2386,26 @@ class EmployeePerformanceAssessmentController extends Controller {
         ]);
 
         $employee = BPEmployee::query()->where('employee_num', $validated['employee_num'])->firstOrFail();
+        AssessmentEvaluatorAuthorization::assertCanEvaluateReviewer($request->user(), $employee);
         $reviewType = $validated['review_type'];
         $on = ! empty($validated['review_date'])
             ? Carbon::parse($validated['review_date'])->startOfDay()
             : now()->startOfDay();
 
-        if ($reviewType === 'A' && $request->boolean('use_rule')) {
+        if ($reviewType === 'A' && ! empty($validated['assessment_year'])) {
+            $annual = EmployeeAssessmentPeriodCalculator::annualPeriodForAssessmentYear(
+                $employee,
+                (int) $validated['assessment_year']
+            );
+            if (! $annual) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected assessment year is earlier than this employee\'s first hire/rehire anniversary, or the employee has no hire date.',
+                ], 422);
+            }
+            $validated['date_from'] = $annual['date_from'];
+            $validated['date_to'] = $annual['date_to'];
+        } elseif ($reviewType === 'A' && $request->boolean('use_rule')) {
             $annual = EmployeeAssessmentPeriodCalculator::annualPeriodForAssessmentOn($employee, $on);
             if (! $annual) {
                 return response()->json([
@@ -2393,6 +2428,27 @@ class EmployeePerformanceAssessmentController extends Controller {
                 'success' => false,
                 'message' => 'Assessment period start and end dates are required.',
             ], 422);
+        }
+
+        if (empty($validated['id'])) {
+            $existingPeriod = EmployeeAssessmentPeriod::query()
+                ->where('employee_num', $employee->employee_num)
+                ->whereDate('date_from', $validated['date_from'])
+                ->whereDate('date_to', $validated['date_to'])
+                ->first();
+
+            if ($existingPeriod) {
+                $fresh = $existingPeriod->fresh();
+                $fresh->setAttribute('date_from', $fresh->date_from?->format('Y-m-d'));
+                $fresh->setAttribute('date_to', $fresh->date_to?->format('Y-m-d'));
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'That assessment period already exists and has been loaded.',
+                    'data' => $fresh,
+                    'period' => $fresh,
+                ]);
+            }
         }
 
         $overlapQuery = EmployeeAssessmentPeriod::query()
